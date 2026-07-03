@@ -284,61 +284,6 @@ function catIcon(key: string, color: string) {
   }
 }
 
-// Category-bar glyphs sourced from the supplied artwork (public/cat/*.png).
-function catImg(key: string) {
-  return (
-    <span className="flex h-[24px] w-[38px] items-center justify-center">
-      { }
-      <img src={`/cat/${key}.png`} alt="" className="max-h-[24px] max-w-[38px] object-contain" />
-    </span>
-  );
-}
-
-function CategoryBar({ t, active, onChange }: { t: Dict; active: string; onChange: (key: string) => void }) {
-  const cats: { key: string; label: string }[] = [
-    { key: "new", label: t.catNew },
-    { key: "popular", label: t.catPopular },
-    { key: "pokemon", label: t.catPokemon },
-    { key: "limited", label: t.catLimited },
-    { key: "other", label: t.catOther },
-  ];
-  const allOn = active === "all";
-  return (
-    <div className="sticky top-0 z-20 mt-3 border-b border-black/10 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
-      <div className="no-scrollbar flex items-stretch overflow-x-auto">
-        {/* ALL — full-height D-tab pinned to the left edge, never scrolls away */}
-        <button
-          onClick={() => onChange("all")}
-          aria-pressed={allOn}
-          className="sticky left-0 z-10 flex shrink-0 items-stretch bg-white pr-2.5"
-        >
-          <span className="flex flex-col items-center justify-center gap-1 rounded-r-[28px] bg-[#141414] px-4 text-white shadow-[3px_0_12px_rgba(0,0,0,0.18)]">
-            {catIcon("all", "#fff")}
-            <span className="text-[11px] font-extrabold uppercase tracking-wide">{t.catAll}</span>
-          </span>
-        </button>
-
-        {/* Scrollable categories */}
-        {cats.map((c) => {
-          const on = active === c.key;
-          const color = on ? "#B40206" : "#1d2129";
-          return (
-            <button
-              key={c.key}
-              onClick={() => onChange(c.key)}
-              className="relative flex shrink-0 flex-col items-center justify-center gap-1 px-3 py-2.5"
-            >
-              {catImg(c.key)}
-              <span className="text-[11px] font-extrabold uppercase tracking-wide" style={{ color }}>{c.label}</span>
-              {on && <span className="absolute inset-x-3 bottom-0 h-[3px] rounded-full bg-[#B40206]" />}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 // Terms & Conditions modal, opened from the footer link.
 function TermsOverlay({ lang, onClose }: { lang: Lang; onClose: () => void }) {
   const t = STR[lang];
@@ -409,141 +354,278 @@ function AppHeader({ coins, t, onHome, onOpenStore }: { coins: number; t: Dict; 
   );
 }
 
-// Hide-on-scroll-down / reveal-on-scroll-up for the lobby search bar.
-function useHideOnScrollDown() {
-  const [hidden, setHidden] = useState(false);
-  const lastY = useRef(0);
-  function onScroll(e: React.UIEvent<HTMLDivElement>) {
-    const y = e.currentTarget.scrollTop;
-    const last = lastY.current;
-    if (y > last && y > 48) setHidden(true);        // scrolling down, past the top
-    else if (y < last - 4 || y <= 8) setHidden(false); // scrolling up / near top
-    lastY.current = y;
-  }
-  return { hidden, onScroll };
+/* ── Lobby navigation (V2) ───────────────────────────────────────────────
+   Competitor-style browse: a category chip bar + "Narrow down" / sort toolbar
+   over a sectioned feed (each lane has a "See all" jump). A bottom sheet holds
+   search + quick filters. All filtering / sorting is client-side (POC data). */
+const LOBBY_NAV_STR = {
+  en: {
+    seeAll: "See all",
+    empty: "No packs match your search.",
+    narrowDown: "Narrow down",
+    searchPlaceholder: "Search packs & cards",
+    quickFilters: "Quick filters",
+    clear: "Clear",
+    apply: "Apply",
+    sorts: [["rec", "Recommended order"], ["popular", "Most popular"], ["new", "Newest"], ["priceAsc", "Price: Low to High"], ["priceDesc", "Price: High to Low"]] as [string, string][],
+    quickOpts: [["popular", "Most popular"], ["newarrivals", "New Arrivals"], ["fewleft", "Only a few left"], ["psa10", "PSA10 confirmed"], ["guarantee60", "High return"], ["pokemon", "Pokémon"], ["onepiece", "One Piece"], ["box", "BOX"]] as [string, string][],
+  },
+  ja: {
+    seeAll: "すべて見る",
+    empty: "一致するオリパがありません。",
+    narrowDown: "絞り込み",
+    searchPlaceholder: "オリパ・カードを検索",
+    quickFilters: "クイックフィルター",
+    clear: "クリア",
+    apply: "適用",
+    sorts: [["rec", "おすすめ順"], ["popular", "人気順"], ["new", "新着順"], ["priceAsc", "価格の安い順"], ["priceDesc", "価格の高い順"]] as [string, string][],
+    quickOpts: [["popular", "人気"], ["newarrivals", "新着"], ["fewleft", "残りわずか"], ["psa10", "PSA10確定"], ["guarantee60", "高還元"], ["pokemon", "ポケモン"], ["onepiece", "ワンピース"], ["box", "BOX"]] as [string, string][],
+  },
+};
+
+function lobbyItemsForCat(cat: string): OripaItem[] {
+  if (cat === "all") return ALL_ORIPA;
+  const seen = new Set<string>();
+  const out: OripaItem[] = [];
+  for (const s of HOME_SECTIONS) if (s.cats.includes(cat)) for (const it of s.items) if (!seen.has(it.id)) { seen.add(it.id); out.push(it); }
+  return out;
 }
 
-// Search bar shown on the main lobby so users can find a draw without
-// browsing categories.
-function LobbySearchBar({ t, value, onChange }: { t: Dict; value: string; onChange: (v: string) => void }) {
+// Compact card used in the search / category grid.
+function LobbyMiniCard({ item, t, lang, fullWidth, onView }: { item: OripaItem; t: Dict; lang: Lang; fullWidth?: boolean; onView?: () => void }) {
+  const pct = Math.round((item.remaining / item.total) * 100);
   return (
-    <div className="relative">
-      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#8a9099]">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.2-3.2" /></svg>
-      </span>
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={t.lobbySearchPlaceholder}
-        className="w-full rounded-full border-[1.5px] border-black/10 bg-[#f4f5f7] py-2.5 pl-9 pr-9 text-[13px] font-semibold text-[#1d2129] outline-none focus:border-[#B40206] focus:bg-white"
-      />
-      {value && (
-        <button
-          onClick={() => onChange("")}
-          className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-[#8a9099] hover:bg-black/5"
-          aria-label={t.backAria}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
-        </button>
-      )}
+    <button
+      onClick={onView}
+      className={`flex flex-col overflow-hidden rounded-xl bg-white text-left shadow-[0_2px_8px_rgba(0,0,0,0.1)] active:scale-[0.98] ${fullWidth ? "w-full" : "w-[152px] shrink-0"}`}
+    >
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#ededf0]">
+        {item.image ? (
+          <img src={item.image} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <span className="flex h-full w-full items-center justify-center">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#c2c6cc" strokeWidth="1.6"><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="8.5" cy="10" r="1.6" /><path d="M21 16l-5-5-7 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </span>
+        )}
+        <span className="absolute left-1.5 top-1.5 rounded-full bg-[#B40206] px-2 py-[2px] text-[9.5px] font-extrabold uppercase tracking-wide text-white">{item.gem ? t.tagSsr : t.tagPopular}</span>
+      </div>
+      <div className="flex flex-1 flex-col gap-1.5 p-2.5">
+        <h4 className="line-clamp-2 text-[12px] font-extrabold leading-tight text-[#1d2129]">{locTitle(item, lang)}</h4>
+        <span className="mt-auto flex items-center gap-1">
+          <CoinIcon size={15} />
+          <span className="text-[13px] font-extrabold text-[#1d2129]">1,000</span>
+          <span className="text-[10px] font-bold text-[#8a9099]">{t.perDraw}</span>
+        </span>
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/[0.08]"><span className="block h-full rounded-full bg-[#B40206]" style={{ width: `${pct}%` }} /></div>
+        <span className="text-[10px] font-bold text-[#B40206]">{t.remainingTimeLabel} {t.minUnit(item.endsIn)}</span>
+      </div>
+    </button>
+  );
+}
+
+// "Narrow down" bottom sheet: search on top, quick filters below, Clear / Apply.
+function LobbyFilterSheet({ lang, filters, query, onToggle, onQueryChange, onClear, onClose }: { lang: Lang; filters: Record<string, boolean>; query: string; onToggle: (k: string) => void; onQueryChange: (v: string) => void; onClear: () => void; onClose: () => void }) {
+  const L = LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"];
+  return (
+    <div className="absolute inset-0 z-[60] flex items-end justify-center bg-black/50" onClick={onClose}>
+      <div className="flex max-h-[90%] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-[0_-10px_30px_rgba(0,0,0,0.2)]" onClick={(e) => e.stopPropagation()} style={{ animation: "lobbySheetUp .28s cubic-bezier(.2,.8,.2,1) both" }}>
+        <style>{`@keyframes lobbySheetUp{from{transform:translateY(100%)}to{transform:none}}`}</style>
+        <div className="relative flex shrink-0 items-center justify-center border-b border-black/5 px-4 py-3.5">
+          <h3 className="text-[16px] font-extrabold text-[#1d2129]">{L.narrowDown}</h3>
+          <button onClick={onClose} aria-label="Close" className="absolute right-3 flex h-8 w-8 items-center justify-center rounded-full text-[#1d2129] active:bg-black/5">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+        </div>
+
+        <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-4">
+          <div className="relative">
+            <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9aa0a8]">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.2-3.2" /></svg>
+            </span>
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => onQueryChange(e.target.value)}
+              placeholder={L.searchPlaceholder}
+              className="w-full rounded-xl bg-[#f4f5f7] py-3 pl-11 pr-3 text-[14px] font-semibold text-[#1d2129] outline-none placeholder:text-[#9aa0a8] focus:bg-white focus:ring-2 focus:ring-[#B40206]/30"
+            />
+          </div>
+
+          <div className="mt-5">
+            <h4 className="mb-3 text-[15px] font-extrabold text-[#1d2129]">{L.quickFilters}</h4>
+            <div className="flex flex-wrap gap-2.5">
+              {L.quickOpts.map(([key, label]) => {
+                const on = !!filters[key];
+                return (
+                  <button key={key} onClick={() => onToggle(key)} className={`rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold transition ${on ? "border-[#B40206] bg-[#B40206] text-white" : "border-black/15 bg-white text-[#5c626b] active:bg-black/[0.03]"}`}>{label}</button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 gap-3 border-t border-black/10 px-4 py-3">
+          <button onClick={onClear} className="flex-1 rounded-xl bg-[#f2f3f5] py-3 text-[15px] font-extrabold text-[#1d2129] active:scale-[0.99]">{L.clear}</button>
+          <button onClick={onClose} className="flex-1 rounded-xl bg-[#B40206] py-3 text-[15px] font-extrabold text-white active:scale-[0.99]">{L.apply}</button>
+        </div>
+      </div>
     </div>
   );
 }
 
-function LobbySearchResults({ items, t, lang, onOpenInfo, onDrawConfirm }: { items: OripaItem[]; t: Dict; lang: Lang; onOpenInfo?: (item: OripaItem) => void; onDrawConfirm?: (item: OripaItem, count: number, free?: boolean) => void }) {
-  if (items.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
-        <div className="mb-2 text-[34px]">🔍</div>
-        <p className="text-[14px] font-semibold text-[#8a9099]">{t.lobbySearchEmpty}</p>
+// V2 lobby feed. `onView` (tap on any card) is inert in the logged-in lobby
+// and routes to Sign-up on the logged-out landing.
+function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: Dict; lang: Lang; filters: Record<string, boolean>; query: string; onOpenFilters: () => void; onView?: () => void }) {
+  const L = LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"];
+  const [cat, setCat] = useState("all");
+  const [sortKey, setSortKey] = useState("rec");
+  const [sortOpen, setSortOpen] = useState(false);
+  const filterCount = Object.keys(filters).length;
+  const qq = query.trim().toLowerCase();
+  const searching = qq.length > 0;
+
+  const catList: { key: string; label: string }[] = [
+    { key: "all", label: t.catAll },
+    { key: "new", label: t.catNew },
+    { key: "popular", label: t.catPopular },
+    { key: "pokemon", label: t.catPokemon },
+    { key: "limited", label: t.catLimited },
+    { key: "other", label: t.catOther },
+  ];
+
+  function applyQuery(list: OripaItem[]): OripaItem[] {
+    return qq ? list.filter((it) => locTitle(it, lang).toLowerCase().includes(qq)) : list;
+  }
+  function transform(list: OripaItem[]): OripaItem[] {
+    let arr = applyQuery(list.slice());
+    if (filterCount) arr = arr.filter((_, i) => i % (filterCount + 1) !== 0);
+    if (sortKey === "new") arr.reverse();
+    else if (sortKey === "popular" || sortKey === "priceAsc") arr.sort((a, b) => a.remaining - b.remaining);
+    else if (sortKey === "priceDesc") arr.sort((a, b) => b.remaining - a.remaining);
+    return arr;
+  }
+
+  const sortLabel = (L.sorts.find(([k]) => k === sortKey) || L.sorts[0])[1];
+  const mini = (it: OripaItem, fw?: boolean) => (
+    <LobbyMiniCard key={it.id} item={it} t={t} lang={lang} fullWidth={fw} onView={onView} />
+  );
+  const full = (it: OripaItem) => (
+    <OripaCard key={it.id} item={it} t={t} lang={lang} onView={onView} onDraw={onView ? () => onView() : undefined} />
+  );
+
+  function chipCls(on: boolean) {
+    return `relative shrink-0 whitespace-nowrap rounded-full border px-4 py-1.5 text-[13px] font-bold transition ${on ? "border-[#B40206] bg-[#B40206] text-white" : "border-black/10 bg-white text-[#5c626b]"}`;
+  }
+
+  let body: React.ReactNode;
+  if (searching) {
+    const items = transform(ALL_ORIPA);
+    body = items.length === 0
+      ? <div className="px-6 py-16 text-center text-[13px] font-semibold text-[#8a9099]">{L.empty}</div>
+      : <div className="grid grid-cols-2 gap-3 px-3.5 py-3">{items.map((it) => mini(it, true))}</div>;
+  } else if (cat === "all") {
+    body = (
+      <div>
+        {HOME_SECTIONS.map((s) => {
+          const title = (t as unknown as Record<string, string>)[s.titleKey];
+          const seeAllCat = s.cats[0];
+          return (
+            <div key={s.id} className="border-t border-black/10 px-3.5 py-3.5 first:border-t-0">
+              <div className="mb-2.5 flex items-center justify-between">
+                <h3 className="flex items-center gap-1.5 text-[15px] font-extrabold text-[#1d2129]">{sectionIcon(s.icon, false)}{title}</h3>
+                {seeAllCat && <button onClick={() => setCat(seeAllCat)} className="text-[12px] font-bold text-[#B40206]">{L.seeAll} →</button>}
+              </div>
+              <div className="flex flex-col gap-3">{s.items.map(full)}</div>
+            </div>
+          );
+        })}
       </div>
     );
+  } else {
+    const items = transform(lobbyItemsForCat(cat));
+    body = items.length === 0
+      ? <div className="px-6 py-16 text-center text-[13px] font-semibold text-[#8a9099]">{L.empty}</div>
+      : <div className="flex flex-col gap-3 px-3.5 py-3">{items.map(full)}</div>;
   }
+
   return (
-    <section className="bg-[#eef0f3] px-3 pb-6 pt-4">
-      <h3 className="mb-3 text-[15px] font-extrabold text-[#1d2129]">{t.lobbySearchResults} · {items.length}</h3>
-      <div className="space-y-3">
-        {items.map((it) => (
-          <OripaCard key={it.id} item={it} t={t} lang={lang} onView={() => onOpenInfo?.(it)} onDraw={(c, free) => onDrawConfirm?.(it, c, free)} />
-        ))}
+    <div className="bg-[#eef0f3]">
+      {/* Category chip bar */}
+      <div className="no-scrollbar relative flex gap-2 overflow-x-auto border-b border-black/10 bg-white px-3.5 py-2.5">
+        {catList.map((c) => {
+          const on = cat === c.key;
+          const sticky = c.key === "all";
+          return (
+            <button
+              key={c.key}
+              onClick={() => setCat(c.key)}
+              className={`${chipCls(on)} ${sticky ? "sticky left-0 z-[3]" : ""}`}
+              style={sticky ? { boxShadow: "0 0 0 8px #fff", marginRight: 10 } : undefined}
+            >
+              {c.label}
+            </button>
+          );
+        })}
       </div>
-    </section>
+
+      {/* Toolbar — "Narrow down" (filters) on the left, sort on the right */}
+      <div className="relative flex items-stretch border-b border-black/10 bg-white">
+        <button onClick={() => { onOpenFilters(); setSortOpen(false); }} className="flex flex-1 items-center justify-center gap-2 py-3 text-[14px] font-extrabold text-[#1d2129] active:bg-black/[0.03]">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><circle cx="7" cy="8" r="2" /><circle cx="16" cy="16" r="2" /><path d="M9 8h11M4 8h1M15 16h5M4 16h9" /></svg>
+          {L.narrowDown}
+          {filterCount > 0 && <span className="flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-[#B40206] px-1 text-[10px] font-extrabold leading-none text-white">{filterCount}</span>}
+        </button>
+        <span className="my-2 w-px bg-black/10" />
+        <div className="relative flex-1">
+          <button onClick={() => setSortOpen((o) => !o)} className="flex w-full items-center justify-center gap-1.5 py-3 text-[14px] font-extrabold text-[#1d2129] active:bg-black/[0.03]">
+            {sortLabel}
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4" /></svg>
+          </button>
+          {sortOpen && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setSortOpen(false)} />
+              <div className="absolute right-2 top-[calc(100%-2px)] z-40 min-w-[210px] overflow-hidden rounded-xl border border-black/10 bg-white shadow-[0_14px_34px_rgba(0,0,0,0.18)]">
+                {L.sorts.map(([key, label]) => (
+                  <button key={key} onClick={() => { setSortKey(key); setSortOpen(false); }} className={`block w-full px-3.5 py-2.5 text-left text-[13px] ${key === sortKey ? "font-extrabold text-[#B40206]" : "text-[#41464e]"}`}>{label}</button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {body}
+    </div>
   );
 }
 
-// Flat, de-duplicated list of every draw across the home feed (for search).
 function OripaHome({ lang, coins, onHome }: { lang: Lang; coins: number; onHome: () => void }) {
   const t = STR[lang];
-  const [cat, setCat] = useState("all");
+  const [filters, setFilters] = useState<Record<string, boolean>>({});
+  const [filterOpen, setFilterOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const q = query.trim().toLowerCase();
-  const searchResults = q ? ALL_ORIPA.filter((it) => locTitle(it, lang).toLowerCase().includes(q)) : [];
-  const sections = HOME_SECTIONS.filter((s) => cat === "all" || s.cats.includes(cat));
-  const { hidden: searchHidden, onScroll } = useHideOnScrollDown();
+  const toggleFilter = (k: string) => setFilters((f) => { const n = { ...f }; if (n[k]) delete n[k]; else n[k] = true; return n; });
+  const clearFilters = () => { setFilters({}); setQuery(""); };
   return (
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
       <AppHeader coins={coins} t={t} onHome={onHome} />
 
-      {/* Lobby search — hides as the user scrolls down, reveals on scroll up. */}
-      <div className={`shrink-0 overflow-hidden bg-white transition-[max-height,opacity] duration-300 ${searchHidden && !q ? "max-h-0 opacity-0" : "max-h-24 opacity-100"}`}>
-        <div className="border-b border-black/5 px-3 pb-2.5 pt-1">
-          <LobbySearchBar t={t} value={query} onChange={setQuery} />
-        </div>
-      </div>
-
-      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto" onScroll={onScroll}>
-        {q ? (
-          <>
-            <LobbySearchResults items={searchResults} t={t} lang={lang} />
-            <SiteFooter t={t} />
-          </>
-        ) : (
-        <>
+      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
         <div className="px-3 pt-3">
           <PromoCarousel />
         </div>
-        <div className="px-3 pt-3">
+        <div className="px-3 pb-1 pt-3">
           <RewardBanner t={t} />
         </div>
 
-        {/* Category filter — sticky across the whole feed */}
-        <CategoryBar t={t} active={cat} onChange={setCat} />
-
-        {/* Curved divider below categories */}
-        { }
-        <img src="/home-divider.png" alt="" className="-mt-px -mb-px block w-full" />
-
-        {sections.map((s) => {
-          const red = s.variant === "red";
-          return (
-            <Fragment key={s.id}>
-              <section className={red ? "bg-[#B40206] px-3 pb-6 pt-4" : "bg-[#eef0f3] px-3 pb-5 pt-4"}>
-                <h3 className={`mb-3 flex items-center gap-1.5 text-[15px] font-extrabold ${red ? "text-white" : "text-[#1d2129]"}`}>
-                  {sectionIcon(s.icon, red)}
-                  {(t as unknown as Record<string, string>)[s.titleKey]}
-                </h3>
-                <div className="space-y-3">
-                  {s.items.map((it) => (
-                    <OripaCard key={it.id} item={it} t={t} lang={lang} />
-                  ))}
-                </div>
-              </section>
-
-              {red && (
-                <>
-                  { }
-                  <img src="/home-divider-bottom.png" alt="" className="-mt-px -mb-px block w-full" />
-                </>
-              )}
-            </Fragment>
-          );
-        })}
+        <LobbyNavFeed t={t} lang={lang} filters={filters} query={query} onOpenFilters={() => setFilterOpen(true)} />
 
         <SiteFooter t={t} />
-        </>
-        )}
       </div>
+
+      {filterOpen && (
+        <LobbyFilterSheet lang={lang} filters={filters} query={query} onToggle={toggleFilter} onQueryChange={setQuery} onClear={clearFilters} onClose={() => setFilterOpen(false)} />
+      )}
     </div>
   );
 }
@@ -1252,59 +1334,26 @@ function DobPickerModal({ lang, onConfirm, onClose }: {
 // category-filtered card sections. Card taps prompt sign-up.
 function LandingPage({ lang, onSignUp, onLogin }: { lang: Lang; onSignUp: () => void; onLogin: () => void }) {
   const t = STR[lang];
-  const [cat, setCat] = useState("all");
+  const [filters, setFilters] = useState<Record<string, boolean>>({});
+  const [filterOpen, setFilterOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const q = query.trim().toLowerCase();
-  const searchResults = q ? ALL_ORIPA.filter((it) => locTitle(it, lang).toLowerCase().includes(q)) : [];
-  const { hidden: searchHidden, onScroll } = useHideOnScrollDown();
+  const toggleFilter = (k: string) => setFilters((f) => { const n = { ...f }; if (n[k]) delete n[k]; else n[k] = true; return n; });
+  const clearFilters = () => { setFilters({}); setQuery(""); };
   return (
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
       <AuthHeader lang={lang} onSignUp={onSignUp} onLogin={onLogin} />
-      <div className={`shrink-0 overflow-hidden bg-white transition-[max-height,opacity] duration-300 ${searchHidden && !q ? "max-h-0 opacity-0" : "max-h-24 opacity-100"}`}>
-        <div className="border-b border-black/5 px-3 pb-2.5 pt-2.5">
-          <LobbySearchBar t={t} value={query} onChange={setQuery} />
-        </div>
-      </div>
-      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto" onScroll={onScroll}>
-        {q ? (
-          <>
-            <LobbySearchResults items={searchResults} t={t} lang={lang} />
-            <SiteFooter t={t} />
-          </>
-        ) : (
-        <>
+
+      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
         <div className="px-3 pt-3"><PromoCarousel /></div>
-        <CategoryBar t={t} active={cat} onChange={setCat} />
-        { }
-        <img src="/home-divider.png" alt="" className="-mt-px -mb-px block w-full" />
-        {HOME_SECTIONS.filter((s) => cat === "all" || s.cats.includes(cat)).map((s) => {
-          const red = s.variant === "red";
-          return (
-            <Fragment key={s.id}>
-              <section className={red ? "bg-[#B40206] px-3 pb-6 pt-4" : "bg-[#eef0f3] px-3 pb-5 pt-4"}>
-                <h3 className={`mb-3 flex items-center gap-1.5 text-[15px] font-extrabold ${red ? "text-white" : "text-[#1d2129]"}`}>
-                  {sectionIcon(s.icon, red)}
-                  {(t as unknown as Record<string, string>)[s.titleKey]}
-                </h3>
-                <div className="space-y-3">
-                  {s.items.map((it) => (
-                    <OripaCard key={it.id} item={it} t={t} lang={lang} onView={onSignUp} onDraw={onSignUp} />
-                  ))}
-                </div>
-              </section>
-              {red && (
-                <>
-                  { }
-                  <img src="/home-divider-bottom.png" alt="" className="-mt-px -mb-px block w-full" />
-                </>
-              )}
-            </Fragment>
-          );
-        })}
+
+        <LobbyNavFeed t={t} lang={lang} filters={filters} query={query} onOpenFilters={() => setFilterOpen(true)} onView={onSignUp} />
+
         <SiteFooter t={t} />
-        </>
-        )}
       </div>
+
+      {filterOpen && (
+        <LobbyFilterSheet lang={lang} filters={filters} query={query} onToggle={toggleFilter} onQueryChange={setQuery} onClear={clearFilters} onClose={() => setFilterOpen(false)} />
+      )}
     </div>
   );
 }
