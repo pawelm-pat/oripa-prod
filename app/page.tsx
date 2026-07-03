@@ -432,6 +432,7 @@ const EN = {
   navItems: "Items won",
   navPrizeHistory: "Prize history",
   navQuest: "Quests",
+  navStore: "Store",
   navMyPage: "My Account",
   comingSoon: "Coming soon",
   welcomeTitle: "Welcome to Oripa!",
@@ -1165,6 +1166,7 @@ const JA: Dict = {
   navItems: "獲得商品",
   navPrizeHistory: "プライズ履歴",
   navQuest: "クエスト",
+  navStore: "ストア",
   navMyPage: "マイページ",
   comingSoon: "準備中",
   welcomeTitle: "オリパへようこそ！",
@@ -3633,69 +3635,14 @@ function GachaResult({ lang, coins, setCoins, prizes, shippingAddresses, onShipp
   );
 }
 
-const PROMO_IMAGES = ["/carousel-1.png", "/carousel-2.png", "/carousel-3.png"];
-
+// PROD: promo banner replaced with an image placeholder that keeps the 8/3
+// ratio, ready for a client-supplied asset.
 function PromoCarousel() {
-  const [idx, setIdx] = useState(0);
-  const [anim, setAnim] = useState(true);
-  const n = PROMO_IMAGES.length;
-
-  // Auto-advance to the right every 2s (idx walks into a cloned first slide
-  // for a seamless wrap, then snaps back without animation).
-  useEffect(() => {
-    const id = setInterval(() => setIdx((i) => i + 1), 5000);
-    return () => clearInterval(id);
-  }, []);
-
-  // Re-enable the transition after a silent reset to the real first slide.
-  useEffect(() => {
-    if (!anim) {
-      const r = requestAnimationFrame(() => requestAnimationFrame(() => setAnim(true)));
-      return () => cancelAnimationFrame(r);
-    }
-  }, [anim]);
-
-  const activeDot = idx % n;
-  const slides = [...PROMO_IMAGES, PROMO_IMAGES[0]];
-
   return (
-    <div>
-      <div className="aspect-[8/3] overflow-hidden rounded-2xl">
-        <div
-          className="flex h-full"
-          style={{
-            transform: `translateX(-${idx * 100}%)`,
-            transition: anim ? "transform 850ms cubic-bezier(0.22,0.61,0.36,1)" : "none",
-          }}
-          onTransitionEnd={() => {
-            if (idx === n) {
-              setAnim(false);
-              setIdx(0);
-            }
-          }}
-        >
-          {slides.map((src, i) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={i} src={src} alt="" className="h-full w-full shrink-0 object-cover" />
-          ))}
-        </div>
-      </div>
-      <div className="mt-2 flex justify-center gap-1.5">
-        {PROMO_IMAGES.map((_, i) => {
-          const on = i === activeDot;
-          return (
-            <button
-              key={i}
-              aria-label={`Go to banner ${i + 1}`}
-              onClick={() => {
-                setAnim(true);
-                setIdx(i);
-              }}
-              className="h-1.5 rounded-full transition-all"
-              style={{ width: on ? 16 : 6, background: on ? "#B40206" : "#cfd3da" }}
-            />
-          );
-        })}
+    <div className="flex aspect-[8/3] items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-black/15 bg-[linear-gradient(135deg,#eef0f3,#e2e5ea)]">
+      <div className="flex flex-col items-center gap-1.5 text-[#a2a8b0]">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="8.5" cy="10" r="1.6" /><path d="M21 16l-5-5-7 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        <span className="text-[11px] font-bold uppercase tracking-wide">Banner image</span>
       </div>
     </div>
   );
@@ -6359,6 +6306,14 @@ function navIcon(key: Screen, color: string) {
           <circle cx="12" cy="12" r="1" fill={color} stroke="none" />
         </svg>
       );
+    case "store":
+      return (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinejoin="round">
+          <path d="M4 4h16l-1 4H5L4 4z" />
+          <path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8" />
+          <path d="M9.5 20v-5.5h5V20" />
+        </svg>
+      );
     default:
       return (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8">
@@ -6369,24 +6324,28 @@ function navIcon(key: Screen, color: string) {
   }
 }
 
-function BottomNav({ screen, setScreen, t }: { screen: Screen; setScreen: (s: Screen) => void; t: Dict }) {
+// PROD: the bottom nav is display-only for now. The lobby (Oripa) is the only
+// live destination; the other tabs (incl. the new Store placeholder) are shown
+// but do not navigate until each screen is signed off and re-introduced.
+function BottomNav({ screen, t }: { screen: Screen; t: Dict }) {
   const items: { key: Screen; label: string }[] = [
     { key: "oripa", label: t.navOripa },
     { key: "prizeHistory", label: t.navPrizeHistory },
     { key: "quest", label: t.navQuest },
+    { key: "store", label: t.navStore },
     { key: "mypage", label: t.navMyPage },
   ];
   return (
     <nav className="shrink-0 border-t border-black/10 bg-white pb-[env(safe-area-inset-bottom)]">
       <div className="flex">
         {items.map((it) => {
-          const active = screen === it.key || (it.key === "mypage" && (screen === "refer" || screen === "faq" || screen === "profile" || screen === "purchaseHistory" || screen === "shippingAddress")) || (it.key === "oripa" && (screen === "gachaInfo" || screen === "gachaResult"));
+          const active = screen === it.key;
           const color = active ? "#B40206" : "#1d2129";
           return (
-            <button key={it.key} onClick={() => setScreen(it.key)} className="flex flex-1 flex-col items-center gap-1 py-2">
+            <div key={it.key} className="flex flex-1 flex-col items-center gap-1 py-2">
               {navIcon(it.key, color)}
               <span className="text-[10px] font-bold" style={{ color }}>{it.label}</span>
-            </button>
+            </div>
           );
         })}
       </div>
@@ -8409,77 +8368,31 @@ function FirstDrawCoach({ t, onClose }: { t: Dict; onClose: () => void }) {
   );
 }
 
-function PhoneApp({ lang, noHistory, initialScreen, drawVariant = "v1", boostVariant = "both", homeVariant = "v1", lobbyNav = "off", initialModal, onScreenChange }: { lang: Lang; noHistory: boolean; initialScreen?: Screen; drawVariant?: "v1" | "v2"; setDrawVariant?: (v: "v1" | "v2") => void; boostVariant?: BoostVariant; homeVariant?: "v1" | "v2"; lobbyNav?: LobbyNav; initialModal?: string; onScreenChange?: (s: Screen) => void }) {
+function PhoneApp({ lang, noHistory }: { lang: Lang; noHistory: boolean }) {
   const t = STR[lang];
-  const [screen, setScreen] = useState<Screen>(initialScreen ?? "landing");
+  const [screen, setScreen] = useState<Screen>("landing");
   const [prevScreen, setPrevScreen] = useState<Screen>("oripa");
-  const [coins, setCoins] = useState(10000);
-  const [infoItem, setInfoItem] = useState<OripaItem | null>(initialScreen === "gachaInfo" ? RECOMMENDED_ORIPA[0] : null);
-  const [drawing, setDrawing] = useState(false);
-  const [drawCount, setDrawCount] = useState(1);
-  const [drawFree, setDrawFree] = useState(false);
-  const [drawSuper, setDrawSuper] = useState(false);
-  const [drawMega, setDrawMega] = useState(false);
-  const [drawResults, setDrawResults] = useState<WonPrize[]>(initialScreen === "gachaResult" ? generateDraw(3) : []);
-  useEffect(() => { onScreenChange?.(screen); }, [screen, onScreenChange]);
-  const goHome = () => setScreen("oripa");
-  const [storeOrigin, setStoreOrigin] = useState<Screen>("oripa");
-  const openStore = () => { if (screen !== "store") setStoreOrigin(screen); setScreen("store"); };
-  const openInfo = (it: OripaItem) => { setInfoItem(it); setPrevScreen((p) => (screen === "gachaInfo" ? p : screen)); setScreen("gachaInfo"); };
-  const runDraw = (count: number, isFree = false, opts?: { superBoost?: boolean; megaBoost?: boolean }) => { setDrawCount(count); setDrawFree(isFree); setDrawSuper(!!opts?.superBoost); setDrawMega(!!opts?.megaBoost); setDrawResults(generateDraw(count)); setDrawing(true); };
+  const [coins] = useState(10000);
   const [notifOnly, setNotifOnly] = useState<"you" | "notice" | undefined>(undefined);
+  const goHome = () => setScreen("oripa");
+  // PROD: login/sign-up land straight on the lobby (no onboarding flow).
+  const enterHome = () => setScreen("oripa");
   const openNotifications = () => { setNotifOnly(undefined); setPrevScreen((p) => (screen === "notifications" ? p : screen)); setScreen("notifications"); };
-  const openNotices = () => { setNotifOnly("notice"); setPrevScreen((p) => (screen === "notifications" ? p : screen)); setScreen("notifications"); };
-  const openRefer = () => { setPrevScreen((p) => (screen === "refer" ? p : screen)); setScreen("refer"); };
-  const openItems = () => { setPrevScreen((p) => (screen === "items" ? p : screen)); setScreen("items"); };
-  const openQuest = () => { setPrevScreen((p) => (screen === "quest" ? p : screen)); setScreen("quest"); };
-  const myPageScroll = useRef(0);
-  const navTo = (s: Screen) => { if (s === "items" || s === "quest" || s === "prizeHistory") setPrevScreen("oripa"); setScreen(s); };
-  const [welcome, setWelcome] = useState(false);
-  const [welcomeFlow, setWelcomeFlow] = useState(false);
-  const [dailyReward, setDailyReward] = useState(false);
-  const [firstDrawCoach, setFirstDrawCoach] = useState(false);
-  const [firstDrawHint, setFirstDrawHint] = useState(false);
-  const [purchasedIds, setPurchasedIds] = useState<string[]>([]);
-  const [subscriptionPurchased, setSubscriptionPurchased] = useState(false);
-  const [subscriptionStartDate, setSubscriptionStartDate] = useState<Date | null>(null);
-  const [openMyAccountSubs, setOpenMyAccountSubs] = useState(false);
-  // PROD: skip the first-login welcome / daily-reward / first-draw flow.
-  const enterHomeWelcome = () => { setScreen("oripa"); };
-  const [displayName, setDisplayName] = useState("");
-  const [shippingAddresses, setShippingAddresses] = useState<ShippingAddr[]>([]);
-  const [confirmDraw, setConfirmDraw] = useState<{ item: OripaItem; count: number } | null>(null);
   const onLanding = screen === "landing" || screen === "signup" || screen === "login";
-  const noNav = onLanding;
-  const showNav = !noNav && !drawing;
+  const showNav = !onLanding;
   return (
     <NotifNavContext.Provider value={onLanding ? () => {} : openNotifications}>
     <div className="flex h-full flex-col bg-[#eef0f3]">
       <div className="relative min-h-0 flex-1">
-        {screen === "landing" && <LandingPage lang={lang} onSignUp={() => setScreen("signup")} onLogin={() => setScreen("login")} onOpenInfo={openInfo} onDrawConfirm={(item, count, free) => { setInfoItem(item); if (free) runDraw(1, true); else setConfirmDraw({ item, count }); }} homeVariant={homeVariant} lobbyNav={lobbyNav} />}
-        {screen === "signup" && <SignupPage lang={lang} onLogin={() => setScreen("login")} onSuccess={enterHomeWelcome} initialEmailVerify={initialModal === "emailVerify"} initialAppleAuth={initialModal === "appleAuth"} />}
-        {screen === "login" && <LoginPage lang={lang} onSignUp={() => setScreen("signup")} onSuccess={enterHomeWelcome} initialAppleAuth={initialModal === "appleAuth"} />}
-        {screen === "oripa" && <OripaHome lang={lang} coins={coins} onHome={goHome} onReward={(key) => { if (key === "rwInvite") openRefer(); else openQuest(); }} onOpenStore={openStore} onOpenInfo={openInfo} onDrawConfirm={(item, count, free) => { setInfoItem(item); if (free) runDraw(1, true); else setConfirmDraw({ item, count }); }} onCredit={(n) => setCoins((c) => c + n)} onOpenRank={() => setScreen("mypage")} homeVariant={homeVariant} lobbyNav={lobbyNav} />}
-        {screen === "items" && <ItemsPage lang={lang} coins={coins} setCoins={setCoins} shippingAddresses={shippingAddresses} onShippingAddressesChange={setShippingAddresses} onBack={() => setScreen(prevScreen)} onHome={goHome} onOpenStore={openStore} />}
-        {screen === "quest" && <QuestScreen lang={lang} coins={coins} onClose={() => setScreen(prevScreen)} />}
-        {screen === "mypage" && <MyPage lang={lang} coins={coins} displayName={displayName} onOpenPrizeHistory={() => setScreen("prizeHistory")} onOpenPurchaseHistory={() => setScreen("purchaseHistory")} onOpenProfile={() => setScreen("profile")} onLogout={() => setScreen("landing")} onOpenRefer={openRefer} onOpenQuest={openQuest} onOpenFaq={() => setScreen("faq")} onOpenItems={openItems} onOpenNotices={openNotices} onOpenShippingAddress={() => setScreen("shippingAddress")} onHome={goHome} onOpenStore={openStore} scrollPos={myPageScroll} subscriptionPurchased={subscriptionPurchased} onSubscriptionPurchased={() => { setSubscriptionPurchased(true); setSubscriptionStartDate(new Date()); }} onCancelSubscription={() => { setSubscriptionPurchased(false); setSubscriptionStartDate(null); }} subscriptionStartDate={subscriptionStartDate} openSubscriptionsOnMount={openMyAccountSubs} onSubscriptionsPanelMounted={() => setOpenMyAccountSubs(false)} />}
-        {screen === "shippingAddress" && <ShippingAddressPage lang={lang} coins={coins} addresses={shippingAddresses} onAddressesChange={setShippingAddresses} onBack={() => setScreen("mypage")} onOpenStore={openStore} />}
-        {screen === "profile" && <ProfilePage lang={lang} coins={coins} displayName={displayName} onDisplayNameChange={setDisplayName} onBack={() => setScreen("mypage")} onOpenStore={openStore} />}
-        {screen === "prizeHistory" && <PrizeHistory lang={lang} coins={coins} setCoins={setCoins} shippingAddresses={shippingAddresses} onShippingAddressesChange={setShippingAddresses} onBack={() => setScreen("mypage")} onHome={goHome} empty={noHistory} onGoGacha={goHome} />}
-        {screen === "refer" && <ReferFriend lang={lang} coins={coins} onBack={() => setScreen(prevScreen)} onHome={goHome} />}
-        {screen === "faq" && <FaqScreen lang={lang} coins={coins} onBack={() => setScreen("mypage")} onHome={goHome} />}
-        {screen === "store" && <StorePage lang={lang} coins={coins} setCoins={setCoins} educational={welcomeFlow} subscriptionPurchased={subscriptionPurchased} purchasedIds={purchasedIds} onSubscriptionPurchased={() => { setSubscriptionPurchased(true); setSubscriptionStartDate(new Date()); }} onManageSubscription={() => { setWelcomeFlow(false); setScreen(storeOrigin); setOpenMyAccountSubs(true); setScreen("mypage"); }} onBack={() => { setWelcomeFlow(false); setScreen(storeOrigin); }} onPaid={(pkgId) => { setPurchasedIds((prev) => [...prev, pkgId]); if (welcomeFlow) { setWelcomeFlow(false); openInfo(RECOMMENDED_ORIPA[0]); } }} onDrawItem={(item) => { setWelcomeFlow(false); openInfo(item); }} />}
-        {screen === "purchaseHistory" && <PurchaseHistoryPage lang={lang} coins={coins} onBack={() => setScreen("mypage")} onOpenStore={openStore} empty={noHistory} />}
+        {/* Logged-out lobby — V1 homepage layout */}
+        {screen === "landing" && <LandingPage lang={lang} onSignUp={() => setScreen("signup")} onLogin={() => setScreen("login")} homeVariant="v1" />}
+        {screen === "signup" && <SignupPage lang={lang} onLogin={() => setScreen("login")} onSuccess={enterHome} />}
+        {screen === "login" && <LoginPage lang={lang} onSignUp={() => setScreen("signup")} onSuccess={enterHome} />}
+        {/* Logged-in lobby — V2 format */}
+        {screen === "oripa" && <OripaHome lang={lang} coins={coins} onHome={goHome} homeVariant="v2" />}
         {screen === "notifications" && <NotificationsScreen lang={lang} coins={coins} empty={noHistory} only={notifOnly} onBack={() => setScreen(prevScreen)} onHome={goHome} />}
-        {screen === "gachaInfo" && infoItem && <OripaGachaInfo lang={lang} coins={coins} item={infoItem} onBack={() => setScreen(prevScreen)} onHome={goHome} onDraw={(c, opts) => runDraw(c, false, opts)} drawVariant={drawVariant} boostVariant={boostVariant} firstDrawHint={firstDrawHint} onFirstDrawHintDone={() => { setFirstDrawHint(false); setFirstDrawCoach(false); }} />}
-        {screen === "gachaResult" && <GachaResult lang={lang} coins={coins} setCoins={setCoins} prizes={drawResults} shippingAddresses={shippingAddresses} onShippingAddressesChange={setShippingAddresses} onBack={() => setScreen("gachaInfo")} onHome={goHome} />}
-        {drawing && <GachaAnimation count={drawCount} free={drawFree} superBoost={drawSuper} megaBoost={drawMega} onReveal={() => setScreen("gachaResult")} onDone={() => setDrawing(false)} />}
-        {welcome && <WelcomeOverlay t={t} lang={lang} onClose={() => setWelcome(false)} onGo={() => { setWelcome(false); setDailyReward(true); }} />}
-        {dailyReward && <DailyRewardOverlay t={t} lang={lang} onClaim={(amt) => setCoins((c) => c + amt)} onClose={() => setDailyReward(false)} onFirstDraw={() => { setDailyReward(false); openInfo(RECOMMENDED_ORIPA[0]); setFirstDrawCoach(true); setFirstDrawHint(true); }} />}
-        {firstDrawCoach && screen === "gachaInfo" && <FirstDrawCoach t={t} onClose={() => { setFirstDrawCoach(false); setFirstDrawHint(false); }} />}
-        {confirmDraw && <GachaConfirmModal lang={lang} count={confirmDraw.count} image={confirmDraw.item.image} onClose={() => setConfirmDraw(null)} onConfirm={() => { const c = confirmDraw.count; setConfirmDraw(null); runDraw(c); }} />}
       </div>
-      {showNav && <BottomNav screen={screen} setScreen={navTo} t={t} />}
+      {showNav && <BottomNav screen={screen} t={t} />}
     </div>
     </NotifNavContext.Provider>
   );
@@ -8545,48 +8458,8 @@ function UpdatePrompt() {
   );
 }
 
-const EMBED_SCREENS: Screen[] = ["landing", "signup", "login", "oripa", "items", "quest", "mypage", "prizeHistory", "refer", "faq", "store", "purchaseHistory", "profile", "notifications", "gachaInfo", "gachaResult", "shippingAddress"];
-
-// Maps mind-map node aliases (incl. overlay-only states) to the closest
-// addressable screen so the flow map can embed live screens.
-const SCREEN_ALIASES: Record<string, Screen> = {
-  verify: "signup",
-  welcome: "oripa",
-  home: "oripa",
-  confirm: "gachaInfo",
-  animation: "gachaInfo",
-  result: "gachaResult",
-  ranking: "mypage",
-  account: "mypage",
-  tncs: "mypage",
-  itemsWon: "items",
-  history: "prizeHistory",
-};
-
-function EmbeddedScreen() {
-  const [params, setParams] = useState<{ lang: Lang; screen: Screen; modal?: string; home: "v1" | "v2" } | null>(null);
-  useEffect(() => {
-    const sp = new URLSearchParams(window.location.search);
-    const lang: Lang = sp.get("lang") === "ja" ? "ja" : "en";
-    const raw = (sp.get("screen") || "landing").trim();
-    const screen: Screen = EMBED_SCREENS.includes(raw as Screen)
-      ? (raw as Screen)
-      : SCREEN_ALIASES[raw] ?? "landing";
-    const modal = (sp.get("modal") || "").trim() || undefined;
-    // Homepage variant deep link (V1 default; &home=v2 opts into the hero).
-    const home: "v1" | "v2" = sp.get("home") === "v2" ? "v2" : "v1";
-    setParams({ lang, screen, modal, home });
-  }, []);
-  if (!params) return <div className="h-[100svh] w-full bg-[#eef0f3]" />;
-  return (
-    <div className="relative h-[100svh] w-full overflow-hidden bg-[#eef0f3]">
-      <PhoneApp lang={params.lang} noHistory={false} initialScreen={params.screen} initialModal={params.modal} homeVariant={params.home} />
-    </div>
-  );
-}
-
 // Near-production shell: renders only the phone experience. Entry point is the
-// logged-out lobby (V2); the internal POC config panel / flow-map are dropped.
+// logged-out lobby (V1); the internal POC config panel / flow-map are dropped.
 export default function Page() {
   const [lang, setLang] = useState<Lang>("ja");
   return (
@@ -8598,7 +8471,7 @@ export default function Page() {
           <div className="rounded-[2.1rem] border border-white/8 bg-black p-2">
             <div className="mx-auto mb-2 h-6 w-28 rounded-full bg-white/10" />
             <div className="relative h-[812px] w-[390px] overflow-hidden rounded-[1.7rem] bg-[#eef0f3]">
-              <PhoneApp lang={lang} noHistory={false} drawVariant="v1" boostVariant="both" homeVariant="v2" lobbyNav="off" />
+              <PhoneApp lang={lang} noHistory={false} />
             </div>
           </div>
         </div>
@@ -8606,7 +8479,7 @@ export default function Page() {
 
       {/* Mobile: full-bleed phone */}
       <div className="relative w-full max-w-[440px] flex-1 overflow-hidden bg-[#eef0f3] sm:hidden" style={{ height: "100svh" }}>
-        <PhoneApp lang={lang} noHistory={false} drawVariant="v1" boostVariant="both" homeVariant="v2" lobbyNav="off" />
+        <PhoneApp lang={lang} noHistory={false} />
       </div>
 
       <UpdatePrompt />
