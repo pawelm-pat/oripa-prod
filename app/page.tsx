@@ -7,7 +7,7 @@ import { LangToggle, PhoneApp, UpdatePrompt, VersionBadge } from "./components/o
 // Near-production shell: renders only the phone experience. Entry point is the
 // logged-out lobby (V1); the internal POC config panel / flow-map are dropped.
 export default function Page() {
-  const [lang, setLang] = useState<Lang>("ja");
+  const [lang, setLang] = useState<Lang>("en");
   return (
     <main className="flex min-h-[100svh] w-full flex-col items-center justify-center bg-[linear-gradient(180deg,#16171c_0%,#0f1014_100%)]">
       {/* Desktop: phone centred in a simple device frame */}
