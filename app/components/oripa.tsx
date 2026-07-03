@@ -2,7 +2,7 @@
 
 import { Fragment, createContext, useContext, useEffect, useRef, useState } from "react";
 import { APP_VERSION } from "../version";
-import type { Lang, OripaItem, SectionIconKey, RewardKey, NotifItem, Screen } from "../lib/types";
+import type { Lang, OripaItem, SectionIconKey, NotifItem, Screen } from "../lib/types";
 import { STR, type Dict, locTitle } from "../lib/i18n";
 import { HOME_SECTIONS, ALL_ORIPA } from "../data/lobby";
 import { NOTIF_YOU, NOTIF_NOTICE, NOTIF_UNREAD_TOTAL } from "../data/notifications";
@@ -185,172 +185,81 @@ function OripaCard({ item, t, lang, onView, onDraw }: { item: OripaItem; t: Dict
   );
 }
 
+const PROMO_IMAGES = ["/carousel-1.png", "/carousel-2.png", "/carousel-3.png"];
+
+// V1 homepage top: auto-advancing promo carousel. Slides walk into a cloned
+// first slide for a seamless wrap, then snap back without animation.
 function PromoCarousel() {
-  return (
-    <div className="flex aspect-[8/3] items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-black/15 bg-[linear-gradient(135deg,#eef0f3,#e2e5ea)]">
-      <div className="flex flex-col items-center gap-1.5 text-[#a2a8b0]">
-        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="8.5" cy="10" r="1.6" /><path d="M21 16l-5-5-7 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
-        <span className="text-[11px] font-bold uppercase tracking-wide">Banner image</span>
-      </div>
-    </div>
-  );
-}
+  const [idx, setIdx] = useState(0);
+  const [anim, setAnim] = useState(true);
+  const n = PROMO_IMAGES.length;
 
-function RankMedallion({ tone, label, next = false }: { tone: "bronze" | "silver"; label: string; next?: boolean }) {
-  const grad = tone === "bronze"
-    ? "linear-gradient(160deg,#f0b27a 0%,#cd7f32 48%,#7a4a1d 100%)"
-    : "linear-gradient(160deg,#ffffff 0%,#c9ced6 48%,#8b94a3 100%)";
-  return (
-    <span className="flex shrink-0 flex-col items-center" style={{ opacity: next ? 0.92 : 1 }}>
-      <span
-        className="flex h-[38px] w-[38px] items-center justify-center rounded-full"
-        style={{ background: grad, border: "2px solid rgba(255,255,255,0.5)", boxShadow: "0 3px 8px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.6), inset 0 -2px 3px rgba(0,0,0,0.35)" }}
-      >
-        <svg width="19" height="19" viewBox="0 0 24 24" aria-hidden>
-          <path d="M12 2.5l2.6 5.6 6.1.7-4.5 4.1 1.2 6-5.4-3-5.4 3 1.2-6-4.5-4.1 6.1-.7z" fill="rgba(255,255,255,0.94)" stroke="rgba(0,0,0,0.3)" strokeWidth="0.8" />
-        </svg>
-      </span>
-      <span className="mt-[1px] text-[8px] font-extrabold uppercase tracking-wide text-white" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.8)" }}>{label}</span>
-    </span>
-  );
-}
-
-function RankStrip({ t, onOpen }: { t: Dict; onOpen?: () => void }) {
-  // POC: fixed rank progress (5/10 pt from Bronze toward Silver).
-  // The bar is deliberately static — no fill/sheen animation.
-  const pts = 5, next = 10;
-  const pct = (pts / next) * 100;
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      aria-label={`${t.mpCurrentRank}: ${t.mpRankBronze} — ${t.heroPts(pts, next)} — ${t.loyaltyNextTier}: ${t.loyaltySilver}`}
-      className="relative block h-[50px] w-full transition-transform active:scale-[0.99]"
-    >
-      {/* Gold-framed bar pill spanning between the medallion centres — its
-          ends tuck underneath the medallions (bar starts/finishes within the
-          icons, reference layout). */}
-      <span
-        className="absolute inset-x-[19px] top-[6px] block h-[26px] rounded-full p-[2px] shadow-[0_5px_14px_rgba(0,0,0,0.5)]"
-        style={{ background: "linear-gradient(180deg,#ffe08a,#c9a84c 55%,#7d5f1a)" }}
-      >
-        <span
-          className="relative block h-full w-full overflow-hidden rounded-full bg-[#12070a]"
-          style={{ boxShadow: "inset 0 2px 4px rgba(0,0,0,0.8), inset 0 -1px 0 rgba(255,255,255,0.05)" }}
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={next}
-          aria-valuenow={pts}
-        >
-          <span className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${pct}%`, background: "linear-gradient(180deg,#5ff08a 0%,#2ecc71 45%,#128a43 100%)", boxShadow: "0 0 8px rgba(62,220,120,0.5)" }}>
-            <span className="absolute inset-x-1 top-[2px] h-[5px] rounded-full bg-white/35" />
-            {pct > 0 && pct < 100 && (
-              <span className="absolute -right-[2px] top-1/2 h-[11px] w-[11px] -translate-y-1/2 rounded-full bg-[#eafff0]" style={{ boxShadow: "0 0 7px 2px rgba(150,255,190,0.8)" }} />
-            )}
-          </span>
-          <span className="absolute inset-0 flex items-center justify-center text-[11px] font-black text-white" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.85)" }}>
-            {t.heroPts(pts, next)}
-          </span>
-        </span>
-      </span>
-      {/* Medallions sit on top of the bar ends, larger than the bar */}
-      <span className="absolute left-0 top-0"><RankMedallion tone="bronze" label={t.mpRankBronze} /></span>
-      <span className="absolute right-0 top-0"><RankMedallion tone="silver" label={t.loyaltySilver} next /></span>
-    </button>
-  );
-}
-
-/* Chunky beveled "game UI" label: gold gradient fill clipped to the glyphs,
-   dark outline + drop built from stacked drop-shadows (MB-style type). */
-const HERO_LABEL_STYLE: React.CSSProperties = {
-  backgroundImage: "linear-gradient(180deg,#fff7d1 0%,#ffd23f 42%,#f6a821 58%,#ffe98a 100%)",
-  WebkitBackgroundClip: "text",
-  backgroundClip: "text",
-  color: "transparent",
-  filter:
-    "drop-shadow(0 1.2px 0 #3a1204) drop-shadow(0 -1px 0 #3a1204) drop-shadow(1px 0 0 #3a1204) drop-shadow(-1px 0 0 #3a1204) drop-shadow(0 2px 3px rgba(0,0,0,0.55))",
-};
-
-function HeroBadge({ img, label, badge, onClick }: { img: string; label: string; badge?: number; onClick?: () => void }) {
-  return (
-    <button onClick={onClick} className="relative flex w-[80px] flex-col items-center transition-transform active:scale-90">
-      {/* Free-floating art IS the button (MB-style — no containing frame) */}
-      { }
-      <img src={img} alt="" className="h-[72px] w-[72px] object-contain drop-shadow-[0_7px_12px_rgba(0,0,0,0.5)]" />
-      <span className="-mt-1 max-w-[80px] text-center text-[11.5px] font-black uppercase leading-[0.95] tracking-tight" style={HERO_LABEL_STYLE}>
-        {label}
-      </span>
-      {badge != null && badge > 0 && (
-        <span className="absolute right-1 top-0 z-10 flex h-[20px] min-w-[20px] items-center justify-center rounded-full border-2 border-white/85 bg-gradient-to-b from-[#ff5a5f] to-[#B40206] px-1 text-[11px] font-extrabold text-white shadow-[0_2px_6px_rgba(0,0,0,0.4)]">{badge}</span>
-      )}
-    </button>
-  );
-}
-
-function HomeHero({ t, onReward, onOpenStore, onChain, onRank, onDraw, showRank = true }: { t: Dict; onReward?: (key: RewardKey) => void; onOpenStore?: () => void; onChain?: () => void; onRank?: () => void; onDraw?: () => void; showRank?: boolean }) {
-  // Daily-bonus claim-window countdown. Starts from a fixed value so SSR and
-  // the first client render match, then ticks once mounted (POC only — not
-  // wired to a real reset time).
-  const [secsLeft, setSecsLeft] = useState(12 * 60 + 39);
   useEffect(() => {
-    const id = setInterval(() => setSecsLeft((s) => (s > 0 ? s - 1 : 12 * 60 + 39)), 1000);
+    const id = setInterval(() => setIdx((i) => i + 1), 5000);
     return () => clearInterval(id);
   }, []);
-  const timer = `${Math.floor(secsLeft / 60)}:${String(secsLeft % 60).padStart(2, "0")}`;
+
+  useEffect(() => {
+    if (!anim) {
+      const r = requestAnimationFrame(() => requestAnimationFrame(() => setAnim(true)));
+      return () => cancelAnimationFrame(r);
+    }
+  }, [anim]);
+
+  const activeDot = idx % n;
+  const slides = [...PROMO_IMAGES, PROMO_IMAGES[0]];
 
   return (
-    <div className="relative overflow-hidden rounded-3xl shadow-[0_12px_32px_rgba(0,0,0,0.15)]">
-      {/* Hero banner image — placeholder for a client-supplied asset. Keeps the
-          same 10/11 ratio + overlay UI; drop in a real image later. */}
-      <div className="absolute inset-0 flex items-center justify-center border-2 border-dashed border-black/10 bg-[linear-gradient(135deg,#eef0f3,#e2e5ea)]">
-        <div className="flex flex-col items-center gap-2 text-[#a2a8b0]">
-          <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="8.5" cy="10" r="1.6" /><path d="M21 16l-5-5-7 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          <span className="text-[12px] font-bold uppercase tracking-wide">Banner image</span>
+    <div>
+      <div className="aspect-[8/3] overflow-hidden rounded-2xl">
+        <div
+          className="flex h-full"
+          style={{
+            transform: `translateX(-${idx * 100}%)`,
+            transition: anim ? "transform 850ms cubic-bezier(0.22,0.61,0.36,1)" : "none",
+          }}
+          onTransitionEnd={() => {
+            if (idx === n) {
+              setAnim(false);
+              setIdx(0);
+            }
+          }}
+        >
+          {slides.map((src, i) => (
+            <img key={i} src={src} alt="" className="h-full w-full shrink-0 object-cover" />
+          ))}
         </div>
       </div>
-      {/* Legibility gutters for the icon columns over any future artwork */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 z-[2] w-[88px] bg-gradient-to-r from-black/10 to-transparent" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 z-[2] w-[88px] bg-gradient-to-l from-black/10 to-transparent" />
-
-      <div className="relative" style={{ aspectRatio: "10 / 11" }}>
-        {/* Rank progress (Bronze → Silver), MB-style top strip.
-            Hidden on the logged-out landing — an anonymous visitor has no rank. */}
-        {showRank && (
-          <div className="absolute left-1/2 top-2.5 z-10 w-[74%] -translate-x-1/2">
-            <RankStrip t={t} onOpen={onRank} />
-          </div>
-        )}
-
-        {/* Left column: timed Daily Bonus (mirrors MB's timed collectible) */}
-        <div className="absolute left-2.5 z-10 flex flex-col items-center" style={{ top: showRank ? 78 : 14 }}>
-          <HeroBadge img="/hero-ic-daily.png" label={t.rwDaily} onClick={() => onReward?.("rwDaily")} />
-          {/* Daily streak (POC: day 2 of 4) — compact segmented track */}
-          <span className="mt-1 flex h-[7px] w-[56px] gap-[2px] rounded-full border border-white/25 bg-black/55 p-[1.5px]">
-            {[0, 1, 2, 3].map((i) => (
-              <span key={i} className="h-full flex-1 rounded-full" style={{ background: i < 2 ? "linear-gradient(180deg,#ffe08a,#f6a821)" : "rgba(255,255,255,0.18)" }} />
-            ))}
-          </span>
-          <span className="mt-1 rounded-md border border-white/30 bg-gradient-to-b from-[#3ddc68] to-[#17a544] px-1.5 py-[1px] text-[10px] font-extrabold tabular-nums text-white shadow-[0_1px_4px_rgba(0,0,0,0.4)]">{timer}</span>
-          {onChain && (
-            <span className="mt-2">
-              <HeroBadge img="/hero-ic-chain.png" label={t.coBadge} onClick={onChain} />
-            </span>
-          )}
-        </div>
-
-        {/* Right column: Oripa Draw (the core product, top slot) / Quest /
-            First bonus. The old Daily Box slot duplicated the left column's
-            Daily entry, so it became the draw shortcut. */}
-        <div className="absolute right-2.5 z-10 flex flex-col items-center gap-2" style={{ top: showRank ? 78 : 14 }}>
-          <HeroBadge img="/hero-ic-draw.png" label={t.heroDraw} onClick={onDraw} />
-          <HeroBadge img="/hero-ic-quest.png" label={t.rwQuest} onClick={() => onReward?.("rwQuest")} />
-          <HeroBadge img="/hero-ic-offer.png" label={t.rwFirst} onClick={() => onOpenStore?.()} />
-        </div>
+      <div className="mt-2 flex justify-center gap-1.5">
+        {PROMO_IMAGES.map((_, i) => {
+          const on = i === activeDot;
+          return (
+            <button
+              key={i}
+              aria-label={`Go to banner ${i + 1}`}
+              onClick={() => {
+                setAnim(true);
+                setIdx(i);
+              }}
+              className="h-1.5 rounded-full transition-all"
+              style={{ width: on ? 16 : 6, background: on ? "#B40206" : "#cfd3da" }}
+            />
+          );
+        })}
       </div>
     </div>
   );
 }
 
+// V1 reward banner (single artwork). PROD: display-only for now — the
+// individual reward screens are re-introduced per client sign-off.
+function RewardBanner({ t }: { t: Dict }) {
+  return (
+    <div className="overflow-hidden rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.12)]">
+      <img src="/reward-banner.png" alt={t.rewardHeadline} className="block w-full" />
+    </div>
+  );
+}
 
 function catIcon(key: string, color: string) {
   switch (key) {
@@ -592,7 +501,10 @@ function OripaHome({ lang, coins, onHome }: { lang: Lang; coins: number; onHome:
         ) : (
         <>
         <div className="px-3 pt-3">
-          <HomeHero t={t} />
+          <PromoCarousel />
+        </div>
+        <div className="px-3 pt-3">
+          <RewardBanner t={t} />
         </div>
 
         {/* Category filter — sticky across the whole feed */}
