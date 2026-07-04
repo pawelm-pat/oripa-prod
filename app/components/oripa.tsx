@@ -291,8 +291,8 @@ function PromoCarousel() {
 function RewardBanner({ t }: { t: Dict }) {
   return (
     <div className="overflow-hidden rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.12)]">
-      {/* Placeholder keeps the reward banner's original 828:378 ratio. */}
-      <div className="aspect-[828/378]">
+      {/* Banner placeholder — 8:3 ratio per Figma. */}
+      <div className="aspect-[8/3]">
         <img src="/placeholder-banner.png" alt={t.rewardHeadline} className="block h-full w-full object-cover" />
       </div>
     </div>
@@ -3678,12 +3678,12 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
             ))}
           </div>
 
-          {/* Promo banners — placeholders keep the original slot ratios. */}
+          {/* Promo banners — 8:3 placeholders per Figma. */}
           <div className="mt-4 space-y-3">
-            <div className="aspect-[778/186] overflow-hidden rounded-xl">
+            <div className="aspect-[8/3] overflow-hidden rounded-xl">
               <img src="/placeholder-banner.png" alt="" className="h-full w-full object-cover" />
             </div>
-            <div className="aspect-[778/190] overflow-hidden rounded-xl">
+            <div className="aspect-[8/3] overflow-hidden rounded-xl">
               <img src="/placeholder-banner.png" alt="" className="h-full w-full object-cover" />
             </div>
           </div>
