@@ -4,6 +4,70 @@ export type Lang = "en" | "ja";
 
 export type Category = "pokemon" | "onepiece" | "baseball" | "football";
 
+// ── Prize History domain ─────────────────────────────────────────────────
+export type Rarity = "UR" | "SR" | "N";
+
+// Sort options for the "Prizes won" list.
+export type SortKey = "coinDesc" | "coinAsc" | "wonNew" | "wonOld" | "expSoon";
+
+// Prize History tabs.
+export type PrizeTab = "won" | "waiting" | "shipped";
+
+export type WonPrize = {
+  id: string;
+  name: string;
+  nameJa: string;
+  desc: string;
+  descJa: string;
+  rarity: Rarity;
+  coinValue: number;
+  wonAt: number;
+  category?: Category;
+};
+
+export type WaitingPrize = {
+  id: string;
+  name: string;
+  nameJa: string;
+  desc: string;
+  descJa: string;
+  rarity: Rarity;
+  coinValue: number;
+  requestedAt: number;
+};
+
+export type ShippedPrize = {
+  id: string;
+  name: string;
+  nameJa: string;
+  desc: string;
+  descJa: string;
+  rarity: Rarity;
+  coinValue: number;
+  requestedAt: number;
+  tracking: string;
+};
+
+// ── Shipping address ─────────────────────────────────────────────────────
+export type ShippingCountry = "japan" | "usa";
+
+export type ShippingAddr = {
+  id: string;
+  isDefault: boolean;
+  country: ShippingCountry;
+  lastName: string;
+  firstName: string;
+  phone: string;
+  postalCode: string;
+  prefecture: string;
+  city: string;
+  streetNumber: string;
+  apartment: string;
+  cityStreetNumber: string;
+  state: string;
+  zipCode: string;
+};
+
 // A lobby card (an "oripa" pack). `image` is optional so cards fall back to a
 // placeholder until real art is supplied.
 export type OripaItem = {
@@ -45,8 +109,9 @@ export type NotifItem = {
   unread?: boolean;
 };
 
-// Screens reachable in the skeleton, plus the display-only bottom-nav labels
-// (prizeHistory / quest / store / mypage) that are not yet navigable.
+// Screens reachable in the skeleton. `mypage` (My Account), `prizeHistory`
+// (Prize History) and `shippingAddress` are navigable; `quest` / `store`
+// remain display-only bottom-nav labels that are not yet wired.
 export type Screen =
   | "landing"
   | "signup"
@@ -54,6 +119,7 @@ export type Screen =
   | "oripa"
   | "notifications"
   | "prizeHistory"
+  | "shippingAddress"
   | "quest"
   | "store"
   | "mypage";

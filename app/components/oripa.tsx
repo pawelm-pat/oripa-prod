@@ -1,11 +1,44 @@
 "use client";
 
-import { Fragment, createContext, useContext, useEffect, useRef, useState } from "react";
+import { Fragment, createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { APP_VERSION } from "../version";
-import type { Lang, OripaItem, SectionIconKey, NotifItem, Screen } from "../lib/types";
+import type {
+  Category,
+  Lang,
+  OripaItem,
+  Rarity,
+  Screen,
+  SectionIconKey,
+  NotifItem,
+  PrizeTab,
+  ShippingAddr,
+  ShippingCountry,
+  ShippedPrize,
+  SortKey,
+  WaitingPrize,
+  WonPrize,
+} from "../lib/types";
 import { STR, type Dict, locTitle } from "../lib/i18n";
 import { HOME_SECTIONS, ALL_ORIPA } from "../data/lobby";
 import { NOTIF_YOU, NOTIF_NOTICE, NOTIF_UNREAD_TOTAL } from "../data/notifications";
+import {
+  CATEGORIES,
+  DAY,
+  EMPTY_SHIPPING_FORM,
+  INITIAL_SHIPPED,
+  INITIAL_WAITING,
+  INITIAL_WON,
+  NOW,
+  PREFECTURES_EN,
+  PREFECTURES_JA,
+  RARITY_IMG,
+  SHIP_MIN_COINS,
+  SHIP_WINDOW_DAYS,
+  SORT_KEYS,
+  US_STATES,
+  formatShippingAddr,
+} from "../data/prizes";
 
 const NotifNavContext = createContext<() => void>(() => {});
 
@@ -674,10 +707,11 @@ function navIcon(key: Screen, color: string) {
   }
 }
 
-// PROD: the bottom nav is display-only for now. The lobby (Oripa) is the only
-// live destination; the other tabs (incl. the new Store placeholder) are shown
-// but do not navigate until each screen is signed off and re-introduced.
-function BottomNav({ screen, t }: { screen: Screen; t: Dict }) {
+// PROD bottom nav. Only the Oripa (lobby) and My Account tabs navigate; the
+// Prize history / Quests / Store tabs are shown but inert. My Account and its
+// sub-screens (Prize History, Shipping Address) all highlight the My Account
+// tab.
+function BottomNav({ screen, t, onNavigate }: { screen: Screen; t: Dict; onNavigate?: (s: Screen) => void }) {
   const items: { key: Screen; label: string }[] = [
     { key: "oripa", label: t.navOripa },
     { key: "prizeHistory", label: t.navPrizeHistory },
@@ -685,17 +719,24 @@ function BottomNav({ screen, t }: { screen: Screen; t: Dict }) {
     { key: "store", label: t.navStore },
     { key: "mypage", label: t.navMyPage },
   ];
+  const activeKey: Screen = screen === "prizeHistory" || screen === "shippingAddress" ? "mypage" : screen;
   return (
     <nav className="shrink-0 border-t border-black/10 bg-white pb-[env(safe-area-inset-bottom)]">
       <div className="flex">
         {items.map((it) => {
-          const active = screen === it.key;
+          const active = activeKey === it.key;
           const color = active ? "#B40206" : "#1d2129";
+          const navigable = it.key === "oripa" || it.key === "mypage";
           return (
-            <div key={it.key} className="flex flex-1 flex-col items-center gap-1 py-2">
+            <button
+              key={it.key}
+              type="button"
+              onClick={navigable ? () => onNavigate?.(it.key) : undefined}
+              className="flex flex-1 flex-col items-center gap-1 py-2"
+            >
               {navIcon(it.key, color)}
               <span className="text-[10px] font-bold" style={{ color }}>{it.label}</span>
-            </div>
+            </button>
           );
         })}
       </div>
@@ -2114,16 +2155,1573 @@ function NotificationsScreen({ lang, coins, empty = false, only, onBack, onHome 
   );
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   Prize History + Shipping Address + My Account
+   Ported from the POC. These screens share the atoms above (CoinIcon,
+   GemIcon, BrandLogo, BalancePill, AppHeader, SiteFooter, LOBBY_NAV_STR).
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── date / locale helpers ───────────────────────────────────────────── */
+function pad(n: number) {
+  return n < 10 ? `0${n}` : `${n}`;
+}
+function fmtDate(ts: number) {
+  const d = new Date(ts);
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+}
+function expiresAt(wonAt: number) {
+  return wonAt + SHIP_WINDOW_DAYS * DAY;
+}
+function locName(p: { name: string; nameJa: string }, lang: Lang) {
+  return lang === "ja" ? p.nameJa : p.name;
+}
+function locDesc(p: { desc: string; descJa: string }, lang: Lang) {
+  return lang === "ja" ? p.descJa : p.desc;
+}
+function rarityTier(r: Rarity): number {
+  return r === "UR" ? 1 : r === "SR" ? 2 : 3;
+}
+
+/* ── small UI atoms ──────────────────────────────────────────────────── */
+function CoinChip({ value, strong = false }: { value: number; strong?: boolean }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-bold"
+      style={{
+        background: strong ? "#FFF1CF" : "#FFF6E3",
+        color: "#B5740A",
+        fontSize: strong ? 14 : 12,
+      }}
+    >
+      <CoinIcon size={strong ? 16 : 14} />
+      {value.toLocaleString()}
+    </span>
+  );
+}
+
+function PrizeArt({ rarity, size = 76 }: { rarity: Rarity; size?: number }) {
+  return (
+    <img
+      src={RARITY_IMG[rarity]}
+      alt={`${rarity} prize card`}
+      draggable={false}
+      className="shrink-0 rounded-lg object-cover"
+      style={{ width: size, height: Math.round(size * 1.4), boxShadow: "0 1px 3px rgba(0,0,0,0.18)", WebkitUserDrag: "none", userSelect: "none" } as React.CSSProperties}
+    />
+  );
+}
+
+function GreenCheck() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" className="shrink-0">
+      <circle cx="10" cy="10" r="9" fill="#22c55e" />
+      <path d="M6 10l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </svg>
+  );
+}
+
+function EmptyState({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) {
+  return (
+    <div className="flex h-full flex-col items-center justify-center px-8 text-center">
+      <div className="text-4xl">{icon}</div>
+      <p className="mt-3 text-[15px] font-bold text-[#41464e]">{title}</p>
+      <p className="mt-1 text-[12.5px] text-[#8a9099]">{subtitle}</p>
+    </div>
+  );
+}
+
+function BottomSheet({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
+  return (
+    <div className="absolute inset-0 z-40 flex items-end" style={{ background: "rgba(0,0,0,0.4)" }} onClick={onClose}>
+      <div className="w-full rounded-t-2xl bg-white px-4 pb-5 pt-3" onClick={(e) => e.stopPropagation()}>
+        <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-black/15" />
+        <div className="mb-1 flex items-center justify-between">
+          <h3 className="text-[14px] font-bold text-[#1d2129]">{title}</h3>
+          <button onClick={onClose} className="text-[#8a9099]">✕</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* ── shipping form field atoms ───────────────────────────────────────── */
+function Field({ label, value, onChange, onBlur, half = false, required = false, type = "text", placeholder, valid: validProp, error, onClear }: {
+  label: string; value: string; onChange: (val: string) => void; onBlur?: () => void; half?: boolean; required?: boolean; type?: string; placeholder: string; valid?: boolean; error?: string; onClear?: () => void;
+}) {
+  const filled = validProp !== undefined ? validProp : value.trim().length > 0;
+  const hasError = !!error;
+  return (
+    <div className={half ? "flex-1 min-w-0" : "w-full"}>
+      <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">
+        {label}{required && <span className="ml-0.5 text-[#B40206]">*</span>}
+      </label>
+      <div className="relative flex items-center">
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={onBlur}
+          placeholder={placeholder}
+          className="w-full rounded-lg border py-2.5 text-[13px] text-[#1d2129] placeholder:text-[#bbbec4] outline-none transition"
+          style={{
+            paddingLeft: "10px",
+            paddingRight: filled || hasError ? "32px" : "10px",
+            borderColor: hasError ? "#B40206" : filled ? "#d1d5db" : "#e5e8ec",
+            background: hasError ? "rgba(230,0,18,0.04)" : "white",
+          }}
+        />
+        {filled && !hasError && <span className="absolute right-2"><GreenCheck /></span>}
+        {hasError && onClear && (
+          <button onClick={onClear} className="absolute right-2 flex h-5 w-5 items-center justify-center rounded-full" style={{ background: "#B40206" }}>
+            <svg width="10" height="10" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="white" strokeWidth="1.8" strokeLinecap="round" /></svg>
+          </button>
+        )}
+      </div>
+      {hasError && <p className="mt-1 text-[10px] text-[#B40206]">{error}</p>}
+    </div>
+  );
+}
+
+function PrefectureSelect({ value, onChange, label, lang }: { value: string; onChange: (val: string) => void; label: string; lang: Lang }) {
+  const filled = value.trim().length > 0;
+  const names = lang === "ja" ? PREFECTURES_JA : PREFECTURES_EN;
+  const placeholder = lang === "ja" ? "都道府県" : "Prefecture";
+  return (
+    <div className="flex-1 min-w-0">
+      <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{label}<span className="ml-0.5 text-[#B40206]">*</span></label>
+      <div className="relative flex items-center">
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full appearance-none rounded-lg border border-[#e5e8ec] bg-white py-2.5 pl-2.5 pr-8 text-[13px] text-[#1d2129] outline-none"
+        >
+          <option value="">{placeholder}</option>
+          {PREFECTURES_JA.map((ja, i) => <option key={ja} value={ja}>{names[i]}</option>)}
+        </select>
+        <span className="pointer-events-none absolute right-2 text-[#8a9099]">
+          {filled ? <GreenCheck /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function USStateSelect({ value, onChange, label }: { value: string; onChange: (val: string) => void; label: string }) {
+  const filled = value.trim().length > 0;
+  return (
+    <div className="w-full">
+      <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{label}<span className="ml-0.5 text-[#B40206]">*</span></label>
+      <div className="relative flex items-center">
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full appearance-none rounded-lg border border-[#e5e8ec] bg-white py-2.5 pl-2.5 pr-8 text-[13px] text-[#1d2129] outline-none"
+        >
+          <option value="">Select State</option>
+          {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <span className="pointer-events-none absolute right-2 text-[#8a9099]">
+          {filled ? <GreenCheck /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ── Prize History ───────────────────────────────────────────────────── */
+type Toast = { id: number; text: string };
+
+function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddressesChange, onBack, onHome, empty = false, onGoGacha }: { lang: Lang; coins: number; setCoins: Dispatch<SetStateAction<number>>; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; onBack: () => void; onHome: () => void; empty?: boolean; onGoGacha?: () => void }) {
+  const t = STR[lang];
+
+  const [tab, setTab] = useState<PrizeTab>("won");
+  const [won, setWon] = useState<WonPrize[]>(INITIAL_WON);
+  const [waiting, setWaiting] = useState<WaitingPrize[]>(INITIAL_WAITING);
+  const [shipped] = useState<ShippedPrize[]>(INITIAL_SHIPPED);
+
+  const [sortKey, setSortKey] = useState<SortKey>("coinDesc");
+  const [sortOpen, setSortOpen] = useState(false);
+
+  const [listSelected, setListSelected] = useState<Set<string>>(new Set());
+  const [listShipOpen, setListShipOpen] = useState(false);
+  const [category, setCategory] = useState<"all" | Category>("all");
+  const [query, setQuery] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const toastSeq = useRef(0);
+
+  function pushToast(text: string) {
+    const id = (toastSeq.current += 1);
+    setToasts((prev) => [...prev, { id, text }]);
+    setTimeout(() => setToasts((prev) => prev.filter((x) => x.id !== id)), 2600);
+  }
+
+  const sortedWon = useMemo(() => {
+    const arr = [...won];
+    arr.sort((a, b) => {
+      switch (sortKey) {
+        case "coinDesc": return b.coinValue - a.coinValue;
+        case "coinAsc": return a.coinValue - b.coinValue;
+        case "wonNew": return b.wonAt - a.wonAt;
+        case "wonOld": return a.wonAt - b.wonAt;
+        case "expSoon": return expiresAt(a.wonAt) - expiresAt(b.wonAt);
+      }
+    });
+    return arr;
+  }, [won, sortKey]);
+
+  // List view: select cards, then exchange or ship.
+  const listSelectedPrizes = won.filter((p) => listSelected.has(p.id));
+  const listTotal = listSelectedPrizes.reduce((s, p) => s + p.coinValue, 0);
+  const listCanShip = listTotal >= SHIP_MIN_COINS;
+  const listShortfall = Math.max(0, SHIP_MIN_COINS - listTotal);
+
+  function listToggle(id: string) {
+    setListSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  }
+  function listReset() { setListSelected(new Set()); }
+  function listExchange() {
+    if (listSelected.size === 0) return;
+    const ids = new Set(listSelected);
+    const n = ids.size;
+    setCoins((c) => c + listTotal);
+    setWon((list) => list.filter((p) => !ids.has(p.id)));
+    setListSelected(new Set());
+    pushToast(t.toastConverted(n, listTotal));
+  }
+  function doListShip() {
+    const ids = new Set(listSelected);
+    const moving = won.filter((p) => ids.has(p.id));
+    setWaiting((list) => [
+      ...moving.map((p) => ({
+        id: p.id,
+        name: p.name,
+        nameJa: p.nameJa,
+        desc: p.desc,
+        descJa: p.descJa,
+        rarity: p.rarity,
+        coinValue: p.coinValue,
+        requestedAt: NOW,
+      })),
+      ...list,
+    ]);
+    setWon((list) => list.filter((p) => !ids.has(p.id)));
+    setListSelected(new Set());
+    setListShipOpen(false);
+    pushToast(t.toastShipReq);
+  }
+
+  // "Narrow down" scopes the list: a franchise category chip plus a free-text
+  // search matched against name/desc.
+  const q = query.trim().toLowerCase();
+  const matchesQuery = (p: WonPrize) => {
+    if (!q) return true;
+    const hay = `${locName(p, lang)} ${locDesc(p, lang)}`.toLowerCase();
+    return q.split(/\s+/).every((w) => hay.includes(w));
+  };
+  const inScope = (p: WonPrize) => (category === "all" || p.category === category) && matchesQuery(p);
+  const catWon = won.filter(inScope);
+  const displayedWon = sortedWon.filter(inScope);
+  const filterActive = category !== "all" || q.length > 0;
+  function clearFilters() { setCategory("all"); setQuery(""); setListSelected(new Set()); }
+
+  // Tier chips: "All" selects everything, a tier chip selects that rarity;
+  // tapping the active chip again deselects. Scoped to the selected category.
+  const tierIds = (key: "all" | Rarity) =>
+    (key === "all" ? catWon : catWon.filter((p) => p.rarity === key)).map((p) => p.id);
+  const isTierActive = (key: "all" | Rarity) => {
+    const ids = tierIds(key);
+    return ids.length > 0 && ids.length === listSelected.size && ids.every((id) => listSelected.has(id));
+  };
+  function selectTier(key: "all" | Rarity) {
+    setListSelected(isTierActive(key) ? new Set() : new Set(tierIds(key)));
+  }
+  const tierChips: { key: "all" | Rarity; label: string }[] = [
+    { key: "all", label: t.deckAll },
+    { key: "UR", label: t.prizeTier(1) },
+    { key: "SR", label: t.prizeTier(2) },
+    { key: "N", label: t.prizeTier(3) },
+  ];
+
+  const counts = { won: won.length, waiting: waiting.length, shipped: shipped.length };
+
+  if (empty) {
+    return (
+      <div className="flex h-full flex-col bg-[#eef0f3]">
+        <header className="shrink-0 bg-white">
+          <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
+            <BrandLogo onClick={onHome} />
+            <BalancePill coins={coins} t={t} />
+          </div>
+          <div className="flex items-center gap-2 px-3 py-2.5">
+            <button onClick={onBack} className="flex h-7 w-7 items-center justify-center" aria-label={t.backAria}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#B40206" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </button>
+            <h2 className="text-[20px] font-extrabold text-[#1d2129]">{t.prizeHistory}</h2>
+          </div>
+        </header>
+
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6">
+          <img src="/refer-mascot.png" alt="" className="mb-5 h-44 w-44 object-contain" />
+          <p className="text-center text-[14px] leading-relaxed text-[#9aa0a8]">{t.winEmptyTitle}</p>
+          <p className="mt-1 max-w-[300px] text-center text-[14px] leading-relaxed text-[#9aa0a8]">{t.winEmptySub}</p>
+          <button
+            onClick={onGoGacha ?? onHome}
+            className="mt-7 w-full rounded-xl bg-[#B40206] py-3.5 text-[15px] font-extrabold tracking-wide text-white shadow-[0_6px_18px_rgba(230,0,18,0.35)] active:scale-[0.99]"
+          >
+            {t.winEmptyCta}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full flex-col bg-[#eef0f3]">
+      <header className="shrink-0 bg-white">
+        <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
+          <BrandLogo onClick={onHome} />
+          <BalancePill coins={coins} t={t} />
+        </div>
+
+        <div className="flex items-center gap-2 px-3 py-2.5">
+          <button onClick={onBack} className="flex h-7 w-7 items-center justify-center" aria-label={t.backAria}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#B40206" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </button>
+          <h2 className="text-[20px] font-extrabold text-[#1d2129]">{t.prizeHistory}</h2>
+        </div>
+
+        <div className="flex border-b border-black/10 px-2">
+          {([
+            { key: "won", label: t.tabWon },
+            { key: "waiting", label: t.tabWaiting },
+            { key: "shipped", label: t.tabShipped },
+          ] as { key: PrizeTab; label: string }[]).map((tb) => {
+            const active = tab === tb.key;
+            return (
+              <button
+                key={tb.key}
+                onClick={() => setTab(tb.key)}
+                className="relative flex-1 pb-2.5 pt-1 text-center"
+              >
+                <span className={`text-[12px] font-bold ${active ? "text-[#B40206]" : "text-[#8a9099]"}`}>
+                  {tb.label}
+                </span>
+                <span
+                  className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${active ? "bg-[#B40206] text-white" : "bg-black/[0.07] text-[#8a9099]"}`}
+                >
+                  {counts[tb.key]}
+                </span>
+                {active && <span className="absolute inset-x-3 -bottom-px h-[3px] rounded-full bg-[#B40206]" />}
+              </button>
+            );
+          })}
+        </div>
+      </header>
+
+      <div className="relative min-h-0 flex-1">
+        {tab === "won" && (
+          won.length === 0 ? (
+            <EmptyState icon="🎁" title={t.wonEmptyTitle} subtitle={t.wonEmptySub} />
+          ) : (
+            <div className="flex h-full flex-col">
+              <div className="relative flex shrink-0 items-stretch border-b border-black/10 bg-white">
+                <button onClick={() => setFilterOpen(true)} className="flex flex-1 items-center justify-center gap-2 py-3 text-[14px] font-extrabold text-[#1d2129] active:bg-black/[0.03]">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><circle cx="7" cy="8" r="2" /><circle cx="16" cy="16" r="2" /><path d="M9 8h11M4 8h1M15 16h5M4 16h9" /></svg>
+                  {LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"].narrowDown}
+                  {filterActive && <span className="flex h-[8px] w-[8px] rounded-full bg-[#B40206]" />}
+                </button>
+                <span className="my-2 w-px bg-black/10" />
+                <button onClick={() => setSortOpen(true)} className="flex flex-1 items-center justify-center gap-1.5 py-3 text-[14px] font-extrabold text-[#1d2129] active:bg-black/[0.03]">
+                  {t.sortLabels[sortKey]}
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4" /></svg>
+                </button>
+              </div>
+
+              <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-3">
+                {displayedWon.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="mb-2 text-[32px]">🔍</div>
+                    <p className="text-[13px] font-semibold text-[#8a9099]">{t.searchNoResults}</p>
+                  </div>
+                )}
+                <div className="space-y-3">
+                  {displayedWon.map((p) => {
+                    const isSel = listSelected.has(p.id);
+                    return (
+                      <div
+                        key={p.id}
+                        onClick={() => listToggle(p.id)}
+                        className="flex gap-3 rounded-2xl bg-white p-2.5 shadow-[0_1px_4px_rgba(0,0,0,0.08)] transition"
+                        style={{ border: isSel ? "2.5px solid #FF7A1A" : "1.5px solid rgba(0,0,0,0.08)", cursor: "pointer" }}
+                      >
+                        <div className="shrink-0"><PrizeArt rarity={p.rarity} size={104} /></div>
+                        <div className="flex min-w-0 flex-1 flex-col">
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="inline-flex items-center rounded-md px-2 py-[3px] text-[11px] font-extrabold leading-none text-white" style={{ background: "linear-gradient(180deg,#F6C64B,#E0951A)", boxShadow: "0 1px 2px rgba(0,0,0,0.2)" }}>
+                              {t.prizeTier(rarityTier(p.rarity))}
+                            </span>
+                            <span className="flex shrink-0 items-center gap-1 text-[11px] font-bold" style={{ color: isSel ? "#FF7A1A" : "#8a9099" }}>
+                              {isSel ? t.itemsSelected : t.itemsNotSelected}
+                              <svg width="15" height="15" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill={isSel ? "#FF7A1A" : "#c9ced6"} /><path d="M6 10l3 3 5-5" stroke="white" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
+                            </span>
+                          </div>
+                          <p className="mt-1.5 text-[14px] font-extrabold leading-tight text-[#1d2129]">{locName(p, lang)}</p>
+                          <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#8a9099]">{locDesc(p, lang)}</p>
+                          <p className="mt-1 text-[11px] font-semibold text-[#8a9099]">{t.itemsExchangePeriod}{fmtDate(expiresAt(p.wonAt))}</p>
+                          <div className="mt-auto flex items-center justify-center gap-1.5 rounded-xl border border-black/10 bg-white pt-2 pb-2" style={{ marginTop: 8 }}>
+                            <CoinIcon size={18} />
+                            <span className="text-[16px] font-extrabold text-[#1d2129]">{p.coinValue.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="-mx-3 mt-3"><SiteFooter t={t} /></div>
+              </div>
+            </div>
+          )
+        )}
+        {tab === "waiting" && <WaitingTab prizes={waiting} t={t} lang={lang} />}
+        {tab === "shipped" && <ShippedTab prizes={shipped} onCopy={(c) => pushToast(t.toastCopied(c))} t={t} lang={lang} />}
+      </div>
+
+      {tab === "won" && won.length > 0 && (
+        <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
+          <div className="mb-2 flex items-center justify-between text-[11px] font-semibold">
+            <span className="text-[#8a9099]">{t.deckSorted}</span>
+            <button onClick={listReset} className="text-[#8a9099] underline">{t.itemsReset}</button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              disabled={listSelected.size === 0}
+              onClick={() => { if (listSelected.size === 0) return; if (!listCanShip) { pushToast(t.toastShort(listShortfall)); return; } setListShipOpen(true); }}
+              className="rounded-xl border-2 py-2 text-[12.5px] font-bold leading-tight transition disabled:opacity-40"
+              style={{ borderColor: "#f5670a", color: "#f5670a", background: "#fff", opacity: listSelected.size === 0 || listCanShip ? 1 : 0.6 }}
+            >
+              ← {t.requestShipping} · {listSelected.size}
+              <span className="mt-0.5 block text-[10px] font-semibold opacity-80">{listTotal.toLocaleString()} coins</span>
+            </button>
+            <button
+              disabled={listSelected.size === 0}
+              onClick={listExchange}
+              className="rounded-xl py-2 text-[12.5px] font-bold leading-tight text-white transition disabled:opacity-40"
+              style={{ background: "linear-gradient(180deg,#ff5a5f,#c8061a)" }}
+            >
+              {t.exchange} · {listSelected.size} →
+              <span className="mt-0.5 block text-[10px] font-semibold opacity-90">{listTotal.toLocaleString()} coins</span>
+            </button>
+          </div>
+          <p className="mt-1.5 text-center text-[10.5px] leading-tight text-[#8a9099]">
+            {listSelected.size === 0 ? t.helperNone : listCanShip ? t.helperReady : t.helperShort(listShortfall)}
+          </p>
+        </div>
+      )}
+
+      {listShipOpen && (
+        <ShippingFlow
+          prizes={listSelectedPrizes}
+          total={listTotal}
+          onClose={() => setListShipOpen(false)}
+          onConfirm={doListShip}
+          t={t}
+          lang={lang}
+          shippingAddresses={shippingAddresses}
+          onShippingAddressesChange={onShippingAddressesChange}
+        />
+      )}
+
+      {filterOpen && (() => {
+        const LF = LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"];
+        const cats: ("all" | Category)[] = ["all", ...CATEGORIES.filter((c) => won.some((p) => p.category === c))];
+        return (
+          <div className="absolute inset-0 z-[60] flex items-end justify-center bg-black/50" onClick={() => setFilterOpen(false)}>
+            <div className="flex max-h-[90%] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-[0_-10px_30px_rgba(0,0,0,0.2)]" onClick={(e) => e.stopPropagation()} style={{ animation: "lobbySheetUp .28s cubic-bezier(.2,.8,.2,1) both" }}>
+              <style>{`@keyframes lobbySheetUp{from{transform:translateY(100%)}to{transform:none}}`}</style>
+              <div className="relative flex shrink-0 items-center justify-center border-b border-black/5 px-4 py-3.5">
+                <h3 className="text-[16px] font-extrabold text-[#1d2129]">{LF.narrowDown}</h3>
+                <button onClick={() => setFilterOpen(false)} aria-label="Close" className="absolute right-3 flex h-8 w-8 items-center justify-center rounded-full text-[#1d2129] active:bg-black/5">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                </button>
+              </div>
+              <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-4">
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9aa0a8]">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.2-3.2" /></svg>
+                  </span>
+                  <input
+                    type="text"
+                    value={query}
+                    onChange={(e) => { setQuery(e.target.value); setListSelected(new Set()); }}
+                    placeholder={LF.searchPlaceholder}
+                    className="w-full rounded-xl bg-[#f4f5f7] py-3 pl-11 pr-3 text-[14px] font-semibold text-[#1d2129] outline-none placeholder:text-[#9aa0a8] focus:bg-white focus:ring-2 focus:ring-[#B40206]/30"
+                  />
+                </div>
+                <div className="mt-5">
+                  <h4 className="mb-3 text-[15px] font-extrabold text-[#1d2129]">{LF.quickFilters}</h4>
+                  <div className="flex flex-wrap gap-2.5">
+                    {cats.map((c) => {
+                      const on = category === c;
+                      const n = c === "all" ? won.length : won.filter((p) => p.category === c).length;
+                      const label = c === "all" ? t.deckCategoryAll : t.cardCategory(c);
+                      return (
+                        <button key={c} onClick={() => { setCategory(c); setListSelected(new Set()); }} className={`rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold transition ${on ? "border-[#B40206] bg-[#B40206] text-white" : "border-black/15 bg-white text-[#5c626b] active:bg-black/[0.03]"}`}>{label}<span className="ml-1 opacity-75">{n}</span></button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="mt-5 border-t border-black/5 pt-4">
+                  <h4 className="mb-3 text-[15px] font-extrabold text-[#1d2129]">{lang === "ja" ? "レアリティで選択" : "Select by tier"}</h4>
+                  <div className="flex flex-wrap gap-2.5">
+                    {tierChips.map((c) => {
+                      const n = tierIds(c.key).length;
+                      const on = isTierActive(c.key);
+                      return (
+                        <button key={c.key} onClick={() => selectTier(c.key)} className="rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold transition" style={{ background: on ? "#B40206" : "#fff", color: on ? "#fff" : "#5c626b", borderColor: on ? "#B40206" : "rgba(0,0,0,0.15)" }}>
+                          {c.label}<span className="ml-1 opacity-75">{n}</span>
+                        </button>
+                      );
+                    })}
+                    <button onClick={() => selectTier("all")} className="rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold transition" style={{ background: isTierActive("all") ? "#1d2129" : "#fff", color: isTierActive("all") ? "#fff" : "#1d2129", borderColor: "rgba(0,0,0,0.15)" }}>
+                      {t.selectAll}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="flex shrink-0 gap-3 border-t border-black/10 px-4 py-3">
+                <button onClick={clearFilters} className="flex-1 rounded-xl bg-[#f2f3f5] py-3 text-[15px] font-extrabold text-[#1d2129] active:scale-[0.99]">{LF.clear}</button>
+                <button onClick={() => setFilterOpen(false)} className="flex-1 rounded-xl bg-[#B40206] py-3 text-[15px] font-extrabold text-white active:scale-[0.99]">{LF.apply}</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {sortOpen && (
+        <BottomSheet title={t.sortTitle} onClose={() => setSortOpen(false)}>
+          {SORT_KEYS.map((key) => (
+            <button
+              key={key}
+              onClick={() => { setSortKey(key); setSortOpen(false); }}
+              className="flex w-full items-center justify-between border-b border-black/5 py-3 text-left text-[14px]"
+            >
+              <span className={sortKey === key ? "font-bold text-[#1d2129]" : "text-[#41464e]"}>{t.sortLabels[key]}</span>
+              {sortKey === key && (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="#B40206" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              )}
+            </button>
+          ))}
+        </BottomSheet>
+      )}
+
+      <div className="pointer-events-none absolute inset-x-0 bottom-24 z-50 flex flex-col items-center gap-2 px-4">
+        {toasts.map((toast) => (
+          <div key={toast.id} className="rounded-full bg-black/85 px-4 py-2 text-[12px] font-semibold text-white shadow-lg">
+            {toast.text}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function WaitingTab({ prizes, t, lang }: { prizes: WaitingPrize[]; t: Dict; lang: Lang }) {
+  if (prizes.length === 0) {
+    return <EmptyState icon="📦" title={t.waitingEmptyTitle} subtitle={t.waitingEmptySub} />;
+  }
+  return (
+    <div className="no-scrollbar h-full overflow-y-auto px-3 pb-4 pt-3">
+      <div className="space-y-2.5">
+        {prizes.map((p) => (
+          <div key={p.id} className="flex gap-3 rounded-2xl bg-white p-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+            <PrizeArt rarity={p.rarity} />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[13.5px] font-bold text-[#1d2129]">{locName(p, lang)}</p>
+              <p className="truncate text-[11px] text-[#8a9099]">{locDesc(p, lang)}</p>
+              <p className="mt-1 text-[11px] text-[#8a9099]">{t.requested(fmtDate(p.requestedAt))}</p>
+              <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-[#FFF3E0] px-2 py-0.5 text-[10.5px] font-semibold text-[#C9701B]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#f5670a]" /> {t.preparing}
+              </span>
+              <div className="mt-1.5">
+                <CoinChip value={p.coinValue} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 px-1 text-center text-[10.5px] text-[#a2a8b0]">{t.waitingFooter}</p>
+      <div className="-mx-3 mt-4"><SiteFooter t={t} /></div>
+    </div>
+  );
+}
+
+function ShippedTab({ prizes, onCopy, t, lang }: { prizes: ShippedPrize[]; onCopy: (code: string) => void; t: Dict; lang: Lang }) {
+  if (prizes.length === 0) {
+    return <EmptyState icon="✅" title={t.shippedEmptyTitle} subtitle={t.shippedEmptySub} />;
+  }
+  return (
+    <div className="no-scrollbar h-full overflow-y-auto px-3 pb-4 pt-3">
+      <div className="space-y-2.5">
+        {prizes.map((p) => (
+          <div key={p.id} className="flex gap-3 rounded-2xl bg-white p-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+            <PrizeArt rarity={p.rarity} />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[13.5px] font-bold text-[#1d2129]">{locName(p, lang)}</p>
+              <p className="truncate text-[11px] text-[#8a9099]">{locDesc(p, lang)}</p>
+              <p className="mt-1 text-[11px] text-[#8a9099]">{t.requested(fmtDate(p.requestedAt))}</p>
+              <div className="mt-1 flex items-center gap-1.5 rounded-lg bg-[#f1f3f6] px-2 py-1">
+                <span className="text-[10px] font-semibold text-[#8a9099]">{t.tracking}</span>
+                <span className="font-mono text-[11px] font-bold text-[#1d2129]">{p.tracking}</span>
+                <button onClick={() => onCopy(p.tracking)} className="ml-auto text-[#B40206]" aria-label={t.copyAria}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="2" /><path d="M5 15V5a2 2 0 012-2h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+                </button>
+              </div>
+              <div className="mt-1.5">
+                <CoinChip value={p.coinValue} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="-mx-3 mt-4"><SiteFooter t={t} /></div>
+    </div>
+  );
+}
+
+/* ── Shipping request flow (bottom-sheet) ────────────────────────────── */
+function ShippingFlow({
+  prizes,
+  total,
+  onClose,
+  onConfirm,
+  t,
+  lang,
+  shippingAddresses,
+  onShippingAddressesChange,
+}: {
+  prizes: WonPrize[];
+  total: number;
+  onClose: () => void;
+  onConfirm: () => void;
+  t: Dict;
+  lang: Lang;
+  shippingAddresses: ShippingAddr[];
+  onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>;
+}) {
+  const [step, setStep] = useState<"address" | "confirm" | "addNew">(shippingAddresses.length === 0 ? "addNew" : "address");
+  const [addrId, setAddrId] = useState<string>(() => {
+    const def = shippingAddresses.find(a => a.isDefault);
+    return def?.id ?? shippingAddresses[0]?.id ?? "";
+  });
+
+  const [newForm, setNewForm] = useState<Omit<ShippingAddr, "id" | "isDefault">>(EMPTY_SHIPPING_FORM);
+  const [postalTouched, setPostalTouched] = useState(false);
+  const [phoneTouched, setPhoneTouched] = useState(false);
+  const [zipTouched, setZipTouched] = useState(false);
+  const [streetNumTouched, setStreetNumTouched] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [candidates, setCandidates] = useState<{ prefecture: string; city: string; streetNumber: string }[]>([]);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const postalValid = /^\d{3}-\d{4}$/.test(newForm.postalCode);
+  const phoneValid = newForm.phone.replace(/\D/g, "").length >= 10;
+  const zipValid = /^\d{5}$/.test(newForm.zipCode);
+  const streetNumValid = /^\d+$/.test(newForm.streetNumber.trim()) && newForm.streetNumber.trim().length > 0;
+  const postalError = postalTouched && newForm.postalCode.length > 0 && !postalValid ? "NNN-NNNN" : "";
+  const phoneError = phoneTouched && newForm.phone.length > 0 && !phoneValid ? (lang === "ja" ? "電話番号は10桁以上で入力してください" : "Phone number must be at least 10 digits") : "";
+  const zipError = zipTouched && newForm.zipCode.length > 0 && !zipValid ? "5 digits required" : "";
+  const streetNumError = streetNumTouched && newForm.streetNumber.length > 0 && !streetNumValid ? (lang === "ja" ? "数字のみ" : "Numbers only") : "";
+  const canAddNew = newForm.lastName.trim().length > 0 && newForm.firstName.trim().length > 0 && phoneValid &&
+    (newForm.country === "japan"
+      ? postalValid && !!newForm.prefecture && newForm.city.trim().length > 0 && streetNumValid
+      : newForm.cityStreetNumber.trim().length > 0 && !!newForm.state && zipValid);
+
+  const chosen = shippingAddresses.find(a => a.id === addrId);
+  const phonePrefix = newForm.country === "japan" ? "🇯🇵 +81" : "🇺🇸 +1";
+
+  // POC postcode lookup: seed a few plausible Japanese addresses from the typed postcode.
+  function genShipCandidates(postal: string): { prefecture: string; city: string; streetNumber: string }[] {
+    const digits = postal.replace(/\D/g, "");
+    const seed = digits.length ? parseInt(digits.slice(0, 4), 10) || 0 : 0;
+    const prefIdx = [12, 26, 13, 22, 39, 27];
+    const cityPool = lang === "ja"
+      ? ["中央区銀座", "渋谷区道玄坂", "新宿区西新宿", "港区六本木", "北区梅田"]
+      : ["Chuo-ku, Ginza", "Shibuya-ku, Dogenzaka", "Nishi-Shinjuku", "Minato-ku, Roppongi", "Kita-ku, Umeda"];
+    return Array.from({ length: 4 }, (_, i) => ({
+      prefecture: PREFECTURES_JA[prefIdx[(seed + i) % prefIdx.length]],
+      city: cityPool[(seed + i) % cityPool.length],
+      streetNumber: String(1000 + ((seed * 7 + i * 137) % 8999)),
+    }));
+  }
+  function chooseShipCandidate(c: { prefecture: string; city: string; streetNumber: string }) {
+    setNewForm(f => ({ ...f, prefecture: c.prefecture, city: c.city, streetNumber: c.streetNumber }));
+    setStreetNumTouched(true);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    setCandidates([]);
+    setSearching(false);
+  }
+
+  function setPostalCode(v: string) {
+    const digits = v.replace(/\D/g, "").slice(0, 7);
+    const formatted = digits.length > 3 ? `${digits.slice(0, 3)}-${digits.slice(3)}` : digits;
+    setNewForm(f => ({ ...f, postalCode: formatted }));
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (digits.length >= 3) {
+      setSearching(true);
+      setCandidates([]);
+      searchTimer.current = setTimeout(() => {
+        setCandidates(genShipCandidates(formatted));
+        setSearching(false);
+      }, 900);
+    } else {
+      setSearching(false);
+      setCandidates([]);
+    }
+  }
+
+  function onCountryChange(country: ShippingCountry) {
+    setNewForm(f => ({ ...f, country, postalCode: "", prefecture: "", city: "", streetNumber: "", cityStreetNumber: "", state: "", zipCode: "", phone: "" }));
+    setPostalTouched(false); setZipTouched(false); setStreetNumTouched(false); setPhoneTouched(false);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    setSearching(false); setCandidates([]);
+  }
+
+  function openAddNew() {
+    setNewForm({ ...EMPTY_SHIPPING_FORM });
+    setPostalTouched(false); setPhoneTouched(false); setZipTouched(false); setStreetNumTouched(false);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    setSearching(false); setCandidates([]);
+    setStep("addNew");
+  }
+
+  function handleSaveNewAddress() {
+    const isFirst = shippingAddresses.length === 0;
+    const newAddr: ShippingAddr = { id: Date.now().toString(36), isDefault: isFirst, ...newForm };
+    onShippingAddressesChange(prev => [...prev, newAddr]);
+    setAddrId(newAddr.id);
+    setStep("address");
+  }
+
+  function addrDisplayLines(addr: ShippingAddr): string[] {
+    return formatShippingAddr(addr);
+  }
+  function addrName(addr: ShippingAddr) { return `${addr.lastName} ${addr.firstName}`; }
+  function addrPhone(addr: ShippingAddr) { return `${addr.country === "japan" ? "+81" : "+1"} ${addr.phone}`; }
+  function addrFlag(addr: ShippingAddr) { return addr.country === "japan" ? "🇯🇵" : "🇺🇸"; }
+
+  const inputCls = "w-full rounded-xl border border-black/15 px-3 py-2.5 text-[13px] text-[#1d2129] outline-none focus:border-[#B40206]";
+  const labelCls = "mb-1 mt-2 block text-[11px] font-semibold text-[#8a9099]";
+
+  return (
+    <div className="absolute inset-0 z-40 flex items-end" style={{ background: "rgba(0,0,0,0.45)" }} onClick={onClose}>
+      <div className="max-h-[88%] w-full overflow-y-auto rounded-t-2xl bg-white px-4 pb-5 pt-3" onClick={(e) => e.stopPropagation()}>
+        <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-black/15" />
+
+        {step === "address" && (
+          <>
+            <h3 className="mb-2 text-[15px] font-bold text-[#1d2129]">{t.chooseAddress}</h3>
+            {shippingAddresses.length === 0 ? (
+              <p className="mb-3 text-center text-[12.5px] text-[#8a9099]">{t.shippingEmpty}</p>
+            ) : (
+              <div className="space-y-2">
+                {shippingAddresses.map((addr) => {
+                  const sel = addr.id === addrId;
+                  const lines = addrDisplayLines(addr);
+                  return (
+                    <button
+                      key={addr.id}
+                      onClick={() => setAddrId(addr.id)}
+                      className="flex w-full items-start gap-2.5 rounded-xl border-2 p-3 text-left"
+                      style={{ borderColor: sel ? "#B40206" : "#e5e8ec", background: sel ? "#FFF4F4" : "#fff" }}
+                    >
+                      <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2" style={{ borderColor: sel ? "#B40206" : "#c9ced6" }}>
+                        {sel && <span className="h-2 w-2 rounded-full bg-[#B40206]" />}
+                      </span>
+                      <span className="text-[12.5px] leading-relaxed">
+                        <b className="text-[#1d2129]">{addrFlag(addr)} {addrName(addr)}</b>
+                        {addr.isDefault && <span className="ml-1.5 rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ background: "#22a34a" }}>{t.shippingDefaultLabel}</span>}
+                        <br />{lines.map((l, i) => <span key={i} className="text-[#5c626b]">{l}<br /></span>)}
+                        <span className="text-[#8a9099]">{addrPhone(addr)}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <button onClick={openAddNew} className="mt-2 w-full rounded-xl border border-dashed border-black/20 py-2.5 text-[13px] font-bold text-[#5c626b]">
+              {t.addNewAddress}
+            </button>
+            <button
+              disabled={!chosen}
+              onClick={() => setStep("confirm")}
+              className="mt-3 w-full rounded-xl py-3 text-[14px] font-bold text-white disabled:opacity-40"
+              style={{ background: "linear-gradient(180deg,#ff8a1f,#f5670a)" }}
+            >
+              {t.continueBtn}
+            </button>
+          </>
+        )}
+
+        {step === "addNew" && (
+          <>
+            <div className="mb-3 flex items-center gap-2">
+              {shippingAddresses.length > 0 && (
+                <button onClick={() => setStep("address")} className="flex h-7 w-7 shrink-0 items-center justify-center">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#B40206" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                </button>
+              )}
+              <h3 className="text-[15px] font-bold text-[#1d2129]">{t.shippingAddNew}</h3>
+            </div>
+
+            <div className="mb-3 flex gap-2">
+              <div className="flex-1 min-w-0">
+                <label className={labelCls}>{t.profileLastName}<span className="ml-0.5 text-[#B40206]">*</span></label>
+                <input value={newForm.lastName} onChange={e => setNewForm(f => ({ ...f, lastName: e.target.value }))} placeholder={t.profilePlaceholder} className={inputCls} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <label className={labelCls}>{t.profileFirstName}<span className="ml-0.5 text-[#B40206]">*</span></label>
+                <input value={newForm.firstName} onChange={e => setNewForm(f => ({ ...f, firstName: e.target.value }))} placeholder={t.profilePlaceholder} className={inputCls} />
+              </div>
+            </div>
+
+            <div className="mb-3">
+              <label className={labelCls}>{t.shippingCountry}<span className="ml-0.5 text-[#B40206]">*</span></label>
+              <div className="relative">
+                <select
+                  value={newForm.country}
+                  onChange={e => onCountryChange(e.target.value as ShippingCountry)}
+                  className={inputCls + " appearance-none pr-8"}
+                >
+                  <option value="japan">{t.shippingJapan}</option>
+                  <option value="usa">{t.shippingUSA}</option>
+                </select>
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#8a9099]">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>
+                </span>
+              </div>
+            </div>
+
+            {newForm.country === "japan" && (
+              <>
+                <div className="mb-3 flex gap-2">
+                  <div className="flex-1 min-w-0">
+                    <label className={labelCls}>{t.profilePostalCode}<span className="ml-0.5 text-[#B40206]">*</span></label>
+                    <input value={newForm.postalCode} onChange={e => setPostalCode(e.target.value)} onBlur={() => setPostalTouched(true)} placeholder="NNN-NNNN" className={inputCls + (postalError ? " border-[#B40206]" : "")} />
+                    {postalError && <p className="mt-0.5 text-[10px] text-[#B40206]">{postalError}</p>}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <label className={labelCls}>{t.profilePrefecture}<span className="ml-0.5 text-[#B40206]">*</span></label>
+                    <div className="relative">
+                      <select value={newForm.prefecture} onChange={e => setNewForm(f => ({ ...f, prefecture: e.target.value }))} className={inputCls + " appearance-none pr-8"}>
+                        <option value="">{lang === "ja" ? "都道府県" : "Prefecture"}</option>
+                        {PREFECTURES_JA.map((ja, i) => <option key={ja} value={ja}>{lang === "ja" ? ja : PREFECTURES_EN[i]}</option>)}
+                      </select>
+                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#8a9099]"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg></span>
+                    </div>
+                  </div>
+                </div>
+                {!searching && candidates.length === 0 && (
+                  <p className="mb-3 -mt-1 text-[10.5px] text-[#a2a8b0]">{t.postcodeHint}</p>
+                )}
+                {searching && (
+                  <div className="mb-3 -mt-1 flex items-center gap-2 text-[12px] font-semibold text-[#8a9099]">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-black/15 border-t-[#B40206]" />
+                    {t.searching}
+                  </div>
+                )}
+                {!searching && candidates.length > 0 && (
+                  <div className="mb-3 -mt-1">
+                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.selectAddress}</p>
+                    <div className="space-y-2">
+                      {candidates.map((c, i) => (
+                        <button
+                          key={i}
+                          onClick={() => chooseShipCandidate(c)}
+                          className="animate-fade-slide flex w-full items-center justify-between gap-2 rounded-xl border border-black/15 bg-white p-3 text-left"
+                          style={{ animationDelay: `${Math.min(i, 4) * 80}ms` }}
+                        >
+                          <span className="text-[12.5px] leading-relaxed text-[#1d2129]">
+                            〒{newForm.postalCode} {c.prefecture}
+                            <br /><span className="text-[#8a9099]">{c.city} {c.streetNumber}</span>
+                          </span>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M9 5l7 7-7 7" stroke="#c9ced6" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="mb-3">
+                  <label className={labelCls}>{t.profileCity}<span className="ml-0.5 text-[#B40206]">*</span></label>
+                  <input value={newForm.city} onChange={e => setNewForm(f => ({ ...f, city: e.target.value }))} placeholder={lang === "ja" ? "市区町村・番地" : "City, Street"} className={inputCls} />
+                </div>
+                <div className="mb-3">
+                  <label className={labelCls}>{t.shippingStreetNumber}<span className="ml-0.5 text-[#B40206]">*</span></label>
+                  <input value={newForm.streetNumber} onChange={e => setNewForm(f => ({ ...f, streetNumber: e.target.value.replace(/\D/g, "") }))} onBlur={() => setStreetNumTouched(true)} placeholder={lang === "ja" ? "例: 1234" : "e.g. 1234"} className={inputCls + (streetNumError ? " border-[#B40206]" : "")} />
+                  {streetNumError && <p className="mt-0.5 text-[10px] text-[#B40206]">{streetNumError}</p>}
+                </div>
+                <div className="mb-3">
+                  <label className={labelCls}>{t.shippingApartment}</label>
+                  <input value={newForm.apartment} onChange={e => setNewForm(f => ({ ...f, apartment: e.target.value }))} placeholder={lang === "ja" ? "例: 〇〇マンション 101号室（任意）" : "Apt, Room No. (optional)"} className={inputCls} />
+                </div>
+              </>
+            )}
+
+            {newForm.country === "usa" && (
+              <>
+                <div className="mb-3">
+                  <label className={labelCls}>{t.shippingApartment}</label>
+                  <input value={newForm.apartment} onChange={e => setNewForm(f => ({ ...f, apartment: e.target.value }))} placeholder="Apt, Suite, Room No. (optional)" className={inputCls} />
+                </div>
+                <div className="mb-3">
+                  <label className={labelCls}>{t.shippingCityStreetNumber}<span className="ml-0.5 text-[#B40206]">*</span></label>
+                  <input value={newForm.cityStreetNumber} onChange={e => setNewForm(f => ({ ...f, cityStreetNumber: e.target.value }))} placeholder="e.g. 123 Main St, Springfield" className={inputCls} />
+                </div>
+                <div className="mb-3">
+                  <label className={labelCls}>{t.shippingState}<span className="ml-0.5 text-[#B40206]">*</span></label>
+                  <div className="relative">
+                    <select value={newForm.state} onChange={e => setNewForm(f => ({ ...f, state: e.target.value }))} className={inputCls + " appearance-none pr-8"}>
+                      <option value="">Select State</option>
+                      {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#8a9099]"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg></span>
+                  </div>
+                </div>
+                <div className="mb-3">
+                  <label className={labelCls}>{t.shippingZipCode}<span className="ml-0.5 text-[#B40206]">*</span></label>
+                  <input value={newForm.zipCode} onChange={e => setNewForm(f => ({ ...f, zipCode: e.target.value.replace(/\D/g, "").slice(0, 5) }))} onBlur={() => setZipTouched(true)} placeholder="e.g. 90210" className={inputCls + (zipError ? " border-[#B40206]" : "")} />
+                  {zipError && <p className="mt-0.5 text-[10px] text-[#B40206]">{zipError}</p>}
+                </div>
+              </>
+            )}
+
+            <div className="mb-4">
+              <label className={labelCls}>{t.profilePhone}<span className="ml-0.5 text-[#B40206]">*</span></label>
+              <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-center self-stretch rounded-xl border border-black/15 px-3 text-[13px] text-[#1d2129]">{phonePrefix}</div>
+                <div className="flex-1">
+                  <input
+                    type="tel"
+                    value={newForm.phone}
+                    onChange={e => setNewForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, "").slice(0, 11) }))}
+                    onBlur={() => setPhoneTouched(true)}
+                    placeholder="0000000000"
+                    className={inputCls + (phoneError ? " border-[#B40206]" : "")}
+                  />
+                  {phoneError && <p className="mt-0.5 text-[10px] text-[#B40206]">{phoneError}</p>}
+                </div>
+              </div>
+            </div>
+
+            <button
+              disabled={!canAddNew}
+              onClick={handleSaveNewAddress}
+              className="mt-1 w-full rounded-xl py-3 text-[14px] font-bold text-white disabled:opacity-40"
+              style={{ background: "linear-gradient(180deg,#ff2233,#B40206)" }}
+            >
+              {t.shippingRegister}
+            </button>
+          </>
+        )}
+
+        {step === "confirm" && (
+          <>
+            <h3 className="mb-2 text-[15px] font-bold text-[#1d2129]">{t.confirmTitle}</h3>
+            <div className="rounded-xl bg-[#f1f3f6] p-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.deliverTo}</p>
+              {chosen && (
+                <p className="mt-1 text-[12.5px] leading-relaxed text-[#1d2129]">
+                  <b>{addrFlag(chosen)} {addrName(chosen)}</b><br />
+                  {addrDisplayLines(chosen).map((l, i) => <span key={i} className="text-[#5c626b]">{l}<br /></span>)}
+                  <span className="text-[#8a9099]">{addrPhone(chosen)}</span>
+                </p>
+              )}
+            </div>
+            <p className="mb-1 mt-3 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.prizesCount(prizes.length)}</p>
+            <div className="space-y-1.5">
+              {prizes.map((p) => (
+                <div key={p.id} className="flex items-center gap-2">
+                  <PrizeArt rarity={p.rarity} size={32} />
+                  <span className="flex-1 truncate text-[12px] text-[#41464e]">{locName(p, lang)}</span>
+                  <CoinChip value={p.coinValue} />
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 flex items-center justify-between rounded-xl bg-[#FFF6E3] px-3 py-2">
+              <span className="text-[12px] font-semibold text-[#B5740A]">{t.totalValue}</span>
+              <CoinChip value={total} strong />
+            </div>
+            <p className="mt-2 text-center text-[11px] text-[#8a9099]">{t.freeShip}</p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button onClick={() => setStep("address")} className="rounded-xl border border-black/15 py-2.5 text-[13px] font-bold text-[#5c626b]">{t.back}</button>
+              <button onClick={onConfirm} className="rounded-xl py-2.5 text-[13px] font-bold text-white" style={{ background: "linear-gradient(180deg,#ff8a1f,#f5670a)" }}>{t.requestShippingBtn}</button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Shipping Address page ───────────────────────────────────────────── */
+function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack, onOpenStore }: { lang: Lang; coins: number; addresses: ShippingAddr[]; onAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; onBack: () => void; onOpenStore?: () => void }) {
+  const t = STR[lang];
+  const setAddresses = onAddressesChange;
+  const [view, setView] = useState<"main" | "form">("main");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<Omit<ShippingAddr, "id" | "isDefault">>(EMPTY_SHIPPING_FORM);
+  const [postalTouched, setPostalTouched] = useState(false);
+  const [phoneTouched, setPhoneTouched] = useState(false);
+  const [zipTouched, setZipTouched] = useState(false);
+  const [streetNumTouched, setStreetNumTouched] = useState(false);
+  const [showDelete, setShowDelete] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ text: string; visible: boolean }>({ text: "", visible: false });
+  const [searching, setSearching] = useState(false);
+  const [candidates, setCandidates] = useState<{ prefecture: string; city: string; streetNumber: string }[]>([]);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const postalValid = /^\d{3}-\d{4}$/.test(form.postalCode);
+  const phoneValid = form.phone.replace(/\D/g, "").length >= 10;
+  const zipValid = /^\d{5}$/.test(form.zipCode);
+  const streetNumValid = /^\d+$/.test(form.streetNumber.trim()) && form.streetNumber.trim().length > 0;
+
+  const postalError = postalTouched && form.postalCode.length > 0 && !postalValid ? "NNN-NNNN" : "";
+  const phoneError = phoneTouched && form.phone.length > 0 && !phoneValid ? (lang === "ja" ? "電話番号は10桁以上で入力してください" : "Phone number must be at least 10 digits") : "";
+  const zipError = zipTouched && form.zipCode.length > 0 && !zipValid ? "5 digits required" : "";
+  const streetNumError = streetNumTouched && form.streetNumber.length > 0 && !streetNumValid ? (lang === "ja" ? "数字のみ入力してください" : "Numbers only") : "";
+
+  const canSubmit = form.lastName.trim().length > 0 && form.firstName.trim().length > 0 && phoneValid &&
+    (form.country === "japan"
+      ? postalValid && !!form.prefecture && form.city.trim().length > 0 && streetNumValid
+      : form.cityStreetNumber.trim().length > 0 && !!form.state && zipValid);
+
+  function genShipCandidates(postal: string): { prefecture: string; city: string; streetNumber: string }[] {
+    const digits = postal.replace(/\D/g, "");
+    const seed = digits.length ? parseInt(digits.slice(0, 4), 10) || 0 : 0;
+    const prefIdx = [12, 26, 13, 22, 39, 27];
+    const cityPool = lang === "ja"
+      ? ["中央区銀座", "渋谷区道玄坂", "新宿区西新宿", "港区六本木", "北区梅田"]
+      : ["Chuo-ku, Ginza", "Shibuya-ku, Dogenzaka", "Nishi-Shinjuku", "Minato-ku, Roppongi", "Kita-ku, Umeda"];
+    return Array.from({ length: 4 }, (_, i) => ({
+      prefecture: PREFECTURES_JA[prefIdx[(seed + i) % prefIdx.length]],
+      city: cityPool[(seed + i) % cityPool.length],
+      streetNumber: String(1000 + ((seed * 7 + i * 137) % 8999)),
+    }));
+  }
+  function chooseShipCandidate(c: { prefecture: string; city: string; streetNumber: string }) {
+    setForm(f => ({ ...f, prefecture: c.prefecture, city: c.city, streetNumber: c.streetNumber }));
+    setStreetNumTouched(true);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    setCandidates([]);
+    setSearching(false);
+  }
+
+  function pushToast(text: string) {
+    setToast({ text, visible: true });
+    setTimeout(() => setToast({ text: "", visible: false }), 4000);
+  }
+
+  function openAddForm() {
+    setForm({ ...EMPTY_SHIPPING_FORM });
+    setEditingId(null);
+    setPostalTouched(false);
+    setPhoneTouched(false);
+    setZipTouched(false);
+    setStreetNumTouched(false);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    setSearching(false);
+    setCandidates([]);
+    setView("form");
+  }
+
+  function openEditForm(addr: ShippingAddr) {
+    setForm({
+      country: addr.country,
+      lastName: addr.lastName,
+      firstName: addr.firstName,
+      phone: addr.phone,
+      postalCode: addr.postalCode,
+      prefecture: addr.prefecture,
+      city: addr.city,
+      streetNumber: addr.streetNumber,
+      apartment: addr.apartment,
+      cityStreetNumber: addr.cityStreetNumber,
+      state: addr.state,
+      zipCode: addr.zipCode,
+    });
+    setEditingId(addr.id);
+    setPostalTouched(false);
+    setPhoneTouched(false);
+    setZipTouched(false);
+    setStreetNumTouched(false);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    setSearching(false);
+    setCandidates([]);
+    setView("form");
+  }
+
+  function handleRegister() {
+    if (editingId) {
+      setAddresses(prev => prev.map(a => a.id === editingId ? { ...a, ...form } : a));
+    } else {
+      const isFirst = addresses.length === 0;
+      const newAddr: ShippingAddr = { id: Date.now().toString(36), isDefault: isFirst, ...form };
+      setAddresses(prev => [...prev, newAddr]);
+    }
+    setView("main");
+    pushToast(editingId ? t.toastShippingEdited : t.toastShippingAdded);
+    setEditingId(null);
+  }
+
+  function handleSetDefault(id: string) {
+    setAddresses(prev => prev.map(a => ({ ...a, isDefault: a.id === id })));
+  }
+
+  function handleDelete(id: string) {
+    setAddresses(prev => {
+      const remaining = prev.filter(a => a.id !== id);
+      const wasDefault = prev.find(a => a.id === id)?.isDefault;
+      if (wasDefault && remaining.length > 0) {
+        remaining[0] = { ...remaining[0], isDefault: true };
+      }
+      return remaining;
+    });
+    setShowDelete(null);
+    pushToast(t.toastShippingDeleted);
+  }
+
+  function setPostalCode(v: string) {
+    const digits = v.replace(/\D/g, "").slice(0, 7);
+    const formatted = digits.length > 3 ? `${digits.slice(0, 3)}-${digits.slice(3)}` : digits;
+    setForm(f => ({ ...f, postalCode: formatted }));
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (digits.length >= 3) {
+      setSearching(true);
+      setCandidates([]);
+      searchTimer.current = setTimeout(() => {
+        setCandidates(genShipCandidates(formatted));
+        setSearching(false);
+      }, 900);
+    } else {
+      setSearching(false);
+      setCandidates([]);
+    }
+  }
+
+  function onCountryChange(country: ShippingCountry) {
+    setForm(f => ({ ...f, country, postalCode: "", prefecture: "", city: "", streetNumber: "", cityStreetNumber: "", state: "", zipCode: "", phone: "" }));
+    setPostalTouched(false);
+    setZipTouched(false);
+    setStreetNumTouched(false);
+    setPhoneTouched(false);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    setSearching(false);
+    setCandidates([]);
+  }
+
+  const phonePrefix = form.country === "japan" ? "🇯🇵 +81" : "🇺🇸 +1";
+
+  return (
+    <div className="relative flex h-full flex-col bg-[#eef0f3]">
+      <AppHeader coins={coins} t={t} onOpenStore={onOpenStore} />
+
+      <div className="relative shrink-0 border-b border-black/10 bg-white px-4 py-3">
+        {toast.visible && (
+          <div className="absolute inset-0 z-10 flex items-center gap-2.5 px-4 text-[13px] font-bold text-white" style={{ background: "#2d7a3a" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="white" fillOpacity="0.25" /><path d="M7 12l3.5 3.5L17 8" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            <span className="flex-1">{toast.text}</span>
+            <button onClick={() => setToast({ text: "", visible: false })} className="ml-auto opacity-80">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="white" strokeWidth="2" strokeLinecap="round" /></svg>
+            </button>
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          <button onClick={view === "form" ? () => setView("main") : onBack} aria-label={t.backAria} className="flex h-7 w-7 items-center justify-center">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#B40206" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </button>
+          <h1 className="text-[15px] font-bold text-[#1d2129]">{view === "form" ? t.shippingFormTitle : t.shippingTitle}</h1>
+        </div>
+      </div>
+
+      {view === "form" && (
+        <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-4">
+          <div className="mb-3 flex gap-2">
+            <Field label={t.profileLastName} value={form.lastName} onChange={(v) => setForm(f => ({ ...f, lastName: v }))} half required placeholder={t.profilePlaceholder} />
+            <Field label={t.profileFirstName} value={form.firstName} onChange={(v) => setForm(f => ({ ...f, firstName: v }))} half required placeholder={t.profilePlaceholder} />
+          </div>
+
+          <div className="mb-3">
+            <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{t.shippingCountry}<span className="ml-0.5 text-[#B40206]">*</span></label>
+            <div className="relative flex items-center">
+              <select
+                value={form.country}
+                onChange={(e) => onCountryChange(e.target.value as ShippingCountry)}
+                className="w-full appearance-none rounded-lg border border-[#e5e8ec] bg-white py-2.5 pl-2.5 pr-8 text-[13px] text-[#1d2129] outline-none"
+              >
+                <option value="japan">{t.shippingJapan}</option>
+                <option value="usa">{t.shippingUSA}</option>
+              </select>
+              <span className="pointer-events-none absolute right-2 text-[#8a9099]">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>
+              </span>
+            </div>
+          </div>
+
+          {form.country === "japan" && (
+            <>
+              <div className="mb-1 flex gap-2">
+                <Field label={t.profilePostalCode} value={form.postalCode} onChange={setPostalCode} onBlur={() => setPostalTouched(true)} half required placeholder="NNN-NNNN" valid={postalValid && form.postalCode.length > 0} error={postalError} />
+                <PrefectureSelect value={form.prefecture} onChange={(v) => setForm(f => ({ ...f, prefecture: v }))} label={t.profilePrefecture} lang={lang} />
+              </div>
+              {!searching && candidates.length === 0 && (
+                <p className="mb-3 text-[10.5px] text-[#a2a8b0]">{t.postcodeHint}</p>
+              )}
+              {searching && (
+                <div className="mb-3 flex items-center gap-2 text-[12px] font-semibold text-[#8a9099]">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-black/15 border-t-[#B40206]" />
+                  {t.searching}
+                </div>
+              )}
+              {!searching && candidates.length > 0 && (
+                <div className="mb-3">
+                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.selectAddress}</p>
+                  <div className="space-y-2">
+                    {candidates.map((c, i) => (
+                      <button
+                        key={i}
+                        onClick={() => chooseShipCandidate(c)}
+                        className="animate-fade-slide flex w-full items-center justify-between gap-2 rounded-xl border border-black/15 bg-white p-3 text-left"
+                        style={{ animationDelay: `${Math.min(i, 4) * 80}ms` }}
+                      >
+                        <span className="text-[12.5px] leading-relaxed text-[#1d2129]">
+                          〒{form.postalCode} {c.prefecture}
+                          <br /><span className="text-[#8a9099]">{c.city} {c.streetNumber}</span>
+                        </span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M9 5l7 7-7 7" stroke="#c9ced6" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="mb-3">
+                <Field label={t.profileCity} value={form.city} onChange={(v) => setForm(f => ({ ...f, city: v }))} required placeholder={lang === "ja" ? "市区町村・番地" : "City, Street"} />
+              </div>
+              <div className="mb-3">
+                <Field label={t.shippingStreetNumber} value={form.streetNumber} onChange={(v) => setForm(f => ({ ...f, streetNumber: v.replace(/\D/g, "") }))} onBlur={() => setStreetNumTouched(true)} required type="text" placeholder={lang === "ja" ? "例: 1234" : "e.g. 1234"} valid={streetNumValid} error={streetNumError} />
+              </div>
+              <div className="mb-3">
+                <Field label={t.shippingApartment} value={form.apartment} onChange={(v) => setForm(f => ({ ...f, apartment: v }))} placeholder={lang === "ja" ? "例: 〇〇マンション 101号室（任意）" : "e.g. Apt 101 (optional)"} />
+              </div>
+            </>
+          )}
+
+          {form.country === "usa" && (
+            <>
+              <div className="mb-3">
+                <Field label={t.shippingApartment} value={form.apartment} onChange={(v) => setForm(f => ({ ...f, apartment: v }))} placeholder="Apt, Suite, Room No. (optional)" />
+              </div>
+              <div className="mb-3">
+                <Field label={t.shippingCityStreetNumber} value={form.cityStreetNumber} onChange={(v) => setForm(f => ({ ...f, cityStreetNumber: v }))} required placeholder="e.g. 123 Main St, Springfield" />
+              </div>
+              <div className="mb-3">
+                <USStateSelect value={form.state} onChange={(v) => setForm(f => ({ ...f, state: v }))} label={t.shippingState} />
+              </div>
+              <div className="mb-3">
+                <Field label={t.shippingZipCode} value={form.zipCode} onChange={(v) => setForm(f => ({ ...f, zipCode: v.replace(/\D/g, "").slice(0, 5) }))} onBlur={() => setZipTouched(true)} required placeholder="e.g. 90210" valid={zipValid && form.zipCode.length > 0} error={zipError} />
+              </div>
+            </>
+          )}
+
+          <div className="mb-6">
+            <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{t.profilePhone}<span className="ml-0.5 text-[#B40206]">*</span></label>
+            <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center self-stretch rounded-lg border border-[#e5e8ec] bg-[#f5f6f8] px-3 text-[13px] text-[#1d2129]">{phonePrefix}</div>
+              <div className="flex-1">
+                <input
+                  type="tel"
+                  value={form.phone}
+                  onChange={(e) => setForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, "").slice(0, 11) }))}
+                  onBlur={() => setPhoneTouched(true)}
+                  placeholder="0000000000"
+                  className="w-full rounded-lg border py-2.5 text-[13px] text-[#1d2129] placeholder:text-[#bbbec4] outline-none transition"
+                  style={{
+                    paddingLeft: "10px",
+                    paddingRight: phoneValid || (phoneTouched && phoneError) ? "32px" : "10px",
+                    borderColor: phoneError ? "#B40206" : phoneValid ? "#d1d5db" : "#e5e8ec",
+                    background: phoneError ? "rgba(230,0,18,0.04)" : "white",
+                  }}
+                />
+                {phoneError && <p className="mt-1 text-[10px] text-[#B40206]">{phoneError}</p>}
+              </div>
+            </div>
+          </div>
+
+          <button disabled={!canSubmit} onClick={handleRegister} className="w-full rounded-xl py-3.5 text-[15px] font-bold text-white" style={{ background: canSubmit ? "#B40206" : "#d1d5db", cursor: canSubmit ? "pointer" : "not-allowed" }}>
+            {t.shippingRegister}
+          </button>
+        </div>
+      )}
+
+      {view === "main" && (
+        <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-4">
+          <p className="mb-4 text-[12.5px] leading-relaxed text-[#5c626b]">{t.shippingDesc}</p>
+
+          {addresses.length === 0 && (
+            <div className="mb-3 flex items-center justify-center rounded-xl border border-dashed border-[#c9ced6] bg-white px-4 py-5">
+              <p className="text-center text-[12.5px] text-[#8a9099]">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a9099" strokeWidth="2" className="mr-1 inline-block align-middle"><circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" strokeLinecap="round" /></svg>
+                {t.shippingEmpty}
+              </p>
+            </div>
+          )}
+
+          {addresses.map((addr) => {
+            const addrLines = formatShippingAddr(addr);
+            const nameLine = `${addr.lastName} ${addr.firstName}`;
+            const countryFlag = addr.country === "japan" ? "🇯🇵" : "🇺🇸";
+            const phoneDisplay = `${addr.country === "japan" ? "+81" : "+1"} ${addr.phone}`;
+            return (
+              <div key={addr.id} className="mb-3 overflow-hidden rounded-xl border-2 bg-white" style={{ borderColor: addr.isDefault ? "#22a34a" : "#e5e8ec" }}>
+                <div className="flex items-center gap-2 border-b border-black/[0.07] px-3 py-2" style={{ background: addr.isDefault ? "rgba(34,163,74,0.06)" : "#f9fafb" }}>
+                  <span className="text-[12px] font-bold text-[#1d2129]">{countryFlag} {t.shippingFormTitle}</span>
+                  {addr.isDefault && (
+                    <span className="ml-1 rounded px-1.5 py-0.5 text-[10px] font-bold text-white" style={{ background: "#22a34a" }}>{t.shippingDefaultLabel}</span>
+                  )}
+                  <div className="ml-auto flex items-center gap-2">
+                    {!addr.isDefault && (
+                      <button onClick={() => handleSetDefault(addr.id)} className="rounded px-2 py-1 text-[10px] font-bold" style={{ background: "#f0fdf4", color: "#22a34a", border: "1px solid #22a34a" }}>
+                        {t.shippingSetDefault}
+                      </button>
+                    )}
+                    <button onClick={() => openEditForm(addr)} className="flex h-7 w-7 items-center justify-center rounded-full" style={{ background: "#22a34a" }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                    </button>
+                    <button onClick={() => setShowDelete(addr.id)} className="flex h-7 w-7 items-center justify-center rounded-full" style={{ background: "#B40206" }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" /></svg>
+                    </button>
+                  </div>
+                </div>
+                <div className="px-3 py-3">
+                  <p className="text-[13px] font-semibold text-[#1d2129]">{nameLine}</p>
+                  <p className="mt-0.5 text-[12.5px] text-[#5c626b]">{phoneDisplay}</p>
+                  {addrLines.map((line, i) => (
+                    <p key={i} className="mt-0.5 text-[13px] text-[#1d2129]">{line}</p>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+
+          <button onClick={openAddForm} className="mt-1 w-full rounded-xl border-2 border-[#1d2129] bg-white py-3 text-[14px] font-bold text-[#1d2129]">
+            {t.shippingAddNew}
+          </button>
+
+          <div className="-mx-4 mt-4"><SiteFooter t={t} /></div>
+        </div>
+      )}
+
+      {showDelete && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.45)" }}>
+          <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white px-5 py-5">
+            <h2 className="text-center text-[15px] font-bold text-[#1d2129]">{t.shippingDeleteTitle}</h2>
+            <div className="mt-4 flex gap-3">
+              <button onClick={() => setShowDelete(null)} className="flex-1 rounded-xl border border-[#e5e8ec] py-3 text-[14px] font-semibold text-[#5c626b]">
+                {t.shippingCancel}
+              </button>
+              <button onClick={() => handleDelete(showDelete)} className="flex-1 rounded-xl py-3 text-[14px] font-bold text-white" style={{ background: "#B40206" }}>
+                {t.shippingDeleteBtn}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── My Account (trimmed MyPage) ─────────────────────────────────────────
+   Visual layout mirrors the POC's MyPage (profile / balance / rank cards +
+   menu grid + account/other sections). Only "Prize history" and "Shipping
+   address" are wired; every other menu row renders but is inert. The heavy
+   POC dependencies (subscriptions, purchase history, refer, quests, FAQ,
+   profile editor, ranking overlay) are intentionally NOT ported. */
+function CrownEmblem({ size = 96 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" className="shrink-0" aria-hidden>
+      <circle cx="50" cy="50" r="50" fill="#c8061a" />
+      <circle cx="50" cy="50" r="44" fill="none" stroke="#fff" strokeOpacity="0.25" strokeWidth="1.5" />
+      <path d="M50 40c-9-7-20-9-29-6 4 6 12 11 22 12M50 40c9-7 20-9 29-6-4 6-12 11-22 12" fill="#fff" opacity="0.92" />
+      <path d="M38 30l4 6 8-9 8 9 4-6 1.5 9h-27z" fill="#fff" />
+      <text x="50" y="72" textAnchor="middle" fontSize="40" fontWeight="900" fontStyle="italic" fill="#fff">O</text>
+    </svg>
+  );
+}
+
+function myMenuIcon(key: string) {
+  const c = "#B40206";
+  switch (key) {
+    case "quest":
+      return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8"><circle cx="12" cy="12" r="8.2" /><circle cx="12" cy="12" r="4.4" /><circle cx="12" cy="12" r="1" fill={c} stroke="none" /></svg>;
+    case "items":
+      return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.7" strokeLinejoin="round"><path d="M4 9h16v10H4z" /><path d="M4 9l2-4h12l2 4M12 5v14" /></svg>;
+    case "history":
+      return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.7" strokeLinejoin="round"><path d="M12 3l2.2 4.6 5 .7-3.6 3.5.9 5L12 14.9 7.5 16.8l.9-5L4.8 8.3l5-.7z" /><path d="M9 19l-2 2M15 19l2 2" strokeLinecap="round" /></svg>;
+    case "purchases":
+      return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.7" strokeLinejoin="round"><rect x="4" y="3" width="13" height="18" rx="2" /><path d="M7 8h7M7 12h7M7 16h4" strokeLinecap="round" /><circle cx="18" cy="17" r="4" fill="#fff" /><path d="M18 15v2l1.4 1" strokeLinecap="round" /></svg>;
+    case "invite":
+      return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.7"><circle cx="8.5" cy="9" r="3" /><path d="M3 19a5.5 5.5 0 0111 0" strokeLinecap="round" /><circle cx="17" cy="8" r="2.4" /><path d="M15 18a4 4 0 016-3.4" strokeLinecap="round" /></svg>;
+    case "faq":
+      return <svg width="26" height="26" viewBox="0 0 24 24" fill={c}><circle cx="12" cy="12" r="9" /><path d="M9.5 9.2a2.6 2.6 0 015 .8c0 1.6-2.2 1.8-2.2 3.4M12 17.2h.01" stroke="#fff" strokeWidth="1.8" fill="none" strokeLinecap="round" /></svg>;
+    case "contact":
+      return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.7"><path d="M5 5h14v10H8l-3 3z" strokeLinejoin="round" /><path d="M9 9h6M9 12h4" strokeLinecap="round" /></svg>;
+    case "shippingAddress":
+      return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" /><circle cx="12" cy="9" r="2.5" /></svg>;
+    case "subscriptions":
+      return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="20" height="13" rx="2.5" /><path d="M6 10h4M6 13.5h8" /><path d="M16 3l2 3M8 3l-2 3" /></svg>;
+    default:
+      return <svg width="26" height="26" viewBox="0 0 24 24" fill={c}><path d="M5 18v-2a7 7 0 0114 0v2l1.5 2H3.5z" /><circle cx="12" cy="20.5" r="1.4" fill="#fff" /></svg>;
+  }
+}
+
+function MyPage({ lang, coins, displayName = "Guest", onOpenPrizeHistory, onOpenShippingAddress, onHome }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenShippingAddress: () => void; onHome: () => void }) {
+  const t = STR[lang];
+  const [tnc, setTnc] = useState(false);
+
+  // Only "history" (Prize History) and "shippingAddress" navigate. Every other
+  // row renders but is inert (no onClick) — the underlying screens are not
+  // ported into PROD yet.
+  const menu: { key: string; label: string; onClick?: () => void }[] = [
+    { key: "quest", label: t.mmQuest },
+    { key: "items", label: t.mmItems },
+    { key: "history", label: t.mmPrizeHistory, onClick: onOpenPrizeHistory },
+    { key: "purchases", label: t.mmPurchases },
+    { key: "shippingAddress", label: t.mmShippingAddress, onClick: onOpenShippingAddress },
+    { key: "subscriptions", label: t.mmSubscriptions },
+    { key: "invite", label: t.mmInvite },
+    { key: "faq", label: t.mmFaq },
+    { key: "contact", label: t.mmContact },
+    { key: "notices", label: t.mmNotices },
+  ];
+
+  const linkRow = (label: string, onClick?: () => void) => (
+    <button key={label} onClick={onClick} className="w-full rounded-xl bg-white px-4 py-3.5 text-left text-[14px] font-semibold text-[#1d2129] shadow-[0_1px_3px_rgba(0,0,0,0.06)] active:bg-black/[0.02]">{label}</button>
+  );
+
+  return (
+    <div className="flex h-full flex-col bg-[#eef0f3]">
+      <AppHeader coins={coins} t={t} onHome={onHome} />
+      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+        <div className="px-3 py-4">
+          {/* Profile card */}
+          <div className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-[0_1px_4px_rgba(0,0,0,0.08)]">
+            <CrownEmblem size={86} />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[19px] font-extrabold text-[#1d2129]">{displayName.trim() || t.accountName}</p>
+              <p className="mt-0.5 text-[12px] font-semibold text-[#8a9099]">{t.mpId} : XXXXXX</p>
+              <button className="mt-2 w-full rounded-lg border-2 border-[#B40206] py-1.5 text-[13px] font-bold text-[#B40206]">{t.mpEditProfile}</button>
+            </div>
+          </div>
+
+          {/* Balance card */}
+          <div className="mt-3 rounded-2xl bg-white p-4 shadow-[0_1px_4px_rgba(0,0,0,0.08)]">
+            <div className="flex items-stretch">
+              <div className="flex-1 pr-3">
+                <p className="text-[13px] font-semibold text-[#5b616b]">{t.mpOripaCoin}</p>
+                <p className="mt-1 flex items-center gap-1.5 text-[22px] font-extrabold text-[#1d2129]">
+                  <CoinIcon size={22} />{coins.toLocaleString()}
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#B40206] text-[15px] leading-none text-white">+</span>
+                </p>
+              </div>
+              <div className="w-px bg-black/10" />
+              <div className="flex-1 pl-4">
+                <p className="text-[13px] font-semibold text-[#5b616b]">{t.mpFreePoint}</p>
+                <p className="mt-1 flex items-center gap-1.5 text-[22px] font-extrabold text-[#1d2129]"><GemIcon size={22} />10,000</p>
+              </div>
+            </div>
+            <div className="mt-3">
+              <p className="text-[12.5px] font-bold text-[#B40206]">{t.mpCoinExpiry}</p>
+            </div>
+          </div>
+
+          {/* Rank card */}
+          <div className="relative mt-3 overflow-hidden rounded-2xl border border-[#e7b98a] p-4" style={{ background: "linear-gradient(135deg,#fbe6cf,#f6d3ad)" }}>
+            <span className="inline-block rounded-md bg-[#7a4a1e] px-2.5 py-1 text-[11px] font-bold text-white">{t.mpCurrentRank}</span>
+            <div className="mt-2 flex items-center gap-3">
+              <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full" style={{ background: "linear-gradient(135deg,#d79a5f,#a9692f)" }}>
+                <CrownEmblem size={52} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[20px] font-extrabold text-[#4a3010]">{t.mpRankBronze}</p>
+                <p className="text-[13px] font-semibold text-[#6b4a23]">{t.mpNextLevel} <span className="text-[15px] font-extrabold text-[#B40206]">1,000pt</span></p>
+                <button className="mt-2 w-full rounded-lg bg-[#B40206] py-2 text-[13px] font-bold text-white active:scale-[0.99]">{t.mpRankPerks}</button>
+              </div>
+            </div>
+            <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-white/60"><span className="block h-full rounded-full bg-[#e08a2e]" style={{ width: "75%" }} /></div>
+            <p className="mt-1 text-right text-[12px] font-bold text-[#6b4a23]">3,000/4,000</p>
+          </div>
+
+          {/* My Menu grid */}
+          <h3 className="mb-2 mt-5 text-[15px] font-extrabold text-[#1d2129]">{t.mpMyMenu}</h3>
+          <div className="grid grid-cols-2 gap-2.5">
+            {menu.map((m) => (
+              <button key={m.key} onClick={m.onClick} className="flex items-center gap-2.5 rounded-xl bg-white px-3 py-3.5 text-left shadow-[0_1px_3px_rgba(0,0,0,0.06)] active:bg-black/[0.02]">
+                {myMenuIcon(m.key)}
+                <span className="text-[13.5px] font-bold text-[#1d2129]">{m.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Promo banners */}
+          <div className="mt-4 space-y-3">
+            <img src="/promo-1.png" alt="" className="w-full rounded-xl object-cover" />
+            <img src="/promo-2.png" alt="" className="w-full rounded-xl object-cover" />
+          </div>
+
+          {/* Account section */}
+          <h3 className="mb-2 mt-5 text-[15px] font-extrabold text-[#1d2129]">{t.mpAccountSection}</h3>
+          <div className="space-y-2">
+            <button className="w-full rounded-xl bg-white px-4 py-3.5 text-left text-[14px] font-semibold text-[#1d2129] shadow-[0_1px_3px_rgba(0,0,0,0.06)]">{t.mpEditAccount}</button>
+            <button className="w-full rounded-xl bg-white px-4 py-3.5 text-left text-[14px] font-semibold text-[#1d2129] shadow-[0_1px_3px_rgba(0,0,0,0.06)]">{t.menuLogout}</button>
+          </div>
+
+          {/* Other section */}
+          <h3 className="mb-2 mt-5 text-[15px] font-extrabold text-[#1d2129]">{t.mpOtherSection}</h3>
+          <div className="space-y-2">
+            {linkRow(t.mpTerms, () => setTnc(true))}
+            {linkRow(t.mpPrivacy)}
+            {linkRow(t.mpLegal)}
+          </div>
+        </div>
+
+        <SiteFooter t={t} />
+      </div>
+      {tnc && <TermsOverlay lang={lang} onClose={() => setTnc(false)} />}
+    </div>
+  );
+}
+
 export function PhoneApp({ lang, noHistory }: { lang: Lang; noHistory: boolean }) {
   const t = STR[lang];
   const [screen, setScreen] = useState<Screen>("landing");
   const [prevScreen, setPrevScreen] = useState<Screen>("oripa");
-  const [coins] = useState(10000);
+  // Prize History adjusts `coins` when exchanging prizes / paying shipping fees.
+  const [coins, setCoins] = useState(10000);
+  // Shipping addresses are shared between the Shipping Address page and the
+  // in-flow "request shipping" address picker.
+  const [shippingAddresses, setShippingAddresses] = useState<ShippingAddr[]>([]);
   const [notifOnly, setNotifOnly] = useState<"you" | "notice" | undefined>(undefined);
   const goHome = () => setScreen("oripa");
   // PROD: login/sign-up land straight on the lobby (no onboarding flow).
   const enterHome = () => setScreen("oripa");
   const openNotifications = () => { setNotifOnly(undefined); setPrevScreen((p) => (screen === "notifications" ? p : screen)); setScreen("notifications"); };
+  // Bottom-nav navigation: only the Oripa (lobby) and My Account tabs are live.
+  const navigate = (s: Screen) => {
+    if (s === "oripa") { goHome(); return; }
+    if (s === "mypage") { setScreen("mypage"); return; }
+    // prizeHistory / quest / store tabs remain inert.
+  };
   const onLanding = screen === "landing" || screen === "signup" || screen === "login";
   const showNav = !onLanding;
   return (
@@ -2137,8 +3735,39 @@ export function PhoneApp({ lang, noHistory }: { lang: Lang; noHistory: boolean }
         {/* Logged-in lobby — V2 format */}
         {screen === "oripa" && <OripaHome lang={lang} coins={coins} onHome={goHome} />}
         {screen === "notifications" && <NotificationsScreen lang={lang} coins={coins} empty={noHistory} only={notifOnly} onBack={() => setScreen(prevScreen)} onHome={goHome} />}
+        {screen === "mypage" && (
+          <MyPage
+            lang={lang}
+            coins={coins}
+            onOpenPrizeHistory={() => setScreen("prizeHistory")}
+            onOpenShippingAddress={() => setScreen("shippingAddress")}
+            onHome={goHome}
+          />
+        )}
+        {screen === "prizeHistory" && (
+          <PrizeHistory
+            lang={lang}
+            coins={coins}
+            setCoins={setCoins}
+            shippingAddresses={shippingAddresses}
+            onShippingAddressesChange={setShippingAddresses}
+            onBack={() => setScreen("mypage")}
+            onHome={goHome}
+            empty={false}
+            onGoGacha={goHome}
+          />
+        )}
+        {screen === "shippingAddress" && (
+          <ShippingAddressPage
+            lang={lang}
+            coins={coins}
+            addresses={shippingAddresses}
+            onAddressesChange={setShippingAddresses}
+            onBack={() => setScreen("mypage")}
+          />
+        )}
       </div>
-      {showNav && <BottomNav screen={screen} t={t} />}
+      {showNav && <BottomNav screen={screen} t={t} onNavigate={navigate} />}
     </div>
     </NotifNavContext.Provider>
   );
