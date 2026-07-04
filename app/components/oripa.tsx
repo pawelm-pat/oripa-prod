@@ -3585,7 +3585,7 @@ function myMenuIcon(key: string) {
   }
 }
 
-function MyPage({ lang, coins, displayName = "Guest", onOpenPrizeHistory, onOpenShippingAddress, onHome }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenShippingAddress: () => void; onHome: () => void }) {
+function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onOpenShippingAddress, onHome }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenShippingAddress: () => void; onHome: () => void }) {
   const t = STR[lang];
   const [tnc, setTnc] = useState(false);
 
@@ -3616,7 +3616,7 @@ function MyPage({ lang, coins, displayName = "Guest", onOpenPrizeHistory, onOpen
         <div className="px-3 py-4">
           {/* Profile card */}
           <div className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-[0_1px_4px_rgba(0,0,0,0.08)]">
-            <CrownEmblem size={86} />
+            <img src="/account-avatar.png" alt="" className="h-[86px] w-[86px] shrink-0 rounded-full object-cover" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[19px] font-extrabold text-[#1d2129]">{displayName.trim() || t.accountName}</p>
               <p className="mt-0.5 text-[12px] font-semibold text-[#8a9099]">{t.mpId} : XXXXXX</p>
