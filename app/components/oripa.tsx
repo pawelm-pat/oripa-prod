@@ -291,20 +291,6 @@ function PromoCarousel() {
     </div>
   );
 }
-
-// V1 reward banner (single artwork). PROD: display-only for now — the
-// individual reward screens are re-introduced per client sign-off.
-function RewardBanner({ t }: { t: Dict }) {
-  return (
-    <div className="overflow-hidden rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.12)]">
-      {/* Banner placeholder — 8:3 ratio per Figma. */}
-      <div className="aspect-[8/3]">
-        <img src="/placeholder-banner.png" alt={t.rewardHeadline} className="block h-full w-full object-cover" />
-      </div>
-    </div>
-  );
-}
-
 function catIcon(key: string, color: string) {
   switch (key) {
     case "all":
@@ -657,9 +643,6 @@ function OripaHome({ lang, coins, onHome }: { lang: Lang; coins: number; onHome:
       <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
         <div className="px-3 pt-3">
           <PromoCarousel />
-        </div>
-        <div className="px-3 pb-1 pt-3">
-          <RewardBanner t={t} />
         </div>
 
         <LobbyNavFeed t={t} lang={lang} filters={filters} query={query} onOpenFilters={() => setFilterOpen(true)} />
