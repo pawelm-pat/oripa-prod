@@ -125,11 +125,11 @@ function BalancePill({ coins, t, onOpenStore }: { coins: number; t: Dict; onOpen
           aria-label={t.addCoinsAria}
           className="flex items-center gap-2 rounded-full border border-black/15 bg-white py-1 pl-3 pr-5 shadow-[0_1px_3px_rgba(0,0,0,0.10)] transition active:scale-[0.97]"
         >
-          <span className="flex items-center gap-1 text-[13px] font-extrabold text-[#1d2129]">
+          <span className="flex items-center gap-1 text-[13px] font-medium text-[#1d2129]">
             <GemIcon size={18} /> 10,000
           </span>
           <span className="h-4 w-px bg-black/15" />
-          <span className="flex items-center gap-1 text-[13px] font-extrabold text-[#1d2129]">
+          <span className="flex items-center gap-1 text-[13px] font-medium text-[#1d2129]">
             <CoinIcon size={18} /> {coins.toLocaleString()}
           </span>
         </button>
