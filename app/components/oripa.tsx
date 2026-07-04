@@ -3619,7 +3619,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
             <img src="/account-avatar.png" alt="" className="h-[86px] w-[86px] shrink-0 rounded-full object-cover" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[19px] font-extrabold text-[#1d2129]">{displayName.trim() || t.accountName}</p>
-              <p className="mt-0.5 text-[12px] font-semibold text-[#8a9099]">{t.mpId} : XXXXXX</p>
+              <p className="mt-0.5 text-[12px] font-normal text-[#8a9099]">{t.mpId} : XXXXXX</p>
               <button className="mt-2 w-full rounded-lg border-2 border-[#B40206] py-1.5 text-[13px] font-bold text-[#B40206]">{t.mpEditProfile}</button>
             </div>
           </div>
@@ -3628,7 +3628,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
           <div className="mt-3 rounded-2xl bg-white p-4 shadow-[0_1px_4px_rgba(0,0,0,0.08)]">
             <div className="flex items-stretch">
               <div className="flex-1 pr-3">
-                <p className="text-[13px] font-semibold text-[#5b616b]">{t.mpOripaCoin}</p>
+                <p className="text-[13px] font-normal text-[#5b616b]">{t.mpOripaCoin}</p>
                 <p className="mt-1 flex items-center gap-1.5 text-[22px] font-extrabold text-[#1d2129]">
                   <CoinIcon size={22} />{coins.toLocaleString()}
                   <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#B40206] text-[15px] leading-none text-white">+</span>
@@ -3636,7 +3636,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
               </div>
               <div className="w-px bg-black/10" />
               <div className="flex-1 pl-4">
-                <p className="text-[13px] font-semibold text-[#5b616b]">{t.mpFreePoint}</p>
+                <p className="text-[13px] font-normal text-[#5b616b]">{t.mpFreePoint}</p>
                 <p className="mt-1 flex items-center gap-1.5 text-[22px] font-extrabold text-[#1d2129]"><GemIcon size={22} />10,000</p>
               </div>
             </div>
