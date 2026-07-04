@@ -84,10 +84,7 @@ function BellIcon({ label }: { label: string }) {
   const openNotif = useContext(NotifNavContext);
   return (
     <button onClick={openNotif} aria-label={label} className="relative flex h-8 w-8 items-center justify-center">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="#B40206">
-        <path d="M12 2a1.6 1.6 0 011.6 1.6v.7A6 6 0 0118 10c0 4 1.6 5.5 2.2 6.1a.8.8 0 01-.56 1.4H4.36a.8.8 0 01-.56-1.4C4.4 15.5 6 14 6 10a6 6 0 014.4-5.7v-.7A1.6 1.6 0 0112 2z" />
-        <path d="M9.7 19.2a2.4 2.4 0 004.6 0z" />
-      </svg>
+      <img src="/bell-notification.png" alt="" className="h-[22px] w-[22px] object-contain" />
       {NOTIF_UNREAD_TOTAL > 0 && (
         <span className="absolute -right-0.5 -top-0.5 flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-[#ff2d2d] px-1 text-[9px] font-extrabold leading-none text-white ring-2 ring-white">{NOTIF_UNREAD_TOTAL}</span>
       )}
@@ -247,9 +244,9 @@ function PromoCarousel() {
 
   return (
     <div>
-      <div className="aspect-[8/3] overflow-hidden rounded-2xl">
+      <div className="overflow-hidden rounded-2xl">
         <div
-          className="flex h-full"
+          className="flex"
           style={{
             transform: `translateX(-${idx * 100}%)`,
             transition: anim ? "transform 850ms cubic-bezier(0.22,0.61,0.36,1)" : "none",
@@ -262,8 +259,10 @@ function PromoCarousel() {
           }}
         >
           {Array.from({ length: slideCount }).map((_, i) => (
-            <div key={i} className="relative h-full w-full shrink-0">
-              <img src="/placeholder-banner.png" alt="" className="h-full w-full object-cover" />
+            // Each slide owns its 8:3 ratio so its height never depends on a
+            // fragile h-full chain through the flex track.
+            <div key={i} className="relative aspect-[8/3] w-full shrink-0">
+              <img src="/placeholder-banner.png" alt="" className="absolute inset-0 h-full w-full object-cover" />
               <span className="absolute inset-0 flex items-center justify-center text-[18px] font-extrabold tracking-wide text-[#1d2129]">
                 PROMO BANNER
               </span>
@@ -271,7 +270,7 @@ function PromoCarousel() {
           ))}
         </div>
       </div>
-      <div className="mt-2 flex justify-center gap-1.5">
+      <div className="mt-2 flex items-center justify-center gap-1.5">
         {Array.from({ length: n }).map((_, i) => {
           const on = i === activeDot;
           return (
@@ -282,8 +281,8 @@ function PromoCarousel() {
                 setAnim(true);
                 setIdx(i);
               }}
-              className="h-2 w-2 rounded-full transition-colors"
-              style={{ background: on ? "#B40206" : "#cfd3da" }}
+              className="h-2 rounded-full transition-all"
+              style={{ width: on ? 18 : 8, background: on ? "#B40206" : "#cfd3da" }}
             />
           );
         })}
