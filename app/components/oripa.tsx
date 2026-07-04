@@ -218,16 +218,16 @@ function OripaCard({ item, t, lang, onView, onDraw }: { item: OripaItem; t: Dict
   );
 }
 
-// PROD: banner artwork is intentionally shown as Figma-style placeholders
-// (same slot ratios) until the client signs off on final creative.
-const PROMO_IMAGES = ["/placeholder-banner.png", "/placeholder-banner.png", "/placeholder-banner.png"];
+// PROD: the top banner is a Figma-style placeholder carousel (8:3 slots,
+// "PROMO BANNER" label) until the client signs off on final creative.
+const PROMO_SLIDE_COUNT = 7;
 
 // V1 homepage top: auto-advancing promo carousel. Slides walk into a cloned
 // first slide for a seamless wrap, then snap back without animation.
 function PromoCarousel() {
   const [idx, setIdx] = useState(0);
   const [anim, setAnim] = useState(true);
-  const n = PROMO_IMAGES.length;
+  const n = PROMO_SLIDE_COUNT;
 
   useEffect(() => {
     const id = setInterval(() => setIdx((i) => i + 1), 5000);
@@ -242,7 +242,8 @@ function PromoCarousel() {
   }, [anim]);
 
   const activeDot = idx % n;
-  const slides = [...PROMO_IMAGES, PROMO_IMAGES[0]];
+  // Render n slides plus one cloned first slide for a seamless wrap.
+  const slideCount = n + 1;
 
   return (
     <div>
@@ -260,13 +261,18 @@ function PromoCarousel() {
             }
           }}
         >
-          {slides.map((src, i) => (
-            <img key={i} src={src} alt="" className="h-full w-full shrink-0 object-cover" />
+          {Array.from({ length: slideCount }).map((_, i) => (
+            <div key={i} className="relative h-full w-full shrink-0">
+              <img src="/placeholder-banner.png" alt="" className="h-full w-full object-cover" />
+              <span className="absolute inset-0 flex items-center justify-center text-[18px] font-extrabold tracking-wide text-[#1d2129]">
+                PROMO BANNER
+              </span>
+            </div>
           ))}
         </div>
       </div>
       <div className="mt-2 flex justify-center gap-1.5">
-        {PROMO_IMAGES.map((_, i) => {
+        {Array.from({ length: n }).map((_, i) => {
           const on = i === activeDot;
           return (
             <button
@@ -276,8 +282,8 @@ function PromoCarousel() {
                 setAnim(true);
                 setIdx(i);
               }}
-              className="h-1.5 rounded-full transition-all"
-              style={{ width: on ? 16 : 6, background: on ? "#B40206" : "#cfd3da" }}
+              className="h-2 w-2 rounded-full transition-colors"
+              style={{ background: on ? "#B40206" : "#cfd3da" }}
             />
           );
         })}
