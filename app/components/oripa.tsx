@@ -640,7 +640,7 @@ function OripaHome({ lang, coins, onHome }: { lang: Lang; coins: number; onHome:
       <AppHeader coins={coins} t={t} onHome={onHome} />
 
       <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-        <div className="px-3 pt-3">
+        <div className="px-3 pb-4 pt-3">
           <PromoCarousel />
         </div>
 
@@ -1378,7 +1378,7 @@ function LandingPage({ lang, onSignUp, onLogin }: { lang: Lang; onSignUp: () => 
       <AuthHeader lang={lang} onSignUp={onSignUp} onLogin={onLogin} />
 
       <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-        <div className="px-3 pt-3"><PromoCarousel /></div>
+        <div className="px-3 pb-4 pt-3"><PromoCarousel /></div>
 
         <LobbyNavFeed t={t} lang={lang} filters={filters} query={query} onOpenFilters={() => setFilterOpen(true)} onView={onSignUp} />
 
