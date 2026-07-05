@@ -3625,18 +3625,6 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
    address" are wired; every other menu row renders but is inert. The heavy
    POC dependencies (subscriptions, purchase history, refer, quests, FAQ,
    profile editor, ranking overlay) are intentionally NOT ported. */
-function CrownEmblem({ size = 96 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 100 100" className="shrink-0" aria-hidden>
-      <circle cx="50" cy="50" r="50" fill="#c8061a" />
-      <circle cx="50" cy="50" r="44" fill="none" stroke="#fff" strokeOpacity="0.25" strokeWidth="1.5" />
-      <path d="M50 40c-9-7-20-9-29-6 4 6 12 11 22 12M50 40c9-7 20-9 29-6-4 6-12 11-22 12" fill="#fff" opacity="0.92" />
-      <path d="M38 30l4 6 8-9 8 9 4-6 1.5 9h-27z" fill="#fff" />
-      <text x="50" y="72" textAnchor="middle" fontSize="40" fontWeight="900" fontStyle="italic" fill="#fff">O</text>
-    </svg>
-  );
-}
-
 function myMenuIcon(key: string) {
   const c = "#D10005";
   switch (key) {
@@ -3718,26 +3706,25 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
                 <p className="mt-1 flex items-center gap-1.5 text-[22px] font-extrabold text-[#1d2129]"><GemIcon size={22} />10,000</p>
               </div>
             </div>
-            <div className="mt-3">
-              <p className="text-[12.5px] font-bold text-[#D10005]">{t.mpCoinExpiry}</p>
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <p className="text-[12px] font-bold text-[#D10005]">{t.mpCoinExpiry}</p>
+              <button className="shrink-0 rounded-lg border border-black/25 px-4 py-1.5 text-[13px] font-bold text-[#1d2129] active:bg-black/[0.03]">{t.mpViewDetails}</button>
             </div>
           </div>
 
           {/* Rank card */}
-          <div className="relative mt-3 overflow-hidden rounded-2xl border border-[#e7b98a] p-4" style={{ background: "linear-gradient(135deg,#fbe6cf,#f6d3ad)" }}>
-            <span className="inline-block rounded-md bg-[#7a4a1e] px-2.5 py-1 text-[11px] font-bold text-white">{t.mpCurrentRank}</span>
+          <div className="relative mt-3 overflow-hidden rounded-2xl border border-[#eab984] p-4" style={{ background: "linear-gradient(135deg,#fdeeda,#f7dab6)" }}>
+            <span className="inline-block rounded-md px-2.5 py-1 text-[11px] font-bold text-white" style={{ background: "linear-gradient(135deg,#c98a4f,#9a5f2b)" }}>{t.mpCurrentRank}</span>
             <div className="mt-2 flex items-center gap-3">
-              <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full" style={{ background: "linear-gradient(135deg,#d79a5f,#a9692f)" }}>
-                <CrownEmblem size={52} />
-              </span>
+              <img src="/rank-bronze.png" alt="" className="h-[68px] w-[68px] shrink-0 object-contain" />
               <div className="min-w-0 flex-1">
-                <p className="text-[20px] font-extrabold text-[#4a3010]">{t.mpRankBronze}</p>
-                <p className="text-[13px] font-semibold text-[#6b4a23]">{t.mpNextLevel} <span className="text-[15px] font-extrabold text-[#D10005]">1,000pt</span></p>
+                <p className="text-[22px] font-extrabold uppercase tracking-wide text-[#5a3a17]">{t.mpRankBronze}</p>
+                <p className="text-[13px] font-semibold text-[#6b4a23]">{t.mpNextLevel} <span className="text-[16px] font-extrabold text-[#D10005]">1,000pt</span></p>
                 <button className="mt-2 w-full rounded-lg bg-[#D10005] py-2 text-[13px] font-bold text-white active:scale-[0.99]">{t.mpRankPerks}</button>
               </div>
             </div>
-            <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-white/60"><span className="block h-full rounded-full bg-[#e08a2e]" style={{ width: "75%" }} /></div>
-            <p className="mt-1 text-right text-[12px] font-bold text-[#6b4a23]">3,000/4,000</p>
+            <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-white/60"><span className="block h-full rounded-full" style={{ width: "75%", background: "linear-gradient(90deg,#f0a94e,#d98128)" }} /></div>
+            <p className="mt-1 text-center text-[12px] font-bold text-[#6b4a23]">3,000/4,000</p>
           </div>
 
           {/* My Menu grid */}
