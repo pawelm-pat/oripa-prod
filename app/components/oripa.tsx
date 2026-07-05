@@ -309,7 +309,7 @@ function catIcon(key: string, color: string) {
     case "limited":
       return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><circle cx="12" cy="12" r="8.6" /><path d="M12 7v5.2l3.3 1.9" strokeLinecap="round" strokeLinejoin="round" /></svg>;
     default:
-      return <svg width="26" height="26" viewBox="0 0 24 24" fill={color}><circle cx="5.5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="18.5" cy="12" r="2" /></svg>;
+      return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinejoin="round"><path d="M12 3.2l2.5 5.2 5.7.8-4.1 4 1 5.6-5.1-2.7-5.1 2.7 1-5.6-4.1-4 5.7-.8z" /></svg>;
   }
 }
 
@@ -542,10 +542,6 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
     <OripaCard key={it.id} item={it} t={t} lang={lang} onView={onView} onDraw={onView ? () => onView() : undefined} />
   );
 
-  function chipCls(on: boolean) {
-    return `relative shrink-0 whitespace-nowrap rounded-full border px-4 py-1.5 text-[13px] font-bold transition ${on ? "border-[#B40206] bg-[#B40206] text-white" : "border-black/10 bg-white text-[#5c626b]"}`;
-  }
-
   let body: React.ReactNode;
   if (searching) {
     const items = transform(ALL_ORIPA);
@@ -582,19 +578,36 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
       {/* Sticky lobby nav: category chips + narrow-down/sort toolbar stay
           pinned under the header while the feed scrolls. */}
       <div className="sticky top-0 z-20">
-      {/* Category chip bar */}
-      <div className="no-scrollbar relative flex gap-2 overflow-x-auto border-b border-black/10 bg-white px-3.5 py-2.5">
+      {/* Category bar — icon over label; ALL is a black D-tab pinned to the
+          left edge, the active category is red with an underline. */}
+      <div className="no-scrollbar flex items-stretch overflow-x-auto border-b border-black/10 bg-white">
         {catList.map((c) => {
           const on = cat === c.key;
-          const sticky = c.key === "all";
+          if (c.key === "all") {
+            return (
+              <button
+                key={c.key}
+                onClick={() => setCat(c.key)}
+                aria-pressed={on}
+                className="sticky left-0 z-[3] flex shrink-0 items-stretch bg-white pr-2.5"
+              >
+                <span className="flex flex-col items-center justify-center gap-1 rounded-r-[28px] bg-[#141414] px-4 py-2 text-white shadow-[3px_0_12px_rgba(0,0,0,0.18)]">
+                  {catIcon("all", "#fff")}
+                  <span className="text-[11px] font-extrabold uppercase tracking-wide">{c.label}</span>
+                </span>
+              </button>
+            );
+          }
+          const color = on ? "#B40206" : "#1d2129";
           return (
             <button
               key={c.key}
               onClick={() => setCat(c.key)}
-              className={`${chipCls(on)} ${sticky ? "sticky left-0 z-[3]" : ""}`}
-              style={sticky ? { boxShadow: "0 0 0 8px #fff", marginRight: 10 } : undefined}
+              className="relative flex shrink-0 flex-col items-center justify-center gap-1 px-3 py-2.5"
             >
-              {c.label}
+              {catIcon(c.key, color)}
+              <span className="text-[11px] font-extrabold uppercase tracking-wide" style={{ color }}>{c.label}</span>
+              {on && <span className="absolute inset-x-3 bottom-0 h-[3px] rounded-full bg-[#B40206]" />}
             </button>
           );
         })}
