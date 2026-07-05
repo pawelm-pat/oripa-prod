@@ -2560,11 +2560,9 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
           <h2 className="text-[20px] font-extrabold text-[#1d2129]">{t.prizeHistory}</h2>
         </div>
 
-      </header>
-
-      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-        {/* Top navigation (Won/Waiting/Shipped) scrolls together with the feed;
-            only the logo, balance, back arrow and title above stay fixed. */}
+        {/* Top navigation (Won/Waiting/Shipped) stays sticky together with the
+            top section (logo, balance, back arrow and title) while the list
+            scrolls beneath it. */}
         <div className="flex border-b border-black/10 bg-white px-2">
           {([
             { key: "won", label: t.tabWon },
@@ -2591,6 +2589,9 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
             );
           })}
         </div>
+      </header>
+
+      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
 
         {tab === "won" && (
           won.length === 0 ? (
@@ -2657,7 +2658,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
         {tab === "shipped" && <ShippedTab prizes={shipped} onCopy={(c) => pushToast(t.toastCopied(c))} t={t} lang={lang} />}
       </div>
 
-      {tab === "won" && won.length > 0 && (
+      {tab === "won" && won.length > 0 && listSelected.size > 0 && (
         <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
           {listSelected.size > 0 && (
             <>
@@ -2683,11 +2684,11 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                   <span className="mt-0.5 block text-[10px] font-semibold opacity-90">{listTotal.toLocaleString()} coins</span>
                 </button>
               </div>
+              <p className="mt-1.5 text-center text-[10.5px] leading-tight text-[#8a9099]">
+                {t.shipSelectHint}
+              </p>
             </>
           )}
-          <p className="mt-1.5 text-center text-[10.5px] leading-tight text-[#8a9099]">
-            {t.shipSelectHint}
-          </p>
         </div>
       )}
 
