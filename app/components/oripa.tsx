@@ -3651,7 +3651,7 @@ function myMenuIcon(key: string) {
   }
 }
 
-function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onOpenShippingAddress, onHome }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenShippingAddress: () => void; onHome: () => void }) {
+function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onOpenShippingAddress, onHome, onLogout }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenShippingAddress: () => void; onHome: () => void; onLogout: () => void }) {
   const t = STR[lang];
   const [tnc, setTnc] = useState(false);
 
@@ -3757,7 +3757,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
           <h3 className="mb-2 mt-5 text-[15px] font-extrabold text-[#1d2129]">{t.mpAccountSection}</h3>
           <div className="space-y-2">
             <button className="w-full rounded-xl bg-white px-4 py-3.5 text-left text-[14px] font-semibold text-[#1d2129] shadow-[0_1px_3px_rgba(0,0,0,0.06)]">{t.mpEditAccount}</button>
-            <button className="w-full rounded-xl bg-white px-4 py-3.5 text-left text-[14px] font-semibold text-[#1d2129] shadow-[0_1px_3px_rgba(0,0,0,0.06)]">{t.menuLogout}</button>
+            <button onClick={onLogout} className="w-full rounded-xl bg-white px-4 py-3.5 text-left text-[14px] font-semibold text-[#1d2129] shadow-[0_1px_3px_rgba(0,0,0,0.06)] active:bg-black/[0.02]">{t.menuLogout}</button>
           </div>
 
           {/* Other section */}
@@ -3816,6 +3816,7 @@ export function PhoneApp({ lang, noHistory }: { lang: Lang; noHistory: boolean }
             onOpenPrizeHistory={() => setScreen("prizeHistory")}
             onOpenShippingAddress={() => setScreen("shippingAddress")}
             onHome={goHome}
+            onLogout={() => setScreen("landing")}
           />
         )}
         {screen === "prizeHistory" && (
