@@ -3663,12 +3663,12 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
     { key: "items", label: t.mmItems },
     { key: "history", label: t.mmPrizeHistory, onClick: onOpenPrizeHistory },
     { key: "purchases", label: t.mmPurchases },
-    { key: "shippingAddress", label: t.mmShippingAddress, onClick: onOpenShippingAddress },
-    { key: "subscriptions", label: t.mmSubscriptions },
     { key: "invite", label: t.mmInvite },
     { key: "faq", label: t.mmFaq },
     { key: "contact", label: t.mmContact },
     { key: "notices", label: t.mmNotices },
+    { key: "shippingAddress", label: t.mmShippingAddress, onClick: onOpenShippingAddress },
+    { key: "subscriptions", label: t.mmSubscriptions },
   ];
 
   const linkRow = (label: string, onClick?: () => void) => (
