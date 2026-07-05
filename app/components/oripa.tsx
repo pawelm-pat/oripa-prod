@@ -714,7 +714,7 @@ function OripaHome({ lang, coins, onHome }: { lang: Lang; coins: number; onHome:
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
       <AppHeader coins={coins} t={t} onHome={onHome} />
 
-      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
         <div className="px-3 pb-4 pt-3">
           <PromoCarousel />
         </div>
@@ -1452,7 +1452,7 @@ function LandingPage({ lang, onSignUp, onLogin }: { lang: Lang; onSignUp: () => 
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
       <AuthHeader lang={lang} onSignUp={onSignUp} onLogin={onLogin} />
 
-      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
         <div className="px-3 pb-4 pt-3"><PromoCarousel /></div>
 
         <LobbyNavFeed t={t} lang={lang} filters={filters} query={query} onOpenFilters={() => setFilterOpen(true)} onView={onSignUp} />
@@ -1704,7 +1704,7 @@ function SignupPage({ lang, onLogin, onSuccess, initialEmailVerify = false, init
     <div className="relative flex h-full flex-col bg-[#f5f6f8]">
       <AuthHeader lang={lang} onSignUp={() => {}} onLogin={onLogin} />
 
-      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
         <div className="h-[120px] w-full" style={{ background: "repeating-conic-gradient(#d1d5db 0% 25%, white 0% 50%) 0 0 / 20px 20px" }} />
 
         <div className="px-4 py-5 space-y-3">
@@ -1976,7 +1976,7 @@ function LoginPage({ lang, onSignUp, onSuccess, initialAppleAuth = false }: { la
     <div className="relative flex h-full flex-col bg-[#f5f6f8]">
       <AuthHeader lang={lang} onSignUp={onSignUp} onLogin={() => {}} />
 
-      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
         <div className="h-[120px] w-full" style={{ background: "repeating-conic-gradient(#d1d5db 0% 25%, white 0% 50%) 0 0 / 20px 20px" }} />
 
         <div className="px-4 py-5 space-y-3">
@@ -2186,7 +2186,7 @@ function NotificationsScreen({ lang, coins, empty = false, only, onBack, onHome 
         </div>
       </header>
 
-      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto bg-[#eef0f3]">
+      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto bg-[#eef0f3]">
         {empty || list.length === 0 ? (
           <p className="py-28 text-center text-[14px] text-[#9aa0a8]">{t.notifEmpty}</p>
         ) : (
@@ -2597,7 +2597,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
         </div>
       </header>
 
-      <div ref={tabScrollRef} className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+      <div ref={tabScrollRef} className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
 
         {tab === "won" && (
           won.length === 0 ? (
@@ -3424,7 +3424,7 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
       </div>
 
       {view === "form" && (
-        <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-4">
+        <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-4">
           <div className="mb-3 flex gap-2">
             <Field label={t.profileLastName} value={form.lastName} onChange={(v) => setForm(f => ({ ...f, lastName: v }))} half required placeholder={t.profilePlaceholder} />
             <Field label={t.profileFirstName} value={form.firstName} onChange={(v) => setForm(f => ({ ...f, firstName: v }))} half required placeholder={t.profilePlaceholder} />
@@ -3543,7 +3543,7 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
       )}
 
       {view === "main" && (
-        <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-4">
+        <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-4">
           <p className="mb-4 text-[12.5px] leading-relaxed text-[#5c626b]">{t.shippingDesc}</p>
 
           {addresses.length === 0 && (
@@ -3678,7 +3678,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
   return (
     <div className="flex h-full flex-col bg-[#eef0f3]">
       <AppHeader coins={coins} t={t} onHome={onHome} />
-      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
         <div className="px-3 py-4">
           {/* Profile card */}
           <div className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-[0_1px_4px_rgba(0,0,0,0.08)]">
@@ -3802,8 +3802,9 @@ export function PhoneApp({ lang, noHistory }: { lang: Lang; noHistory: boolean }
     <NotifNavContext.Provider value={onLanding ? () => {} : openNotifications}>
     <div className="flex h-full flex-col bg-[#eef0f3]">
       <div className="relative min-h-0 flex-1">
-        {/* Keyed on `screen` so each navigation replays the soft fade/slide-in. */}
-        <div key={screen} className="animate-screen-in h-full">
+        {/* Keyed on `screen` so each navigation remounts and replays the
+            body-only fade/slide-in (headers are excluded per-screen). */}
+        <div key={screen} className="h-full">
         {/* Logged-out lobby — V1 homepage layout */}
         {screen === "landing" && <LandingPage lang={lang} onSignUp={() => setScreen("signup")} onLogin={() => setScreen("login")} />}
         {screen === "signup" && <SignupPage lang={lang} onLogin={() => setScreen("login")} onSuccess={enterHome} />}
