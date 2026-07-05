@@ -133,10 +133,9 @@ function BalancePill({ coins, t, onOpenStore }: { coins: number; t: Dict; onOpen
         <button
           onClick={onOpenStore}
           aria-label={t.addCoinsAria}
-          className="absolute right-0 top-1/2 flex h-[22px] w-[22px] -translate-y-1/2 translate-x-1/2 items-center justify-center rounded-full"
-          style={{ background: "#B40206", boxShadow: "0 1px 3px rgba(0,0,0,0.25)" }}
+          className="absolute right-0 top-1/2 flex h-[22px] w-[22px] -translate-y-1/2 translate-x-1/2 items-center justify-center transition active:scale-[0.95]"
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" strokeWidth="3.4" strokeLinecap="round" /></svg>
+          <img src="/plus-sign.png" alt="" className="h-full w-full object-contain" draggable={false} />
         </button>
       </div>
       <BellIcon label={t.notificationsAria} />
