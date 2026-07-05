@@ -55,6 +55,27 @@ a {
   animation: fadeSlideIn 0.45s ease both;
 }
 
+/* Soft screen-to-screen transition on navigation */
+@keyframes screenIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-screen-in {
+  animation: screenIn 0.32s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  will-change: opacity, transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-screen-in {
+    animation: none;
+  }
+}
+
 @keyframes slideInLeft {
   from {
     transform: translateX(-100%);

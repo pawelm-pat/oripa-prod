@@ -3802,6 +3802,8 @@ export function PhoneApp({ lang, noHistory }: { lang: Lang; noHistory: boolean }
     <NotifNavContext.Provider value={onLanding ? () => {} : openNotifications}>
     <div className="flex h-full flex-col bg-[#eef0f3]">
       <div className="relative min-h-0 flex-1">
+        {/* Keyed on `screen` so each navigation replays the soft fade/slide-in. */}
+        <div key={screen} className="animate-screen-in h-full">
         {/* Logged-out lobby — V1 homepage layout */}
         {screen === "landing" && <LandingPage lang={lang} onSignUp={() => setScreen("signup")} onLogin={() => setScreen("login")} />}
         {screen === "signup" && <SignupPage lang={lang} onLogin={() => setScreen("login")} onSuccess={enterHome} />}
@@ -3841,6 +3843,7 @@ export function PhoneApp({ lang, noHistory }: { lang: Lang; noHistory: boolean }
             onBack={() => setScreen("mypage")}
           />
         )}
+        </div>
       </div>
       {showNav && <BottomNav screen={screen} t={t} onNavigate={navigate} />}
     </div>
