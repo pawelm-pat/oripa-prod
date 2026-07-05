@@ -2729,20 +2729,6 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                   />
                 </div>
                 <div className="mt-5">
-                  <h4 className="mb-3 text-[15px] font-extrabold text-[#1d2129]">{LF.quickFilters}</h4>
-                  <div className="flex flex-wrap gap-2.5">
-                    {cats.map((c) => {
-                      const on = category === c;
-                      const n = c === "all" ? won.length : won.filter((p) => p.category === c).length;
-                      const label = c === "all" ? t.deckCategoryAll : t.cardCategory(c);
-                      return (
-                        <button key={c} onClick={() => { setCategory(c); setListSelected(new Set()); }} className={`rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold transition ${on ? "border-[#B40206] bg-[#B40206] text-white" : "border-black/15 bg-white text-[#5c626b] active:bg-black/[0.03]"}`}>{label}<span className="ml-1 opacity-75">{n}</span></button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="mt-5 border-t border-black/5 pt-4">
                   <h4 className="mb-3 text-[15px] font-extrabold text-[#1d2129]">{lang === "ja" ? "レアリティで選択" : "Select by tier"}</h4>
                   <div className="flex flex-wrap gap-2.5">
                     {tierChips.map((c) => {
@@ -2757,6 +2743,20 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                     <button onClick={() => selectTier("all")} className="rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold transition" style={{ background: isTierActive("all") ? "#1d2129" : "#fff", color: isTierActive("all") ? "#fff" : "#1d2129", borderColor: "rgba(0,0,0,0.15)" }}>
                       {t.selectAll}
                     </button>
+                  </div>
+                </div>
+
+                <div className="mt-5 border-t border-black/5 pt-4">
+                  <h4 className="mb-3 text-[15px] font-extrabold text-[#1d2129]">{LF.quickFilters}</h4>
+                  <div className="flex flex-wrap gap-2.5">
+                    {cats.map((c) => {
+                      const on = category === c;
+                      const n = c === "all" ? won.length : won.filter((p) => p.category === c).length;
+                      const label = c === "all" ? t.deckCategoryAll : t.cardCategory(c);
+                      return (
+                        <button key={c} onClick={() => { setCategory(c); setListSelected(new Set()); }} className={`rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold transition ${on ? "border-[#B40206] bg-[#B40206] text-white" : "border-black/15 bg-white text-[#5c626b] active:bg-black/[0.03]"}`}>{label}<span className="ml-1 opacity-75">{n}</span></button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
