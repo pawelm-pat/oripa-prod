@@ -86,7 +86,7 @@ function BellIcon({ label }: { label: string }) {
     <button onClick={openNotif} aria-label={label} className="relative flex h-8 w-8 items-center justify-center">
       <img src="/bell-notification.png" alt="" className="h-[22px] w-[22px] object-contain" />
       {NOTIF_UNREAD_TOTAL > 0 && (
-        <span className="absolute -right-0.5 -top-0.5 flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-[#ff2d2d] px-1 text-[9px] font-extrabold leading-none text-white ring-2 ring-white">{NOTIF_UNREAD_TOTAL}</span>
+        <span className="absolute -right-0.5 -top-0.5 flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-[#D10005] px-1 text-[9px] font-extrabold leading-none text-white ring-2 ring-white">{NOTIF_UNREAD_TOTAL}</span>
       )}
     </button>
   );
@@ -102,7 +102,7 @@ export function LangToggle({ lang, setLang }: { lang: Lang; setLang: (l: Lang) =
             key={l}
             onClick={() => setLang(l)}
             className="whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-bold transition"
-            style={{ background: active ? "#B40206" : "transparent", color: active ? "#fff" : "#8a9099" }}
+            style={{ background: active ? "#D10005" : "transparent", color: active ? "#fff" : "#8a9099" }}
           >
             {l === "en" ? "EN" : "日本語"}
           </button>
@@ -153,9 +153,9 @@ function sectionIcon(icon: SectionIconKey, red: boolean) {
 function TagPill({ children, variant }: { children: React.ReactNode; variant: "redOutline" | "redFill" | "darkOutline" }) {
   const cls =
     variant === "redFill"
-      ? "bg-[#B40206] text-white border border-[#B40206]"
+      ? "bg-[#D10005] text-white border border-[#D10005]"
       : variant === "redOutline"
-        ? "border border-[#B40206] text-[#B40206]"
+        ? "border border-[#D10005] text-[#D10005]"
         : "border border-black/35 text-[#1d2129]";
   return <span className={`whitespace-nowrap rounded-full px-2 py-[1px] text-[10px] font-bold ${cls}`}>{children}</span>;
 }
@@ -164,14 +164,14 @@ function OripaCard({ item, t, lang, onView, onDraw }: { item: OripaItem; t: Dict
   const pct = Math.round((item.remaining / item.total) * 100);
   const price = (
     <span className="flex items-baseline">
-      <span className="text-[15px] font-extrabold text-[#1d2129] underline decoration-[#B40206] decoration-2 underline-offset-2">1,000</span>
+      <span className="text-[15px] font-extrabold text-[#1d2129] underline decoration-[#D10005] decoration-2 underline-offset-2">1,000</span>
       <span className="text-[11px] font-bold text-[#8a9099]">{t.perDraw}</span>
     </span>
   );
   return (
     <div className="overflow-hidden rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.12)]">
       <div className="flex flex-wrap items-center gap-1.5 px-2.5 pt-2.5">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B40206" strokeWidth="1.8" strokeLinejoin="round" className="shrink-0"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" /></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D10005" strokeWidth="1.8" strokeLinejoin="round" className="shrink-0"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" /></svg>
         <TagPill variant="redOutline">{t.tagPopular}</TagPill>
         <TagPill variant="redFill">{t.tagPokemon}</TagPill>
         <TagPill variant="darkOutline">{t.tagLv5}</TagPill>
@@ -198,16 +198,16 @@ function OripaCard({ item, t, lang, onView, onDraw }: { item: OripaItem; t: Dict
             <span className="text-[19px] font-extrabold text-[#1d2129]">{item.remaining}</span>
             <span className="text-[12px] font-bold text-[#8a9099]">/{item.total}</span>
           </p>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-black/[0.08]"><span className="block h-full rounded-full bg-[#B40206]" style={{ width: `${pct}%` }} /></div>
-          <p className="flex items-baseline justify-center gap-0.5 leading-none text-[#B40206]">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-black/[0.08]"><span className="block h-full rounded-full bg-[#D10005]" style={{ width: `${pct}%` }} /></div>
+          <p className="flex items-baseline justify-center gap-0.5 leading-none text-[#D10005]">
             <span className="text-[13px] font-bold">{t.remainingTimeLabel}</span>
             <span className="text-[17px] font-extrabold">{t.minUnit(item.endsIn)}</span>
           </p>
         </div>
       </div>
       <div className="flex gap-2 px-3 pb-3">
-        <button onClick={onView} className="flex-1 rounded-lg py-2 text-[12px] font-bold text-white" style={{ background: "#B40206" }}>{t.btnDraw}</button>
-        {item.free && <button onClick={() => onDraw?.(1, true)} className="flex-1 rounded-lg border border-[#B40206] py-2 text-[12px] font-bold text-[#B40206]">{t.btnFree}</button>}
+        <button onClick={onView} className="flex-1 rounded-lg py-2 text-[12px] font-bold text-white" style={{ background: "#D10005" }}>{t.btnDraw}</button>
+        {item.free && <button onClick={() => onDraw?.(1, true)} className="flex-1 rounded-lg border border-[#D10005] py-2 text-[12px] font-bold text-[#D10005]">{t.btnFree}</button>}
         <button onClick={onView} className="flex-1 rounded-lg border border-black/40 py-2 text-[12px] font-bold text-[#1d2129]">{t.btnView}</button>
       </div>
     </div>
@@ -281,7 +281,7 @@ function PromoCarousel() {
                 setIdx(i);
               }}
               className="h-2 rounded-full transition-all"
-              style={{ width: on ? 18 : 8, background: on ? "#B40206" : "#cfd3da" }}
+              style={{ width: on ? 18 : 8, background: on ? "#D10005" : "#cfd3da" }}
             />
           );
         })}
@@ -296,7 +296,7 @@ function catIcon(key: string, color: string) {
     case "new":
       return (
         <svg width="27" height="27" viewBox="0 0 24 24">
-          <path d="M12 1.3l2.2 2.5 3.2-1.1.2 3.4 3.4 1-1.9 2.8 1.9 2.8-3.4 1-.2 3.4-3.2-1.1L12 22.7l-2.2-2.5-3.2 1.1-.2-3.4-3.4-1 1.9-2.8L3 11.3l3.4-1 .2-3.4 3.2 1.1z" fill="#B40206" />
+          <path d="M12 1.3l2.2 2.5 3.2-1.1.2 3.4 3.4 1-1.9 2.8 1.9 2.8-3.4 1-.2 3.4-3.2-1.1L12 22.7l-2.2-2.5-3.2 1.1-.2-3.4-3.4-1 1.9-2.8L3 11.3l3.4-1 .2-3.4 3.2 1.1z" fill="#D10005" />
           <rect x="11" y="6.6" width="2" height="6" rx="1" fill="#fff" />
           <circle cx="12" cy="15.2" r="1.15" fill="#fff" />
         </svg>
@@ -435,7 +435,7 @@ function LobbyMiniCard({ item, t, lang, fullWidth, onView }: { item: OripaItem; 
             <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#c2c6cc" strokeWidth="1.6"><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="8.5" cy="10" r="1.6" /><path d="M21 16l-5-5-7 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </span>
         )}
-        <span className="absolute left-1.5 top-1.5 rounded-full bg-[#B40206] px-2 py-[2px] text-[9.5px] font-extrabold uppercase tracking-wide text-white">{item.gem ? t.tagSsr : t.tagPopular}</span>
+        <span className="absolute left-1.5 top-1.5 rounded-full bg-[#D10005] px-2 py-[2px] text-[9.5px] font-extrabold uppercase tracking-wide text-white">{item.gem ? t.tagSsr : t.tagPopular}</span>
       </div>
       <div className="flex flex-1 flex-col gap-1.5 p-2.5">
         <h4 className="line-clamp-2 text-[12px] font-extrabold leading-tight text-[#1d2129]">{locTitle(item, lang)}</h4>
@@ -444,8 +444,8 @@ function LobbyMiniCard({ item, t, lang, fullWidth, onView }: { item: OripaItem; 
           <span className="text-[13px] font-extrabold text-[#1d2129]">1,000</span>
           <span className="text-[10px] font-bold text-[#8a9099]">{t.perDraw}</span>
         </span>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/[0.08]"><span className="block h-full rounded-full bg-[#B40206]" style={{ width: `${pct}%` }} /></div>
-        <span className="text-[10px] font-bold text-[#B40206]">{t.remainingTimeLabel} {t.minUnit(item.endsIn)}</span>
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/[0.08]"><span className="block h-full rounded-full bg-[#D10005]" style={{ width: `${pct}%` }} /></div>
+        <span className="text-[10px] font-bold text-[#D10005]">{t.remainingTimeLabel} {t.minUnit(item.endsIn)}</span>
       </div>
     </button>
   );
@@ -475,7 +475,7 @@ function LobbyFilterSheet({ lang, filters, query, onToggle, onQueryChange, onCle
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
               placeholder={L.searchPlaceholder}
-              className="w-full rounded-xl bg-[#f4f5f7] py-3 pl-11 pr-3 text-[14px] font-semibold text-[#1d2129] outline-none placeholder:text-[#9aa0a8] focus:bg-white focus:ring-2 focus:ring-[#B40206]/30"
+              className="w-full rounded-xl bg-[#f4f5f7] py-3 pl-11 pr-3 text-[14px] font-semibold text-[#1d2129] outline-none placeholder:text-[#9aa0a8] focus:bg-white focus:ring-2 focus:ring-[#D10005]/30"
             />
           </div>
 
@@ -485,7 +485,7 @@ function LobbyFilterSheet({ lang, filters, query, onToggle, onQueryChange, onCle
               {L.quickOpts.map(([key, label]) => {
                 const on = !!filters[key];
                 return (
-                  <button key={key} onClick={() => onToggle(key)} className={`rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold transition ${on ? "border-[#B40206] bg-[#B40206] text-white" : "border-black/15 bg-white text-[#5c626b] active:bg-black/[0.03]"}`}>{label}</button>
+                  <button key={key} onClick={() => onToggle(key)} className={`rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold transition ${on ? "border-[#D10005] bg-[#D10005] text-white" : "border-black/15 bg-white text-[#5c626b] active:bg-black/[0.03]"}`}>{label}</button>
                 );
               })}
             </div>
@@ -494,7 +494,7 @@ function LobbyFilterSheet({ lang, filters, query, onToggle, onQueryChange, onCle
 
         <div className="flex shrink-0 gap-3 border-t border-black/10 px-4 py-3">
           <button onClick={onClear} className="flex-1 rounded-xl bg-[#f2f3f5] py-3 text-[15px] font-extrabold text-[#1d2129] active:scale-[0.99]">{L.clear}</button>
-          <button onClick={onClose} className="flex-1 rounded-xl bg-[#B40206] py-3 text-[15px] font-extrabold text-white active:scale-[0.99]">{L.apply}</button>
+          <button onClick={onClose} className="flex-1 rounded-xl bg-[#D10005] py-3 text-[15px] font-extrabold text-white active:scale-[0.99]">{L.apply}</button>
         </div>
       </div>
     </div>
@@ -602,7 +602,7 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
             <div key={s.id} className="border-t border-black/10 px-3.5 py-3.5 first:border-t-0">
               <div className="mb-2.5 flex items-center justify-between">
                 <h3 className="flex items-center gap-1.5 text-[15px] font-extrabold text-[#1d2129]">{sectionIcon(s.icon, false)}{title}</h3>
-                {seeAllCat && <button onClick={() => setCat(seeAllCat)} className="text-[12px] font-bold text-[#B40206]">{L.seeAll} →</button>}
+                {seeAllCat && <button onClick={() => setCat(seeAllCat)} className="text-[12px] font-bold text-[#D10005]">{L.seeAll} →</button>}
               </div>
               <div className="flex flex-col gap-3">{s.items.map(full)}</div>
             </div>
@@ -656,7 +656,7 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
               </button>
             );
           }
-          const color = on ? "#B40206" : "#1d2129";
+          const color = on ? "#D10005" : "#1d2129";
           return (
             <button
               key={c.key}
@@ -665,7 +665,7 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
             >
               {catIcon(c.key, color)}
               <span className="text-[11px] font-medium uppercase tracking-wide" style={{ color }}>{c.label}</span>
-              {on && <span className="absolute inset-x-3 bottom-0 h-[3px] rounded-full bg-[#B40206]" />}
+              {on && <span className="absolute inset-x-3 bottom-0 h-[3px] rounded-full bg-[#D10005]" />}
             </button>
           );
         })}
@@ -676,7 +676,7 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
         <button onClick={() => { onOpenFilters(); setSortOpen(false); }} className="flex flex-1 items-center justify-center gap-2 py-3 text-[14px] font-extrabold text-[#1d2129] active:bg-black/[0.03]">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><circle cx="7" cy="8" r="2" /><circle cx="16" cy="16" r="2" /><path d="M9 8h11M4 8h1M15 16h5M4 16h9" /></svg>
           {L.narrowDown}
-          {filterCount > 0 && <span className="flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-[#B40206] px-1 text-[10px] font-extrabold leading-none text-white">{filterCount}</span>}
+          {filterCount > 0 && <span className="flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-[#D10005] px-1 text-[10px] font-extrabold leading-none text-white">{filterCount}</span>}
         </button>
         <span className="my-2 w-px bg-black/10" />
         <div className="relative flex-1">
@@ -689,7 +689,7 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
               <div className="fixed inset-0 z-30" onClick={() => setSortOpen(false)} />
               <div className="absolute right-2 top-[calc(100%-2px)] z-40 min-w-[210px] overflow-hidden rounded-xl border border-black/10 bg-white shadow-[0_14px_34px_rgba(0,0,0,0.18)]">
                 {L.sorts.map(([key, label]) => (
-                  <button key={key} onClick={() => { setSortKey(key); setSortOpen(false); }} className={`block w-full px-3.5 py-2.5 text-left text-[13px] ${key === sortKey ? "font-extrabold text-[#B40206]" : "text-[#41464e]"}`}>{label}</button>
+                  <button key={key} onClick={() => { setSortKey(key); setSortOpen(false); }} className={`block w-full px-3.5 py-2.5 text-left text-[13px] ${key === sortKey ? "font-extrabold text-[#D10005]" : "text-[#41464e]"}`}>{label}</button>
                 ))}
               </div>
             </>
@@ -793,7 +793,7 @@ function BottomNav({ screen, t, onNavigate }: { screen: Screen; t: Dict; onNavig
       <div className="flex">
         {items.map((it) => {
           const active = activeKey === it.key;
-          const color = active ? "#B40206" : "#1d2129";
+          const color = active ? "#D10005" : "#1d2129";
           const navigable = it.key === "oripa" || it.key === "mypage";
           return (
             <button
@@ -820,7 +820,7 @@ function AuthHeader({ lang, onSignUp, onLogin }: { lang: Lang; onSignUp: () => v
       { }
       <img src="/oripa-logo-full.png" alt="オリパロット" className="h-8 w-auto shrink-0" />
       <div className="flex items-center gap-2">
-        <button onClick={onSignUp} className="rounded-lg px-4 py-1.5 text-[13px] font-bold text-white" style={{ background: "#B40206" }}>{t.authSignUp}</button>
+        <button onClick={onSignUp} className="rounded-lg px-4 py-1.5 text-[13px] font-bold text-white" style={{ background: "#D10005" }}>{t.authSignUp}</button>
         <button onClick={onLogin} className="rounded-lg px-4 py-1.5 text-[13px] font-bold text-white" style={{ background: "#f59e0b" }}>{t.authLogin}</button>
       </div>
     </header>
@@ -1245,7 +1245,7 @@ function AuthField({ label, value, onChange, type = "text", icon, valid, error, 
   return (
     <div>
       <label className="mb-1 block text-[12px] font-semibold text-[#1d2129]">
-        {label}<span className="ml-0.5 text-[#B40206]">*</span>
+        {label}<span className="ml-0.5 text-[#D10005]">*</span>
       </label>
       <div className="relative flex items-center">
         {icon && <span className="absolute left-3 text-[#8a9099]">{icon}</span>}
@@ -1255,7 +1255,7 @@ function AuthField({ label, value, onChange, type = "text", icon, valid, error, 
           onChange={(e) => onChange(e.target.value)}
           onBlur={onBlur}
           placeholder="Placeholder"
-          className={`w-full rounded-xl bg-white py-3 text-[14px] text-[#1d2129] placeholder:text-[#bbbec4] outline-none border ${error ? "border-[#B40206]" : "border-[#e5e8ec]"}`}
+          className={`w-full rounded-xl bg-white py-3 text-[14px] text-[#1d2129] placeholder:text-[#bbbec4] outline-none border ${error ? "border-[#D10005]" : "border-[#e5e8ec]"}`}
           style={{ paddingLeft: icon ? "36px" : "14px", paddingRight: showTick ? "40px" : "14px" }}
         />
         {showTick && (
@@ -1264,7 +1264,7 @@ function AuthField({ label, value, onChange, type = "text", icon, valid, error, 
           </span>
         )}
       </div>
-      {error && <p className="mt-1 text-[11px] text-[#B40206]">{error}</p>}
+      {error && <p className="mt-1 text-[11px] text-[#D10005]">{error}</p>}
     </div>
   );
 }
@@ -1423,7 +1423,7 @@ function DobPickerModal({ lang, onConfirm, onClose }: {
                     <div className="mt-3 flex justify-end">
                       <button
                         onClick={() => onConfirm(`${selYear}-${String(selMonth).padStart(2, "0")}-${String(selDay).padStart(2, "0")}`)}
-                        className="rounded-xl bg-[#B40206] px-5 py-2 text-[14px] font-bold text-white">
+                        className="rounded-xl bg-[#D10005] px-5 py-2 text-[14px] font-bold text-white">
                         {t.authDobPickerDone}
                       </button>
                     </div>
@@ -1540,7 +1540,7 @@ function PhoneOtpPage({ lang, phone, onBack, onSuccess }: {
                 value={d}
                 onChange={e => handleDigitChange(i, e.target.value)}
                 onKeyDown={e => handleKeyDown(i, e)}
-                className="h-12 w-10 rounded-xl border border-[#e5e8ec] bg-white text-center text-[20px] font-bold text-[#1d2129] outline-none focus:border-[#B40206]"
+                className="h-12 w-10 rounded-xl border border-[#e5e8ec] bg-white text-center text-[20px] font-bold text-[#1d2129] outline-none focus:border-[#D10005]"
               />
             ))}
           </div>
@@ -1549,7 +1549,7 @@ function PhoneOtpPage({ lang, phone, onBack, onSuccess }: {
             onClick={() => { if (allFilled) onSuccess(); }}
             disabled={!allFilled}
             className="mt-6 w-full rounded-xl py-3.5 text-[15px] font-bold text-white"
-            style={{ background: "#B40206", opacity: allFilled ? 1 : 0.45 }}
+            style={{ background: "#D10005", opacity: allFilled ? 1 : 0.45 }}
           >
             {t.authOtpAuthenticate as string}
           </button>
@@ -1565,7 +1565,7 @@ function PhoneOtpPage({ lang, phone, onBack, onSuccess }: {
 
           <button
             onClick={onBack}
-            className="mt-3 w-full text-center text-[13px] font-bold text-[#B40206] underline"
+            className="mt-3 w-full text-center text-[13px] font-bold text-[#D10005] underline"
           >
             {t.authOtpChangePhone as string}
           </button>
@@ -1645,7 +1645,7 @@ function SignupPage({ lang, onLogin, onSuccess, initialEmailVerify = false, init
   const renderDobButton = (dob: string, onOpen: () => void) => (
     <div>
       <label className="mb-1 block text-[12px] font-semibold text-[#1d2129]">
-        {t.authDobLabel}<span className="ml-0.5 text-[#B40206]">*</span>
+        {t.authDobLabel}<span className="ml-0.5 text-[#D10005]">*</span>
       </label>
       <button
         type="button"
@@ -1678,16 +1678,16 @@ function SignupPage({ lang, onLogin, onSuccess, initialEmailVerify = false, init
         <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="sr-only" />
         <div
           className="flex h-5 w-5 items-center justify-center rounded"
-          style={{ background: checked ? "#B40206" : "white", border: checked ? "none" : "2px solid #d1d5db" }}
+          style={{ background: checked ? "#D10005" : "white", border: checked ? "none" : "2px solid #d1d5db" }}
         >
           {checked && <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>}
         </div>
       </div>
       <span className="text-[12px] leading-relaxed text-[#5c626b]">
         {t.authAgreePrefix}
-        <span className="text-[#B40206] underline">{t.authTermsOfService}</span>
+        <span className="text-[#D10005] underline">{t.authTermsOfService}</span>
         {t.authAnd}
-        <span className="text-[#B40206] underline">{t.authPrivacyPolicy}</span>
+        <span className="text-[#D10005] underline">{t.authPrivacyPolicy}</span>
         {t.authAgreeEnd}
       </span>
     </label>
@@ -1747,7 +1747,7 @@ function SignupPage({ lang, onLogin, onSuccess, initialEmailVerify = false, init
                   onClick={() => { if (canEmailSubmit) setShowEmailVerify(true); }}
                   disabled={!canEmailSubmit}
                   className="w-full rounded-xl py-3.5 text-[15px] font-bold text-white"
-                  style={{ background: "#B40206", opacity: canEmailSubmit ? 1 : 0.45 }}
+                  style={{ background: "#D10005", opacity: canEmailSubmit ? 1 : 0.45 }}
                 >
                   {t.authSignUpFree}
                 </button>
@@ -1774,7 +1774,7 @@ function SignupPage({ lang, onLogin, onSuccess, initialEmailVerify = false, init
                 {/* Country code + Phone number */}
                 <div>
                   <label className="mb-1 block text-[12px] font-semibold text-[#1d2129]">
-                    {t.authPhoneLabel as string}<span className="ml-0.5 text-[#B40206]">*</span>
+                    {t.authPhoneLabel as string}<span className="ml-0.5 text-[#D10005]">*</span>
                   </label>
                   <div className="flex gap-2">
                     <select
@@ -1792,7 +1792,7 @@ function SignupPage({ lang, onLogin, onSuccess, initialEmailVerify = false, init
                         onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                         onBlur={() => setPhoneTouched(true)}
                         placeholder="Placeholder"
-                        className={`w-full rounded-xl border bg-white py-3 pl-3.5 text-[14px] text-[#1d2129] placeholder:text-[#bbbec4] outline-none ${phoneError ? "border-[#B40206]" : "border-[#e5e8ec]"}`}
+                        className={`w-full rounded-xl border bg-white py-3 pl-3.5 text-[14px] text-[#1d2129] placeholder:text-[#bbbec4] outline-none ${phoneError ? "border-[#D10005]" : "border-[#e5e8ec]"}`}
                         style={{ paddingRight: phoneValid && phone.length > 0 ? "40px" : "14px" }}
                       />
                       {phoneValid && phone.length > 0 && (
@@ -1800,7 +1800,7 @@ function SignupPage({ lang, onLogin, onSuccess, initialEmailVerify = false, init
                       )}
                     </div>
                   </div>
-                  {phoneError && <p className="mt-1 text-[11px] text-[#B40206]">{phoneError}</p>}
+                  {phoneError && <p className="mt-1 text-[11px] text-[#D10005]">{phoneError}</p>}
                 </div>
 
                 {renderDobButton(phoneDob, () => setShowPhoneDobPicker(true))}
@@ -1811,7 +1811,7 @@ function SignupPage({ lang, onLogin, onSuccess, initialEmailVerify = false, init
                   onClick={() => { if (canPhoneSubmit) { setOtpPhone(`${phonePrefix} ${phone}`); setView("otp"); } }}
                   disabled={!canPhoneSubmit}
                   className="w-full rounded-xl py-3.5 text-[15px] font-bold text-white"
-                  style={{ background: "#B40206", opacity: canPhoneSubmit ? 1 : 0.45 }}
+                  style={{ background: "#D10005", opacity: canPhoneSubmit ? 1 : 0.45 }}
                 >
                   {t.authSignUpFree}
                 </button>
@@ -1822,7 +1822,7 @@ function SignupPage({ lang, onLogin, onSuccess, initialEmailVerify = false, init
 
           <p className="text-center text-[13px] text-[#5c626b]">
             {t.authHaveAccount}{" "}
-            <button onClick={onLogin} className="font-bold text-[#B40206] underline">{t.authLogInLink}</button>
+            <button onClick={onLogin} className="font-bold text-[#D10005] underline">{t.authLogInLink}</button>
           </p>
         </div>
       </div>
@@ -1857,8 +1857,8 @@ function SignupPage({ lang, onLogin, onSuccess, initialEmailVerify = false, init
                   <ellipse cx="30" cy="28" rx="3" ry="2" fill="#f87171" />
                   <path d="M26 32 Q30 35 34 32" stroke="#1d2129" strokeWidth="1.2" fill="none" strokeLinecap="round" />
                   <rect x="16" y="36" width="28" height="20" rx="3" fill="white" stroke="#e5e8ec" strokeWidth="1.5" />
-                  <path d="M16 39l14 10 14-10" stroke="#B40206" strokeWidth="1.5" fill="none" />
-                  <circle cx="36" cy="34" r="5" fill="#B40206" />
+                  <path d="M16 39l14 10 14-10" stroke="#D10005" strokeWidth="1.5" fill="none" />
+                  <circle cx="36" cy="34" r="5" fill="#D10005" />
                   <text x="36" y="38" textAnchor="middle" fontSize="8" fill="white" fontWeight="bold">♥</text>
                 </svg>
               </div>
@@ -1870,7 +1870,7 @@ function SignupPage({ lang, onLogin, onSuccess, initialEmailVerify = false, init
             <button onClick={() => {
               try { sessionStorage.setItem("authData", JSON.stringify({ email, dob: emailDob })); } catch {}
               onSuccess();
-            }} className="mt-4 w-full rounded-xl py-3 text-[14px] font-bold text-white" style={{ background: "#B40206" }}>
+            }} className="mt-4 w-full rounded-xl py-3 text-[14px] font-bold text-white" style={{ background: "#D10005" }}>
               {t.authOpenEmailApp}
             </button>
             <div className="mt-3 space-y-1">
@@ -2016,7 +2016,7 @@ function LoginPage({ lang, onSignUp, onSuccess, initialAppleAuth = false }: { la
                   onClick={() => { if (canEmailSubmit) { try { sessionStorage.setItem("authData", JSON.stringify({ email })); } catch {} onSuccess(); } }}
                   disabled={!canEmailSubmit}
                   className="w-full rounded-xl py-3.5 text-[15px] font-bold text-white"
-                  style={{ background: "#B40206", opacity: canEmailSubmit ? 1 : 0.45 }}
+                  style={{ background: "#D10005", opacity: canEmailSubmit ? 1 : 0.45 }}
                 >
                   {t.authLoginTitle}
                 </button>
@@ -2042,7 +2042,7 @@ function LoginPage({ lang, onSignUp, onSuccess, initialAppleAuth = false }: { la
               <div className="border-t border-[#e5e8ec] px-4 pt-4 pb-4 space-y-4">
                 <div>
                   <label className="mb-1 block text-[12px] font-semibold text-[#1d2129]">
-                    {t.authPhoneLabel as string}<span className="ml-0.5 text-[#B40206]">*</span>
+                    {t.authPhoneLabel as string}<span className="ml-0.5 text-[#D10005]">*</span>
                   </label>
                   <div className="flex gap-2">
                     <select
@@ -2060,7 +2060,7 @@ function LoginPage({ lang, onSignUp, onSuccess, initialAppleAuth = false }: { la
                         onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                         onBlur={() => setPhoneTouched(true)}
                         placeholder="Placeholder"
-                        className={`w-full rounded-xl border bg-white py-3 pl-3.5 text-[14px] text-[#1d2129] placeholder:text-[#bbbec4] outline-none ${phoneError ? "border-[#B40206]" : "border-[#e5e8ec]"}`}
+                        className={`w-full rounded-xl border bg-white py-3 pl-3.5 text-[14px] text-[#1d2129] placeholder:text-[#bbbec4] outline-none ${phoneError ? "border-[#D10005]" : "border-[#e5e8ec]"}`}
                         style={{ paddingRight: phoneValid && phone.length > 0 ? "40px" : "14px" }}
                       />
                       {phoneValid && phone.length > 0 && (
@@ -2068,14 +2068,14 @@ function LoginPage({ lang, onSignUp, onSuccess, initialAppleAuth = false }: { la
                       )}
                     </div>
                   </div>
-                  {phoneError && <p className="mt-1 text-[11px] text-[#B40206]">{phoneError}</p>}
+                  {phoneError && <p className="mt-1 text-[11px] text-[#D10005]">{phoneError}</p>}
                 </div>
 
                 <button
                   onClick={() => { if (phoneValid) { setOtpPhone(`${phonePrefix} ${phone}`); setView("otp"); } }}
                   disabled={!phoneValid}
                   className="w-full rounded-xl py-3.5 text-[15px] font-bold text-white"
-                  style={{ background: "#B40206", opacity: phoneValid ? 1 : 0.45 }}
+                  style={{ background: "#D10005", opacity: phoneValid ? 1 : 0.45 }}
                 >
                   {t.authLoginTitle}
                 </button>
@@ -2086,7 +2086,7 @@ function LoginPage({ lang, onSignUp, onSuccess, initialAppleAuth = false }: { la
 
           <p className="text-center text-[13px] text-[#5c626b]">
             {t.authNoAccount}{" "}
-            <button onClick={onSignUp} className="font-bold text-[#B40206] underline">{t.authSignUpNow}</button>
+            <button onClick={onSignUp} className="font-bold text-[#D10005] underline">{t.authSignUpNow}</button>
           </p>
         </div>
       </div>
@@ -2165,12 +2165,12 @@ function NotificationsScreen({ lang, coins, empty = false, only, onBack, onHome 
               return (
                 <button key={tb.key} onClick={() => setTab(tb.key)} className="relative flex-1 pb-2.5 pt-1">
                   <span className="flex items-center justify-center gap-1.5">
-                    <span className={`text-[13px] font-bold ${active ? "text-[#B40206]" : "text-[#1d2129]"}`}>{tb.label}</span>
+                    <span className={`text-[13px] font-bold ${active ? "text-[#D10005]" : "text-[#1d2129]"}`}>{tb.label}</span>
                     {tb.count > 0 && (
-                      <span className="flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-[#B40206] px-1 text-[10px] font-extrabold leading-none text-white">{tb.count}</span>
+                      <span className="flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-[#D10005] px-1 text-[10px] font-extrabold leading-none text-white">{tb.count}</span>
                     )}
                   </span>
-                  {active && <span className="absolute inset-x-5 -bottom-px h-[3px] rounded-full bg-[#B40206]" />}
+                  {active && <span className="absolute inset-x-5 -bottom-px h-[3px] rounded-full bg-[#D10005]" />}
                 </button>
               );
             })}
@@ -2180,7 +2180,7 @@ function NotificationsScreen({ lang, coins, empty = false, only, onBack, onHome 
         {/* Title row */}
         <div className="flex items-center gap-2 px-3 py-2.5">
           <button onClick={onBack} className="flex h-7 w-7 items-center justify-center" aria-label={t.backAria}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#B40206" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
           <h2 className="text-[20px] font-extrabold text-[#1d2129]">{title}</h2>
         </div>
@@ -2199,12 +2199,12 @@ function NotificationsScreen({ lang, coins, empty = false, only, onBack, onHome 
                   onClick={() => un && markRead(it.id)}
                   className={`relative w-full overflow-hidden rounded-xl border px-4 py-3 text-left transition ${un ? "border-[#f1c4c4] bg-[#fff5f5]" : "border-black/10 bg-white"}`}
                 >
-                  {un && <span className="absolute inset-y-0 left-0 w-1 bg-[#B40206]" />}
+                  {un && <span className="absolute inset-y-0 left-0 w-1 bg-[#D10005]" />}
                   <div className="flex items-center gap-1.5 text-[11.5px] text-[#9aa0a8]">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></svg>
                     {lang === "ja" ? it.atJa : it.at}
                     {un && (
-                      <span className="ml-auto flex items-center gap-1 rounded-full bg-[#B40206] px-2 py-[2px] text-[9.5px] font-extrabold uppercase tracking-wide text-white">
+                      <span className="ml-auto flex items-center gap-1 rounded-full bg-[#D10005] px-2 py-[2px] text-[9.5px] font-extrabold uppercase tracking-wide text-white">
                         <span className="h-1.5 w-1.5 rounded-full bg-white" />{t.notifNew}
                       </span>
                     )}
@@ -2322,7 +2322,7 @@ function Field({ label, value, onChange, onBlur, half = false, required = false,
   return (
     <div className={half ? "flex-1 min-w-0" : "w-full"}>
       <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">
-        {label}{required && <span className="ml-0.5 text-[#B40206]">*</span>}
+        {label}{required && <span className="ml-0.5 text-[#D10005]">*</span>}
       </label>
       <div className="relative flex items-center">
         <input
@@ -2335,18 +2335,18 @@ function Field({ label, value, onChange, onBlur, half = false, required = false,
           style={{
             paddingLeft: "10px",
             paddingRight: filled || hasError ? "32px" : "10px",
-            borderColor: hasError ? "#B40206" : filled ? "#d1d5db" : "#e5e8ec",
+            borderColor: hasError ? "#D10005" : filled ? "#d1d5db" : "#e5e8ec",
             background: hasError ? "rgba(230,0,18,0.04)" : "white",
           }}
         />
         {filled && !hasError && <span className="absolute right-2"><GreenCheck /></span>}
         {hasError && onClear && (
-          <button onClick={onClear} className="absolute right-2 flex h-5 w-5 items-center justify-center rounded-full" style={{ background: "#B40206" }}>
+          <button onClick={onClear} className="absolute right-2 flex h-5 w-5 items-center justify-center rounded-full" style={{ background: "#D10005" }}>
             <svg width="10" height="10" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="white" strokeWidth="1.8" strokeLinecap="round" /></svg>
           </button>
         )}
       </div>
-      {hasError && <p className="mt-1 text-[10px] text-[#B40206]">{error}</p>}
+      {hasError && <p className="mt-1 text-[10px] text-[#D10005]">{error}</p>}
     </div>
   );
 }
@@ -2357,7 +2357,7 @@ function PrefectureSelect({ value, onChange, label, lang }: { value: string; onC
   const placeholder = lang === "ja" ? "都道府県" : "Prefecture";
   return (
     <div className="flex-1 min-w-0">
-      <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{label}<span className="ml-0.5 text-[#B40206]">*</span></label>
+      <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{label}<span className="ml-0.5 text-[#D10005]">*</span></label>
       <div className="relative flex items-center">
         <select
           value={value}
@@ -2379,7 +2379,7 @@ function USStateSelect({ value, onChange, label }: { value: string; onChange: (v
   const filled = value.trim().length > 0;
   return (
     <div className="w-full">
-      <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{label}<span className="ml-0.5 text-[#B40206]">*</span></label>
+      <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{label}<span className="ml-0.5 text-[#D10005]">*</span></label>
       <div className="relative flex items-center">
         <select
           value={value}
@@ -2530,7 +2530,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
           </div>
           <div className="flex items-center gap-2 px-3 py-2.5">
             <button onClick={onBack} className="flex h-7 w-7 items-center justify-center" aria-label={t.backAria}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#B40206" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </button>
             <h2 className="text-[20px] font-extrabold text-[#1d2129]">{t.prizeHistory}</h2>
           </div>
@@ -2542,7 +2542,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
           <p className="mt-1 max-w-[300px] text-center text-[14px] leading-relaxed text-[#9aa0a8]">{t.winEmptySub}</p>
           <button
             onClick={onGoGacha ?? onHome}
-            className="mt-7 w-full rounded-xl bg-[#B40206] py-3.5 text-[15px] font-extrabold tracking-wide text-white shadow-[0_6px_18px_rgba(230,0,18,0.35)] active:scale-[0.99]"
+            className="mt-7 w-full rounded-xl bg-[#D10005] py-3.5 text-[15px] font-extrabold tracking-wide text-white shadow-[0_6px_18px_rgba(230,0,18,0.35)] active:scale-[0.99]"
           >
             {t.winEmptyCta}
           </button>
@@ -2561,7 +2561,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
 
         <div className="flex items-center gap-2 px-3 py-2.5">
           <button onClick={onBack} className="flex h-7 w-7 items-center justify-center" aria-label={t.backAria}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#B40206" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
           <h2 className="text-[20px] font-extrabold text-[#1d2129]">{t.prizeHistory}</h2>
         </div>
@@ -2582,15 +2582,15 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                 onClick={() => setTab(tb.key)}
                 className="relative flex-1 pb-2.5 pt-1 text-center"
               >
-                <span className={`text-[12px] font-bold ${active ? "text-[#B40206]" : "text-[#8a9099]"}`}>
+                <span className={`text-[12px] font-bold ${active ? "text-[#D10005]" : "text-[#8a9099]"}`}>
                   {tb.label}
                 </span>
                 <span
-                  className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${active ? "bg-[#B40206] text-white" : "bg-black/[0.07] text-[#8a9099]"}`}
+                  className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${active ? "bg-[#D10005] text-white" : "bg-black/[0.07] text-[#8a9099]"}`}
                 >
                   {counts[tb.key]}
                 </span>
-                {active && <span className="absolute inset-x-3 -bottom-px h-[3px] rounded-full bg-[#B40206]" />}
+                {active && <span className="absolute inset-x-3 -bottom-px h-[3px] rounded-full bg-[#D10005]" />}
               </button>
             );
           })}
@@ -2608,7 +2608,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                 <button onClick={() => setFilterOpen(true)} className="flex flex-1 items-center justify-center gap-2 py-3 text-[14px] font-extrabold text-[#1d2129] active:bg-black/[0.03]">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><circle cx="7" cy="8" r="2" /><circle cx="16" cy="16" r="2" /><path d="M9 8h11M4 8h1M15 16h5M4 16h9" /></svg>
                   {LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"].narrowDown}
-                  {filterActive && <span className="flex h-[8px] w-[8px] rounded-full bg-[#B40206]" />}
+                  {filterActive && <span className="flex h-[8px] w-[8px] rounded-full bg-[#D10005]" />}
                 </button>
                 <span className="my-2 w-px bg-black/10" />
                 <button onClick={() => setSortOpen(true)} className="flex flex-1 items-center justify-center gap-1.5 py-3 text-[14px] font-extrabold text-[#1d2129] active:bg-black/[0.03]">
@@ -2734,7 +2734,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                     value={query}
                     onChange={(e) => { setQuery(e.target.value); setListSelected(new Set()); }}
                     placeholder={LF.searchPlaceholder}
-                    className="w-full rounded-xl bg-[#f4f5f7] py-3 pl-11 pr-3 text-[14px] font-semibold text-[#1d2129] outline-none placeholder:text-[#9aa0a8] focus:bg-white focus:ring-2 focus:ring-[#B40206]/30"
+                    className="w-full rounded-xl bg-[#f4f5f7] py-3 pl-11 pr-3 text-[14px] font-semibold text-[#1d2129] outline-none placeholder:text-[#9aa0a8] focus:bg-white focus:ring-2 focus:ring-[#D10005]/30"
                   />
                 </div>
                 <div className="mt-5">
@@ -2744,7 +2744,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                       const n = tierIds(c.key).length;
                       const on = isTierActive(c.key);
                       return (
-                        <button key={c.key} onClick={() => selectTier(c.key)} className="rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold transition" style={{ background: on ? "#B40206" : "#fff", color: on ? "#fff" : "#5c626b", borderColor: on ? "#B40206" : "rgba(0,0,0,0.15)" }}>
+                        <button key={c.key} onClick={() => selectTier(c.key)} className="rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold transition" style={{ background: on ? "#D10005" : "#fff", color: on ? "#fff" : "#5c626b", borderColor: on ? "#D10005" : "rgba(0,0,0,0.15)" }}>
                           {c.label}<span className="ml-1 opacity-75">{n}</span>
                         </button>
                       );
@@ -2763,7 +2763,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                       const n = c === "all" ? won.length : won.filter((p) => p.category === c).length;
                       const label = c === "all" ? t.deckCategoryAll : t.cardCategory(c);
                       return (
-                        <button key={c} onClick={() => { setCategory(c); setListSelected(new Set()); }} className={`rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold transition ${on ? "border-[#B40206] bg-[#B40206] text-white" : "border-black/15 bg-white text-[#5c626b] active:bg-black/[0.03]"}`}>{label}<span className="ml-1 opacity-75">{n}</span></button>
+                        <button key={c} onClick={() => { setCategory(c); setListSelected(new Set()); }} className={`rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold transition ${on ? "border-[#D10005] bg-[#D10005] text-white" : "border-black/15 bg-white text-[#5c626b] active:bg-black/[0.03]"}`}>{label}<span className="ml-1 opacity-75">{n}</span></button>
                       );
                     })}
                   </div>
@@ -2771,7 +2771,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
               </div>
               <div className="flex shrink-0 gap-3 border-t border-black/10 px-4 py-3">
                 <button onClick={clearFilters} className="flex-1 rounded-xl bg-[#f2f3f5] py-3 text-[15px] font-extrabold text-[#1d2129] active:scale-[0.99]">{LF.clear}</button>
-                <button onClick={() => setFilterOpen(false)} className="flex-1 rounded-xl bg-[#B40206] py-3 text-[15px] font-extrabold text-white active:scale-[0.99]">{LF.apply}</button>
+                <button onClick={() => setFilterOpen(false)} className="flex-1 rounded-xl bg-[#D10005] py-3 text-[15px] font-extrabold text-white active:scale-[0.99]">{LF.apply}</button>
               </div>
             </div>
           </div>
@@ -2788,7 +2788,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
             >
               <span className={sortKey === key ? "font-bold text-[#1d2129]" : "text-[#41464e]"}>{t.sortLabels[key]}</span>
               {sortKey === key && (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="#B40206" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
               )}
             </button>
           ))}
@@ -2853,7 +2853,7 @@ function ShippedTab({ prizes, onCopy, t, lang }: { prizes: ShippedPrize[]; onCop
               <div className="mt-1 flex items-center gap-1.5 rounded-lg bg-[#f1f3f6] px-2 py-1">
                 <span className="text-[10px] font-semibold text-[#8a9099]">{t.tracking}</span>
                 <span className="font-mono text-[11px] font-bold text-[#1d2129]">{p.tracking}</span>
-                <button onClick={() => onCopy(p.tracking)} className="ml-auto text-[#B40206]" aria-label={t.copyAria}>
+                <button onClick={() => onCopy(p.tracking)} className="ml-auto text-[#D10005]" aria-label={t.copyAria}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="2" /><path d="M5 15V5a2 2 0 012-2h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
                 </button>
               </div>
@@ -2990,7 +2990,7 @@ function ShippingFlow({
   function addrPhone(addr: ShippingAddr) { return `${addr.country === "japan" ? "+81" : "+1"} ${addr.phone}`; }
   function addrFlag(addr: ShippingAddr) { return addr.country === "japan" ? "🇯🇵" : "🇺🇸"; }
 
-  const inputCls = "w-full rounded-xl border border-black/15 px-3 py-2.5 text-[13px] text-[#1d2129] outline-none focus:border-[#B40206]";
+  const inputCls = "w-full rounded-xl border border-black/15 px-3 py-2.5 text-[13px] text-[#1d2129] outline-none focus:border-[#D10005]";
   const labelCls = "mb-1 mt-2 block text-[11px] font-semibold text-[#8a9099]";
 
   return (
@@ -3013,10 +3013,10 @@ function ShippingFlow({
                       key={addr.id}
                       onClick={() => setAddrId(addr.id)}
                       className="flex w-full items-start gap-2.5 rounded-xl border-2 p-3 text-left"
-                      style={{ borderColor: sel ? "#B40206" : "#e5e8ec", background: sel ? "#FFF4F4" : "#fff" }}
+                      style={{ borderColor: sel ? "#D10005" : "#e5e8ec", background: sel ? "#FFF4F4" : "#fff" }}
                     >
-                      <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2" style={{ borderColor: sel ? "#B40206" : "#c9ced6" }}>
-                        {sel && <span className="h-2 w-2 rounded-full bg-[#B40206]" />}
+                      <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2" style={{ borderColor: sel ? "#D10005" : "#c9ced6" }}>
+                        {sel && <span className="h-2 w-2 rounded-full bg-[#D10005]" />}
                       </span>
                       <span className="text-[12.5px] leading-relaxed">
                         <b className="text-[#1d2129]">{addrFlag(addr)} {addrName(addr)}</b>
@@ -3048,7 +3048,7 @@ function ShippingFlow({
             <div className="mb-3 flex items-center gap-2">
               {shippingAddresses.length > 0 && (
                 <button onClick={() => setStep("address")} className="flex h-7 w-7 shrink-0 items-center justify-center">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#B40206" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
                 </button>
               )}
               <h3 className="text-[15px] font-bold text-[#1d2129]">{t.shippingAddNew}</h3>
@@ -3056,17 +3056,17 @@ function ShippingFlow({
 
             <div className="mb-3 flex gap-2">
               <div className="flex-1 min-w-0">
-                <label className={labelCls}>{t.profileLastName}<span className="ml-0.5 text-[#B40206]">*</span></label>
+                <label className={labelCls}>{t.profileLastName}<span className="ml-0.5 text-[#D10005]">*</span></label>
                 <input value={newForm.lastName} onChange={e => setNewForm(f => ({ ...f, lastName: e.target.value }))} placeholder={t.profilePlaceholder} className={inputCls} />
               </div>
               <div className="flex-1 min-w-0">
-                <label className={labelCls}>{t.profileFirstName}<span className="ml-0.5 text-[#B40206]">*</span></label>
+                <label className={labelCls}>{t.profileFirstName}<span className="ml-0.5 text-[#D10005]">*</span></label>
                 <input value={newForm.firstName} onChange={e => setNewForm(f => ({ ...f, firstName: e.target.value }))} placeholder={t.profilePlaceholder} className={inputCls} />
               </div>
             </div>
 
             <div className="mb-3">
-              <label className={labelCls}>{t.shippingCountry}<span className="ml-0.5 text-[#B40206]">*</span></label>
+              <label className={labelCls}>{t.shippingCountry}<span className="ml-0.5 text-[#D10005]">*</span></label>
               <div className="relative">
                 <select
                   value={newForm.country}
@@ -3086,12 +3086,12 @@ function ShippingFlow({
               <>
                 <div className="mb-3 flex gap-2">
                   <div className="flex-1 min-w-0">
-                    <label className={labelCls}>{t.profilePostalCode}<span className="ml-0.5 text-[#B40206]">*</span></label>
-                    <input value={newForm.postalCode} onChange={e => setPostalCode(e.target.value)} onBlur={() => setPostalTouched(true)} placeholder="NNN-NNNN" className={inputCls + (postalError ? " border-[#B40206]" : "")} />
-                    {postalError && <p className="mt-0.5 text-[10px] text-[#B40206]">{postalError}</p>}
+                    <label className={labelCls}>{t.profilePostalCode}<span className="ml-0.5 text-[#D10005]">*</span></label>
+                    <input value={newForm.postalCode} onChange={e => setPostalCode(e.target.value)} onBlur={() => setPostalTouched(true)} placeholder="NNN-NNNN" className={inputCls + (postalError ? " border-[#D10005]" : "")} />
+                    {postalError && <p className="mt-0.5 text-[10px] text-[#D10005]">{postalError}</p>}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <label className={labelCls}>{t.profilePrefecture}<span className="ml-0.5 text-[#B40206]">*</span></label>
+                    <label className={labelCls}>{t.profilePrefecture}<span className="ml-0.5 text-[#D10005]">*</span></label>
                     <div className="relative">
                       <select value={newForm.prefecture} onChange={e => setNewForm(f => ({ ...f, prefecture: e.target.value }))} className={inputCls + " appearance-none pr-8"}>
                         <option value="">{lang === "ja" ? "都道府県" : "Prefecture"}</option>
@@ -3106,7 +3106,7 @@ function ShippingFlow({
                 )}
                 {searching && (
                   <div className="mb-3 -mt-1 flex items-center gap-2 text-[12px] font-semibold text-[#8a9099]">
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-black/15 border-t-[#B40206]" />
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-black/15 border-t-[#D10005]" />
                     {t.searching}
                   </div>
                 )}
@@ -3132,13 +3132,13 @@ function ShippingFlow({
                   </div>
                 )}
                 <div className="mb-3">
-                  <label className={labelCls}>{t.profileCity}<span className="ml-0.5 text-[#B40206]">*</span></label>
+                  <label className={labelCls}>{t.profileCity}<span className="ml-0.5 text-[#D10005]">*</span></label>
                   <input value={newForm.city} onChange={e => setNewForm(f => ({ ...f, city: e.target.value }))} placeholder={lang === "ja" ? "市区町村・番地" : "City, Street"} className={inputCls} />
                 </div>
                 <div className="mb-3">
-                  <label className={labelCls}>{t.shippingStreetNumber}<span className="ml-0.5 text-[#B40206]">*</span></label>
-                  <input value={newForm.streetNumber} onChange={e => setNewForm(f => ({ ...f, streetNumber: e.target.value.replace(/\D/g, "") }))} onBlur={() => setStreetNumTouched(true)} placeholder={lang === "ja" ? "例: 1234" : "e.g. 1234"} className={inputCls + (streetNumError ? " border-[#B40206]" : "")} />
-                  {streetNumError && <p className="mt-0.5 text-[10px] text-[#B40206]">{streetNumError}</p>}
+                  <label className={labelCls}>{t.shippingStreetNumber}<span className="ml-0.5 text-[#D10005]">*</span></label>
+                  <input value={newForm.streetNumber} onChange={e => setNewForm(f => ({ ...f, streetNumber: e.target.value.replace(/\D/g, "") }))} onBlur={() => setStreetNumTouched(true)} placeholder={lang === "ja" ? "例: 1234" : "e.g. 1234"} className={inputCls + (streetNumError ? " border-[#D10005]" : "")} />
+                  {streetNumError && <p className="mt-0.5 text-[10px] text-[#D10005]">{streetNumError}</p>}
                 </div>
                 <div className="mb-3">
                   <label className={labelCls}>{t.shippingApartment}</label>
@@ -3154,11 +3154,11 @@ function ShippingFlow({
                   <input value={newForm.apartment} onChange={e => setNewForm(f => ({ ...f, apartment: e.target.value }))} placeholder="Apt, Suite, Room No. (optional)" className={inputCls} />
                 </div>
                 <div className="mb-3">
-                  <label className={labelCls}>{t.shippingCityStreetNumber}<span className="ml-0.5 text-[#B40206]">*</span></label>
+                  <label className={labelCls}>{t.shippingCityStreetNumber}<span className="ml-0.5 text-[#D10005]">*</span></label>
                   <input value={newForm.cityStreetNumber} onChange={e => setNewForm(f => ({ ...f, cityStreetNumber: e.target.value }))} placeholder="e.g. 123 Main St, Springfield" className={inputCls} />
                 </div>
                 <div className="mb-3">
-                  <label className={labelCls}>{t.shippingState}<span className="ml-0.5 text-[#B40206]">*</span></label>
+                  <label className={labelCls}>{t.shippingState}<span className="ml-0.5 text-[#D10005]">*</span></label>
                   <div className="relative">
                     <select value={newForm.state} onChange={e => setNewForm(f => ({ ...f, state: e.target.value }))} className={inputCls + " appearance-none pr-8"}>
                       <option value="">Select State</option>
@@ -3168,15 +3168,15 @@ function ShippingFlow({
                   </div>
                 </div>
                 <div className="mb-3">
-                  <label className={labelCls}>{t.shippingZipCode}<span className="ml-0.5 text-[#B40206]">*</span></label>
-                  <input value={newForm.zipCode} onChange={e => setNewForm(f => ({ ...f, zipCode: e.target.value.replace(/\D/g, "").slice(0, 5) }))} onBlur={() => setZipTouched(true)} placeholder="e.g. 90210" className={inputCls + (zipError ? " border-[#B40206]" : "")} />
-                  {zipError && <p className="mt-0.5 text-[10px] text-[#B40206]">{zipError}</p>}
+                  <label className={labelCls}>{t.shippingZipCode}<span className="ml-0.5 text-[#D10005]">*</span></label>
+                  <input value={newForm.zipCode} onChange={e => setNewForm(f => ({ ...f, zipCode: e.target.value.replace(/\D/g, "").slice(0, 5) }))} onBlur={() => setZipTouched(true)} placeholder="e.g. 90210" className={inputCls + (zipError ? " border-[#D10005]" : "")} />
+                  {zipError && <p className="mt-0.5 text-[10px] text-[#D10005]">{zipError}</p>}
                 </div>
               </>
             )}
 
             <div className="mb-4">
-              <label className={labelCls}>{t.profilePhone}<span className="ml-0.5 text-[#B40206]">*</span></label>
+              <label className={labelCls}>{t.profilePhone}<span className="ml-0.5 text-[#D10005]">*</span></label>
               <div className="flex items-center gap-2">
                 <div className="flex shrink-0 items-center self-stretch rounded-xl border border-black/15 px-3 text-[13px] text-[#1d2129]">{phonePrefix}</div>
                 <div className="flex-1">
@@ -3186,9 +3186,9 @@ function ShippingFlow({
                     onChange={e => setNewForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, "").slice(0, 11) }))}
                     onBlur={() => setPhoneTouched(true)}
                     placeholder="0000000000"
-                    className={inputCls + (phoneError ? " border-[#B40206]" : "")}
+                    className={inputCls + (phoneError ? " border-[#D10005]" : "")}
                   />
-                  {phoneError && <p className="mt-0.5 text-[10px] text-[#B40206]">{phoneError}</p>}
+                  {phoneError && <p className="mt-0.5 text-[10px] text-[#D10005]">{phoneError}</p>}
                 </div>
               </div>
             </div>
@@ -3197,7 +3197,7 @@ function ShippingFlow({
               disabled={!canAddNew}
               onClick={handleSaveNewAddress}
               className="mt-1 w-full rounded-xl py-3 text-[14px] font-bold text-white disabled:opacity-40"
-              style={{ background: "linear-gradient(180deg,#ff2233,#B40206)" }}
+              style={{ background: "linear-gradient(180deg,#ff2233,#D10005)" }}
             >
               {t.shippingRegister}
             </button>
@@ -3417,7 +3417,7 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
         )}
         <div className="flex items-center gap-2">
           <button onClick={view === "form" ? () => setView("main") : onBack} aria-label={t.backAria} className="flex h-7 w-7 items-center justify-center">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#B40206" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
           <h1 className="text-[15px] font-bold text-[#1d2129]">{view === "form" ? t.shippingFormTitle : t.shippingTitle}</h1>
         </div>
@@ -3431,7 +3431,7 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
           </div>
 
           <div className="mb-3">
-            <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{t.shippingCountry}<span className="ml-0.5 text-[#B40206]">*</span></label>
+            <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{t.shippingCountry}<span className="ml-0.5 text-[#D10005]">*</span></label>
             <div className="relative flex items-center">
               <select
                 value={form.country}
@@ -3458,7 +3458,7 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
               )}
               {searching && (
                 <div className="mb-3 flex items-center gap-2 text-[12px] font-semibold text-[#8a9099]">
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-black/15 border-t-[#B40206]" />
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-black/15 border-t-[#D10005]" />
                   {t.searching}
                 </div>
               )}
@@ -3513,7 +3513,7 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
           )}
 
           <div className="mb-6">
-            <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{t.profilePhone}<span className="ml-0.5 text-[#B40206]">*</span></label>
+            <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{t.profilePhone}<span className="ml-0.5 text-[#D10005]">*</span></label>
             <div className="flex items-center gap-2">
               <div className="flex shrink-0 items-center self-stretch rounded-lg border border-[#e5e8ec] bg-[#f5f6f8] px-3 text-[13px] text-[#1d2129]">{phonePrefix}</div>
               <div className="flex-1">
@@ -3527,16 +3527,16 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
                   style={{
                     paddingLeft: "10px",
                     paddingRight: phoneValid || (phoneTouched && phoneError) ? "32px" : "10px",
-                    borderColor: phoneError ? "#B40206" : phoneValid ? "#d1d5db" : "#e5e8ec",
+                    borderColor: phoneError ? "#D10005" : phoneValid ? "#d1d5db" : "#e5e8ec",
                     background: phoneError ? "rgba(230,0,18,0.04)" : "white",
                   }}
                 />
-                {phoneError && <p className="mt-1 text-[10px] text-[#B40206]">{phoneError}</p>}
+                {phoneError && <p className="mt-1 text-[10px] text-[#D10005]">{phoneError}</p>}
               </div>
             </div>
           </div>
 
-          <button disabled={!canSubmit} onClick={handleRegister} className="w-full rounded-xl py-3.5 text-[15px] font-bold text-white" style={{ background: canSubmit ? "#B40206" : "#d1d5db", cursor: canSubmit ? "pointer" : "not-allowed" }}>
+          <button disabled={!canSubmit} onClick={handleRegister} className="w-full rounded-xl py-3.5 text-[15px] font-bold text-white" style={{ background: canSubmit ? "#D10005" : "#d1d5db", cursor: canSubmit ? "pointer" : "not-allowed" }}>
             {t.shippingRegister}
           </button>
         </div>
@@ -3576,7 +3576,7 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
                     <button onClick={() => openEditForm(addr)} className="flex h-7 w-7 items-center justify-center rounded-full" style={{ background: "#22a34a" }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
                     </button>
-                    <button onClick={() => setShowDelete(addr.id)} className="flex h-7 w-7 items-center justify-center rounded-full" style={{ background: "#B40206" }}>
+                    <button onClick={() => setShowDelete(addr.id)} className="flex h-7 w-7 items-center justify-center rounded-full" style={{ background: "#D10005" }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" /></svg>
                     </button>
                   </div>
@@ -3608,7 +3608,7 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
               <button onClick={() => setShowDelete(null)} className="flex-1 rounded-xl border border-[#e5e8ec] py-3 text-[14px] font-semibold text-[#5c626b]">
                 {t.shippingCancel}
               </button>
-              <button onClick={() => handleDelete(showDelete)} className="flex-1 rounded-xl py-3 text-[14px] font-bold text-white" style={{ background: "#B40206" }}>
+              <button onClick={() => handleDelete(showDelete)} className="flex-1 rounded-xl py-3 text-[14px] font-bold text-white" style={{ background: "#D10005" }}>
                 {t.shippingDeleteBtn}
               </button>
             </div>
@@ -3638,7 +3638,7 @@ function CrownEmblem({ size = 96 }: { size?: number }) {
 }
 
 function myMenuIcon(key: string) {
-  const c = "#B40206";
+  const c = "#D10005";
   switch (key) {
     case "quest":
       return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8"><circle cx="12" cy="12" r="8.2" /><circle cx="12" cy="12" r="4.4" /><circle cx="12" cy="12" r="1" fill={c} stroke="none" /></svg>;
@@ -3698,7 +3698,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
             <div className="min-w-0 flex-1">
               <p className="truncate text-[19px] font-extrabold text-[#1d2129]">{displayName.trim() || t.accountName}</p>
               <p className="mt-0.5 text-[12px] font-normal text-[#8a9099]">{t.mpId} : XXXXXX</p>
-              <button className="mt-2 w-full rounded-lg border-2 border-[#B40206] py-1.5 text-[13px] font-bold text-[#B40206]">{t.mpEditProfile}</button>
+              <button className="mt-2 w-full rounded-lg border-2 border-[#D10005] py-1.5 text-[13px] font-bold text-[#D10005]">{t.mpEditProfile}</button>
             </div>
           </div>
 
@@ -3709,7 +3709,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
                 <p className="text-[13px] font-normal text-[#5b616b]">{t.mpOripaCoin}</p>
                 <p className="mt-1 flex items-center gap-1.5 text-[22px] font-extrabold text-[#1d2129]">
                   <CoinIcon size={22} />{coins.toLocaleString()}
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#B40206] text-[15px] leading-none text-white">+</span>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#D10005] text-[15px] leading-none text-white">+</span>
                 </p>
               </div>
               <div className="w-px bg-black/10" />
@@ -3719,7 +3719,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
               </div>
             </div>
             <div className="mt-3">
-              <p className="text-[12.5px] font-bold text-[#B40206]">{t.mpCoinExpiry}</p>
+              <p className="text-[12.5px] font-bold text-[#D10005]">{t.mpCoinExpiry}</p>
             </div>
           </div>
 
@@ -3732,8 +3732,8 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-[20px] font-extrabold text-[#4a3010]">{t.mpRankBronze}</p>
-                <p className="text-[13px] font-semibold text-[#6b4a23]">{t.mpNextLevel} <span className="text-[15px] font-extrabold text-[#B40206]">1,000pt</span></p>
-                <button className="mt-2 w-full rounded-lg bg-[#B40206] py-2 text-[13px] font-bold text-white active:scale-[0.99]">{t.mpRankPerks}</button>
+                <p className="text-[13px] font-semibold text-[#6b4a23]">{t.mpNextLevel} <span className="text-[15px] font-extrabold text-[#D10005]">1,000pt</span></p>
+                <button className="mt-2 w-full rounded-lg bg-[#D10005] py-2 text-[13px] font-bold text-white active:scale-[0.99]">{t.mpRankPerks}</button>
               </div>
             </div>
             <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-white/60"><span className="block h-full rounded-full bg-[#e08a2e]" style={{ width: "75%" }} /></div>
@@ -3897,7 +3897,7 @@ export function UpdatePrompt() {
       <span className="text-[12.5px] font-semibold">New version available <span className="font-extrabold text-[#ffd36b]">{newVersion}</span></span>
       <button
         onClick={() => window.location.reload()}
-        className="rounded-md bg-[#B40206] px-2.5 py-1 text-[12px] font-extrabold text-white active:scale-[0.97]"
+        className="rounded-md bg-[#D10005] px-2.5 py-1 text-[12px] font-extrabold text-white active:scale-[0.97]"
       >
         Refresh
       </button>
