@@ -3725,8 +3725,8 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
             </div>
             <div className="relative mt-3.5 h-2 w-full rounded-full border border-[#e2c197] bg-[#efe0c6]">
               <div
-                className="absolute left-0 top-1/2 h-[14px] -translate-y-1/2 rounded-full border border-[#c56a1f]"
-                style={{ width: "75%", background: "linear-gradient(180deg,#f7b866,#e07f22)", boxShadow: "inset 0 1.5px 0 rgba(255,255,255,0.55)" }}
+                className="absolute left-0 top-1/2 h-[14px] -translate-y-1/2 rounded-full"
+                style={{ width: "75%", background: "linear-gradient(180deg,#F5AF78 0%,#F18532 40%,#D56A21 75%,#CC6023 100%)", border: "0.5px solid #934516" }}
               />
             </div>
             <p className="mt-1 text-center text-[12px] font-medium text-[#6b4a23]">3,000/4,000</p>
