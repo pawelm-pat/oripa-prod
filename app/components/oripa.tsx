@@ -362,9 +362,9 @@ function SiteFooter({ t }: { t: Dict }) {
   const [tnc, setTnc] = useState(false);
   const chip = (label: string) =>
     label === t.mpTerms ? (
-      <button key={label} onClick={() => setTnc(true)} className="rounded-full bg-white px-3.5 py-2 text-[12px] font-semibold text-[#1d2129] active:bg-white/80">{label}</button>
+      <button key={label} onClick={() => setTnc(true)} className="rounded-full bg-white px-3.5 py-2 text-[12px] font-bold text-[#1d2129] active:bg-white/80">{label}</button>
     ) : (
-      <span key={label} className="rounded-full bg-white px-3.5 py-2 text-[12px] font-semibold text-[#1d2129]">{label}</span>
+      <span key={label} className="rounded-full bg-white px-3.5 py-2 text-[12px] font-bold text-[#1d2129]">{label}</span>
     );
   return (
     <footer className="bg-black px-4 py-7 text-white">
@@ -372,13 +372,13 @@ function SiteFooter({ t }: { t: Dict }) {
       <p className="mt-3 text-[11px] text-white/55">{t.ftCopyright}</p>
       <p className="mt-3 text-[11px] leading-relaxed text-white/55">{t.ftBlurb}</p>
 
-      <h4 className="mt-6 text-[15px] font-bold">{t.ftAbout}</h4>
+      <h4 className="mt-6 text-[14px] font-bold">{t.ftAbout}</h4>
       <div className="mt-3 flex flex-wrap gap-2.5">{t.ftLinks.map(chip)}</div>
 
-      <h4 className="mt-6 text-[15px] font-bold">{t.ftCategories}</h4>
+      <h4 className="mt-6 text-[14px] font-bold">{t.ftCategories}</h4>
       <div className="mt-3 flex flex-wrap gap-2.5">{t.ftCats.map(chip)}</div>
 
-      <h4 className="mt-6 text-[15px] font-bold">{t.ftFollow}</h4>
+      <h4 className="mt-6 text-[14px] font-bold">{t.ftFollow}</h4>
       <div className="mt-3 flex items-center gap-3.5">
         {SOCIAL_ICONS.map(({ key, path, viewBox }) => (
           <span key={key} className="flex h-11 w-11 items-center justify-center rounded-full bg-black ring-1 ring-white/25">
