@@ -2419,6 +2419,12 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastSeq = useRef(0);
 
+  // Scroll the tab content back to the top whenever the active tab changes.
+  const tabScrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    tabScrollRef.current?.scrollTo({ top: 0 });
+  }, [tab]);
+
   function pushToast(text: string) {
     const id = (toastSeq.current += 1);
     setToasts((prev) => [...prev, { id, text }]);
@@ -2591,7 +2597,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
         </div>
       </header>
 
-      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+      <div ref={tabScrollRef} className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
 
         {tab === "won" && (
           won.length === 0 ? (
