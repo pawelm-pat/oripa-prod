@@ -513,10 +513,10 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
   const qq = query.trim().toLowerCase();
   const searching = qq.length > 0;
 
-  // When switching categories, scroll so the sticky top navigation is pinned to
-  // the top of the viewport (the promo carousel above it scrolls out of view),
-  // giving a clean full-list view. Skip on first render so the carousel is still
-  // visible on initial load.
+  // When switching categories: if the user has already scrolled past the promo
+  // banner (so the feed has scrolled up under the top nav), bring the top nav
+  // back into focus at the top of the viewport. If the banner is still visible,
+  // leave the scroll position untouched. Skip on first render.
   const rootRef = useRef<HTMLDivElement>(null);
   const firstRun = useRef(true);
   useEffect(() => {
@@ -531,7 +531,10 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
       const oy = getComputedStyle(p).overflowY;
       if ((oy === "auto" || oy === "scroll") && p.scrollHeight > p.clientHeight) {
         const delta = el.getBoundingClientRect().top - p.getBoundingClientRect().top;
-        p.scrollTop += delta;
+        // delta < 0 means the feed top (and the nav) is above the viewport top,
+        // i.e. the banner has been scrolled out — pull the nav back to the top.
+        // delta >= 0 means the banner is still visible — don't move.
+        if (delta < 0) p.scrollTop += delta;
         return;
       }
       p = p.parentElement;
