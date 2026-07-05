@@ -315,7 +315,7 @@ const EN = {
   mmFaq: "FAQ",
   mmContact: "Support Inquiry",
   mmNotices: "Announcements",
-  mmShippingAddress: "Shipping Address",
+  mmShippingAddress: "Address",
   mmSubscriptions: "Subscriptions",
   cancelSubscription: "Cancel Subscription",
   cancelSubTitle: "Cancel subscription?",
