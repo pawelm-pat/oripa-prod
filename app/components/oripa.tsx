@@ -2659,32 +2659,34 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
 
       {tab === "won" && won.length > 0 && (
         <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
-          <div className="mb-2 flex items-center justify-between text-[11px] font-semibold">
-            <span className="text-[#8a9099]">{t.deckSorted}</span>
-            <button onClick={listReset} className="text-[#8a9099] underline">{t.itemsReset}</button>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              disabled={listSelected.size === 0}
-              onClick={() => { if (listSelected.size === 0) return; if (!listCanShip) { pushToast(t.toastShort(listShortfall)); return; } setListShipOpen(true); }}
-              className="rounded-xl border-2 py-2 text-[12.5px] font-bold leading-tight transition disabled:opacity-40"
-              style={{ borderColor: "#f5670a", color: "#f5670a", background: "#fff", opacity: listSelected.size === 0 || listCanShip ? 1 : 0.6 }}
-            >
-              ← {t.requestShipping} · {listSelected.size}
-              <span className="mt-0.5 block text-[10px] font-semibold opacity-80">{listTotal.toLocaleString()} coins</span>
-            </button>
-            <button
-              disabled={listSelected.size === 0}
-              onClick={listExchange}
-              className="rounded-xl py-2 text-[12.5px] font-bold leading-tight text-white transition disabled:opacity-40"
-              style={{ background: "linear-gradient(180deg,#ff5a5f,#c8061a)" }}
-            >
-              {t.exchange} · {listSelected.size} →
-              <span className="mt-0.5 block text-[10px] font-semibold opacity-90">{listTotal.toLocaleString()} coins</span>
-            </button>
-          </div>
+          {listSelected.size > 0 && (
+            <>
+              <div className="mb-2 flex items-center justify-between text-[11px] font-semibold">
+                <span className="text-[#8a9099]">{t.deckSorted}</span>
+                <button onClick={listReset} className="text-[#8a9099] underline">{t.itemsReset}</button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => { if (!listCanShip) { pushToast(t.toastShort(listShortfall)); return; } setListShipOpen(true); }}
+                  className="rounded-xl border-2 py-2 text-[12.5px] font-bold leading-tight transition"
+                  style={{ borderColor: "#f5670a", color: "#f5670a", background: "#fff", opacity: listCanShip ? 1 : 0.6 }}
+                >
+                  ← {t.requestShipping} · {listSelected.size}
+                  <span className="mt-0.5 block text-[10px] font-semibold opacity-80">{listTotal.toLocaleString()} coins</span>
+                </button>
+                <button
+                  onClick={listExchange}
+                  className="rounded-xl py-2 text-[12.5px] font-bold leading-tight text-white transition"
+                  style={{ background: "linear-gradient(180deg,#ff5a5f,#c8061a)" }}
+                >
+                  {t.exchange} · {listSelected.size} →
+                  <span className="mt-0.5 block text-[10px] font-semibold opacity-90">{listTotal.toLocaleString()} coins</span>
+                </button>
+              </div>
+            </>
+          )}
           <p className="mt-1.5 text-center text-[10.5px] leading-tight text-[#8a9099]">
-            {listSelected.size === 0 ? t.helperNone : listCanShip ? t.helperReady : t.helperShort(listShortfall)}
+            {t.shipSelectHint}
           </p>
         </div>
       )}
