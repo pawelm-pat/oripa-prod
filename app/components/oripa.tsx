@@ -513,6 +513,21 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
   const qq = query.trim().toLowerCase();
   const searching = qq.length > 0;
 
+  // When switching categories, jump back to the top of the scroll container so
+  // the full list (and the recommended section) is visible from the start.
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let p = rootRef.current?.parentElement ?? null;
+    while (p) {
+      const oy = getComputedStyle(p).overflowY;
+      if ((oy === "auto" || oy === "scroll") && p.scrollHeight > p.clientHeight) {
+        p.scrollTop = 0;
+        return;
+      }
+      p = p.parentElement;
+    }
+  }, [cat]);
+
   const catList: { key: string; label: string }[] = [
     { key: "all", label: t.catAll },
     { key: "new", label: t.catNew },
@@ -605,7 +620,7 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
   }
 
   return (
-    <div className="bg-[#eef0f3]">
+    <div ref={rootRef} className="bg-[#eef0f3]">
       {/* Sticky lobby nav: category chips + narrow-down/sort toolbar stay
           pinned under the header while the feed scrolls. */}
       <div className="sticky top-0 z-20">
