@@ -3714,17 +3714,19 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
 
           {/* Rank card */}
           <div className="relative mt-3 overflow-hidden rounded-2xl border border-[#eab984] p-4" style={{ background: "linear-gradient(135deg,#fdeeda,#f7dab6)" }}>
-            <span className="inline-block rounded-md px-2.5 py-1 text-[11px] font-bold text-white" style={{ background: "linear-gradient(135deg,#c98a4f,#9a5f2b)" }}>{t.mpCurrentRank}</span>
+            <span className="inline-block rounded-md px-2.5 py-1 text-[12px] font-bold text-white" style={{ background: "linear-gradient(180deg,#c46a1e,#a5511a)" }}>{t.mpCurrentRank}</span>
             <div className="mt-2 flex items-center gap-3">
               <img src="/rank-bronze.png" alt="" className="h-[68px] w-[68px] shrink-0 object-contain" />
               <div className="min-w-0 flex-1">
                 <p className="text-[22px] font-extrabold uppercase tracking-wide text-[#5a3a17]">{t.mpRankBronze}</p>
-                <p className="text-[13px] font-semibold text-[#6b4a23]">{t.mpNextLevel} <span className="text-[16px] font-extrabold text-[#D10005]">1,000pt</span></p>
+                <p className="text-[13px] font-semibold text-[#6b4a23]">{t.mpNextLevel} <span className="text-[20px] font-bold text-[#BA5919]">1,000pt</span></p>
                 <button className="mt-2 w-full rounded-lg bg-[#D10005] py-2 text-[13px] font-bold text-white active:scale-[0.99]">{t.mpRankPerks}</button>
               </div>
             </div>
-            <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-white/60"><span className="block h-full rounded-full" style={{ width: "75%", background: "linear-gradient(90deg,#f0a94e,#d98128)" }} /></div>
-            <p className="mt-1 text-center text-[12px] font-bold text-[#6b4a23]">3,000/4,000</p>
+            <div className="mt-3 h-3 w-full rounded-full border border-[#e2b581] bg-[#f6e7cf] p-[1.5px]">
+              <div className="h-full rounded-full" style={{ width: "75%", background: "linear-gradient(180deg,#f6b968,#e2882b)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.55)" }} />
+            </div>
+            <p className="mt-1 text-center text-[12px] font-medium text-[#6b4a23]">3,000/4,000</p>
           </div>
 
           {/* My Menu grid */}
