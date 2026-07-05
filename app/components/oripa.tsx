@@ -2561,7 +2561,12 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
           <h2 className="text-[20px] font-extrabold text-[#1d2129]">{t.prizeHistory}</h2>
         </div>
 
-        <div className="flex border-b border-black/10 px-2">
+      </header>
+
+      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+        {/* Top navigation (Won/Waiting/Shipped) scrolls together with the feed;
+            only the logo, balance, back arrow and title above stay fixed. */}
+        <div className="flex border-b border-black/10 bg-white px-2">
           {([
             { key: "won", label: t.tabWon },
             { key: "waiting", label: t.tabWaiting },
@@ -2587,15 +2592,13 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
             );
           })}
         </div>
-      </header>
 
-      <div className="relative min-h-0 flex-1">
         {tab === "won" && (
           won.length === 0 ? (
             <EmptyState icon="🎁" title={t.wonEmptyTitle} subtitle={t.wonEmptySub} />
           ) : (
-            <div className="flex h-full flex-col">
-              <div className="relative flex shrink-0 items-stretch border-b border-black/10 bg-white">
+            <>
+              <div className="relative flex items-stretch border-b border-black/10 bg-white">
                 <button onClick={() => setFilterOpen(true)} className="flex flex-1 items-center justify-center gap-2 py-3 text-[14px] font-extrabold text-[#1d2129] active:bg-black/[0.03]">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><circle cx="7" cy="8" r="2" /><circle cx="16" cy="16" r="2" /><path d="M9 8h11M4 8h1M15 16h5M4 16h9" /></svg>
                   {LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"].narrowDown}
@@ -2608,7 +2611,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                 </button>
               </div>
 
-              <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-3">
+              <div className="px-3 py-3">
                 {displayedWon.length === 0 && (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
                     <div className="mb-2 text-[32px]">🔍</div>
@@ -2628,20 +2631,18 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                         <div className="shrink-0"><PrizeArt rarity={p.rarity} size={104} /></div>
                         <div className="flex min-w-0 flex-1 flex-col">
                           <div className="flex items-start justify-between gap-2">
-                            <span className="inline-flex items-center rounded-md px-2 py-[3px] text-[11px] font-extrabold leading-none text-white" style={{ background: "linear-gradient(180deg,#F6C64B,#E0951A)", boxShadow: "0 1px 2px rgba(0,0,0,0.2)" }}>
-                              {t.prizeTier(rarityTier(p.rarity))}
-                            </span>
+                            <img src={`/prize-tag-${rarityTier(p.rarity)}.png`} alt={t.prizeTier(rarityTier(p.rarity))} className="h-[24px] w-auto shrink-0 object-contain" draggable={false} />
                             <span className="flex shrink-0 items-center gap-1 text-[11px] font-bold" style={{ color: isSel ? "#FF7A1A" : "#8a9099" }}>
                               {isSel ? t.itemsSelected : t.itemsNotSelected}
                               <svg width="15" height="15" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill={isSel ? "#FF7A1A" : "#c9ced6"} /><path d="M6 10l3 3 5-5" stroke="white" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
                             </span>
                           </div>
-                          <p className="mt-1.5 text-[14px] font-extrabold leading-tight text-[#1d2129]">{locName(p, lang)}</p>
-                          <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#8a9099]">{locDesc(p, lang)}</p>
+                          <p className="mt-1.5 text-[14px] font-bold leading-tight text-[#1d2129]">{locName(p, lang)}</p>
+                          <p className="mt-1 line-clamp-2 text-[10px] font-normal leading-relaxed text-[#8a9099]">{locDesc(p, lang)}</p>
                           <p className="mt-1 text-[11px] font-semibold text-[#8a9099]">{t.itemsExchangePeriod}{fmtDate(expiresAt(p.wonAt))}</p>
                           <div className="mt-auto flex items-center justify-center gap-1.5 rounded-xl border border-black/10 bg-white pt-2 pb-2" style={{ marginTop: 8 }}>
                             <CoinIcon size={18} />
-                            <span className="text-[16px] font-extrabold text-[#1d2129]">{p.coinValue.toLocaleString()}</span>
+                            <span className="text-[18px] font-bold text-[#1d2129]">{p.coinValue.toLocaleString()}</span>
                           </div>
                         </div>
                       </div>
@@ -2650,7 +2651,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                 </div>
                 <div className="-mx-3 mt-3"><SiteFooter t={t} /></div>
               </div>
-            </div>
+            </>
           )
         )}
         {tab === "waiting" && <WaitingTab prizes={waiting} t={t} lang={lang} />}
@@ -2802,14 +2803,14 @@ function WaitingTab({ prizes, t, lang }: { prizes: WaitingPrize[]; t: Dict; lang
     return <EmptyState icon="📦" title={t.waitingEmptyTitle} subtitle={t.waitingEmptySub} />;
   }
   return (
-    <div className="no-scrollbar h-full overflow-y-auto px-3 pb-4 pt-3">
+    <div className="px-3 pb-4 pt-3">
       <div className="space-y-2.5">
         {prizes.map((p) => (
           <div key={p.id} className="flex gap-3 rounded-2xl bg-white p-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
             <PrizeArt rarity={p.rarity} />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[13.5px] font-bold text-[#1d2129]">{locName(p, lang)}</p>
-              <p className="truncate text-[11px] text-[#8a9099]">{locDesc(p, lang)}</p>
+              <p className="truncate text-[14px] font-bold text-[#1d2129]">{locName(p, lang)}</p>
+              <p className="truncate text-[10px] font-normal text-[#8a9099]">{locDesc(p, lang)}</p>
               <p className="mt-1 text-[11px] text-[#8a9099]">{t.requested(fmtDate(p.requestedAt))}</p>
               <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-[#FFF3E0] px-2 py-0.5 text-[10.5px] font-semibold text-[#C9701B]">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#f5670a]" /> {t.preparing}
@@ -2832,14 +2833,14 @@ function ShippedTab({ prizes, onCopy, t, lang }: { prizes: ShippedPrize[]; onCop
     return <EmptyState icon="✅" title={t.shippedEmptyTitle} subtitle={t.shippedEmptySub} />;
   }
   return (
-    <div className="no-scrollbar h-full overflow-y-auto px-3 pb-4 pt-3">
+    <div className="px-3 pb-4 pt-3">
       <div className="space-y-2.5">
         {prizes.map((p) => (
           <div key={p.id} className="flex gap-3 rounded-2xl bg-white p-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
             <PrizeArt rarity={p.rarity} />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[13.5px] font-bold text-[#1d2129]">{locName(p, lang)}</p>
-              <p className="truncate text-[11px] text-[#8a9099]">{locDesc(p, lang)}</p>
+              <p className="truncate text-[14px] font-bold text-[#1d2129]">{locName(p, lang)}</p>
+              <p className="truncate text-[10px] font-normal text-[#8a9099]">{locDesc(p, lang)}</p>
               <p className="mt-1 text-[11px] text-[#8a9099]">{t.requested(fmtDate(p.requestedAt))}</p>
               <div className="mt-1 flex items-center gap-1.5 rounded-lg bg-[#f1f3f6] px-2 py-1">
                 <span className="text-[10px] font-semibold text-[#8a9099]">{t.tracking}</span>
