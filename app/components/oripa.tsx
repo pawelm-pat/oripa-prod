@@ -3625,23 +3625,23 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
    address" are wired; every other menu row renders but is inert. The heavy
    POC dependencies (subscriptions, purchase history, refer, quests, FAQ,
    profile editor, ranking overlay) are intentionally NOT ported. */
+const MENU_ICON_IMG: Record<string, string> = {
+  quest: "/menu-quest.png",
+  items: "/menu-items.png",
+  history: "/menu-history.png",
+  purchases: "/menu-purchases.png",
+  invite: "/menu-invite.png",
+  faq: "/menu-faq.png",
+  contact: "/menu-contact.png",
+  notices: "/menu-notices.png",
+};
+
 function myMenuIcon(key: string) {
   const c = "#D10005";
+  if (MENU_ICON_IMG[key]) {
+    return <img src={MENU_ICON_IMG[key]} alt="" className="h-[26px] w-[26px] shrink-0 object-contain" />;
+  }
   switch (key) {
-    case "quest":
-      return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8"><circle cx="12" cy="12" r="8.2" /><circle cx="12" cy="12" r="4.4" /><circle cx="12" cy="12" r="1" fill={c} stroke="none" /></svg>;
-    case "items":
-      return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.7" strokeLinejoin="round"><path d="M4 9h16v10H4z" /><path d="M4 9l2-4h12l2 4M12 5v14" /></svg>;
-    case "history":
-      return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.7" strokeLinejoin="round"><path d="M12 3l2.2 4.6 5 .7-3.6 3.5.9 5L12 14.9 7.5 16.8l.9-5L4.8 8.3l5-.7z" /><path d="M9 19l-2 2M15 19l2 2" strokeLinecap="round" /></svg>;
-    case "purchases":
-      return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.7" strokeLinejoin="round"><rect x="4" y="3" width="13" height="18" rx="2" /><path d="M7 8h7M7 12h7M7 16h4" strokeLinecap="round" /><circle cx="18" cy="17" r="4" fill="#fff" /><path d="M18 15v2l1.4 1" strokeLinecap="round" /></svg>;
-    case "invite":
-      return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.7"><circle cx="8.5" cy="9" r="3" /><path d="M3 19a5.5 5.5 0 0111 0" strokeLinecap="round" /><circle cx="17" cy="8" r="2.4" /><path d="M15 18a4 4 0 016-3.4" strokeLinecap="round" /></svg>;
-    case "faq":
-      return <svg width="26" height="26" viewBox="0 0 24 24" fill={c}><circle cx="12" cy="12" r="9" /><path d="M9.5 9.2a2.6 2.6 0 015 .8c0 1.6-2.2 1.8-2.2 3.4M12 17.2h.01" stroke="#fff" strokeWidth="1.8" fill="none" strokeLinecap="round" /></svg>;
-    case "contact":
-      return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.7"><path d="M5 5h14v10H8l-3 3z" strokeLinejoin="round" /><path d="M9 9h6M9 12h4" strokeLinecap="round" /></svg>;
     case "shippingAddress":
       return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" /><circle cx="12" cy="9" r="2.5" /></svg>;
     case "subscriptions":
@@ -3723,19 +3723,22 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
                 <button className="mt-2 w-full rounded-lg bg-[#D10005] py-2 text-[13px] font-bold text-white active:scale-[0.99]">{t.mpRankPerks}</button>
               </div>
             </div>
-            <div className="mt-3 h-3 w-full rounded-full border border-[#e2b581] bg-[#f6e7cf] p-[1.5px]">
-              <div className="h-full rounded-full" style={{ width: "75%", background: "linear-gradient(180deg,#f6b968,#e2882b)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.55)" }} />
+            <div className="relative mt-3.5 h-2 w-full rounded-full border border-[#e2c197] bg-[#efe0c6]">
+              <div
+                className="absolute left-0 top-1/2 h-[14px] -translate-y-1/2 rounded-full border border-[#c56a1f]"
+                style={{ width: "75%", background: "linear-gradient(180deg,#f7b866,#e07f22)", boxShadow: "inset 0 1.5px 0 rgba(255,255,255,0.55)" }}
+              />
             </div>
             <p className="mt-1 text-center text-[12px] font-medium text-[#6b4a23]">3,000/4,000</p>
           </div>
 
           {/* My Menu grid */}
-          <h3 className="mb-2 mt-5 text-[15px] font-extrabold text-[#1d2129]">{t.mpMyMenu}</h3>
+          <h3 className="mb-2 mt-5 text-[16px] font-bold text-[#1d2129]">{t.mpMyMenu}</h3>
           <div className="grid grid-cols-2 gap-2.5">
             {menu.map((m) => (
               <button key={m.key} onClick={m.onClick} className="flex items-center gap-2.5 rounded-xl bg-white px-3 py-3.5 text-left shadow-[0_1px_3px_rgba(0,0,0,0.06)] active:bg-black/[0.02]">
                 {myMenuIcon(m.key)}
-                <span className="text-[13.5px] font-bold text-[#1d2129]">{m.label}</span>
+                <span className="text-[14px] font-bold text-[#1d2129]">{m.label}</span>
               </button>
             ))}
           </div>
