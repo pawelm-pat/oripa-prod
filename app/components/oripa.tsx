@@ -585,9 +585,23 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
     );
   } else {
     const items = transform(lobbyItemsForCat(cat));
+    const recTitle = (t as unknown as Record<string, string>).secRecommended;
+    const featured = items.slice(0, 2);
+    const rest = items.slice(2);
     body = items.length === 0
       ? <div className="px-6 py-16 text-center text-[13px] font-semibold text-[#8a9099]">{L.empty}</div>
-      : <div className="flex flex-col gap-3 px-3.5 py-3">{items.map(full)}</div>;
+      : (
+        <div>
+          {/* Top 2 oripas are recommended for the category: red section + dividers */}
+          <img src="/home-divider-top.png" alt="" className="-mb-px block w-full" />
+          <section className="bg-[#D10005] px-3.5 pb-6 pt-4">
+            <h3 className="mb-3 flex items-center gap-1.5 text-[15px] font-extrabold text-white">{sectionIcon("star", true)}{recTitle}</h3>
+            <div className="flex flex-col gap-3">{featured.map(full)}</div>
+          </section>
+          <img src="/home-divider-bottom.png" alt="" className="-mt-px block w-full" />
+          {rest.length > 0 && <div className="flex flex-col gap-3 px-3.5 py-3">{rest.map(full)}</div>}
+        </div>
+      );
   }
 
   return (
