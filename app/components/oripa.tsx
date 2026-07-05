@@ -554,6 +554,23 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
         {HOME_SECTIONS.map((s) => {
           const title = (t as unknown as Record<string, string>)[s.titleKey];
           const seeAllCat = s.cats[0];
+          if (s.variant === "red") {
+            return (
+              <div key={s.id}>
+                {/* Curved divider transitioning white -> red (above the section) */}
+                <img src="/home-divider-top.png" alt="" className="-mb-px block w-full" />
+                <section className="bg-[#D10005] px-3.5 pb-6 pt-4">
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="flex items-center gap-1.5 text-[15px] font-extrabold text-white">{sectionIcon(s.icon, true)}{title}</h3>
+                    {seeAllCat && <button onClick={() => setCat(seeAllCat)} className="text-[12px] font-bold text-white/90">{L.seeAll} →</button>}
+                  </div>
+                  <div className="flex flex-col gap-3">{s.items.map(full)}</div>
+                </section>
+                {/* Curved divider transitioning red -> white (below the section) */}
+                <img src="/home-divider-bottom.png" alt="" className="-mt-px block w-full" />
+              </div>
+            );
+          }
           return (
             <div key={s.id} className="border-t border-black/10 px-3.5 py-3.5 first:border-t-0">
               <div className="mb-2.5 flex items-center justify-between">
