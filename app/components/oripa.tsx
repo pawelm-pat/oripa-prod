@@ -334,37 +334,69 @@ function TermsOverlay({ lang, onClose }: { lang: Lang; onClose: () => void }) {
   );
 }
 
+const SOCIAL_ICONS: { key: string; viewBox: string; path: React.ReactNode }[] = [
+  {
+    key: "line",
+    viewBox: "0 0 24 24",
+    path: <path d="M12 2C6.5 2 2 5.7 2 10.2c0 4 3.6 7.4 8.4 8 .3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.6 1.1-.5 6-3.5 8.2-6C21.6 13.6 22 12 22 10.2 22 5.7 17.5 2 12 2zM8 12.9H6.4c-.2 0-.4-.2-.4-.4V9.3c0-.2.2-.4.4-.4s.4.2.4.4v2.8H8c.2 0 .4.2.4.4s-.2.4-.4.4zm1.7-.4c0 .2-.2.4-.4.4s-.4-.2-.4-.4V9.3c0-.2.2-.4.4-.4s.4.2.4.4v3.2zm3.9 0c0 .2-.1.3-.3.4h-.1c-.1 0-.3-.1-.3-.2l-1.3-1.8v1.6c0 .2-.2.4-.4.4s-.4-.2-.4-.4V9.3c0-.2.1-.3.3-.4.2 0 .3 0 .4.2l1.3 1.8V9.3c0-.2.2-.4.4-.4s.4.2.4.4v3.2zm2.8-2c.2 0 .4.2.4.4s-.2.4-.4.4h-1.1v.7h1.1c.2 0 .4.2.4.4s-.2.4-.4.4h-1.5c-.2 0-.4-.2-.4-.4V9.3c0-.2.2-.4.4-.4h1.5c.2 0 .4.2.4.4s-.2.4-.4.4h-1.1v.7h1.1z" />,
+  },
+  {
+    key: "x",
+    viewBox: "0 0 24 24",
+    path: <path d="M18.2 2.5h3.3l-7.2 8.2 8.5 11.3h-6.7l-5.2-6.8-6 6.8H1.6l7.7-8.8L1.1 2.5h6.8l4.7 6.2 5.6-6.2zm-1.2 17.5h1.8L7.1 4.3H5.2L17 20z" />,
+  },
+  {
+    key: "ig",
+    viewBox: "0 0 24 24",
+    path: <path fillRule="evenodd" clipRule="evenodd" d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9A5.5 5.5 0 0 1 16.5 22h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2zm0 1.8A3.7 3.7 0 0 0 3.8 7.5v9a3.7 3.7 0 0 0 3.7 3.7h9a3.7 3.7 0 0 0 3.7-3.7v-9a3.7 3.7 0 0 0-3.7-3.7h-9zM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 1.8a3.2 3.2 0 1 0 0 6.4 3.2 3.2 0 0 0 0-6.4zM17.3 5.5a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4z" />,
+  },
+  {
+    key: "fb",
+    viewBox: "0 0 24 24",
+    path: <path d="M13.5 21v-8h2.7l.4-3.1h-3.1V7.9c0-.9.3-1.5 1.6-1.5h1.7V3.6c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2.1H7.3V13h2.6v8h3.6z" />,
+  },
+];
+
 function SiteFooter({ t }: { t: Dict }) {
   const lang: Lang = t === STR.ja ? "ja" : "en";
   const [tnc, setTnc] = useState(false);
   const chip = (label: string) =>
     label === t.mpTerms ? (
-      <button key={label} onClick={() => setTnc(true)} className="rounded-full bg-white/12 px-3 py-1.5 text-[11px] font-semibold text-white/90 underline decoration-white/40 active:bg-white/20">{label}</button>
+      <button key={label} onClick={() => setTnc(true)} className="rounded-full bg-white px-3.5 py-2 text-[12px] font-semibold text-[#1d2129] active:bg-white/80">{label}</button>
     ) : (
-      <span key={label} className="rounded-full bg-white/12 px-3 py-1.5 text-[11px] font-semibold text-white/90">{label}</span>
+      <span key={label} className="rounded-full bg-white px-3.5 py-2 text-[12px] font-semibold text-[#1d2129]">{label}</span>
     );
   return (
-    <footer className="bg-[#161616] px-4 py-6 text-white">
-      { }
-      <img src="/oripa-logo.png" alt="オリパロット" className="h-7 w-auto" style={{ filter: "brightness(1.6)" }} />
-      <p className="mt-2 text-[11px] text-white/55">{t.ftCopyright}</p>
+    <footer className="bg-black px-4 py-7 text-white">
+      <img src="/oripa-logo.png" alt="オリパロット" className="h-8 w-auto" />
+      <p className="mt-3 text-[11px] text-white/55">{t.ftCopyright}</p>
       <p className="mt-3 text-[11px] leading-relaxed text-white/55">{t.ftBlurb}</p>
 
-      <h4 className="mt-5 text-[13px] font-bold">{t.ftAbout}</h4>
-      <div className="mt-2 flex flex-wrap gap-2">{t.ftLinks.map(chip)}</div>
+      <h4 className="mt-6 text-[15px] font-bold">{t.ftAbout}</h4>
+      <div className="mt-3 flex flex-wrap gap-2.5">{t.ftLinks.map(chip)}</div>
 
-      <h4 className="mt-5 text-[13px] font-bold">{t.ftCategories}</h4>
-      <div className="mt-2 flex flex-wrap gap-2">{t.ftCats.map(chip)}</div>
+      <h4 className="mt-6 text-[15px] font-bold">{t.ftCategories}</h4>
+      <div className="mt-3 flex flex-wrap gap-2.5">{t.ftCats.map(chip)}</div>
 
-      <h4 className="mt-5 text-[13px] font-bold">{t.ftFollow}</h4>
-      <div className="mt-2 flex items-center gap-3">
-        {["LINE", "X", "IG", "f"].map((s) => (
-          <span key={s} className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[11px] font-extrabold text-[#161616]">{s}</span>
+      <h4 className="mt-6 text-[15px] font-bold">{t.ftFollow}</h4>
+      <div className="mt-3 flex items-center gap-3.5">
+        {SOCIAL_ICONS.map(({ key, path, viewBox }) => (
+          <span key={key} className="flex h-11 w-11 items-center justify-center rounded-full bg-black ring-1 ring-white/25">
+            <svg width="20" height="20" viewBox={viewBox} fill="#fff">{path}</svg>
+          </span>
         ))}
       </div>
 
-      <div className="my-5 h-px bg-white/15" />
-      <p className="text-[11px] leading-relaxed text-white/70">{t.ftSupport}</p>
+      <div className="my-6 h-px bg-white/15" />
+      <p className="text-[12px] font-semibold leading-relaxed text-white/85">
+        {t.ftSupport.split(":")[0]}: <span className="underline decoration-white/50">{t.ftSupport.split(":").slice(1).join(":").trim()}</span>
+      </p>
+      <p className="mt-4 text-[12px] leading-relaxed text-white/80">{t.ftPayInquiry}</p>
+      <p className="mt-2 text-[11px] leading-relaxed text-white/45">{t.ftPhoneNote}</p>
+
+      <div className="my-6 h-px bg-white/15" />
+      <p className="text-[11px] leading-relaxed text-white/45">{t.ftPurchaseNote}</p>
+      <p className="mt-4 text-[11px] leading-relaxed text-white/45">{t.ftOperator}</p>
       <p className="mt-4 text-[10.5px] text-white/40">{t.ftCopyright}</p>
       {tnc && <TermsOverlay lang={lang} onClose={() => setTnc(false)} />}
     </footer>
