@@ -513,15 +513,25 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
   const qq = query.trim().toLowerCase();
   const searching = qq.length > 0;
 
-  // When switching categories, jump back to the top of the scroll container so
-  // the full list (and the recommended section) is visible from the start.
+  // When switching categories, scroll so the sticky top navigation is pinned to
+  // the top of the viewport (the promo carousel above it scrolls out of view),
+  // giving a clean full-list view. Skip on first render so the carousel is still
+  // visible on initial load.
   const rootRef = useRef<HTMLDivElement>(null);
+  const firstRun = useRef(true);
   useEffect(() => {
-    let p = rootRef.current?.parentElement ?? null;
+    if (firstRun.current) {
+      firstRun.current = false;
+      return;
+    }
+    const el = rootRef.current;
+    if (!el) return;
+    let p = el.parentElement;
     while (p) {
       const oy = getComputedStyle(p).overflowY;
       if ((oy === "auto" || oy === "scroll") && p.scrollHeight > p.clientHeight) {
-        p.scrollTop = 0;
+        const delta = el.getBoundingClientRect().top - p.getBoundingClientRect().top;
+        p.scrollTop += delta;
         return;
       }
       p = p.parentElement;
@@ -639,7 +649,7 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
               >
                 <span className="flex flex-col items-center justify-center gap-1 rounded-r-[28px] bg-[#141414] px-4 py-2 text-white shadow-[3px_0_12px_rgba(0,0,0,0.18)]">
                   {catIcon("all", "#fff")}
-                  <span className="text-[11px] font-extrabold uppercase tracking-wide">{c.label}</span>
+                  <span className="text-[11px] font-medium uppercase tracking-wide">{c.label}</span>
                 </span>
               </button>
             );
@@ -652,7 +662,7 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
               className="relative flex shrink-0 flex-col items-center justify-center gap-1 px-3 py-2.5"
             >
               {catIcon(c.key, color)}
-              <span className="text-[11px] font-extrabold uppercase tracking-wide" style={{ color }}>{c.label}</span>
+              <span className="text-[11px] font-medium uppercase tracking-wide" style={{ color }}>{c.label}</span>
               {on && <span className="absolute inset-x-3 bottom-0 h-[3px] rounded-full bg-[#B40206]" />}
             </button>
           );
