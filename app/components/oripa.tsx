@@ -2604,7 +2604,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
             <EmptyState icon="🎁" title={t.wonEmptyTitle} subtitle={t.wonEmptySub} />
           ) : (
             <>
-              <div className="relative flex items-stretch border-b border-black/10 bg-white">
+              <div className="sticky top-0 z-10 flex items-stretch border-b border-black/10 bg-white">
                 <button onClick={() => setFilterOpen(true)} className="flex flex-1 items-center justify-center gap-2 py-3 text-[14px] font-extrabold text-[#1d2129] active:bg-black/[0.03]">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><circle cx="7" cy="8" r="2" /><circle cx="16" cy="16" r="2" /><path d="M9 8h11M4 8h1M15 16h5M4 16h9" /></svg>
                   {LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"].narrowDown}
