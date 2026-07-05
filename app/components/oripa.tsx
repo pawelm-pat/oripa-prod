@@ -579,6 +579,9 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
 
   return (
     <div className="bg-[#eef0f3]">
+      {/* Sticky lobby nav: category chips + narrow-down/sort toolbar stay
+          pinned under the header while the feed scrolls. */}
+      <div className="sticky top-0 z-20">
       {/* Category chip bar */}
       <div className="no-scrollbar relative flex gap-2 overflow-x-auto border-b border-black/10 bg-white px-3.5 py-2.5">
         {catList.map((c) => {
@@ -621,6 +624,7 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
             </>
           )}
         </div>
+      </div>
       </div>
 
       {body}
