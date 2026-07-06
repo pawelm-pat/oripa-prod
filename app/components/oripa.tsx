@@ -3910,6 +3910,23 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
   const [prevScreen, setPrevScreen] = useState<Screen>("oripa");
   // Surface the active screen so the review comments panel can scope itself.
   useEffect(() => { onScreenChange?.(screen); }, [screen, onScreenChange]);
+  // Deep link: a `?screen=` param (used by Slack comment links) opens the app
+  // directly on that screen so reviewers land where the comment was left.
+  useEffect(() => {
+    let alive = true;
+    const applyDeepLink = async () => {
+      // Yield once so this isn't a synchronous setState within the effect.
+      await Promise.resolve();
+      if (!alive) return;
+      const valid: Screen[] = ["landing", "signup", "login", "oripa", "notifications", "prizeHistory", "purchaseHistory", "shippingAddress", "quest", "store", "mypage"];
+      const target = new URLSearchParams(window.location.search).get("screen");
+      if (target && valid.includes(target as Screen)) setScreen(target as Screen);
+    };
+    applyDeepLink();
+    return () => {
+      alive = false;
+    };
+  }, []);
   // Prize History adjusts `coins` when exchanging prizes / paying shipping fees.
   const [coins, setCoins] = useState(10000);
   // Shipping addresses are shared between the Shipping Address page and the

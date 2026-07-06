@@ -90,42 +90,96 @@ function sectionLabel(section?: string): string {
   return SECTION_LABELS[section] || section;
 }
 
-async function notifySlack(comment: Comment): Promise<void> {
+const STATUS_TEXT: Record<Status, string> = {
+  new: "New",
+  inprogress: "In progress",
+  resolved: "Resolved",
+  rejected: "Rejected",
+  deleted: "Deleted",
+};
+
+// Build a link that opens the app directly on the screen the comment lives on.
+function appLink(section?: string): string {
+  const base = (process.env.PROD_URL || "https://oripa-prod-one.vercel.app/").replace(/\/+$/, "");
+  return section ? `${base}/?screen=${encodeURIComponent(section)}` : `${base}/`;
+}
+
+async function postSlack(payload: unknown): Promise<void> {
   const webhook = process.env.SLACK_WEBHOOK_URL;
   if (!webhook) return;
-  const appUrl = process.env.PROD_URL || "https://oripa-prod-one.vercel.app/";
-  const label = sectionLabel(comment.section);
   try {
     await fetch(webhook, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        // Fallback text (notifications / older clients).
-        text: `:speech_balloon: New PROD comment by ${comment.name} on "${label}" (status: New)`,
-        blocks: [
-          {
-            type: "section",
-            text: {
-              type: "mrkdwn",
-              text: `:speech_balloon: *New PROD comment*\n:bust_in_silhouette: Name: *${comment.name}*\n:round_pushpin: Section: *${label}*\n:label: Status: *New*`,
-            },
-          },
-          {
-            type: "section",
-            text: { type: "mrkdwn", text: `>${comment.text.replace(/\n/g, "\n>")}` },
-          },
-          {
-            type: "context",
-            elements: [
-              { type: "mrkdwn", text: `${comment.version ? `\`${comment.version}\` · ` : ""}<${appUrl}|Open app>` },
-            ],
-          },
-        ],
-      }),
+      body: JSON.stringify(payload),
     });
   } catch {
     // Never let a Slack failure break commenting.
   }
+}
+
+async function notifySlack(comment: Comment): Promise<void> {
+  const label = sectionLabel(comment.section);
+  const link = appLink(comment.section);
+  await postSlack({
+    // Fallback text (notifications / older clients).
+    text: `:speech_balloon: New PROD comment by ${comment.name} on "${label}" (status: New)`,
+    blocks: [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `:speech_balloon: *New PROD comment*\n:bust_in_silhouette: Name: *${comment.name}*\n:round_pushpin: Section: *${label}*\n:label: Status: *New*`,
+        },
+      },
+      {
+        type: "section",
+        text: { type: "mrkdwn", text: `>${comment.text.replace(/\n/g, "\n>")}` },
+      },
+      {
+        type: "context",
+        elements: [
+          { type: "mrkdwn", text: `${comment.version ? `\`${comment.version}\` · ` : ""}<${link}|Open this screen>` },
+        ],
+      },
+    ],
+  });
+}
+
+// Incoming webhooks cannot edit past messages, so a status change / delete is
+// announced as a new follow-up message referencing the same comment.
+async function notifySlackStatus(comment: Comment): Promise<void> {
+  const label = sectionLabel(comment.section);
+  const link = appLink(comment.section);
+  const statusText = STATUS_TEXT[comment.status] || comment.status;
+  const emoji =
+    comment.status === "deleted"
+      ? ":wastebasket:"
+      : comment.status === "resolved"
+      ? ":white_check_mark:"
+      : comment.status === "rejected"
+      ? ":x:"
+      : ":hammer_and_wrench:";
+  const by = comment.resolvedBy ? ` by *${comment.resolvedBy}*` : "";
+  const snippet = comment.text.length > 140 ? `${comment.text.slice(0, 140)}…` : comment.text;
+  await postSlack({
+    text: `${emoji} Comment by ${comment.name} on "${label}" → ${statusText}`,
+    blocks: [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `${emoji} *Comment ${statusText}*${by}\n:bust_in_silhouette: Author: *${comment.name}*\n:round_pushpin: Section: *${label}*`,
+        },
+      },
+      {
+        type: "context",
+        elements: [
+          { type: "mrkdwn", text: `>${snippet.replace(/\n/g, " ")}   ·   <${link}|Open this screen>` },
+        ],
+      },
+    ],
+  });
 }
 
 function parseList(raw: Comment[]): Comment[] {
@@ -299,6 +353,11 @@ export async function PATCH(req: Request) {
   };
 
   await redis.lset(KEY, idx, JSON.stringify(updated));
+
+  // Announce the change in Slack (status change / delete / restore).
+  if (current.status !== updated.status) {
+    await notifySlackStatus(updated);
+  }
 
   return NextResponse.json({ ok: true, comment: updated });
 }
