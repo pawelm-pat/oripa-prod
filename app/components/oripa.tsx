@@ -3774,14 +3774,17 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
             ))}
           </div>
 
-          {/* Promo banners — 8:3 placeholders per Figma. */}
+          {/* Promo banners — Figma placeholders (e.g. LINE campaign / guide). */}
           <div className="mt-4 space-y-3">
-            <div className="aspect-[8/3] overflow-hidden rounded-xl">
-              <img src="/placeholder-banner.png" alt="" className="h-full w-full object-cover" />
-            </div>
-            <div className="aspect-[8/3] overflow-hidden rounded-xl">
-              <img src="/placeholder-banner.png" alt="" className="h-full w-full object-cover" />
-            </div>
+            {[1, 2].map((n) => (
+              <div key={n} className="relative aspect-[8/3] overflow-hidden rounded-xl">
+                <img src="/placeholder-banner.png" alt="" className="absolute inset-0 h-full w-full object-cover" />
+                <span className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
+                  <span className="text-[15px] font-extrabold uppercase tracking-wide text-[#1d2129]">Promo Banner {n}</span>
+                  <span className="mt-0.5 text-[12px] font-bold uppercase tracking-wide text-[#1d2129]">(e.g. LINE campaign / beginner guide)</span>
+                </span>
+              </div>
+            ))}
           </div>
 
           {/* Account section */}
