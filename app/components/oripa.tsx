@@ -3840,15 +3840,15 @@ function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false }: { l
       {/* Title row */}
       <div className="shrink-0 flex items-center justify-between border-b border-black/10 bg-white px-4 py-3">
         <div className="flex items-center gap-2">
-          <button onClick={onBack} aria-label={t.backAria} className="flex h-8 w-8 items-center justify-center rounded-full text-[#1d2129] hover:bg-black/5">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          <button onClick={onBack} aria-label={t.backAria} className="flex h-8 w-8 items-center justify-center text-[#D10005] hover:bg-black/5">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 12H4M10 6l-6 6 6 6" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
           <h1 className="text-[16px] font-bold text-[#1d2129]">{t.purchaseHistoryTitle}</h1>
         </div>
-        <button className="flex items-center gap-1.5 rounded-lg border border-black/15 bg-white px-3 py-1.5 text-[13px] font-semibold text-[#1d2129] shadow-[0_1px_2px_rgba(0,0,0,0.06)]">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
+        <button className="flex items-center gap-1.5 rounded-xl border border-black/10 bg-white px-3.5 py-2 text-[14px] font-bold text-[#1d2129] shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D10005" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2.5" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
           {t.purchaseHistoryFilter}
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D10005" strokeWidth="2.4"><path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </button>
       </div>
 
