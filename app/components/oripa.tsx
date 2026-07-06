@@ -368,8 +368,8 @@ function SiteFooter({ t }: { t: Dict }) {
   return (
     <footer className="bg-black px-4 py-7 text-white">
       <img src="/oripa-logo-footer.png" alt="オリパロット" className="h-8 w-auto" />
-      <p className="mt-3 text-[11px] text-white/55">{t.ftCopyright}</p>
-      <p className="mt-3 text-[11px] leading-relaxed text-white/55">{t.ftBlurb}</p>
+      <p className="mt-3 text-[11px] text-white">{t.ftCopyright}</p>
+      <p className="mt-3 text-[11px] leading-relaxed text-white">{t.ftBlurb}</p>
 
       <h4 className="mt-6 text-[14px] font-bold">{t.ftAbout}</h4>
       <div className="mt-3 flex flex-wrap gap-2.5">{t.ftLinks.map(chip)}</div>
@@ -387,16 +387,16 @@ function SiteFooter({ t }: { t: Dict }) {
       </div>
 
       <div className="my-6 h-px bg-white/15" />
-      <p className="text-[12px] font-medium leading-relaxed text-white/85">
+      <p className="text-[12px] font-medium leading-relaxed text-white">
         {t.ftSupport.split(":")[0]}: <span className="underline decoration-white/50">{t.ftSupport.split(":").slice(1).join(":").trim()}</span>
       </p>
-      <p className="mt-4 text-[12px] font-medium leading-relaxed text-white/80">{t.ftPayInquiry}</p>
-      <p className="mt-2 text-[10px] font-medium leading-relaxed text-white/45">{t.ftPhoneNote}</p>
+      <p className="mt-4 text-[12px] font-medium leading-relaxed text-white">{t.ftPayInquiry}</p>
+      <p className="mt-2 text-[10px] font-medium leading-relaxed text-white">{t.ftPhoneNote}</p>
 
       <div className="my-6 h-px bg-white/15" />
-      <p className="text-[10px] font-medium leading-relaxed text-white/45">{t.ftPurchaseNote}</p>
-      <p className="mt-4 text-[10px] font-medium leading-relaxed text-white/45">{t.ftOperator}</p>
-      <p className="mt-4 text-[10px] font-medium text-white/40">{t.ftCopyright}</p>
+      <p className="text-[10px] font-medium leading-relaxed text-white">{t.ftPurchaseNote}</p>
+      <p className="mt-4 text-[10px] font-medium leading-relaxed text-white">{t.ftOperator}</p>
+      <p className="mt-4 text-[10px] font-medium text-white">{t.ftCopyright}</p>
       {tnc && <TermsOverlay lang={lang} onClose={() => setTnc(false)} />}
     </footer>
   );
