@@ -69,16 +69,58 @@ function newId(): string {
     : String(Date.now()) + Math.random().toString(36).slice(2);
 }
 
-async function notifySlack(name: string, section?: string): Promise<void> {
+// Human-friendly names for each screen key, so Slack readers know exactly
+// where a comment was left (keep in sync with SCREEN_LABELS in comments.tsx).
+const SECTION_LABELS: Record<string, string> = {
+  landing: "Home (logged out)",
+  signup: "Sign up",
+  login: "Log in",
+  oripa: "Lobby / Home",
+  notifications: "Notifications",
+  prizeHistory: "Winning history",
+  purchaseHistory: "Purchase history",
+  shippingAddress: "Address",
+  mypage: "My Account",
+  quest: "Quest",
+  store: "Store",
+};
+
+function sectionLabel(section?: string): string {
+  if (!section) return "Unknown screen";
+  return SECTION_LABELS[section] || section;
+}
+
+async function notifySlack(comment: Comment): Promise<void> {
   const webhook = process.env.SLACK_WEBHOOK_URL;
   if (!webhook) return;
   const appUrl = process.env.PROD_URL || "https://oripa-prod-one.vercel.app/";
+  const label = sectionLabel(comment.section);
   try {
     await fetch(webhook, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        text: `:speech_balloon: New PROD comment by *${name}*${section ? ` on *${section}*` : ""} — <${appUrl}|Open app>`,
+        // Fallback text (notifications / older clients).
+        text: `:speech_balloon: New PROD comment by ${comment.name} on "${label}" (status: New)`,
+        blocks: [
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: `:speech_balloon: *New PROD comment*\n:bust_in_silhouette: Name: *${comment.name}*\n:round_pushpin: Section: *${label}*\n:label: Status: *New*`,
+            },
+          },
+          {
+            type: "section",
+            text: { type: "mrkdwn", text: `>${comment.text.replace(/\n/g, "\n>")}` },
+          },
+          {
+            type: "context",
+            elements: [
+              { type: "mrkdwn", text: `${comment.version ? `\`${comment.version}\` · ` : ""}<${appUrl}|Open app>` },
+            ],
+          },
+        ],
       }),
     });
   } catch {
@@ -151,7 +193,7 @@ export async function POST(req: Request) {
   await redis.lpush(KEY, JSON.stringify(comment));
   await redis.ltrim(KEY, 0, MAX_KEEP - 1);
 
-  await notifySlack(comment.name, comment.section);
+  await notifySlack(comment);
 
   return NextResponse.json({ ok: true, comment });
 }
