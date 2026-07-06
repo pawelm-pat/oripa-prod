@@ -2210,8 +2210,8 @@ function NotificationsScreen({ lang, coins, empty = false, only, onBack, onHome 
 
         {/* Title row */}
         <div className="flex items-center gap-2 px-3 py-2.5">
-          <button onClick={onBack} className="flex h-7 w-7 items-center justify-center" aria-label={t.backAria}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          <button onClick={onBack} aria-label={t.backAria} className="flex h-8 w-8 items-center justify-center text-[#D10005] hover:bg-black/5">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 12H4M10 6l-6 6 6 6" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
           <h2 className="text-[20px] font-extrabold text-[#1d2129]">{title}</h2>
         </div>
@@ -2560,8 +2560,8 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
             <BalancePill coins={coins} t={t} />
           </div>
           <div className="flex items-center gap-2 px-3 py-2.5">
-            <button onClick={onBack} className="flex h-7 w-7 items-center justify-center" aria-label={t.backAria}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            <button onClick={onBack} aria-label={t.backAria} className="flex h-8 w-8 items-center justify-center text-[#D10005] hover:bg-black/5">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 12H4M10 6l-6 6 6 6" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </button>
             <h2 className="text-[20px] font-extrabold text-[#1d2129]">{t.prizeHistory}</h2>
           </div>
@@ -2591,8 +2591,8 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
         </div>
 
         <div className="flex items-center gap-2 px-3 py-2.5">
-          <button onClick={onBack} className="flex h-7 w-7 items-center justify-center" aria-label={t.backAria}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          <button onClick={onBack} aria-label={t.backAria} className="flex h-8 w-8 items-center justify-center text-[#D10005] hover:bg-black/5">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 12H4M10 6l-6 6 6 6" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
           <h2 className="text-[20px] font-extrabold text-[#1d2129]">{t.prizeHistory}</h2>
         </div>
@@ -3447,8 +3447,8 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
           </div>
         )}
         <div className="flex items-center gap-2">
-          <button onClick={view === "form" ? () => setView("main") : onBack} aria-label={t.backAria} className="flex h-7 w-7 items-center justify-center">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          <button onClick={view === "form" ? () => setView("main") : onBack} aria-label={t.backAria} className="flex h-8 w-8 items-center justify-center text-[#D10005] hover:bg-black/5">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 12H4M10 6l-6 6 6 6" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
           <h1 className="text-[15px] font-bold text-[#1d2129]">{view === "form" ? t.shippingFormTitle : t.shippingTitle}</h1>
         </div>
