@@ -2244,7 +2244,7 @@ function NotificationsScreen({ lang, coins, empty = false, only, onBack, onHome 
                   </div>
                   <p className={`mt-1 text-[14px] font-bold leading-snug ${un ? "text-[#1d2129]" : "text-[#41464e]"}`}>{lang === "ja" ? it.titleJa : it.title}</p>
                   <p className={`mt-0.5 text-[10px] font-normal leading-relaxed ${un ? "text-[#6b7078]" : "text-[#8a9099]"}`}>{lang === "ja" ? it.bodyJa : it.body}</p>
-                  {it.tracking && <p className="mt-0.5 text-[12.5px] text-[#8a9099]">{lang === "ja" ? "追跡番号：" : "Tracking number: "}{it.tracking}</p>}
+                  {it.tracking && <p className="mt-0.5 text-[10px] font-normal text-[#8a9099]">{lang === "ja" ? "追跡番号：" : "Tracking number: "}{it.tracking}</p>}
                 </button>
               );
             })}
