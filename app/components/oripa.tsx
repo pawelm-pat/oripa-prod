@@ -3704,7 +3704,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
   ];
 
   const linkRow = (label: string, onClick?: () => void) => (
-    <button key={label} onClick={onClick} className="w-full rounded-xl bg-white px-4 py-3.5 text-left text-[14px] font-semibold text-[#1d2129] shadow-[0_1px_3px_rgba(0,0,0,0.06)] active:bg-black/[0.02]">{label}</button>
+    <button key={label} onClick={onClick} className="w-full rounded-xl bg-white px-4 py-3.5 text-left text-[16px] font-bold text-[#1d2129] shadow-[0_1px_3px_rgba(0,0,0,0.06)] active:bg-black/[0.02]">{label}</button>
   );
 
   return (
@@ -3788,8 +3788,8 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
           {/* Account section */}
           <h3 className="mb-2 mt-5 text-[15px] font-extrabold text-[#1d2129]">{t.mpAccountSection}</h3>
           <div className="space-y-2">
-            <button className="w-full rounded-xl bg-white px-4 py-3.5 text-left text-[14px] font-semibold text-[#1d2129] shadow-[0_1px_3px_rgba(0,0,0,0.06)]">{t.mpEditAccount}</button>
-            <button onClick={onLogout} className="w-full rounded-xl bg-white px-4 py-3.5 text-left text-[14px] font-semibold text-[#1d2129] shadow-[0_1px_3px_rgba(0,0,0,0.06)] active:bg-black/[0.02]">{t.menuLogout}</button>
+            <button className="w-full rounded-xl bg-white px-4 py-3.5 text-left text-[16px] font-bold text-[#1d2129] shadow-[0_1px_3px_rgba(0,0,0,0.06)]">{t.mpEditAccount}</button>
+            <button onClick={onLogout} className="w-full rounded-xl bg-white px-4 py-3.5 text-left text-[16px] font-bold text-[#1d2129] shadow-[0_1px_3px_rgba(0,0,0,0.06)] active:bg-black/[0.02]">{t.menuLogout}</button>
           </div>
 
           {/* Other section */}
