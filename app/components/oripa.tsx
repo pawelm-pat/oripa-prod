@@ -3875,22 +3875,22 @@ function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false }: { l
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></svg>
                       {rec.date}
                     </div>
-                    <span className="shrink-0 text-[13px] font-bold" style={{ color: statusColor }}>{statusLabel}</span>
+                    <span className="shrink-0 text-[13px] font-medium" style={{ color: statusColor }}>{statusLabel}</span>
                   </div>
 
                   {/* Coins + price */}
                   <div className="mt-1.5 flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-[18px] font-extrabold text-[#1d2129]">{rec.coins.toLocaleString()} COINS</p>
-                      <p className="text-[12px] text-[#5c626b]">{t.purchaseFreePoints(rec.freePoints)}</p>
+                      <p className="text-[14px] font-bold text-[#1d2129]">{rec.coins.toLocaleString()} COINS</p>
+                      <p className="text-[10px] font-normal text-[#5c626b]">{t.purchaseFreePoints(rec.freePoints)}</p>
                     </div>
-                    <p className="shrink-0 text-[16px] font-extrabold text-[#1d2129]">{rec.jpy.toLocaleString()} JPY</p>
+                    <p className="shrink-0 text-[14px] font-bold text-[#1d2129]">{rec.jpy.toLocaleString()} JPY</p>
                   </div>
 
                   {/* Payment details */}
                   <div className="mt-2 space-y-0.5 border-t border-black/[0.06] pt-2">
-                    <p className="text-[12px] text-[#8a9099]">{t.purchasePaymentMethod}: {rec.paymentMethod}</p>
-                    <p className="text-[12px] text-[#8a9099]">{t.purchasePaymentId}: {rec.paymentId}</p>
+                    <p className="text-[10px] font-normal text-[#8a9099]">{t.purchasePaymentMethod}: {rec.paymentMethod}</p>
+                    <p className="text-[10px] font-normal text-[#8a9099]">{t.purchasePaymentId}: {rec.paymentId}</p>
                   </div>
                 </div>
               );
