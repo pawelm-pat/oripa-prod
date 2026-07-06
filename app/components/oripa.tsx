@@ -178,12 +178,8 @@ function OripaCard({ item, t, onView, onDraw }: { item: OripaItem; t: Dict; onVi
         <TagPill variant="darkOutline">{t.tagSsr}</TagPill>
       </div>
       <div className="mx-2.5 mt-2 flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg bg-[#ededf0]">
-        {item.image ? (
-           
-          <img src={item.image} alt="" className="h-full w-full object-cover" />
-        ) : (
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#c2c6cc" strokeWidth="1.6"><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="8.5" cy="10" r="1.6" /><path d="M21 16l-5-5-7 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
-        )}
+        {/* Figma placeholder until final oripa-draw creative is signed off. */}
+        <img src="/placeholder-oripa.png" alt="" className="h-full w-full object-cover" />
       </div>
       <div className="mt-2.5 bg-[#1d1d1d] px-3 py-1 text-center text-[11px] font-bold text-white">{t.periodLabel("2026/01/01")}</div>
       <div className="flex items-stretch px-3 py-2.5">
