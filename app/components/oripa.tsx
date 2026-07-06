@@ -3808,10 +3808,12 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
   );
 }
 
-export function PhoneApp({ lang, noHistory }: { lang: Lang; noHistory: boolean }) {
+export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void }) {
   const t = STR[lang];
   const [screen, setScreen] = useState<Screen>("landing");
   const [prevScreen, setPrevScreen] = useState<Screen>("oripa");
+  // Surface the active screen so the review comments panel can scope itself.
+  useEffect(() => { onScreenChange?.(screen); }, [screen, onScreenChange]);
   // Prize History adjusts `coins` when exchanging prizes / paying shipping fees.
   const [coins, setCoins] = useState(10000);
   // Shipping addresses are shared between the Shipping Address page and the

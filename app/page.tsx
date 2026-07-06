@@ -1,13 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import type { Lang } from "./lib/types";
+import type { Lang, Screen } from "./lib/types";
 import { LangToggle, PhoneApp, UpdatePrompt, VersionBadge } from "./components/oripa";
+import { CommentsPanel } from "./components/comments";
 
 // Near-production shell: renders only the phone experience. Entry point is the
 // logged-out lobby (V1); the internal POC config panel / flow-map are dropped.
 export default function Page() {
   const [lang, setLang] = useState<Lang>("en");
+  // Drives the per-screen review comments panel.
+  const [screen, setScreen] = useState<Screen>("landing");
   return (
     <main className="flex min-h-[100svh] w-full flex-col items-center justify-center bg-[linear-gradient(180deg,#16171c_0%,#0f1014_100%)]">
       {/* Desktop: phone centred in a simple device frame */}
@@ -17,7 +20,7 @@ export default function Page() {
           <div className="rounded-[2.1rem] border border-white/8 bg-black p-2">
             <div className="mx-auto mb-2 h-6 w-28 rounded-full bg-white/10" />
             <div className="relative h-[812px] w-[390px] overflow-hidden rounded-[1.7rem] bg-[#eef0f3]">
-              <PhoneApp lang={lang} noHistory={false} />
+              <PhoneApp lang={lang} noHistory={false} onScreenChange={setScreen} />
             </div>
           </div>
         </div>
@@ -25,9 +28,10 @@ export default function Page() {
 
       {/* Mobile: full-bleed phone */}
       <div className="relative w-full max-w-[440px] flex-1 overflow-hidden bg-[#eef0f3] sm:hidden" style={{ height: "100svh" }}>
-        <PhoneApp lang={lang} noHistory={false} />
+        <PhoneApp lang={lang} noHistory={false} onScreenChange={setScreen} />
       </div>
 
+      <CommentsPanel screen={screen} />
       <UpdatePrompt />
       <VersionBadge />
     </main>
