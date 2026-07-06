@@ -2196,7 +2196,7 @@ function NotificationsScreen({ lang, coins, empty = false, only, onBack, onHome 
               return (
                 <button key={tb.key} onClick={() => setTab(tb.key)} className="relative flex-1 pb-2.5 pt-1">
                   <span className="flex items-center justify-center gap-1.5">
-                    <span className={`text-[13px] font-bold ${active ? "text-[#D10005]" : "text-[#1d2129]"}`}>{tb.label}</span>
+                    <span className={`text-[14px] font-medium ${active ? "text-[#D10005]" : "text-[#1d2129]"}`}>{tb.label}</span>
                     {tb.count > 0 && (
                       <span className="flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-[#D10005] px-1 text-[10px] font-extrabold leading-none text-white">{tb.count}</span>
                     )}
@@ -2213,7 +2213,7 @@ function NotificationsScreen({ lang, coins, empty = false, only, onBack, onHome 
           <button onClick={onBack} aria-label={t.backAria} className="flex h-8 w-8 items-center justify-center text-[#D10005] hover:bg-black/5">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 12H4M10 6l-6 6 6 6" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
-          <h2 className="text-[20px] font-extrabold text-[#1d2129]">{title}</h2>
+          <h2 className="text-[20px] font-bold text-[#1d2129]">{title}</h2>
         </div>
       </header>
 
@@ -2231,7 +2231,7 @@ function NotificationsScreen({ lang, coins, empty = false, only, onBack, onHome 
                   className={`relative w-full overflow-hidden rounded-xl border px-4 py-3 text-left transition ${un ? "border-[#f1c4c4] bg-[#fff5f5]" : "border-black/10 bg-white"}`}
                 >
                   {un && <span className="absolute inset-y-0 left-0 w-1 bg-[#D10005]" />}
-                  <div className="flex items-center gap-1.5 text-[11.5px] text-[#9aa0a8]">
+                  <div className="flex items-center gap-1.5 text-[13px] font-medium text-[#9aa0a8]">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></svg>
                     {lang === "ja" ? it.atJa : it.at}
                     {un && (
@@ -2240,8 +2240,8 @@ function NotificationsScreen({ lang, coins, empty = false, only, onBack, onHome 
                       </span>
                     )}
                   </div>
-                  <p className={`mt-1 text-[14px] leading-snug ${un ? "font-extrabold text-[#1d2129]" : "font-semibold text-[#41464e]"}`}>{lang === "ja" ? it.titleJa : it.title}</p>
-                  <p className={`mt-0.5 text-[12.5px] leading-relaxed ${un ? "text-[#6b7078]" : "text-[#8a9099]"}`}>{lang === "ja" ? it.bodyJa : it.body}</p>
+                  <p className={`mt-1 text-[14px] font-bold leading-snug ${un ? "text-[#1d2129]" : "text-[#41464e]"}`}>{lang === "ja" ? it.titleJa : it.title}</p>
+                  <p className={`mt-0.5 text-[10px] font-normal leading-relaxed ${un ? "text-[#6b7078]" : "text-[#8a9099]"}`}>{lang === "ja" ? it.bodyJa : it.body}</p>
                   {it.tracking && <p className="mt-0.5 text-[12.5px] text-[#8a9099]">{lang === "ja" ? "追跡番号：" : "Tracking number: "}{it.tracking}</p>}
                 </button>
               );
