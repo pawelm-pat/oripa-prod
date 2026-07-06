@@ -15,7 +15,7 @@ const NAME_MAX = 60;
 const TEXT_MAX = 2000;
 const SECTION_MAX = 80;
 const REASON_MAX = 600;
-const STATUSES = ["new", "inprogress", "resolved", "rejected"] as const;
+const STATUSES = ["new", "inprogress", "resolved", "rejected", "deleted"] as const;
 type Status = (typeof STATUSES)[number];
 
 function normalizeStatus(s: unknown): Status {

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Screen } from "../lib/types";
 
-type Status = "new" | "inprogress" | "resolved" | "rejected";
+type Status = "new" | "inprogress" | "resolved" | "rejected" | "deleted";
 
 type Comment = {
   id: string;
@@ -33,19 +33,25 @@ const SCREEN_LABELS: Record<string, string> = {
   store: "Store",
 };
 
-const STATUSES: Status[] = ["new", "inprogress", "resolved", "rejected"];
+const STATUSES: Status[] = ["new", "inprogress", "resolved", "rejected", "deleted"];
+// Statuses a reviewer can move a live comment to via the dropdown.
+const CHANGEABLE: Status[] = ["inprogress", "resolved", "rejected"];
 const STATUS_LABEL: Record<Status, string> = {
   new: "New",
   inprogress: "In progress",
   resolved: "Resolved",
   rejected: "Rejected",
+  deleted: "Deleted",
 };
 const STATUS_STYLE: Record<Status, string> = {
   new: "bg-[#ef4444] text-white border border-[#ef4444]",
   inprogress: "bg-[#fff7e6] text-[#92660a] border border-[#fde6b0]",
   resolved: "bg-[#e9f9ef] text-[#15803d] border border-[#bbe7cb]",
   rejected: "bg-[#fdeaea] text-[#b91c1c] border border-[#f5c2c2]",
+  deleted: "bg-black/5 text-[#8a9099] border border-black/10",
 };
+// Closed states render with a strikethrough so it's clear no action is needed.
+const STRUCK: Status[] = ["deleted", "resolved"];
 
 function timeAgo(ts: number): string {
   const s = Math.max(1, Math.round((Date.now() - ts) / 1000));
@@ -195,21 +201,11 @@ export function CommentsPanel({ screen }: { screen: Screen }) {
     }
   };
 
+  // Soft-delete: keep the comment visible (struck through, "Deleted" status)
+  // instead of removing it, so the review trail is preserved.
   const remove = async (id: string) => {
-    if (!confirm("Delete this comment?")) return;
-    setBusyId(id);
-    try {
-      await fetch("/api/comments", {
-        method: "DELETE",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
-      await load();
-    } catch {
-      /* ignore */
-    } finally {
-      setBusyId(null);
-    }
+    if (!confirm("Mark this comment as deleted?")) return;
+    await setStatus(id, "deleted");
   };
 
   const badge = (count: number) =>
@@ -269,16 +265,19 @@ export function CommentsPanel({ screen }: { screen: Screen }) {
             No comments on this screen yet.
           </p>
         )}
-        {visible.map((c) => (
-          <div key={c.id} className="rounded-xl border border-black/10 bg-white p-3">
+        {visible.map((c) => {
+          const isDeleted = c.status === "deleted";
+          const struck = STRUCK.includes(c.status);
+          return (
+          <div key={c.id} className={`rounded-xl border border-black/10 bg-white p-3 ${isDeleted ? "opacity-70" : ""}`}>
             <div className="flex items-center gap-2">
-              <span className="text-[12px] font-bold text-[#1d2129]">{c.name || "Anonymous"}</span>
+              <span className={`text-[12px] font-bold text-[#1d2129] ${struck ? "line-through" : ""}`}>{c.name || "Anonymous"}</span>
               <span className="text-[10px] text-[#a4aab2]">{timeAgo(c.updatedAt || c.ts)}</span>
               <span className={`ml-auto rounded-full px-2 py-0.5 text-[10px] font-bold ${STATUS_STYLE[c.status]}`}>
                 {STATUS_LABEL[c.status]}
               </span>
             </div>
-            <p className="mt-1.5 whitespace-pre-wrap break-words text-[12.5px] leading-relaxed text-[#2a2f36]">{c.text}</p>
+            <p className={`mt-1.5 whitespace-pre-wrap break-words text-[12.5px] leading-relaxed text-[#2a2f36] ${struck ? "line-through decoration-[#a4aab2]" : ""}`}>{c.text}</p>
             {c.reason && (
               <p className="mt-1.5 rounded-md bg-black/[0.03] px-2 py-1 text-[11px] text-[#5c626b]">
                 <b>{c.status === "rejected" ? "Rejected" : "Note"}:</b> {c.reason}
@@ -286,35 +285,46 @@ export function CommentsPanel({ screen }: { screen: Screen }) {
               </p>
             )}
             <div className="mt-2 flex items-center gap-1.5">
-              <select
-                value=""
-                disabled={busyId === c.id}
-                onChange={(e) => {
-                  if (e.target.value) setStatus(c.id, e.target.value as Status);
-                }}
-                className="rounded-md border border-black/15 bg-white px-1.5 py-1 text-[11px] font-semibold text-[#1d2129]"
-              >
-                <option value="" disabled>
-                  Change status…
-                </option>
-                {(["inprogress", "resolved", "rejected"] as Status[])
-                  .filter((s) => s !== c.status)
-                  .map((s) => (
-                    <option key={s} value={s}>
-                      {STATUS_LABEL[s]}
+              {isDeleted ? (
+                <button
+                  onClick={() => setStatus(c.id, "new")}
+                  disabled={busyId === c.id}
+                  className="ml-auto text-[11px] font-semibold text-[#1d2129] hover:underline disabled:opacity-40"
+                >
+                  Restore
+                </button>
+              ) : (
+                <>
+                  <select
+                    value=""
+                    disabled={busyId === c.id}
+                    onChange={(e) => {
+                      if (e.target.value) setStatus(c.id, e.target.value as Status);
+                    }}
+                    className="rounded-md border border-black/15 bg-white px-1.5 py-1 text-[11px] font-semibold text-[#1d2129]"
+                  >
+                    <option value="" disabled>
+                      Change status…
                     </option>
-                  ))}
-              </select>
-              <button
-                onClick={() => remove(c.id)}
-                disabled={busyId === c.id}
-                className="ml-auto text-[11px] font-semibold text-[#b91c1c] hover:underline disabled:opacity-40"
-              >
-                Delete
-              </button>
+                    {CHANGEABLE.filter((s) => s !== c.status).map((s) => (
+                      <option key={s} value={s}>
+                        {STATUS_LABEL[s]}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => remove(c.id)}
+                    disabled={busyId === c.id}
+                    className="ml-auto text-[11px] font-semibold text-[#b91c1c] hover:underline disabled:opacity-40"
+                  >
+                    Delete
+                  </button>
+                </>
+              )}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Add form */}
