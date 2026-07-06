@@ -3682,13 +3682,13 @@ function myMenuIcon(key: string) {
   }
 }
 
-function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onOpenPurchaseHistory, onOpenShippingAddress, onHome, onLogout }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenPurchaseHistory: () => void; onOpenShippingAddress: () => void; onHome: () => void; onLogout: () => void }) {
+function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onOpenPurchaseHistory, onOpenAnnouncements, onOpenShippingAddress, onHome, onLogout }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenPurchaseHistory: () => void; onOpenAnnouncements: () => void; onOpenShippingAddress: () => void; onHome: () => void; onLogout: () => void }) {
   const t = STR[lang];
   const [tnc, setTnc] = useState(false);
 
-  // "history" (Prize History), "purchases" (Purchase History) and
-  // "shippingAddress" navigate. Every other row renders but is inert
-  // (no onClick) — the underlying screens are not ported into PROD yet.
+  // "history" (Prize History), "purchases" (Purchase History), "notices"
+  // (Announcements) and "shippingAddress" navigate. Every other row renders
+  // but is inert (no onClick) — those screens are not ported into PROD yet.
   const menu: { key: string; label: string; onClick?: () => void }[] = [
     { key: "quest", label: t.mmQuest },
     { key: "items", label: t.mmItems },
@@ -3697,7 +3697,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
     { key: "invite", label: t.mmInvite },
     { key: "faq", label: t.mmFaq },
     { key: "contact", label: t.mmContact },
-    { key: "notices", label: t.mmNotices },
+    { key: "notices", label: t.mmNotices, onClick: onOpenAnnouncements },
     { key: "shippingAddress", label: t.mmShippingAddress, onClick: onOpenShippingAddress },
     { key: "subscriptions", label: t.mmSubscriptions },
   ];
@@ -3937,6 +3937,9 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
   // PROD: login/sign-up land straight on the lobby (no onboarding flow).
   const enterHome = () => setScreen("oripa");
   const openNotifications = () => { setNotifOnly(undefined); setPrevScreen((p) => (screen === "notifications" ? p : screen)); setScreen("notifications"); };
+  // My Account → Announcements opens the notifications screen in single-tab
+  // "notice" mode and returns to My Account on back.
+  const openAnnouncements = () => { setNotifOnly("notice"); setPrevScreen("mypage"); setScreen("notifications"); };
   // Bottom-nav navigation: only the Oripa (lobby) and My Account tabs are live.
   const navigate = (s: Screen) => {
     if (s === "oripa") { goHome(); return; }
@@ -3965,6 +3968,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
             coins={coins}
             onOpenPrizeHistory={() => setScreen("prizeHistory")}
             onOpenPurchaseHistory={() => setScreen("purchaseHistory")}
+            onOpenAnnouncements={openAnnouncements}
             onOpenShippingAddress={() => setScreen("shippingAddress")}
             onHome={goHome}
             onLogout={() => setScreen("landing")}
