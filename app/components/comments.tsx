@@ -133,8 +133,9 @@ export function CommentsPanel({ screen }: { screen: Screen }) {
     () => (filter === "all" ? screenComments : screenComments.filter((c) => c.status === filter)),
     [screenComments, filter]
   );
-  const newCount = useMemo(
-    () => screenComments.filter((c) => c.status === "new").length,
+  // Count anything still needing action on this screen (new + in progress).
+  const actionCount = useMemo(
+    () => screenComments.filter((c) => c.status === "new" || c.status === "inprogress").length,
     [screenComments]
   );
 
@@ -228,7 +229,7 @@ export function CommentsPanel({ screen }: { screen: Screen }) {
           <p className="text-[13px] font-bold leading-tight text-[#1d2129]">Comments</p>
           <p className="truncate text-[11px] text-[#8a9099]">{SCREEN_LABELS[screen] || screen}</p>
         </div>
-        {badge(newCount)}
+        {badge(actionCount)}
         <button
           onClick={() => setOpenPersist(false)}
           aria-label="Close comments"
@@ -360,7 +361,7 @@ export function CommentsPanel({ screen }: { screen: Screen }) {
             <path d="M4 5h16v11H8l-4 3z" strokeLinejoin="round" />
           </svg>
           <span className="text-[11px] font-bold [writing-mode:vertical-rl]">Comments</span>
-          {badge(newCount)}
+          {badge(actionCount)}
         </button>
       )}
 
@@ -374,9 +375,9 @@ export function CommentsPanel({ screen }: { screen: Screen }) {
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
             <path d="M4 5h16v11H8l-4 3z" strokeLinejoin="round" />
           </svg>
-          {newCount > 0 && (
+          {actionCount > 0 && (
             <span className="absolute -right-1 -top-1 flex h-6 min-w-6 items-center justify-center rounded-full bg-[#ef4444] px-1.5 text-[12px] font-bold text-white ring-2 ring-[#0f1014]">
-              {newCount}
+              {actionCount}
             </span>
           )}
         </button>
