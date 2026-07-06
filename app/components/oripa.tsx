@@ -160,7 +160,7 @@ function TagPill({ children, variant }: { children: React.ReactNode; variant: "r
   return <span className={`whitespace-nowrap rounded-full px-2 py-[1px] text-[10px] font-bold ${cls}`}>{children}</span>;
 }
 
-function OripaCard({ item, t, lang, onView, onDraw }: { item: OripaItem; t: Dict; lang: Lang; onView?: () => void; onDraw?: (count: number, free?: boolean) => void }) {
+function OripaCard({ item, t, onView, onDraw }: { item: OripaItem; t: Dict; onView?: () => void; onDraw?: (count: number, free?: boolean) => void }) {
   const pct = Math.round((item.remaining / item.total) * 100);
   const price = (
     <span className="flex items-baseline">
@@ -177,7 +177,6 @@ function OripaCard({ item, t, lang, onView, onDraw }: { item: OripaItem; t: Dict
         <TagPill variant="darkOutline">{t.tagLv5}</TagPill>
         <TagPill variant="darkOutline">{t.tagSsr}</TagPill>
       </div>
-      <h4 className="px-2.5 pt-1.5 text-[13.5px] font-extrabold leading-tight text-[#1d2129]">{locTitle(item, lang)}</h4>
       <div className="mx-2.5 mt-2 flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg bg-[#ededf0]">
         {item.image ? (
            
@@ -598,7 +597,7 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
     <LobbyMiniCard key={it.id} item={it} t={t} lang={lang} fullWidth={fw} onView={onView} />
   );
   const full = (it: OripaItem) => (
-    <OripaCard key={it.id} item={it} t={t} lang={lang} onView={onView} onDraw={onView ? () => onView() : undefined} />
+    <OripaCard key={it.id} item={it} t={t} onView={onView} onDraw={onView ? () => onView() : undefined} />
   );
 
   let body: React.ReactNode;

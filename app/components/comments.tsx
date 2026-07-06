@@ -287,16 +287,23 @@ export function CommentsPanel({ screen }: { screen: Screen }) {
             )}
             <div className="mt-2 flex items-center gap-1.5">
               <select
-                value={c.status}
+                value=""
                 disabled={busyId === c.id}
-                onChange={(e) => setStatus(c.id, e.target.value as Status)}
+                onChange={(e) => {
+                  if (e.target.value) setStatus(c.id, e.target.value as Status);
+                }}
                 className="rounded-md border border-black/15 bg-white px-1.5 py-1 text-[11px] font-semibold text-[#1d2129]"
               >
-                {STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {STATUS_LABEL[s]}
-                  </option>
-                ))}
+                <option value="" disabled>
+                  Change status…
+                </option>
+                {(["inprogress", "resolved", "rejected"] as Status[])
+                  .filter((s) => s !== c.status)
+                  .map((s) => (
+                    <option key={s} value={s}>
+                      {STATUS_LABEL[s]}
+                    </option>
+                  ))}
               </select>
               <button
                 onClick={() => remove(c.id)}
