@@ -818,7 +818,7 @@ function BottomNav({ screen, t, onNavigate }: { screen: Screen; t: Dict; onNavig
     { key: "store", label: t.navStore },
     { key: "mypage", label: t.navMyPage },
   ];
-  const activeKey: Screen = screen === "prizeHistory" || screen === "shippingAddress" ? "mypage" : screen;
+  const activeKey: Screen = screen === "prizeHistory" || screen === "purchaseHistory" || screen === "shippingAddress" ? "mypage" : screen;
   return (
     <nav className="shrink-0 border-t border-black/10 bg-white pb-[env(safe-area-inset-bottom)]">
       <div className="flex">
@@ -3682,18 +3682,18 @@ function myMenuIcon(key: string) {
   }
 }
 
-function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onOpenShippingAddress, onHome, onLogout }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenShippingAddress: () => void; onHome: () => void; onLogout: () => void }) {
+function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onOpenPurchaseHistory, onOpenShippingAddress, onHome, onLogout }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenPurchaseHistory: () => void; onOpenShippingAddress: () => void; onHome: () => void; onLogout: () => void }) {
   const t = STR[lang];
   const [tnc, setTnc] = useState(false);
 
-  // Only "history" (Prize History) and "shippingAddress" navigate. Every other
-  // row renders but is inert (no onClick) — the underlying screens are not
-  // ported into PROD yet.
+  // "history" (Prize History), "purchases" (Purchase History) and
+  // "shippingAddress" navigate. Every other row renders but is inert
+  // (no onClick) — the underlying screens are not ported into PROD yet.
   const menu: { key: string; label: string; onClick?: () => void }[] = [
     { key: "quest", label: t.mmQuest },
     { key: "items", label: t.mmItems },
     { key: "history", label: t.mmPrizeHistory, onClick: onOpenPrizeHistory },
-    { key: "purchases", label: t.mmPurchases },
+    { key: "purchases", label: t.mmPurchases, onClick: onOpenPurchaseHistory },
     { key: "invite", label: t.mmInvite },
     { key: "faq", label: t.mmFaq },
     { key: "contact", label: t.mmContact },
@@ -3810,6 +3810,100 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
   );
 }
 
+/* ── PurchaseHistoryPage ─────────────────────────────────────────────── */
+type PurchaseRecord = {
+  id: string;
+  date: string;
+  coins: number;
+  freePoints: number;
+  paymentMethod: string;
+  paymentId: string;
+  status: "Completed" | "Cancelled";
+  jpy: number;
+};
+
+const PURCHASE_HISTORY: PurchaseRecord[] = [
+  { id: "ph1", date: "Feb 3, 2026, 22:14", coins: 20000, freePoints: 500, paymentMethod: "Mazooma *****5678", paymentId: "35812349", status: "Completed", jpy: 52000 },
+  { id: "ph2", date: "Feb 3, 2026, 22:14", coins: 20000, freePoints: 500, paymentMethod: "Mazooma *******5678", paymentId: "35812349", status: "Cancelled", jpy: 52000 },
+  { id: "ph3", date: "Feb 3, 2026, 22:14", coins: 20000, freePoints: 500, paymentMethod: "Mazooma *****5678", paymentId: "35812349", status: "Completed", jpy: 52000 },
+  { id: "ph4", date: "Feb 3, 2026, 22:14", coins: 20000, freePoints: 500, paymentMethod: "Mazooma *****5678", paymentId: "35812349", status: "Completed", jpy: 52000 },
+  { id: "ph5", date: "Feb 3, 2026, 22:14", coins: 20000, freePoints: 500, paymentMethod: "Mazooma *****5678", paymentId: "35812349", status: "Completed", jpy: 52000 },
+  { id: "ph6", date: "Feb 3, 2026, 22:14", coins: 20000, freePoints: 500, paymentMethod: "Mazooma *****5678", paymentId: "35812349", status: "Completed", jpy: 52000 },
+];
+
+function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false }: { lang: Lang; coins: number; onBack: () => void; onHome: () => void; empty?: boolean }) {
+  const t = STR[lang];
+  return (
+    <div className="flex h-full flex-col bg-[#eef0f3]">
+      <AppHeader coins={coins} t={t} onHome={onHome} />
+
+      {/* Title row */}
+      <div className="shrink-0 flex items-center justify-between border-b border-black/10 bg-white px-4 py-3">
+        <div className="flex items-center gap-2">
+          <button onClick={onBack} aria-label={t.backAria} className="flex h-8 w-8 items-center justify-center rounded-full text-[#1d2129] hover:bg-black/5">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </button>
+          <h1 className="text-[16px] font-bold text-[#1d2129]">{t.purchaseHistoryTitle}</h1>
+        </div>
+        <button className="flex items-center gap-1.5 rounded-lg border border-black/15 bg-white px-3 py-1.5 text-[13px] font-semibold text-[#1d2129] shadow-[0_1px_2px_rgba(0,0,0,0.06)]">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
+          {t.purchaseHistoryFilter}
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </button>
+      </div>
+
+      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
+        {/* Note */}
+        <p className="px-4 py-2.5 text-[11.5px] text-[#8a9099]">{t.purchaseHistoryNote}</p>
+
+        {empty && (
+          <p className="px-4 py-20 text-center text-[14px] text-[#9aa0a8]">{t.purchaseEmpty}</p>
+        )}
+
+        {/* Purchase records */}
+        {!empty && (
+          <div className="space-y-2 px-3 pb-6">
+            {PURCHASE_HISTORY.map((rec) => {
+              const isCompleted = rec.status === "Completed";
+              const statusLabel = isCompleted ? t.purchaseStatusCompleted : t.purchaseStatusCancelled;
+              const statusColor = isCompleted ? "#16a34a" : "#D10005";
+              return (
+                <div key={rec.id} className="rounded-xl bg-white px-4 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.07)]">
+                  {/* Date + status */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-1.5 text-[12px] text-[#8a9099]">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></svg>
+                      {rec.date}
+                    </div>
+                    <span className="shrink-0 text-[13px] font-bold" style={{ color: statusColor }}>{statusLabel}</span>
+                  </div>
+
+                  {/* Coins + price */}
+                  <div className="mt-1.5 flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-[18px] font-extrabold text-[#1d2129]">{rec.coins.toLocaleString()} COINS</p>
+                      <p className="text-[12px] text-[#5c626b]">{t.purchaseFreePoints(rec.freePoints)}</p>
+                    </div>
+                    <p className="shrink-0 text-[16px] font-extrabold text-[#1d2129]">{rec.jpy.toLocaleString()} JPY</p>
+                  </div>
+
+                  {/* Payment details */}
+                  <div className="mt-2 space-y-0.5 border-t border-black/[0.06] pt-2">
+                    <p className="text-[12px] text-[#8a9099]">{t.purchasePaymentMethod}: {rec.paymentMethod}</p>
+                    <p className="text-[12px] text-[#8a9099]">{t.purchasePaymentId}: {rec.paymentId}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <SiteFooter t={t} />
+      </div>
+    </div>
+  );
+}
+
 export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void }) {
   const t = STR[lang];
   const [screen, setScreen] = useState<Screen>("landing");
@@ -3853,6 +3947,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
             lang={lang}
             coins={coins}
             onOpenPrizeHistory={() => setScreen("prizeHistory")}
+            onOpenPurchaseHistory={() => setScreen("purchaseHistory")}
             onOpenShippingAddress={() => setScreen("shippingAddress")}
             onHome={goHome}
             onLogout={() => setScreen("landing")}
@@ -3869,6 +3964,15 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
             onHome={goHome}
             empty={false}
             onGoGacha={goHome}
+          />
+        )}
+        {screen === "purchaseHistory" && (
+          <PurchaseHistoryPage
+            lang={lang}
+            coins={coins}
+            onBack={() => setScreen("mypage")}
+            onHome={goHome}
+            empty={noHistory}
           />
         )}
         {screen === "shippingAddress" && (

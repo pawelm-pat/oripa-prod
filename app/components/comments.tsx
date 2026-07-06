@@ -26,6 +26,7 @@ const SCREEN_LABELS: Record<string, string> = {
   oripa: "Lobby / Home",
   notifications: "Notifications",
   prizeHistory: "Winning history",
+  purchaseHistory: "Purchase history",
   shippingAddress: "Address",
   mypage: "My Account",
   quest: "Quest",
