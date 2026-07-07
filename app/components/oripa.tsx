@@ -833,12 +833,12 @@ function BottomNav({ screen, t, onNavigate }: { screen: Screen; t: Dict; onNavig
           // Center Store button: a raised circular image (label baked in).
           if (it.key === "store") {
             return (
-              <div key={it.key} className="flex flex-1 flex-col items-center justify-end pb-2.5">
+              <div key={it.key} className="flex flex-1 flex-col items-center justify-end pb-1">
                 <button
                   type="button"
                   onClick={navigable ? () => onNavigate?.(it.key) : undefined}
                   aria-label={it.label}
-                  className="-mt-5 active:scale-95"
+                  className="-mt-4 active:scale-95"
                 >
                   <img src="/nav-store.png" alt={it.label} className="h-[58px] w-[58px] object-contain drop-shadow-[0_4px_10px_rgba(209,0,5,0.35)]" />
                 </button>
