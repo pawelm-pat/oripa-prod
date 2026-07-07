@@ -838,9 +838,9 @@ function BottomNav({ screen, t, onNavigate }: { screen: Screen; t: Dict; onNavig
                   type="button"
                   onClick={navigable ? () => onNavigate?.(it.key) : undefined}
                   aria-label={it.label}
-                  className="-mt-4 active:scale-95"
+                  className="-mt-2 active:scale-95"
                 >
-                  <img src="/nav-store.png" alt={it.label} className="h-[58px] w-[58px] object-contain drop-shadow-[0_4px_10px_rgba(209,0,5,0.35)]" />
+                  <img src="/nav-store.png" alt={it.label} className="h-[50px] w-[50px] object-contain drop-shadow-[0_4px_10px_rgba(209,0,5,0.35)]" />
                 </button>
               </div>
             );
