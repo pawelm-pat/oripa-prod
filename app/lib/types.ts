@@ -119,6 +119,7 @@ export type Screen =
   | "oripa"
   | "notifications"
   | "prizeHistory"
+  | "myLoot"
   | "purchaseHistory"
   | "shippingAddress"
   | "quest"

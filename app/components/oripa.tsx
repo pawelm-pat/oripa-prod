@@ -816,14 +816,19 @@ function BottomNav({ screen, t, onNavigate }: { screen: Screen; t: Dict; onNavig
     { key: "store", label: t.navStore },
     { key: "mypage", label: t.navMyPage },
   ];
-  const activeKey: Screen = screen === "prizeHistory" || screen === "purchaseHistory" || screen === "shippingAddress" ? "mypage" : screen;
+  const activeKey: Screen =
+    screen === "myLoot"
+      ? "prizeHistory"
+      : screen === "prizeHistory" || screen === "purchaseHistory" || screen === "shippingAddress"
+      ? "mypage"
+      : screen;
   return (
     <nav className="shrink-0 border-t border-black/10 bg-white pb-[env(safe-area-inset-bottom)]">
       <div className="flex">
         {items.map((it) => {
           const active = activeKey === it.key;
           const color = active ? "#D10005" : "#1d2129";
-          const navigable = it.key === "oripa" || it.key === "mypage";
+          const navigable = it.key === "oripa" || it.key === "mypage" || it.key === "prizeHistory";
           return (
             <button
               key={it.key}
@@ -2429,11 +2434,14 @@ function USStateSelect({ value, onChange, label }: { value: string; onChange: (v
 /* ── Prize History ───────────────────────────────────────────────────── */
 type Toast = { id: number; text: string };
 
-function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddressesChange, onBack, onHome, empty = false, onGoGacha }: { lang: Lang; coins: number; setCoins: Dispatch<SetStateAction<number>>; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; onBack: () => void; onHome: () => void; empty?: boolean; onGoGacha?: () => void }) {
+function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddressesChange, onBack, onHome, empty = false, onGoGacha, lootMode = false }: { lang: Lang; coins: number; setCoins: Dispatch<SetStateAction<number>>; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; onBack: () => void; onHome: () => void; empty?: boolean; onGoGacha?: () => void; lootMode?: boolean }) {
+  // "My Loot" reuses this screen but shows only the most valuable cards
+  // (top UR tier) and hides the Won/Waiting/Shipped tabs.
+  const screenTitle = lootMode ? STR[lang].mmItems : STR[lang].prizeHistory;
   const t = STR[lang];
 
   const [tab, setTab] = useState<PrizeTab>("won");
-  const [won, setWon] = useState<WonPrize[]>(INITIAL_WON);
+  const [won, setWon] = useState<WonPrize[]>(lootMode ? INITIAL_WON.filter((p) => p.rarity === "UR") : INITIAL_WON);
   const [waiting, setWaiting] = useState<WaitingPrize[]>(INITIAL_WAITING);
   const [shipped] = useState<ShippedPrize[]>(INITIAL_SHIPPED);
 
@@ -2561,7 +2569,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
             <button onClick={onBack} aria-label={t.backAria} className="flex h-8 w-8 items-center justify-center text-[#D10005] hover:bg-black/5">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 12H4M10 6l-6 6 6 6" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </button>
-            <h2 className="text-[20px] font-extrabold text-[#1d2129]">{t.prizeHistory}</h2>
+            <h2 className="text-[20px] font-bold text-[#1d2129]">{screenTitle}</h2>
           </div>
         </header>
 
@@ -2592,12 +2600,13 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
           <button onClick={onBack} aria-label={t.backAria} className="flex h-8 w-8 items-center justify-center text-[#D10005] hover:bg-black/5">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 12H4M10 6l-6 6 6 6" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
-          <h2 className="text-[20px] font-extrabold text-[#1d2129]">{t.prizeHistory}</h2>
+          <h2 className="text-[20px] font-bold text-[#1d2129]">{screenTitle}</h2>
         </div>
 
         {/* Top navigation (Won/Waiting/Shipped) stays sticky together with the
             top section (logo, balance, back arrow and title) while the list
-            scrolls beneath it. */}
+            scrolls beneath it. Hidden in My Loot mode (single list only). */}
+        {!lootMode && (
         <div className="flex border-b border-black/10 bg-white px-2">
           {([
             { key: "won", label: t.tabWon },
@@ -2624,6 +2633,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
             );
           })}
         </div>
+        )}
       </header>
 
       <div ref={tabScrollRef} className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
@@ -3680,16 +3690,17 @@ function myMenuIcon(key: string) {
   }
 }
 
-function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onOpenPurchaseHistory, onOpenAnnouncements, onOpenShippingAddress, onHome, onLogout }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenPurchaseHistory: () => void; onOpenAnnouncements: () => void; onOpenShippingAddress: () => void; onHome: () => void; onLogout: () => void }) {
+function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onOpenMyLoot, onOpenPurchaseHistory, onOpenAnnouncements, onOpenShippingAddress, onHome, onLogout }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenMyLoot: () => void; onOpenPurchaseHistory: () => void; onOpenAnnouncements: () => void; onOpenShippingAddress: () => void; onHome: () => void; onLogout: () => void }) {
   const t = STR[lang];
   const [tnc, setTnc] = useState(false);
 
-  // "history" (Prize History), "purchases" (Purchase History), "notices"
-  // (Announcements) and "shippingAddress" navigate. Every other row renders
-  // but is inert (no onClick) — those screens are not ported into PROD yet.
+  // "items" (My Loot), "history" (Prize History), "purchases" (Purchase
+  // History), "notices" (Announcements) and "shippingAddress" navigate. Every
+  // other row renders but is inert (no onClick) — those screens are not ported
+  // into PROD yet.
   const menu: { key: string; label: string; onClick?: () => void }[] = [
     { key: "quest", label: t.mmQuest },
-    { key: "items", label: t.mmItems },
+    { key: "items", label: t.mmItems, onClick: onOpenMyLoot },
     { key: "history", label: t.mmPrizeHistory, onClick: onOpenPrizeHistory },
     { key: "purchases", label: t.mmPurchases, onClick: onOpenPurchaseHistory },
     { key: "invite", label: t.mmInvite },
@@ -3916,7 +3927,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
       // Yield once so this isn't a synchronous setState within the effect.
       await Promise.resolve();
       if (!alive) return;
-      const valid: Screen[] = ["landing", "signup", "login", "oripa", "notifications", "prizeHistory", "purchaseHistory", "shippingAddress", "quest", "store", "mypage"];
+      const valid: Screen[] = ["landing", "signup", "login", "oripa", "notifications", "prizeHistory", "myLoot", "purchaseHistory", "shippingAddress", "quest", "store", "mypage"];
       const target = new URLSearchParams(window.location.search).get("screen");
       if (target && valid.includes(target as Screen)) setScreen(target as Screen);
     };
@@ -3938,11 +3949,17 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
   // My Account → Announcements opens the notifications screen in single-tab
   // "notice" mode and returns to My Account on back.
   const openAnnouncements = () => { setNotifOnly("notice"); setPrevScreen("mypage"); setScreen("notifications"); };
-  // Bottom-nav navigation: only the Oripa (lobby) and My Account tabs are live.
+  // My Loot reuses the Winning-history screen filtered to the most valuable
+  // cards. It can be opened from the bottom nav or from My Account; back
+  // returns to wherever it was opened from.
+  const [lootReturn, setLootReturn] = useState<Screen>("oripa");
+  const openMyLoot = () => { setLootReturn((p) => (screen === "myLoot" ? p : screen)); setScreen("myLoot"); };
+  // Bottom-nav navigation: Oripa (lobby), My Loot and My Account tabs are live.
   const navigate = (s: Screen) => {
     if (s === "oripa") { goHome(); return; }
     if (s === "mypage") { setScreen("mypage"); return; }
-    // prizeHistory / quest / store tabs remain inert.
+    if (s === "prizeHistory") { openMyLoot(); return; }
+    // quest / store tabs remain inert.
   };
   const onLanding = screen === "landing" || screen === "signup" || screen === "login";
   const showNav = !onLanding;
@@ -3965,6 +3982,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
             lang={lang}
             coins={coins}
             onOpenPrizeHistory={() => setScreen("prizeHistory")}
+            onOpenMyLoot={openMyLoot}
             onOpenPurchaseHistory={() => setScreen("purchaseHistory")}
             onOpenAnnouncements={openAnnouncements}
             onOpenShippingAddress={() => setScreen("shippingAddress")}
@@ -3983,6 +4001,20 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
             onHome={goHome}
             empty={false}
             onGoGacha={goHome}
+          />
+        )}
+        {screen === "myLoot" && (
+          <PrizeHistory
+            lang={lang}
+            coins={coins}
+            setCoins={setCoins}
+            shippingAddresses={shippingAddresses}
+            onShippingAddressesChange={setShippingAddresses}
+            onBack={() => setScreen(lootReturn)}
+            onHome={goHome}
+            empty={false}
+            onGoGacha={goHome}
+            lootMode
           />
         )}
         {screen === "purchaseHistory" && (

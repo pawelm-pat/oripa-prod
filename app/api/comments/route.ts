@@ -78,6 +78,7 @@ const SECTION_LABELS: Record<string, string> = {
   oripa: "Lobby / Home",
   notifications: "Notifications",
   prizeHistory: "Winning history",
+  myLoot: "My Loot",
   purchaseHistory: "Purchase history",
   shippingAddress: "Address",
   mypage: "My Account",
