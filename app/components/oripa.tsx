@@ -809,11 +809,12 @@ function navIcon(key: Screen, color: string) {
 // sub-screens (Prize History, Shipping Address) all highlight the My Account
 // tab.
 function BottomNav({ screen, t, onNavigate }: { screen: Screen; t: Dict; onNavigate?: (s: Screen) => void }) {
+  // Store sits in the middle as a raised circular button (Figma "オリパゲーム").
   const items: { key: Screen; label: string }[] = [
     { key: "oripa", label: t.navOripa },
     { key: "prizeHistory", label: t.navPrizeHistory },
-    { key: "quest", label: t.navQuest },
     { key: "store", label: t.navStore },
+    { key: "quest", label: t.navQuest },
     { key: "mypage", label: t.navMyPage },
   ];
   const activeKey: Screen =
@@ -829,6 +830,21 @@ function BottomNav({ screen, t, onNavigate }: { screen: Screen; t: Dict; onNavig
           const active = activeKey === it.key;
           const color = active ? "#D10005" : "#1d2129";
           const navigable = it.key === "oripa" || it.key === "mypage" || it.key === "prizeHistory";
+          // Center Store button: a raised circular image (label baked in).
+          if (it.key === "store") {
+            return (
+              <div key={it.key} className="flex flex-1 flex-col items-center justify-end">
+                <button
+                  type="button"
+                  onClick={navigable ? () => onNavigate?.(it.key) : undefined}
+                  aria-label={it.label}
+                  className="-mt-6 active:scale-95"
+                >
+                  <img src="/nav-store.png" alt={it.label} className="h-[58px] w-[58px] object-contain drop-shadow-[0_4px_10px_rgba(209,0,5,0.35)]" />
+                </button>
+              </div>
+            );
+          }
           return (
             <button
               key={it.key}
