@@ -4262,7 +4262,7 @@ function PurchaseFlow({
           </div>
           {/* Card */}
           <div className="rounded-2xl bg-white px-5 pb-5 pt-16">
-            <h2 className="text-center text-[20px] font-extrabold leading-snug text-[#1d2129]">
+            <h2 className="text-center text-[20px] font-bold leading-snug text-[#1d2129]">
               {successHeading.split("\n").map((line, i) => <span key={i}>{line}{i === 0 && <br />}</span>)}
             </h2>
             <p className="mt-3 mb-3 text-center text-[13px] font-semibold text-[#5c626b]">{t.successPurchaseDetails}</p>
@@ -4284,24 +4284,24 @@ function PurchaseFlow({
               <div className="flex items-center justify-center gap-6 rounded-xl border border-black/10 py-3">
                 <div className="flex items-center gap-2">
                   <CoinIcon size={22} />
-                  <span className="text-[18px] font-extrabold text-[#1d2129]">{pkg.coins.toLocaleString()}</span>
+                  <span className="text-[16px] font-medium text-[#1d2129]">{pkg.coins.toLocaleString()}</span>
                 </div>
                 <div className="h-6 w-px bg-black/10" />
                 <div className="flex items-center gap-2">
                   <GemIcon size={22} />
-                  <span className="text-[18px] font-extrabold text-[#1d2129]">{pkg.freePoints.toLocaleString()}</span>
+                  <span className="text-[16px] font-medium text-[#1d2129]">{pkg.freePoints.toLocaleString()}</span>
                 </div>
               </div>
             )}
             {/* Close button */}
             <button
               onClick={() => { onComplete(pkg.coins); }}
-              className="mt-3 w-full rounded-xl border border-black/20 py-3 text-[15px] font-bold text-[#1d2129]"
+              className="mt-3 w-full rounded-xl border border-black/20 py-3 text-[16px] font-bold text-[#1d2129]"
             >
               {t.successClose}
             </button>
             {/* Billing note */}
-            <p className="mt-3 text-center text-[10px] leading-relaxed text-[#8a9099]">{t.successBillingNote}</p>
+            <p className="mt-3 text-center text-[10px] font-medium leading-relaxed text-[#8a9099]">{t.successBillingNote}</p>
           </div>
         </div>
       </div>
