@@ -3968,10 +3968,10 @@ function CoinHistoryPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
         <div className="rounded-2xl bg-white p-3 shadow-[0_1px_3px_rgba(0,0,0,0.07)]">
           <div className="flex items-stretch">
             <div className="flex-1 pr-3">
-              <p className="text-[12px] font-medium text-[#5c626b]">{t.chOripaCoins}</p>
+              <p className="text-[20px] font-bold text-[#5c626b]">{t.chOripaCoins}</p>
               <div className="mt-1 flex items-center gap-2">
                 <CoinIcon size={22} />
-                <span className="text-[22px] font-extrabold text-[#1d2129]">{coins.toLocaleString()}</span>
+                <span className="text-[25px] font-bold text-[#1d2129]">{coins.toLocaleString()}</span>
                 <button onClick={onOpenStore} aria-label={t.addCoinsAria} className="flex h-[22px] w-[22px] items-center justify-center transition active:scale-95">
                   <img src="/plus-sign.png" alt="" className="h-full w-full object-contain" draggable={false} />
                 </button>
@@ -3979,18 +3979,18 @@ function CoinHistoryPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
             </div>
             <div className="w-px bg-black/10" />
             <div className="flex-1 pl-3">
-              <p className="text-[12px] font-medium text-[#5c626b]">{t.chFreePoints}</p>
+              <p className="text-[20px] font-bold text-[#5c626b]">{t.chFreePoints}</p>
               <div className="mt-1 flex items-center gap-2">
                 <GemIcon size={22} />
-                <span className="text-[22px] font-extrabold text-[#1d2129]">10,000</span>
+                <span className="text-[25px] font-bold text-[#1d2129]">10,000</span>
               </div>
             </div>
           </div>
-          <p className="mt-2.5 text-[13px] font-bold text-[#D10005]">{t.chExpireMsg(50, "11/12 at 18:51")}</p>
+          <p className="mt-2.5 text-[12px] font-bold text-[#D10005]">{t.chExpireMsg(50, "11/12 at 18:51")}</p>
         </div>
 
         {/* Note */}
-        <p className="px-1 py-2.5 text-[11.5px] text-[#8a9099]">{t.chNote}</p>
+        <p className="px-1 py-2.5 text-[10px] font-normal text-[#8a9099]">{t.chNote}</p>
 
         {/* Transactions */}
         <div className="space-y-2 pb-6">
@@ -4001,20 +4001,20 @@ function CoinHistoryPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
             const subLabel = sub(tx.kind);
             return (
               <div key={tx.id} className="rounded-xl bg-white px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.07)]">
-                <div className="flex items-center gap-1.5 text-[12px] text-[#8a9099]">
+                <div className="flex items-center gap-1.5 text-[13px] font-medium text-[#8a9099]">
                   {clock}
                   {tx.date}
                 </div>
                 <div className="mt-1 flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-[14px] font-bold text-[#1d2129]">{title(tx.kind)}</p>
-                    {subLabel && <p className="text-[11px] font-normal text-[#8a9099]">{subLabel}</p>}
+                    {subLabel && <p className="text-[10px] font-normal text-[#8a9099]">{subLabel}</p>}
                     {tx.paymentId && <p className="text-[10px] font-normal text-[#8a9099]">{t.chPaymentId}: {tx.paymentId}</p>}
                     {tx.expires && <p className="text-[10px] font-normal text-[#8a9099]">{t.chExpiresOn} {tx.expires}</p>}
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5">
                     {isCoin ? <CoinIcon size={18} /> : <GemIcon size={18} />}
-                    <span className="text-[16px] font-extrabold tabular-nums" style={{ color: amountColor }}>
+                    <span className="text-[16px] font-bold tabular-nums" style={{ color: amountColor }}>
                       {tx.sign}{tx.amount.toLocaleString()}
                     </span>
                   </div>
