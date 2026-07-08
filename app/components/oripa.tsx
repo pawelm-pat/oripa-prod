@@ -41,6 +41,8 @@ import {
 } from "../data/prizes";
 
 const NotifNavContext = createContext<() => void>(() => {});
+// Tapping the currency balances in the header opens the Coin History screen.
+const CoinHistoryNavContext = createContext<() => void>(() => {});
 
 /* ════════════════════════════════════════════════════════════════════
    ORIPA — PROD skeleton (v1.0)
@@ -113,13 +115,14 @@ export function LangToggle({ lang, setLang }: { lang: Lang; setLang: (l: Lang) =
 }
 
 function BalancePill({ coins, t, onOpenStore }: { coins: number; t: Dict; onOpenStore?: () => void }) {
+  const openCoinHistory = useContext(CoinHistoryNavContext);
   return (
     <div className="flex items-center gap-1.5">
       <div className="relative mr-2.5">
         <button
           type="button"
-          onClick={onOpenStore}
-          aria-label={t.addCoinsAria}
+          onClick={openCoinHistory}
+          aria-label={t.coinHistoryTitle}
           className="flex items-center gap-2 rounded-full border border-black/15 bg-white py-1 pl-3 pr-5 shadow-[0_1px_3px_rgba(0,0,0,0.10)] transition active:scale-[0.97]"
         >
           <span className="flex items-center gap-1 text-[13px] font-medium text-[#1d2129]">
@@ -3908,6 +3911,125 @@ function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false, onOpe
   );
 }
 
+/* ── Coin History ─────────────────────────────────────────────────────── */
+type CoinTxnKind = "superGacha" | "gacha" | "once" | "purchased" | "granted" | "expired";
+type CoinTxn = {
+  id: string;
+  kind: CoinTxnKind;
+  date: string;
+  amount: number;
+  sign: "+" | "-";
+  currency: "coin" | "point";
+  paymentId?: string;
+  expires?: string;
+};
+
+const COIN_HISTORY: CoinTxn[] = [
+  { id: "c1", kind: "superGacha", date: "Feb 3, 2026, 22:14", amount: 5000, sign: "-", currency: "coin" },
+  { id: "c2", kind: "gacha", date: "Feb 3, 2026, 22:14", amount: 2000, sign: "-", currency: "coin" },
+  { id: "c3", kind: "once", date: "Feb 3, 2026, 22:14", amount: 50, sign: "-", currency: "point" },
+  { id: "c4", kind: "purchased", date: "Feb 3, 2026, 22:14", amount: 5000, sign: "+", currency: "coin", paymentId: "35812349", expires: "2027/02/03 at 22:14" },
+  { id: "c5", kind: "granted", date: "Feb 3, 2026, 22:14", amount: 5000, sign: "+", currency: "point", paymentId: "35812349", expires: "2027/02/03 at 22:14" },
+  { id: "c6", kind: "expired", date: "Feb 3, 2026, 22:14", amount: 500, sign: "-", currency: "point" },
+  { id: "c7", kind: "superGacha", date: "Feb 3, 2026, 22:14", amount: 5000, sign: "-", currency: "coin" },
+  { id: "c8", kind: "gacha", date: "Feb 3, 2026, 22:14", amount: 2000, sign: "-", currency: "coin" },
+  { id: "c9", kind: "once", date: "Feb 3, 2026, 22:14", amount: 50, sign: "-", currency: "point" },
+  { id: "c10", kind: "purchased", date: "Feb 3, 2026, 22:14", amount: 5000, sign: "+", currency: "coin", paymentId: "35812349", expires: "2027/02/03 at 22:14" },
+  { id: "c11", kind: "granted", date: "Feb 3, 2026, 22:14", amount: 5000, sign: "+", currency: "point", paymentId: "35812349", expires: "2027/02/03 at 22:14" },
+];
+
+function CoinHistoryPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: Lang; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void }) {
+  const t = STR[lang];
+  const clock = (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></svg>
+  );
+  const title = (kind: CoinTxnKind) =>
+    kind === "superGacha" ? t.chSuperGacha
+    : kind === "gacha" ? t.chGacha
+    : kind === "once" ? t.chOnceDaily
+    : kind === "purchased" ? t.chPurchased
+    : kind === "granted" ? t.chGranted
+    : t.chExpired;
+  const sub = (kind: CoinTxnKind) => (kind === "superGacha" || kind === "gacha" ? t.ch10Pull : null);
+  return (
+    <div className="flex h-full flex-col bg-[#eef0f3]">
+      <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
+
+      {/* Title row */}
+      <div className="shrink-0 flex items-center gap-2 border-b border-black/10 bg-white px-4 py-3">
+        <button onClick={onBack} aria-label={t.backAria} className="flex h-8 w-8 items-center justify-center text-[#D10005] hover:bg-black/5">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 12H4M10 6l-6 6 6 6" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </button>
+        <h1 className="text-[16px] font-bold text-[#1d2129]">{t.coinHistoryTitle}</h1>
+      </div>
+
+      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-3">
+        {/* Balance summary */}
+        <div className="rounded-2xl bg-white p-3 shadow-[0_1px_3px_rgba(0,0,0,0.07)]">
+          <div className="flex items-stretch">
+            <div className="flex-1 pr-3">
+              <p className="text-[12px] font-medium text-[#5c626b]">{t.chOripaCoins}</p>
+              <div className="mt-1 flex items-center gap-2">
+                <CoinIcon size={22} />
+                <span className="text-[22px] font-extrabold text-[#1d2129]">{coins.toLocaleString()}</span>
+                <button onClick={onOpenStore} aria-label={t.addCoinsAria} className="flex h-[22px] w-[22px] items-center justify-center transition active:scale-95">
+                  <img src="/plus-sign.png" alt="" className="h-full w-full object-contain" draggable={false} />
+                </button>
+              </div>
+            </div>
+            <div className="w-px bg-black/10" />
+            <div className="flex-1 pl-3">
+              <p className="text-[12px] font-medium text-[#5c626b]">{t.chFreePoints}</p>
+              <div className="mt-1 flex items-center gap-2">
+                <GemIcon size={22} />
+                <span className="text-[22px] font-extrabold text-[#1d2129]">10,000</span>
+              </div>
+            </div>
+          </div>
+          <p className="mt-2.5 text-[13px] font-bold text-[#D10005]">{t.chExpireMsg(50, "11/12 at 18:51")}</p>
+        </div>
+
+        {/* Note */}
+        <p className="px-1 py-2.5 text-[11.5px] text-[#8a9099]">{t.chNote}</p>
+
+        {/* Transactions */}
+        <div className="space-y-2 pb-6">
+          {COIN_HISTORY.map((tx) => {
+            const isCoin = tx.currency === "coin";
+            const positive = tx.sign === "+";
+            const amountColor = !isCoin ? "#2f6fed" : positive ? "#E8890C" : "#1d2129";
+            const subLabel = sub(tx.kind);
+            return (
+              <div key={tx.id} className="rounded-xl bg-white px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.07)]">
+                <div className="flex items-center gap-1.5 text-[12px] text-[#8a9099]">
+                  {clock}
+                  {tx.date}
+                </div>
+                <div className="mt-1 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[14px] font-bold text-[#1d2129]">{title(tx.kind)}</p>
+                    {subLabel && <p className="text-[11px] font-normal text-[#8a9099]">{subLabel}</p>}
+                    {tx.paymentId && <p className="text-[10px] font-normal text-[#8a9099]">{t.chPaymentId}: {tx.paymentId}</p>}
+                    {tx.expires && <p className="text-[10px] font-normal text-[#8a9099]">{t.chExpiresOn} {tx.expires}</p>}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    {isCoin ? <CoinIcon size={18} /> : <GemIcon size={18} />}
+                    <span className="text-[16px] font-extrabold tabular-nums" style={{ color: amountColor }}>
+                      {tx.sign}{tx.amount.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <SiteFooter t={t} />
+      </div>
+    </div>
+  );
+}
+
 /* ── Store (coin purchase) ────────────────────────────────────────────── */
 type PointPackage = { id: string; coins: number; freePoints: number; jpy: number; inrApprox: number; originalJpy?: number; firstTimeOffer?: boolean; popularOffer?: boolean; discount?: number; subscriptionName?: string };
 const POINT_PACKAGES: PointPackage[] = [
@@ -5000,7 +5122,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
       // Yield once so this isn't a synchronous setState within the effect.
       await Promise.resolve();
       if (!alive) return;
-      const valid: Screen[] = ["landing", "signup", "login", "oripa", "notifications", "prizeHistory", "myLoot", "purchaseHistory", "shippingAddress", "quest", "store", "mypage"];
+      const valid: Screen[] = ["landing", "signup", "login", "oripa", "notifications", "prizeHistory", "myLoot", "purchaseHistory", "shippingAddress", "quest", "store", "coinHistory", "mypage"];
       const target = new URLSearchParams(window.location.search).get("screen");
       if (target && valid.includes(target as Screen)) setScreen(target as Screen);
     };
@@ -5031,6 +5153,10 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
   // bottom-nav Store tab; back returns to wherever it was opened from.
   const [storeReturn, setStoreReturn] = useState<Screen>("oripa");
   const openStore = () => { setStoreReturn((p) => (screen === "store" ? p : screen)); setScreen("store"); };
+  // Coin History opens when the currency balances in the header are tapped;
+  // back returns to wherever it was opened from.
+  const [coinHistoryReturn, setCoinHistoryReturn] = useState<Screen>("oripa");
+  const openCoinHistory = () => { setCoinHistoryReturn((p) => (screen === "coinHistory" ? p : screen)); setScreen("coinHistory"); };
   // Bottom-nav navigation: Oripa (lobby), My Loot, Store and My Account tabs are live.
   const navigate = (s: Screen) => {
     if (s === "oripa") { goHome(); return; }
@@ -5043,6 +5169,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
   const showNav = !onLanding;
   return (
     <NotifNavContext.Provider value={onLanding ? () => {} : openNotifications}>
+    <CoinHistoryNavContext.Provider value={onLanding ? () => {} : openCoinHistory}>
     <div className="flex h-full flex-col bg-[#eef0f3]">
       <div className="relative min-h-0 flex-1">
         {/* Keyed on `screen` so each navigation remounts and replays the
@@ -5124,10 +5251,20 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
             onBack={() => setScreen(storeReturn)}
           />
         )}
+        {screen === "coinHistory" && (
+          <CoinHistoryPage
+            lang={lang}
+            coins={coins}
+            onBack={() => setScreen(coinHistoryReturn)}
+            onHome={goHome}
+            onOpenStore={openStore}
+          />
+        )}
         </div>
       </div>
       {showNav && <BottomNav screen={screen} t={t} onNavigate={navigate} />}
     </div>
+    </CoinHistoryNavContext.Provider>
     </NotifNavContext.Provider>
   );
 }

@@ -91,6 +91,7 @@ const SECTION_LABELS: Record<string, string> = {
   mypage: "My Account",
   quest: "Quest",
   store: "Store",
+  coinHistory: "Coin History",
 };
 
 function sectionLabel(section?: string): string {

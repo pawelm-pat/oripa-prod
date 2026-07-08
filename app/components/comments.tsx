@@ -32,6 +32,7 @@ const SCREEN_LABELS: Record<string, string> = {
   mypage: "My Account",
   quest: "Quest",
   store: "Store",
+  coinHistory: "Coin History",
 };
 
 const STATUSES: Status[] = ["new", "inreview", "inprogress", "resolved", "rejected", "deleted"];

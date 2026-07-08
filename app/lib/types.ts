@@ -124,4 +124,5 @@ export type Screen =
   | "shippingAddress"
   | "quest"
   | "store"
+  | "coinHistory"
   | "mypage";
