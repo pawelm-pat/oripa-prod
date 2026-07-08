@@ -2468,8 +2468,8 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
   // "My Loot" reuses this screen but shows only the most valuable cards
   // (top UR tier) and hides the Won/Waiting/Shipped tabs.
   const screenTitle = lootMode ? STR[lang].mmItems : STR[lang].prizeHistory;
-  // "Best cards" = the higher rarities (exclude the common "N" tier).
-  const bestOnly = <T extends { rarity: Rarity }>(arr: T[]) => (lootMode ? arr.filter((p) => p.rarity !== "N") : arr);
+  // "Best cards" = only the top tier (UR).
+  const bestOnly = <T extends { rarity: Rarity }>(arr: T[]) => (lootMode ? arr.filter((p) => p.rarity === "UR") : arr);
   const t = STR[lang];
 
   const [tab, setTab] = useState<PrizeTab>("won");
