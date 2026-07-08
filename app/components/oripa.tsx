@@ -730,7 +730,7 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
   );
 }
 
-function OripaHome({ lang, coins, onHome }: { lang: Lang; coins: number; onHome: () => void }) {
+function OripaHome({ lang, coins, onHome, onOpenStore }: { lang: Lang; coins: number; onHome: () => void; onOpenStore?: () => void }) {
   const t = STR[lang];
   const [filters, setFilters] = useState<Record<string, boolean>>({});
   const [filterOpen, setFilterOpen] = useState(false);
@@ -739,7 +739,7 @@ function OripaHome({ lang, coins, onHome }: { lang: Lang; coins: number; onHome:
   const clearFilters = () => { setFilters({}); setQuery(""); };
   return (
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
-      <AppHeader coins={coins} t={t} onHome={onHome} />
+      <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
 
       <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
         <div className="px-3 pb-4 pt-3">
@@ -823,7 +823,7 @@ function BottomNav({ screen, t, onNavigate }: { screen: Screen; t: Dict; onNavig
         {items.map((it) => {
           const active = activeKey === it.key;
           const color = active ? "#D10005" : "#1d2129";
-          const navigable = it.key === "oripa" || it.key === "mypage" || it.key === "prizeHistory";
+          const navigable = it.key === "oripa" || it.key === "mypage" || it.key === "prizeHistory" || it.key === "store";
           return (
             <button
               key={it.key}
@@ -3685,7 +3685,7 @@ function myMenuIcon(key: string) {
   }
 }
 
-function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onOpenMyLoot, onOpenPurchaseHistory, onOpenAnnouncements, onOpenShippingAddress, onHome, onLogout }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenMyLoot: () => void; onOpenPurchaseHistory: () => void; onOpenAnnouncements: () => void; onOpenShippingAddress: () => void; onHome: () => void; onLogout: () => void }) {
+function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onOpenMyLoot, onOpenPurchaseHistory, onOpenAnnouncements, onOpenShippingAddress, onHome, onLogout, onOpenStore }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenMyLoot: () => void; onOpenPurchaseHistory: () => void; onOpenAnnouncements: () => void; onOpenShippingAddress: () => void; onHome: () => void; onLogout: () => void; onOpenStore?: () => void }) {
   const t = STR[lang];
   const [tnc, setTnc] = useState(false);
 
@@ -3712,7 +3712,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
 
   return (
     <div className="flex h-full flex-col bg-[#eef0f3]">
-      <AppHeader coins={coins} t={t} onHome={onHome} />
+      <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
       <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
         <div className="px-3 py-4">
           {/* Profile card */}
@@ -3835,11 +3835,11 @@ const PURCHASE_HISTORY: PurchaseRecord[] = [
   { id: "ph6", date: "Feb 3, 2026, 22:14", coins: 20000, freePoints: 500, paymentMethod: "Mazooma *****5678", paymentId: "35812349", status: "Completed", jpy: 52000 },
 ];
 
-function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false }: { lang: Lang; coins: number; onBack: () => void; onHome: () => void; empty?: boolean }) {
+function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false, onOpenStore }: { lang: Lang; coins: number; onBack: () => void; onHome: () => void; empty?: boolean; onOpenStore?: () => void }) {
   const t = STR[lang];
   return (
     <div className="flex h-full flex-col bg-[#eef0f3]">
-      <AppHeader coins={coins} t={t} onHome={onHome} />
+      <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
 
       {/* Title row */}
       <div className="shrink-0 flex items-center justify-between border-b border-black/10 bg-white px-4 py-3">
@@ -3908,6 +3908,1084 @@ function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false }: { l
   );
 }
 
+/* ── Store (coin purchase) ────────────────────────────────────────────── */
+type PointPackage = { id: string; coins: number; freePoints: number; jpy: number; inrApprox: number; originalJpy?: number; firstTimeOffer?: boolean; popularOffer?: boolean; discount?: number; subscriptionName?: string };
+const POINT_PACKAGES: PointPackage[] = [
+  { id: "pp25000", coins: 25000, freePoints: 25000, jpy: 25000, inrApprox: 15332.20, originalJpy: 30000, firstTimeOffer: true, discount: 90 },
+  { id: "pp20000", coins: 20000, freePoints: 20000, jpy: 20000, inrApprox: 12265.76, originalJpy: 30000, popularOffer: true, discount: 66 },
+  { id: "pp500",   coins: 500,   freePoints: 500,   jpy: 500,   inrApprox: 306.64 },
+  { id: "pp1000",  coins: 1000,  freePoints: 1000,  jpy: 1000,  inrApprox: 613.29 },
+  { id: "pp5000",  coins: 5000,  freePoints: 5000,  jpy: 5000,  inrApprox: 3066.44 },
+  { id: "pp10000", coins: 10000, freePoints: 10000, jpy: 10000, inrApprox: 6132.88 },
+];
+
+const FIRST_TIME_OFFER: PointPackage = { id: "fto1", coins: 500, freePoints: 50, jpy: 500, inrApprox: 306.64, originalJpy: 1000, firstTimeOffer: true, discount: 90 };
+
+type LimitedBundle = { id: string; name: string; coins: number; freePoints: number; jpy: number; originalJpy: number; remaining: number; total: number; discount: number; hot?: boolean };
+const LIMITED_BUNDLES: LimitedBundle[] = [
+  { id: "lb1", name: "Starter Pack",  coins: 3000,  freePoints: 800,   jpy: 1200,  originalJpy: 2400,  remaining: 23, total: 50, discount: 50, hot: true },
+  { id: "lb2", name: "Power Pack",    coins: 8000,  freePoints: 2000,  jpy: 4000,  originalJpy: 8000,  remaining: 8,  total: 30, discount: 50 },
+  { id: "lb3", name: "Whale Pack",    coins: 20000, freePoints: 6000,  jpy: 6000,  originalJpy: 12000, remaining: 5,  total: 20, discount: 50 },
+  { id: "lb4", name: "Elite Pack",    coins: 15000, freePoints: 4000,  jpy: 9000,  originalJpy: 18000, remaining: 12, total: 25, discount: 50 },
+  { id: "lb5", name: "Mega Pack",     coins: 50000, freePoints: 15000, jpy: 24000, originalJpy: 48000, remaining: 3,  total: 10, discount: 50 },
+];
+
+function CardBrandIcon({ brand }: { brand: string }) {
+  const b = brand.toLowerCase();
+  if (b === "visa") return <span className="inline-block min-w-[36px] text-center text-[13px] font-black italic" style={{ color: "#1a1f71" }}>VISA</span>;
+  if (b === "mastercard") return (
+    <div className="relative flex h-6 w-9 shrink-0 items-center">
+      <div className="absolute left-0 h-6 w-6 rounded-full" style={{ background: "#eb001b" }} />
+      <div className="absolute left-3 h-6 w-6 rounded-full opacity-80" style={{ background: "#f79e1b" }} />
+    </div>
+  );
+  if (b === "amex") return <span className="inline-block rounded bg-[#006fcf] px-1.5 py-0.5 text-center text-[10px] font-black text-white">AMEX</span>;
+  return <svg width="36" height="24" viewBox="0 0 36 24" fill="none"><rect width="36" height="24" rx="3" fill="#1d2129" /><rect x="2" y="8" width="32" height="4" fill="#8a9099" /><rect x="2" y="16" width="8" height="4" rx="1" fill="#8a9099" /></svg>;
+}
+
+type BillingAddress = {
+  firstName: string;
+  lastName: string;
+  address1: string;
+  address2: string;
+  country: string;
+  city: string;
+  state: string;
+  zip: string;
+};
+type PurchaseStep = "checkout" | "auth3ds" | "success";
+
+function PurchaseFlow({
+  pkg,
+  lang,
+  onComplete,
+  onClose,
+  savedCards,
+  onSaveCard,
+  onDeleteCard,
+}: {
+  pkg: PointPackage;
+  lang: Lang;
+  onComplete: (pts: number) => void;
+  onClose: () => void;
+  savedCards?: { last4: string; expiry: string; brand: string; name: string; billingAddress?: BillingAddress }[];
+  onSaveCard?: (card: { last4: string; expiry: string; brand: string; name: string; billingAddress?: BillingAddress }) => void;
+  onDeleteCard?: (idx: number) => void;
+}) {
+  const t = STR[lang];
+  const [step, setStep] = useState<PurchaseStep>("checkout");
+  const [payMethod, setPayMethod] = useState<"card" | "applePay" | "googlePay" | "payPay" | "link">("card");
+  const [selectedCardIdx, setSelectedCardIdx] = useState<number | "new">((savedCards && savedCards.length > 0) ? 0 : "new");
+  const [cardNum, setCardNum] = useState("");
+  const [expiry, setExpiry] = useState("");
+  const [cvc, setCvc] = useState("");
+  const [cardName, setCardName] = useState("");
+  const [country, setCountry] = useState("Japan");
+  const [authCode, setAuthCode] = useState("");
+  const [showMyCards, setShowMyCards] = useState(false);
+  const [deleteConfirmIdx, setDeleteConfirmIdx] = useState<number | null>(null);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [billingFirstName, setBillingFirstName] = useState("");
+  const [billingLastName, setBillingLastName] = useState("");
+  const [billingAddress1, setBillingAddress1] = useState("");
+  const [billingAddress2, setBillingAddress2] = useState("");
+  const [billingCity, setBillingCity] = useState("");
+  const [billingState, setBillingState] = useState("");
+  const [billingZip, setBillingZip] = useState("");
+  const [billingEditMode, setBillingEditMode] = useState(false);
+  useEffect(() => {
+    if (!toastMsg) return;
+    const id = setTimeout(() => setToastMsg(null), 3000);
+    return () => clearTimeout(id);
+  }, [toastMsg]);
+  // Switching to a fresh card pre-populates billing from the most recent saved
+  // address (kept in an event handler rather than an effect to avoid cascading
+  // renders on selection changes).
+  const selectNewCard = () => {
+    const lastAddr = savedCards?.find(c => c.billingAddress)?.billingAddress;
+    if (lastAddr) {
+      setBillingFirstName(lastAddr.firstName);
+      setBillingLastName(lastAddr.lastName);
+      setBillingAddress1(lastAddr.address1);
+      setBillingAddress2(lastAddr.address2);
+      setCountry(lastAddr.country);
+      setBillingCity(lastAddr.city);
+      setBillingState(lastAddr.state);
+      setBillingZip(lastAddr.zip);
+    } else {
+      setBillingFirstName(""); setBillingLastName(""); setBillingAddress1("");
+      setBillingAddress2(""); setBillingCity(""); setBillingState(""); setBillingZip("");
+    }
+    setBillingEditMode(false);
+    setSelectedCardIdx("new");
+  };
+
+  const inputCls = "w-full rounded-lg border border-[#e2e5ea] bg-white px-3 py-2.5 text-[14px] text-[#1d2129] placeholder:text-[#b0b6bf] focus:outline-none focus:border-[#7b88ff]";
+  const labelCls = "block mb-1 mt-3 text-[12px] font-medium text-[#5c626b]";
+
+  const rawCardNum = cardNum.replace(/\s/g, "");
+  const cardNumValid = rawCardNum.length >= 14 && rawCardNum.length <= 16;
+  const expiryValid = (() => {
+    const m = expiry.match(/^(\d{2})\/(\d{2})$/);
+    if (!m) return false;
+    const mm = parseInt(m[1], 10);
+    const yy = parseInt(m[2], 10);
+    if (mm < 1 || mm > 12) return false;
+    const now = new Date();
+    const nowY = now.getFullYear() % 100;
+    const nowM = now.getMonth() + 1;
+    return yy > nowY || (yy === nowY && mm >= nowM);
+  })();
+  const isNewCard = payMethod === "card" && (!savedCards || savedCards.length === 0 || selectedCardIdx === "new");
+  const billingFilled = billingFirstName.trim().length > 0 && billingLastName.trim().length > 0 && billingAddress1.trim().length > 0 && billingCity.trim().length > 0 && billingState.length > 0 && billingZip.trim().length > 0;
+  const payDisabled = isNewCard && (!cardNumValid || !expiryValid || !billingFilled);
+
+  const selectCls = "w-full appearance-none rounded-lg border border-[#e2e5ea] bg-white px-3 py-2.5 text-[14px] text-[#1d2129] focus:outline-none focus:border-[#7b88ff]";
+  const chevronSvg = <svg className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="#5c626b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+  const renderBillingForm = () => (
+    <div className="flex flex-col gap-2">
+      <div className="grid grid-cols-2 gap-2">
+        <input value={billingFirstName} onChange={(e) => setBillingFirstName(e.target.value)} placeholder={t.checkoutBillingFirstNamePh} className={inputCls} />
+        <input value={billingLastName} onChange={(e) => setBillingLastName(e.target.value)} placeholder={t.checkoutBillingLastNamePh} className={inputCls} />
+      </div>
+      <input value={billingAddress1} onChange={(e) => setBillingAddress1(e.target.value)} placeholder={t.checkoutBillingAddress1Ph} className={inputCls} />
+      <p className="flex items-start gap-1 text-[11px] text-[#5c626b]">
+        {t.checkoutBillingPOBoxNote}
+        <svg className="mt-0.5 shrink-0" width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#8a9099" strokeWidth="2"/><path d="M12 16v-4M12 8h.01" stroke="#8a9099" strokeWidth="2" strokeLinecap="round"/></svg>
+      </p>
+      <input value={billingAddress2} onChange={(e) => setBillingAddress2(e.target.value)} placeholder={t.checkoutBillingAddress2Ph} className={inputCls} />
+      <div className="grid grid-cols-2 gap-2">
+        <div className="relative">
+          <select value={country} onChange={(e) => setCountry(e.target.value)} className={selectCls}>
+            <option>India</option>
+            <option>Japan</option>
+            <option>United States</option>
+            <option>United Kingdom</option>
+            <option>Australia</option>
+          </select>
+          {chevronSvg}
+        </div>
+        <input value={billingCity} onChange={(e) => setBillingCity(e.target.value)} placeholder={t.checkoutBillingCityPh} className={inputCls} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="relative">
+          <select value={billingState} onChange={(e) => setBillingState(e.target.value)} className={selectCls}>
+            <option value="">{t.checkoutBillingStatePh}</option>
+            {US_STATES.map(s => <option key={s}>{s}</option>)}
+          </select>
+          {chevronSvg}
+        </div>
+        <input value={billingZip} onChange={(e) => setBillingZip(e.target.value)} placeholder={t.checkoutBillingZipPh} className={inputCls} />
+      </div>
+    </div>
+  );
+
+  if (step === "auth3ds") {
+    return (
+      <div className="absolute inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
+        <div className="relative mx-3 w-full max-w-sm overflow-hidden rounded-2xl bg-white">
+          <button onClick={onClose} className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-[14px] font-bold text-[#5c626b] hover:bg-black/5">✕</button>
+          <div className="border-b border-black/10 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <div className="h-4 w-4 rounded-sm" style={{ background: "#1a5c3a" }} />
+                <span className="text-[11px] font-bold text-[#333]">三井住友カード</span>
+              </div>
+              <span className="text-[22px] font-black italic" style={{ color: "#1a1f71" }}>VISA</span>
+            </div>
+          </div>
+          <div className="px-5 pb-6 pt-4">
+            <h3 className="text-[16px] font-bold text-[#1d2129]">認証コードをご入力ください</h3>
+            <p className="mt-2 text-[12.5px] leading-relaxed text-[#5c626b]">
+              TRUSTHUB K.K.へ¥{pkg.jpy.toLocaleString()} JPYの決済を認証します。<br /><br />
+              認証コードをa*****n@flatriver-inc.comへお送りしました。届いた認証コードをご入力いただき、「認証する」ボタンを押してください。<br />
+              ※ドメイン指定受信を設定の場合は@payment.vpass.ne.jpからのメールを受信できるように設定をお願いします。
+            </p>
+            <div className="mt-4 text-center">
+              <p className="text-[12px] text-[#5c626b]">{t.auth3dsRefCode}</p>
+              <p className="text-[18px] font-black text-[#1d2129]">OTE</p>
+            </div>
+            <label className="mt-4 block text-[12px] font-medium text-[#5c626b]">認証コード</label>
+            <input
+              value={authCode}
+              onChange={(e) => setAuthCode(e.target.value)}
+              placeholder={t.auth3dsInputPh}
+              className={`mt-1 ${inputCls}`}
+            />
+            <button
+              onClick={() => setStep("success")}
+              className="mt-4 w-full rounded-lg py-3 text-[15px] font-bold text-white"
+              style={{ background: "#2355c5" }}
+            >
+              {t.auth3dsSubmit}
+            </button>
+            <button className="mt-3 block w-full text-center text-[13px] font-semibold text-[#2355c5] underline underline-offset-2">
+              {t.auth3dsResend}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === "success") {
+    const isSubscription = !!pkg.subscriptionName;
+    const successHeading = isSubscription ? t.storeSuccessSubscription : t.successTitle;
+    return (
+      <div className="absolute inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.55)" }}>
+        <div className="relative w-full max-w-sm overflow-visible">
+          {/* Floating treasure bag illustration */}
+          <div className="relative z-10 flex justify-center" style={{ marginBottom: "-56px" }}>
+            <img src="/coin-bag.png" alt="Coin bag" style={{ width: 140, height: 140, objectFit: "contain" }} />
+          </div>
+          {/* Card */}
+          <div className="rounded-2xl bg-white px-5 pb-5 pt-16">
+            <h2 className="text-center text-[20px] font-extrabold leading-snug text-[#1d2129]">
+              {successHeading.split("\n").map((line, i) => <span key={i}>{line}{i === 0 && <br />}</span>)}
+            </h2>
+            <p className="mt-3 mb-3 text-center text-[13px] font-semibold text-[#5c626b]">{t.successPurchaseDetails}</p>
+            {isSubscription ? (
+              <div className="rounded-xl border border-black/10 px-4 py-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[18px]">🎴</span>
+                  <span className="text-[15px] font-extrabold text-[#1d2129]">{pkg.subscriptionName}</span>
+                  <span className="ml-auto rounded-full px-2 py-0.5 text-[10px] font-bold text-white" style={{ background: "#16a34a" }}>{t.storeSubscribedActive}</span>
+                </div>
+                {t.storeCollectorsPassPerks.map((perk, i) => (
+                  <div key={i} className="flex items-center gap-2 mt-1.5">
+                    <span className="text-[13px]">{t.storeCollectorsPassPerkIcons[i]}</span>
+                    <span className="text-[12px] text-[#5c626b]">{perk}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-6 rounded-xl border border-black/10 py-3">
+                <div className="flex items-center gap-2">
+                  <CoinIcon size={22} />
+                  <span className="text-[18px] font-extrabold text-[#1d2129]">{pkg.coins.toLocaleString()}</span>
+                </div>
+                <div className="h-6 w-px bg-black/10" />
+                <div className="flex items-center gap-2">
+                  <GemIcon size={22} />
+                  <span className="text-[18px] font-extrabold text-[#1d2129]">{pkg.freePoints.toLocaleString()}</span>
+                </div>
+              </div>
+            )}
+            {/* Close button */}
+            <button
+              onClick={() => { onComplete(pkg.coins); }}
+              className="mt-3 w-full rounded-xl border border-black/20 py-3 text-[15px] font-bold text-[#1d2129]"
+            >
+              {t.successClose}
+            </button>
+            {/* Billing note */}
+            <p className="mt-3 text-center text-[10px] leading-relaxed text-[#8a9099]">{t.successBillingNote}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (showMyCards) {
+    return (
+      <div className="absolute inset-0 z-50">
+        {/* Scrollable cards list */}
+        <div className="h-full overflow-y-auto bg-white">
+          <div className="sticky top-0 z-10 flex items-center border-b border-black/10 bg-white px-4 py-3">
+            <button onClick={() => setShowMyCards(false)} className="flex h-8 w-8 items-center justify-center rounded-full text-[#5c626b] hover:bg-black/5">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#e60012" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </button>
+            <span className="absolute left-1/2 -translate-x-1/2 text-[16px] font-bold text-[#1d2129]">My Cards</span>
+          </div>
+          <div className="flex flex-col gap-3 px-4 py-4 pb-32">
+            {(savedCards ?? []).map((card, i) => (
+              <div
+                key={i}
+                className="flex cursor-pointer items-center gap-3 rounded-xl border p-4"
+                style={{ borderColor: selectedCardIdx === i ? "#1d2129" : "#e2e5ea", background: selectedCardIdx === i ? "#f8f9fa" : "white" }}
+                onClick={() => setSelectedCardIdx(i)}
+              >
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2" style={{ borderColor: selectedCardIdx === i ? "#1d2129" : "#c9ced6" }}>
+                  {selectedCardIdx === i && <span className="h-2.5 w-2.5 rounded-full bg-[#1d2129]" />}
+                </span>
+                <CardBrandIcon brand={card.brand} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[14px] font-semibold text-[#1d2129]">{card.brand} •••• {card.last4}</p>
+                  <p className="text-[12px] text-[#8a9099]">{card.expiry}</p>
+                </div>
+                <button
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-red-50"
+                  onClick={(e) => { e.stopPropagation(); setDeleteConfirmIdx(i); }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" stroke="#B40206" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><path d="M10 11v6M14 11v6" stroke="#B40206" strokeWidth="2" strokeLinecap="round" /></svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Sticky Pay button */}
+        <div className="absolute bottom-0 left-0 right-0 border-t border-black/10 bg-white px-4 py-4">
+          <button
+            onClick={() => { setShowMyCards(false); setStep("auth3ds"); }}
+            className="w-full rounded-xl py-3.5 text-[16px] font-bold text-white"
+            style={{ background: "#c0392b" }}
+          >
+            Pay Now ¥{pkg.jpy.toLocaleString()}
+          </button>
+        </div>
+        {/* Delete confirmation modal */}
+        {deleteConfirmIdx !== null && savedCards && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.55)" }}>
+            <div className="relative w-full max-w-sm rounded-2xl bg-white shadow-xl">
+              <button
+                onClick={() => setDeleteConfirmIdx(null)}
+                className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-full text-[#5c626b] hover:bg-black/5"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" /></svg>
+              </button>
+              <div className="px-6 pb-6 pt-5">
+                <h3 className="text-[18px] font-bold text-[#1d2129]">Delete Card?</h3>
+                <div className="my-3 h-px bg-black/10" />
+                <p className="text-[14px] leading-relaxed text-[#5c626b]">
+                  Are you sure you want to remove {savedCards[deleteConfirmIdx]?.brand} •••• {savedCards[deleteConfirmIdx]?.last4}?
+                </p>
+                <button
+                  onClick={() => {
+                    const newLen = (savedCards?.length ?? 0) - 1;
+                    onDeleteCard?.(deleteConfirmIdx);
+                    setToastMsg("Card removed successfully");
+                    setDeleteConfirmIdx(null);
+                    if (selectedCardIdx === deleteConfirmIdx) {
+                      setSelectedCardIdx(newLen > 0 ? 0 : "new");
+                    } else if (typeof selectedCardIdx === "number" && selectedCardIdx > deleteConfirmIdx) {
+                      setSelectedCardIdx(selectedCardIdx - 1);
+                    }
+                    if (newLen === 0) setShowMyCards(false);
+                  }}
+                  className="mt-5 w-full rounded-xl py-3 text-[15px] font-bold text-white"
+                  style={{ background: "#c0392b" }}
+                >
+                  Delete
+                </button>
+                <button
+                  onClick={() => setDeleteConfirmIdx(null)}
+                  className="mt-2.5 w-full rounded-xl border border-[#e2e5ea] py-3 text-[15px] font-semibold text-[#1d2129]"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Toast */}
+        {toastMsg && (
+          <div className="pointer-events-none absolute bottom-24 left-4 right-4 flex justify-center">
+            <div className="rounded-full bg-[#1d2129] px-5 py-3 text-[14px] font-semibold text-white shadow-lg">
+              {toastMsg}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="absolute inset-0 z-50 overflow-y-auto bg-white">
+      {/* Header */}
+      <div className="sticky top-0 z-10 flex items-center border-b border-black/10 bg-white px-4 py-3">
+        <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full text-[#5c626b] hover:bg-black/5">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#e60012" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </button>
+        <img src="/oripa-logo.png" alt="オリパロット" className="h-7 w-auto absolute left-1/2 -translate-x-1/2" />
+        <div className="ml-auto h-8 w-8" />
+      </div>
+
+      <div className="px-4 pb-4 pt-4">
+        {/* Package summary */}
+        <div className="mb-4 overflow-hidden rounded-xl border bg-white" style={{ borderColor: (pkg.firstTimeOffer || pkg.popularOffer) ? "#B40206" : "#e5e8ec" }}>
+          {(pkg.firstTimeOffer || pkg.popularOffer) && (
+            <div className="flex items-center gap-1.5 px-3 pt-1.5 pb-1" style={{ background: "rgba(230,0,18,0.07)" }}>
+              <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ background: "#B40206" }}>{pkg.popularOffer ? t.storePopularOffer : t.storeFirstTimeOffer}</span>
+              {pkg.discount && <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ background: "#B40206" }}>{t.storeOff(pkg.discount)}</span>}
+            </div>
+          )}
+          <div className="flex items-center gap-2.5 px-3 py-2.5">
+            {pkg.subscriptionName ? (
+              <>
+                <span className="text-[28px]">🎴</span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px] font-extrabold text-[#1d2129]">{pkg.subscriptionName}</p>
+                  <p className="text-[11px] text-[#6b7280]">{t.storeCollectorsPassTagline}</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <StoreCoinIcon />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px] font-extrabold text-[#1d2129]">{t.storeCoins(pkg.coins)}</p>
+                  <div className="mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5" style={{ background: "#fef3c7" }}>
+                    <span className="text-[11px] font-semibold text-[#92400e]">+</span>
+                    <GemIcon size={12} />
+                    <span className="text-[11px] font-semibold text-[#92400e]">{t.storeFreePoints(pkg.freePoints)}</span>
+                  </div>
+                </div>
+              </>
+            )}
+
+            <div className="flex shrink-0 flex-col items-end gap-0.5">
+              {pkg.originalJpy && (
+                <span className="text-[11px] text-[#8a9099] line-through">{pkg.originalJpy.toLocaleString()} JPY</span>
+              )}
+              <span className="text-[15px] font-extrabold text-[#1d2129]">{pkg.jpy.toLocaleString()} JPY</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Payment method */}
+        <div className="mb-2 mt-5 flex items-center justify-between">
+          <p className="text-[16px] font-bold text-[#1d2129]">{t.checkoutPaymentMethod}</p>
+          {savedCards && savedCards.length > 0 && (
+            <button
+              onClick={() => setShowMyCards(true)}
+              className="text-[13px] font-semibold underline underline-offset-2"
+              style={{ color: "#2355c5" }}
+            >
+              My Cards
+            </button>
+          )}
+        </div>
+        <div className="overflow-hidden rounded-xl border border-[#e2e5ea]">
+          {/* Card option */}
+          <label className="flex cursor-pointer flex-col gap-3 p-4">
+            <div className="flex items-center gap-3">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full border-2" style={{ borderColor: payMethod === "card" ? "#1d2129" : "#c9ced6" }}>
+                {payMethod === "card" && <span className="h-2.5 w-2.5 rounded-full bg-[#1d2129]" />}
+              </span>
+              <input type="radio" className="sr-only" checked={payMethod === "card"} onChange={() => setPayMethod("card")} />
+              <svg width="22" height="16" viewBox="0 0 36 24" fill="none"><rect width="36" height="24" rx="3" fill="#1d2129" /><rect x="2" y="8" width="32" height="4" fill="#8a9099" /><rect x="2" y="16" width="8" height="4" rx="1" fill="#8a9099" /></svg>
+              <span className="text-[15px] font-semibold text-[#1d2129]">{t.checkoutCard}</span>
+            </div>
+
+            {payMethod === "card" && savedCards && savedCards.length > 0 && (
+              <div className="flex flex-col gap-2">
+                {savedCards.map((card, i) => (
+                  <label key={i} className="flex cursor-pointer items-center gap-3 rounded-xl border p-3" style={{ borderColor: selectedCardIdx === i ? "#1d2129" : "#e2e5ea" }} onClick={() => setSelectedCardIdx(i)}>
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full border-2" style={{ borderColor: selectedCardIdx === i ? "#1d2129" : "#c9ced6" }}>
+                      {selectedCardIdx === i && <span className="h-2.5 w-2.5 rounded-full bg-[#1d2129]" />}
+                    </span>
+                    <svg width="22" height="16" viewBox="0 0 36 24" fill="none"><rect width="36" height="24" rx="3" fill="#1d2129" /><rect x="2" y="8" width="32" height="4" fill="#8a9099" /><rect x="2" y="16" width="8" height="4" rx="1" fill="#8a9099" /></svg>
+                    <div className="flex-1">
+                      <p className="text-[13px] font-semibold text-[#1d2129]">{card.brand} •••• {card.last4}</p>
+                      <p className="text-[11px] text-[#8a9099]">Expires {card.expiry}</p>
+                    </div>
+                    {i === 0 && <span className="rounded-full bg-[#f0fdf4] px-2 py-0.5 text-[10px] font-bold text-[#16a34a]">Last Used</span>}
+                  </label>
+                ))}
+                <label className="flex cursor-pointer items-center gap-3 rounded-xl border p-3" style={{ borderColor: selectedCardIdx === "new" ? "#1d2129" : "#e2e5ea" }} onClick={selectNewCard}>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full border-2" style={{ borderColor: selectedCardIdx === "new" ? "#1d2129" : "#c9ced6" }}>
+                    {selectedCardIdx === "new" && <span className="h-2.5 w-2.5 rounded-full bg-[#1d2129]" />}
+                  </span>
+                  <span className="text-[13px] font-semibold text-[#1d2129]">Use a different card</span>
+                </label>
+              </div>
+            )}
+
+            {payMethod === "card" && (!savedCards || savedCards.length === 0 || selectedCardIdx === "new") && (
+              <>
+                <p className="text-[12px] font-medium text-[#5c626b]">{t.checkoutCardInfo}</p>
+                <div className="overflow-hidden rounded-lg border border-[#e2e5ea]">
+                  <div className="flex items-center justify-between border-b border-[#e2e5ea] px-3 py-2.5">
+                    <input
+                      value={cardNum}
+                      onChange={(e) => setCardNum(e.target.value)}
+                      placeholder={t.checkoutCardNumPh}
+                      className={`flex-1 bg-transparent text-[13px] placeholder:text-[#b0b6bf] focus:outline-none ${cardNum && !cardNumValid ? "text-red-500" : "text-[#1d2129]"}`}
+                    />
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="text-[10px] font-bold italic" style={{ color: "#1a1f71" }}>VISA</span>
+                      <div className="relative h-4 w-5"><div className="absolute left-0 h-4 w-4 rounded-full bg-[#eb001b] opacity-90" /><div className="absolute left-2 h-4 w-4 rounded-full bg-[#f79e1b] opacity-90" /></div>
+                      <span className="text-[10px] font-black" style={{ color: "#006fcf" }}>AMEX</span>
+                      <div className="flex h-4 w-5 items-center justify-center rounded bg-[#003087]"><span className="text-[8px] font-black text-white">JCB</span></div>
+                    </div>
+                  </div>
+                  <div className="flex">
+                    <input
+                      value={expiry}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/\D/g, "").slice(0, 4);
+                        const formatted = raw.length > 2 ? `${raw.slice(0, 2)}/${raw.slice(2)}` : raw;
+                        setExpiry(formatted);
+                      }}
+                      placeholder={t.checkoutExpiryPh}
+                      maxLength={5}
+                      className={`flex-1 border-r border-[#e2e5ea] bg-transparent px-3 py-2.5 text-[13px] placeholder:text-[#b0b6bf] focus:outline-none ${expiry && !expiryValid ? "text-red-500" : "text-[#1d2129]"}`}
+                    />
+                    <div className="flex flex-1 items-center gap-1.5 px-3 py-2.5">
+                      <input
+                        value={cvc}
+                        onChange={(e) => setCvc(e.target.value)}
+                        placeholder={t.checkoutCvcPh}
+                        maxLength={4}
+                        className="flex-1 bg-transparent text-[13px] text-[#1d2129] placeholder:text-[#b0b6bf] focus:outline-none"
+                      />
+                      <svg width="20" height="14" viewBox="0 0 32 22" fill="none"><rect width="32" height="22" rx="3" fill="#c9ced6" /><rect x="2" y="6" width="28" height="5" fill="#8a9099" /><rect x="20" y="14" width="8" height="4" rx="1" fill="#8a9099" /></svg>
+                    </div>
+                  </div>
+                </div>
+                {cardNum && !cardNumValid && (
+                  <p className="mt-1 text-[11px] text-red-500">Card number must be 14–16 digits</p>
+                )}
+                {expiry && !expiryValid && (
+                  <p className="mt-0.5 text-[11px] text-red-500">Enter a valid future date (MM/YY)</p>
+                )}
+                <div>
+                  <p className={labelCls}>{t.checkoutCardNameLabel}</p>
+                  <input value={cardName} onChange={(e) => setCardName(e.target.value)} placeholder={t.checkoutCardNamePh} maxLength={30} className={inputCls} />
+                </div>
+                <div className="mt-1 rounded-xl border border-[#e2e5ea] p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[14px] font-semibold text-[#1d2129]">{t.checkoutBillingAddress}</p>
+                    {billingFilled && !billingEditMode && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); setBillingEditMode(true); }}
+                        className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-black/5"
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke="#5c626b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke="#5c626b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </button>
+                    )}
+                  </div>
+                  {billingFilled && !billingEditMode ? (
+                    <div className="space-y-0.5">
+                      <p className="text-[13px] text-[#1d2129]">{billingFirstName} {billingLastName}</p>
+                      <p className="text-[13px] text-[#1d2129]">{billingAddress1}{billingAddress2 ? `, ${billingAddress2}` : ""}</p>
+                      <p className="text-[13px] text-[#1d2129]">{billingCity}, {billingState} {billingZip}</p>
+                      <p className="text-[13px] text-[#1d2129]">{country}</p>
+                    </div>
+                  ) : (
+                    <>
+                      {renderBillingForm()}
+                      {billingFilled && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); e.preventDefault(); setBillingEditMode(false); }}
+                          className="mt-2 w-full rounded-lg border border-[#e2e5ea] py-2 text-[13px] font-semibold text-[#1d2129]"
+                        >
+                          Done
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              </>
+            )}
+          </label>
+
+          {/* Apple Pay option */}
+          <label className="flex cursor-pointer items-center gap-3 border-t border-[#e2e5ea] p-4">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full border-2" style={{ borderColor: payMethod === "applePay" ? "#1d2129" : "#c9ced6" }}>
+              {payMethod === "applePay" && <span className="h-2.5 w-2.5 rounded-full bg-[#1d2129]" />}
+            </span>
+            <input type="radio" className="sr-only" checked={payMethod === "applePay"} onChange={() => setPayMethod("applePay")} />
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#1d2129"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" /></svg>
+            <span className="text-[15px] font-semibold text-[#1d2129]">{t.checkoutApplePay}</span>
+          </label>
+
+          {/* Google Pay option */}
+          <label className="flex cursor-pointer items-center gap-3 border-t border-[#e2e5ea] p-4">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full border-2" style={{ borderColor: payMethod === "googlePay" ? "#1d2129" : "#c9ced6" }}>
+              {payMethod === "googlePay" && <span className="h-2.5 w-2.5 rounded-full bg-[#1d2129]" />}
+            </span>
+            <input type="radio" className="sr-only" checked={payMethod === "googlePay"} onChange={() => setPayMethod("googlePay")} />
+            <img src="/g-pay.png" alt="Google Pay" className="h-5 w-auto" />
+            <span className="text-[15px] font-semibold text-[#1d2129]">Google Pay</span>
+          </label>
+
+          {/* PayPay option */}
+          <label className="flex cursor-pointer items-center gap-3 border-t border-[#e2e5ea] p-4">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full border-2" style={{ borderColor: payMethod === "payPay" ? "#1d2129" : "#c9ced6" }}>
+              {payMethod === "payPay" && <span className="h-2.5 w-2.5 rounded-full bg-[#1d2129]" />}
+            </span>
+            <input type="radio" className="sr-only" checked={payMethod === "payPay"} onChange={() => setPayMethod("payPay")} />
+            <svg width="56" height="20" viewBox="0 0 64 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="64" height="22" rx="4" fill="#FF0033" />
+              <text x="7" y="15.5" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="13" fill="white">PayPay</text>
+            </svg>
+          </label>
+
+          {/* Link option */}
+          <label className="flex cursor-pointer items-center gap-3 border-t border-[#e2e5ea] p-4">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full border-2" style={{ borderColor: payMethod === "link" ? "#1d2129" : "#c9ced6" }}>
+              {payMethod === "link" && <span className="h-2.5 w-2.5 rounded-full bg-[#1d2129]" />}
+            </span>
+            <input type="radio" className="sr-only" checked={payMethod === "link"} onChange={() => setPayMethod("link")} />
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#1d2129" /><path d="M8 12l3 3 5-6" stroke="#00d64f" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            <span className="text-[15px] font-semibold text-[#1d2129]">link</span>
+          </label>
+
+        </div>
+
+        {/* Pay button */}
+        <button
+          disabled={payDisabled}
+          onClick={() => {
+            if (payMethod === "card" && selectedCardIdx === "new" && cardNum && onSaveCard) {
+              const last4 = cardNum.replace(/\s/g, "").slice(-4) || "0000";
+              const brand = cardNum.startsWith("4") ? "Visa" : cardNum.startsWith("5") ? "Mastercard" : cardNum.startsWith("3") ? "Amex" : "Card";
+              onSaveCard({ last4, expiry, brand, name: cardName, billingAddress: { firstName: billingFirstName, lastName: billingLastName, address1: billingAddress1, address2: billingAddress2, country, city: billingCity, state: billingState, zip: billingZip } });
+            }
+            setStep(payMethod === "card" ? "auth3ds" : "success");
+          }}
+          className="mt-4 w-full rounded-xl py-3.5 text-[16px] font-bold text-white disabled:cursor-not-allowed"
+          style={{ background: payDisabled ? "#c9ced6" : "#c0392b" }}
+        >
+          {t.checkoutPayBtn} ¥{pkg.jpy.toLocaleString()}
+        </button>
+
+        <div className="mt-4 flex w-full items-center justify-center gap-x-4 text-center text-[11px] text-[#8a9099]">
+          <button className="underline underline-offset-1">{t.checkoutTerms}</button>
+          <button className="underline underline-offset-1">{t.checkoutPrivacy}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StoreCoinIcon({ size = 32 }: { size?: number }) {
+  return <img src="/coin.png" alt="" width={size} height={size} className="shrink-0 object-contain" />;
+}
+
+function CountdownTimer({ initialSeconds, className, style }: { initialSeconds: number; className?: string; style?: React.CSSProperties }) {
+  const [secs, setSecs] = useState(initialSeconds);
+  useEffect(() => {
+    const id = setInterval(() => setSecs(s => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  return (
+    <span className={className} style={style}>
+      {String(h).padStart(2, "0")}:{String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}
+    </span>
+  );
+}
+
+function StorePage({
+  lang,
+  coins,
+  setCoins,
+  onBack,
+  educational = false,
+  subscriptionPurchased = false,
+  purchasedIds = [] as string[],
+  onSubscriptionPurchased,
+  onManageSubscription,
+}: {
+  lang: Lang;
+  coins: number;
+  setCoins: Dispatch<SetStateAction<number>>;
+  onBack: () => void;
+  educational?: boolean;
+  subscriptionPurchased?: boolean;
+  purchasedIds?: string[];
+  onSubscriptionPurchased?: () => void;
+  onManageSubscription?: () => void;
+}) {
+  const t = STR[lang];
+  const [selectedPkg, setSelectedPkg] = useState<PointPackage | null>(null);
+  const [eduOpen, setEduOpen] = useState(true);
+  const [loyaltyOpen, setLoyaltyOpen] = useState(false);
+  const [subActive, setSubActive] = useState(subscriptionPurchased);
+  const [savedCards, setSavedCards] = useState<{ last4: string; expiry: string; brand: string; name: string; billingAddress?: BillingAddress }[]>([]);
+  const manageSubscription = onManageSubscription ?? onBack;
+
+  function handleComplete(coinsEarned: number) {
+    if (selectedPkg?.subscriptionName) {
+      setSubActive(true);
+      onSubscriptionPurchased?.();
+    } else {
+      setCoins((c) => c + coinsEarned);
+    }
+    setSelectedPkg(null);
+  }
+
+  function handleSubscriptionPurchase() {
+    const pkg: PointPackage = { id: "sub_collectors_pass", coins: 0, freePoints: 0, jpy: 980, inrApprox: 980 * 0.613, subscriptionName: "Collector's Pass" };
+    setSelectedPkg(pkg);
+  }
+
+  function handleBundlePurchase(bundle: LimitedBundle) {
+    const pkg: PointPackage = { id: bundle.id, coins: bundle.coins, freePoints: bundle.freePoints, jpy: bundle.jpy, inrApprox: bundle.jpy * 0.613, originalJpy: bundle.originalJpy };
+    setSelectedPkg(pkg);
+  }
+
+  return (
+    <div className="relative flex h-full flex-col bg-[#eef0f3]">
+      {/* Standard app header */}
+      <AppHeader coins={coins} t={t} onHome={onBack} />
+
+      {/* Page title row */}
+      <div className="shrink-0 bg-white px-4 py-3 border-b border-black/10">
+        <div className="flex items-center gap-2">
+          <button onClick={onBack} aria-label={t.backAria} className="flex h-7 w-7 items-center justify-center text-[#1d2129]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#B40206" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </button>
+          <h1 className="text-[15px] font-bold text-[#1d2129]">{t.storeTitle}</h1>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes storeEduPulse { 0%,100%{ box-shadow:0 0 0 0 rgba(230,0,18,.45), 0 2px 8px rgba(0,0,0,.1) } 50%{ box-shadow:0 0 0 7px rgba(230,0,18,0), 0 2px 8px rgba(0,0,0,.1) } }
+        @keyframes storeEduPop { 0%{ opacity:0; transform:translateY(8px) scale(.9) } 100%{ opacity:1; transform:translateY(0) scale(1) } }
+        @keyframes storeEduBounce { 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(5px) } }
+        @keyframes storeEduBannerIn { 0%{ opacity:0; transform:translateY(-10px) } 100%{ opacity:1; transform:translateY(0) } }
+      `}</style>
+
+      {/* ── COINS ── */}
+      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+
+        {/* Loyalty / VIP Status bar */}
+        <div className="mx-4 mt-4 overflow-hidden rounded-2xl">
+          {/* Top — purple gradient, compact single row */}
+          <div className="flex items-center justify-between px-4 py-2.5" style={{ background: "linear-gradient(135deg,#2d1f5e,#3a2470)" }}>
+            <div className="flex items-center gap-2">
+              <svg width="22" height="26" viewBox="0 0 22 26" fill="none">
+                <path d="M8 0h6l-1.2 5.5h-3.6L8 0z" fill="#a0aab4"/>
+                <path d="M8 0L5.5 5.5H9.2L10.4 0H8z" fill="#8a9299"/>
+                <path d="M14 0l2.5 5.5h-3.7L11.6 0H14z" fill="#8a9299"/>
+                <circle cx="11" cy="18" r="7.5" fill="#c8d0d8" stroke="#9aa4ae" strokeWidth="1.2"/>
+                <circle cx="11" cy="18" r="5.5" fill="#dde2e8"/>
+                <path d="M11 13.5l1.1 3.3h3.5l-2.8 2 1.1 3.3L11 20.4l-2.9 1.7 1.1-3.3-2.8-2h3.5z" fill="#9aa4ae"/>
+              </svg>
+              <div className="flex flex-col leading-none gap-0.5">
+                <span className="text-[9px] font-bold tracking-widest uppercase" style={{ color: "rgba(255,255,255,0.55)" }}>{t.loyaltyVipStatus}</span>
+                <span className="text-[15px] font-black text-white">{t.loyaltySilver}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex flex-col items-end leading-none gap-0.5">
+                <span className="text-[9px] font-bold tracking-widest uppercase" style={{ color: "rgba(255,255,255,0.55)" }}>{t.loyaltyNextTier}</span>
+                <span className="text-[15px] font-black" style={{ color: "#f5c842" }}>{t.loyaltyGold}</span>
+              </div>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#f5c842">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+            </div>
+          </div>
+          {/* Bottom — white, progress bar + toggle */}
+          <div className="bg-white px-4 pt-2.5 pb-1">
+            <div className="h-1.5 rounded-full overflow-hidden mb-1.5" style={{ background: "rgba(0,0,0,0.1)" }}>
+              <div className="h-full rounded-full" style={{ width: "57%", background: "#f5a623" }} />
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[10px] text-black/45">28,500 {t.loyaltyCoinsSpent}</span>
+              <span className="text-[10px] font-semibold" style={{ color: "#f5a623" }}>{t.loyaltyToNext(21500, t.loyaltyGold)}</span>
+            </div>
+          </div>
+          <div className="bg-white">
+            <button
+              onClick={() => setLoyaltyOpen((o) => !o)}
+              className="flex w-full items-center justify-center gap-1 pb-3 pt-1 text-[10px] font-semibold text-black/35"
+            >
+              <span>{loyaltyOpen ? t.loyaltyHidePerks : t.loyaltyShowPerks}</span>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ transform: loyaltyOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+            {loyaltyOpen && (
+              <div className="grid grid-cols-2 gap-2 px-4 pb-4">
+                <div className="rounded-xl px-3 py-2.5" style={{ background: "rgba(0,0,0,0.05)" }}>
+                  <p className="text-[8px] font-bold tracking-widest uppercase mb-1.5 text-black/40">{t.loyaltyYourPerks}</p>
+                  <p className="text-[11px] font-bold text-black/80 leading-snug">{t.loyaltyPerk}</p>
+                </div>
+                <div className="rounded-xl px-3 py-2.5" style={{ background: "rgba(0,0,0,0.05)" }}>
+                  <p className="text-[8px] font-bold tracking-widest uppercase mb-1.5 text-black/40">{t.loyaltyUnlockNext}</p>
+                  <p className="text-[11px] font-bold leading-snug" style={{ color: "#f5a623" }}>{t.loyaltyUnlock}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* First Time / Welcome Offer — compact bar */}
+        {purchasedIds.length === 0 && (
+          <div className="mx-4 mt-3 overflow-hidden rounded-2xl" style={{ background: "linear-gradient(135deg,#c50008,#8b0000)" }}>
+            <div className="flex items-center gap-3 px-3 py-1">
+              <div className="shrink-0 flex flex-col items-center justify-center rounded-xl bg-white/20 px-2.5 py-1.5 min-w-[44px]">
+                <span className="text-[15px] font-black leading-none text-white">90%</span>
+                <span className="text-[9px] font-bold text-white/80">OFF</span>
+              </div>
+              <div className="min-w-0 flex-1 overflow-hidden">
+                <span className="text-[13px] font-black text-white">{t.storeWelcomeOfferTitle}</span>
+                <p className="text-[9px] leading-none text-white/60 mt-0.5">· First purchase only</p>
+                <div className="flex items-center gap-1 mt-1 whitespace-nowrap">
+                  <StoreCoinIcon size={13} />
+                  <span className="text-[12px] font-black text-white">500</span>
+                  <span className="text-[10px] text-white/50 line-through">¥1,000</span>
+                  <GemIcon size={10} />
+                  <span className="text-[10px] text-white/75">{t.storeWelcomeOfferBonus}</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedPkg(FIRST_TIME_OFFER)}
+                className="shrink-0 rounded-xl bg-white px-4 py-2 text-[15px] font-black"
+                style={{ color: "#B40206" }}
+              >
+                ¥500
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Limited Bundles */}
+        <div className="px-4 pt-4 pb-3">
+          <div className="mb-2.5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <p className="text-[14px] font-extrabold text-[#1d2129]">{t.storeLimitedBundles}</p>
+              <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ background: "#e60012" }}>{t.storeLimitedTag}</span>
+            </div>
+            <div className="flex items-center gap-1 text-[11px] text-[#6b7280]">
+              <span>{t.storeEndsSoon}</span>
+              <CountdownTimer initialSeconds={6407} className="font-bold tabular-nums text-[#e60012]" />
+            </div>
+          </div>
+          <div className="no-scrollbar flex gap-3 overflow-x-auto pb-2">
+            {LIMITED_BUNDLES.map((bundle, idx) => (
+              <div
+                key={bundle.id}
+                onClick={() => handleBundlePurchase(bundle)}
+                role="button"
+                className="relative flex w-[150px] shrink-0 cursor-pointer flex-col rounded-xl border-2 border-[#e5e8ec] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.09)] active:scale-[0.98] overflow-hidden"
+              >
+                {/* Image area with overlaid badges */}
+                <div className="relative h-[88px] w-full overflow-hidden bg-gradient-to-br from-[#1a1a2e] to-[#16213e]">
+                  <img src={`/carousel-${(idx % 3) + 1}.png`} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                  <div className="absolute inset-0 flex items-end justify-between p-1.5">
+                    {bundle.hot && (
+                      <span className="rounded px-1.5 py-0.5 text-[8px] font-black text-white" style={{ background: "#ff6b00" }}>{t.storeHot}</span>
+                    )}
+                    {!bundle.hot && <span />}
+                    <span className="rounded px-1.5 py-0.5 text-[8px] font-black text-white" style={{ background: "#e60012" }}>{bundle.discount}% OFF</span>
+                  </div>
+                </div>
+                {/* Info */}
+                <div className="flex flex-col px-2 py-2 gap-0.5">
+                  <p className="text-[11px] font-bold text-[#1d2129]">{t.storeBundleNames[LIMITED_BUNDLES.indexOf(bundle)] ?? bundle.name}</p>
+                  <div className="flex items-center gap-1">
+                    <StoreCoinIcon size={13} />
+                    <span className="text-[13px] font-extrabold text-[#1d2129]">{bundle.coins.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <GemIcon size={11} />
+                    <span className="text-[10px] font-semibold text-[#92400e]">+{bundle.freePoints.toLocaleString()}</span>
+                  </div>
+                  {/* Remaining progress */}
+                  <div className="mt-1">
+                    <div className="flex justify-between text-[9px] text-[#6b7280] mb-0.5">
+                      <span>{t.storeRemaining(bundle.remaining)}</span>
+                      <span>{bundle.total}</span>
+                    </div>
+                    <div className="h-1 rounded-full bg-[#e5e8ec] overflow-hidden">
+                      <div className="h-full rounded-full" style={{ width: `${((bundle.total - bundle.remaining) / bundle.total) * 100}%`, background: "#e60012" }} />
+                    </div>
+                  </div>
+                  {/* Prices */}
+                  <div className="mt-1.5 flex items-center justify-between">
+                    <span className="text-[9px] text-[#8a9099] line-through">¥{bundle.originalJpy.toLocaleString()}</span>
+                    <button
+                      onClick={() => handleBundlePurchase(bundle)}
+                      className="rounded-lg px-2.5 py-1 text-[11px] font-bold text-white"
+                      style={{ background: "#e60012" }}
+                    >
+                      ¥{bundle.jpy.toLocaleString()}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Buy Coins */}
+        <div className="px-4 pb-4">
+          <div className="mb-3">
+            <p className="text-[14px] font-extrabold text-[#1d2129]">Buy Coins</p>
+          </div>
+          <div className="space-y-2.5">
+            {POINT_PACKAGES.filter(p => !(p.firstTimeOffer || p.popularOffer) || !purchasedIds.includes(p.id)).map((pkg) => {
+              const isBlue = !!pkg.firstTimeOffer;
+              const isRed = !!pkg.popularOffer;
+              const isColored = isBlue || isRed;
+              const cardBg = isBlue ? "linear-gradient(135deg,#1d4ed8,#1e3a8a)" : isRed ? "linear-gradient(135deg,#c50008,#8b0000)" : undefined;
+              const tagLabel = isBlue ? "MEGA BUNDLE" : isRed ? "BEST VALUE" : (pkg.popularOffer ? t.storePopularOffer : t.storeFirstTimeOffer);
+              const tagBg = isBlue ? "rgba(255,255,255,0.25)" : "#B40206";
+              const discountBg = isBlue ? "rgba(255,255,255,0.2)" : "#B40206";
+              return (
+                <div
+                  key={pkg.id}
+                  onClick={() => setSelectedPkg(pkg)}
+                  role="button"
+                  className="relative cursor-pointer rounded-xl border shadow-[0_1px_3px_rgba(0,0,0,0.07)] active:scale-[0.99]"
+                  style={{ borderColor: isColored ? "transparent" : (pkg.firstTimeOffer || pkg.popularOffer) ? "#B40206" : "#e5e8ec", background: cardBg ?? "#ffffff" }}
+                >
+                  {(isColored || pkg.firstTimeOffer || pkg.popularOffer) && (
+                    <div className="flex items-center gap-1.5 rounded-t-xl px-3 pt-1.5 pb-1" style={{ background: isColored ? "rgba(0,0,0,0.15)" : "rgba(230,0,18,0.07)" }}>
+                      <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ background: tagBg }}>{tagLabel}</span>
+                      {pkg.discount && <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ background: discountBg }}>{t.storeOff(pkg.discount)}</span>}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2.5 px-3 py-2.5">
+                    <StoreCoinIcon />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[15px] font-extrabold" style={{ color: isColored ? "#ffffff" : "#1d2129" }}>{t.storeCoins(pkg.coins)}</p>
+                      <div className="mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5" style={{ background: isColored ? "rgba(255,255,255,0.2)" : "#fef3c7" }}>
+                        <span className="text-[11px] font-semibold" style={{ color: isColored ? "#ffffff" : "#92400e" }}>+</span>
+                        <GemIcon size={12} />
+                        <span className="text-[11px] font-semibold" style={{ color: isColored ? "#ffffff" : "#92400e" }}>{t.storeFreePoints(pkg.freePoints)}</span>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-0.5">
+                      {pkg.originalJpy && (
+                        <span className="text-[11px] line-through" style={{ color: isColored ? "rgba(255,255,255,0.55)" : "#8a9099" }}>¥{pkg.originalJpy.toLocaleString()}</span>
+                      )}
+                      <button
+                        onClick={() => setSelectedPkg(pkg)}
+                        className="rounded-lg px-4 py-2 text-[13px] font-bold text-white"
+                        style={{ background: isBlue ? "rgba(255,255,255,0.25)" : isRed ? "#f97316" : "#B40206" }}
+                      >
+                        ¥{pkg.jpy.toLocaleString()}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Subscriptions */}
+        <div className="px-4 pb-6">
+          <p className="mb-3 text-[14px] font-extrabold text-[#1d2129]">{t.storeSubscriptions}</p>
+          {subActive ? (
+            /* Active subscription card */
+            <div className="overflow-hidden rounded-2xl border-2 border-[#92400e]" style={{ background: "linear-gradient(135deg,#78350f,#451a03)" }}>
+              <div className="flex items-center justify-between px-3 pt-2 pb-0.5">
+                <div>
+                  <p className="text-[14px] font-black text-white">{t.storeCollectorsPass}</p>
+                  <p className="text-[10px] text-white/60">{t.storeCollectorsPassTagline}</p>
+                </div>
+                <span className="rounded-full px-2 py-0.5 text-[9px] font-black text-white" style={{ background: "#16a34a" }}>{t.storeSubscribedActive}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-x-2 gap-y-1 px-3 py-1.5">
+                {t.storeCollectorsPassPerks.map((perk, i) => (
+                  <div key={i} className="flex items-center gap-1.5">
+                    <span className="text-[11px]">{t.storeCollectorsPassPerkIcons[i]}</span>
+                    <span className="text-[10px] font-semibold leading-tight text-white/85">{perk}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="px-3 pb-2 pt-0.5">
+                <button
+                  onClick={manageSubscription}
+                  className="w-full rounded-xl border border-white/30 py-2 text-[12px] font-bold text-white"
+                >
+                  {t.storeManageSubscription}
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Subscribe card */
+            <div className="overflow-hidden rounded-2xl border border-[#e7b98a]" style={{ background: "linear-gradient(135deg,#78350f,#451a03)" }}>
+              <div className="flex items-start justify-between px-3 pt-2 pb-0.5">
+                <div>
+                  <p className="text-[14px] font-black text-white">{t.storeCollectorsPass}</p>
+                  <p className="text-[10px] text-white/60">{t.storeCollectorsPassTagline}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[16px] font-black leading-none" style={{ color: "#f59e0b" }}>¥980</p>
+                  <p className="text-[9px] text-white/60">/month</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-x-2 gap-y-1 px-3 py-1.5">
+                {t.storeCollectorsPassPerks.map((perk, i) => (
+                  <div key={i} className="flex items-center gap-1.5">
+                    <span className="text-[11px]">{t.storeCollectorsPassPerkIcons[i]}</span>
+                    <span className="text-[10px] font-semibold leading-tight text-white/85">{perk}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="px-3 pb-2 pt-0.5">
+                <button
+                  onClick={handleSubscriptionPurchase}
+                  className="w-full rounded-xl py-2 text-[12px] font-black text-white"
+                  style={{ background: "#92400e" }}
+                >
+                  {t.storeSubscribeCta}
+                </button>
+                <p className="mt-1 text-center text-[9px] text-white/45">{t.storeSubscribeLegal}</p>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="-mx-4 mt-3"><SiteFooter t={t} /></div>
+      </div>
+
+      {/* Educational spotlight coachmark (welcome flow) */}
+      {educational && eduOpen && (
+        <div className="absolute inset-0 z-[55] flex flex-col items-center overflow-y-auto px-6 pb-8 pt-9" style={{ background: "rgba(8,6,18,0.82)", animation: "storeEduBannerIn .35s ease both" }}>
+          <button onClick={() => setEduOpen(false)} aria-label="Close" className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-white active:bg-white/25">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+          <img src="/welcome-mascot.png" alt="" className="h-24 w-24 object-contain" style={{ animation: "storeEduBounce 1.6s ease-in-out infinite", filter: "drop-shadow(0 0 18px rgba(255,180,80,.65))" }} />
+          <h2 className="mt-2 text-center text-[22px] font-black italic tracking-wide text-white" style={{ animation: "storeEduPop .5s ease both", textShadow: "0 2px 12px rgba(255,120,60,.6)" }}>{t.storeEduTitle}</h2>
+          <p className="mt-1.5 max-w-[280px] text-center text-[13px] font-semibold leading-relaxed text-white/85" style={{ animation: "storeEduPop .6s ease both" }}>{t.storeEduSub}</p>
+          <div className="mt-6 flex flex-col items-center" style={{ animation: "storeEduBounce 1.6s ease-in-out infinite" }}>
+            <span className="rounded-full bg-[#B40206] px-3 py-1 text-[11px] font-extrabold text-white shadow-[0_3px_10px_rgba(230,0,18,0.6)]">{t.storeEduPick}</span>
+            <svg width="20" height="14" viewBox="0 0 20 14" className="mt-0.5"><path d="M10 13L1 3h18z" fill="#B40206" /></svg>
+          </div>
+          <button
+            onClick={() => { setSelectedPkg(FIRST_TIME_OFFER); setEduOpen(false); }}
+            className="relative mt-2 w-[230px] overflow-hidden rounded-2xl border-2 border-[#B40206] bg-white text-left"
+            style={{ animation: "storeEduPulse 1.5s ease-in-out infinite" }}
+          >
+            <div className="flex items-center gap-1.5 px-3 pt-2" style={{ background: "rgba(230,0,18,0.07)" }}>
+              <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ background: "#B40206" }}>{t.storeFirstTimeOffer}</span>
+              <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ background: "#B40206" }}>90% OFF</span>
+            </div>
+            <div className="flex items-center gap-2.5 px-3 py-3">
+              <StoreCoinIcon />
+              <div className="min-w-0 flex-1">
+                <p className="text-[16px] font-extrabold leading-tight text-[#1d2129]">500 Coins</p>
+                <div className="mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5" style={{ background: "#fef3c7" }}>
+                  <span className="text-[11px] font-semibold text-[#92400e]">+</span>
+                  <GemIcon size={12} />
+                  <span className="text-[11px] font-semibold text-[#92400e]">Free Points 50</span>
+                </div>
+              </div>
+            </div>
+            <div className="px-3 pb-3">
+              <span className="block w-full rounded-lg py-2.5 text-center text-[14px] font-bold text-white" style={{ background: "#e60012" }}>¥500</span>
+            </div>
+          </button>
+          <button onClick={() => setEduOpen(false)} className="mt-5 text-[13px] font-semibold text-white/70 underline underline-offset-2 active:text-white">{t.storeEduSkip}</button>
+        </div>
+      )}
+
+      {/* Purchase flow overlay */}
+      {selectedPkg && (
+        <PurchaseFlow
+          pkg={selectedPkg}
+          lang={lang}
+          onComplete={handleComplete}
+          onClose={() => setSelectedPkg(null)}
+          savedCards={savedCards}
+          onSaveCard={(card) => setSavedCards(prev => [card, ...prev])}
+          onDeleteCard={(idx) => setSavedCards(prev => prev.filter((_, i) => i !== idx))}
+        />
+      )}
+    </div>
+  );
+}
+
 export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void }) {
   const t = STR[lang];
   const [screen, setScreen] = useState<Screen>("landing");
@@ -3949,12 +5027,17 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
   // returns to wherever it was opened from.
   const [lootReturn, setLootReturn] = useState<Screen>("oripa");
   const openMyLoot = () => { setLootReturn((p) => (screen === "myLoot" ? p : screen)); setScreen("myLoot"); };
-  // Bottom-nav navigation: Oripa (lobby), My Loot and My Account tabs are live.
+  // Store (coin purchase) can be opened from the header "+" button or the
+  // bottom-nav Store tab; back returns to wherever it was opened from.
+  const [storeReturn, setStoreReturn] = useState<Screen>("oripa");
+  const openStore = () => { setStoreReturn((p) => (screen === "store" ? p : screen)); setScreen("store"); };
+  // Bottom-nav navigation: Oripa (lobby), My Loot, Store and My Account tabs are live.
   const navigate = (s: Screen) => {
     if (s === "oripa") { goHome(); return; }
     if (s === "mypage") { setScreen("mypage"); return; }
     if (s === "prizeHistory") { openMyLoot(); return; }
-    // quest / store tabs remain inert.
+    if (s === "store") { openStore(); return; }
+    // quest tab remains inert.
   };
   const onLanding = screen === "landing" || screen === "signup" || screen === "login";
   const showNav = !onLanding;
@@ -3970,7 +5053,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
         {screen === "signup" && <SignupPage lang={lang} onLogin={() => setScreen("login")} onSuccess={enterHome} />}
         {screen === "login" && <LoginPage lang={lang} onSignUp={() => setScreen("signup")} onSuccess={enterHome} />}
         {/* Logged-in lobby — V2 format */}
-        {screen === "oripa" && <OripaHome lang={lang} coins={coins} onHome={goHome} />}
+        {screen === "oripa" && <OripaHome lang={lang} coins={coins} onHome={goHome} onOpenStore={openStore} />}
         {screen === "notifications" && <NotificationsScreen lang={lang} coins={coins} empty={noHistory} only={notifOnly} onBack={() => setScreen(prevScreen)} onHome={goHome} />}
         {screen === "mypage" && (
           <MyPage
@@ -3983,6 +5066,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
             onOpenShippingAddress={() => setScreen("shippingAddress")}
             onHome={goHome}
             onLogout={() => setScreen("landing")}
+            onOpenStore={openStore}
           />
         )}
         {screen === "prizeHistory" && (
@@ -4019,6 +5103,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
             onBack={() => setScreen("mypage")}
             onHome={goHome}
             empty={noHistory}
+            onOpenStore={openStore}
           />
         )}
         {screen === "shippingAddress" && (
@@ -4028,6 +5113,15 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
             addresses={shippingAddresses}
             onAddressesChange={setShippingAddresses}
             onBack={() => setScreen("mypage")}
+            onOpenStore={openStore}
+          />
+        )}
+        {screen === "store" && (
+          <StorePage
+            lang={lang}
+            coins={coins}
+            setCoins={setCoins}
+            onBack={() => setScreen(storeReturn)}
           />
         )}
         </div>
