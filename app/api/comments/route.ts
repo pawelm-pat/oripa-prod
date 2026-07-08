@@ -15,7 +15,7 @@ const NAME_MAX = 60;
 const TEXT_MAX = 2000;
 const SECTION_MAX = 80;
 const REASON_MAX = 600;
-const STATUSES = ["new", "inprogress", "resolved", "rejected", "deleted"] as const;
+const STATUSES = ["new", "inreview", "inprogress", "resolved", "rejected", "deleted"] as const;
 type Status = (typeof STATUSES)[number];
 
 function normalizeStatus(s: unknown): Status {
@@ -35,6 +35,13 @@ type Comment = {
   ts: number;
   updatedAt?: number;
   deletedAt?: number;
+  // Slack message references so a status change edits the SAME message
+  // instead of posting a new one (requires a bot token, see notes below).
+  slackTs?: string;
+  slackChannel?: string;
+  // Separate copy posted to the external client channel once "In review".
+  slackExternalTs?: string;
+  slackExternalChannel?: string;
 };
 
 // Find an env var by suffix regardless of the prefix Upstash/Vercel chose.
@@ -93,10 +100,20 @@ function sectionLabel(section?: string): string {
 
 const STATUS_TEXT: Record<Status, string> = {
   new: "New",
+  inreview: "In review",
   inprogress: "In progress",
   resolved: "Resolved",
   rejected: "Rejected",
   deleted: "Deleted",
+};
+
+const STATUS_EMOJI: Record<Status, string> = {
+  new: ":speech_balloon:",
+  inreview: ":eyes:",
+  inprogress: ":hammer_and_wrench:",
+  resolved: ":white_check_mark:",
+  rejected: ":x:",
+  deleted: ":wastebasket:",
 };
 
 // Build a link that opens the app directly on the screen the comment lives on.
@@ -105,7 +122,85 @@ function appLink(section?: string): string {
   return section ? `${base}/?screen=${encodeURIComponent(section)}` : `${base}/`;
 }
 
-async function postSlack(payload: unknown): Promise<void> {
+// A single message block layout, reused for the initial post AND every edit,
+// so status changes just re-render the same message with the new status.
+function buildMessage(comment: Comment, external = false): { text: string; blocks: unknown[] } {
+  const label = sectionLabel(comment.section);
+  const link = appLink(comment.section);
+  const statusText = STATUS_TEXT[comment.status] || comment.status;
+  const emoji = STATUS_EMOJI[comment.status] || ":speech_balloon:";
+  const by = comment.resolvedBy ? ` · handled by *${comment.resolvedBy}*` : "";
+  const heading = external ? "PROD comment — in review" : "PROD comment";
+  const noteBlock =
+    comment.reason && comment.reason.trim()
+      ? [
+          {
+            type: "context" as const,
+            elements: [{ type: "mrkdwn" as const, text: `:memo: *Note:* ${comment.reason.replace(/\n/g, " ")}` }],
+          },
+        ]
+      : [];
+  return {
+    text: `${emoji} ${label}: ${comment.name} — ${statusText}`,
+    blocks: [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `${emoji} *${heading}*\n:bust_in_silhouette: *${comment.name}*${by}\n:round_pushpin: Section: *${label}*\n:label: Status: *${statusText}*`,
+        },
+      },
+      {
+        type: "section",
+        text: { type: "mrkdwn", text: `>${comment.text.replace(/\n/g, "\n>")}` },
+      },
+      ...noteBlock,
+      {
+        type: "context",
+        elements: [
+          { type: "mrkdwn", text: `${comment.version ? `\`${comment.version}\` · ` : ""}<${link}|Open this screen>` },
+        ],
+      },
+    ],
+  };
+}
+
+// --- Slack Web API (bot token) -------------------------------------------
+// A bot token lets us edit the original message (chat.update) so a status
+// change never spawns a duplicate. Falls back to the incoming webhook when
+// no bot token is configured (webhook cannot edit, so it posts follow-ups).
+function slackBotToken(): string | undefined {
+  return process.env.SLACK_BOT_TOKEN;
+}
+
+async function slackApi(method: string, payload: object): Promise<Record<string, unknown> | null> {
+  const token = slackBotToken();
+  if (!token) return null;
+  try {
+    const res = await fetch(`https://slack.com/api/${method}`, {
+      method: "POST",
+      headers: { "content-type": "application/json; charset=utf-8", authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload),
+    });
+    const data = (await res.json()) as Record<string, unknown>;
+    return data.ok ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+// Post a message to a channel; returns its `ts` (message id) for later edits.
+async function slackPost(channel: string, msg: { text: string; blocks: unknown[] }): Promise<string | null> {
+  const data = await slackApi("chat.postMessage", { channel, text: msg.text, blocks: msg.blocks });
+  return (data?.ts as string) ?? null;
+}
+
+async function slackUpdate(channel: string, ts: string, msg: { text: string; blocks: unknown[] }): Promise<void> {
+  await slackApi("chat.update", { channel, ts, text: msg.text, blocks: msg.blocks });
+}
+
+// Legacy incoming-webhook post (fallback only — cannot edit past messages).
+async function postWebhook(payload: unknown): Promise<void> {
   const webhook = process.env.SLACK_WEBHOOK_URL;
   if (!webhook) return;
   try {
@@ -119,51 +214,54 @@ async function postSlack(payload: unknown): Promise<void> {
   }
 }
 
-async function notifySlack(comment: Comment): Promise<void> {
-  const label = sectionLabel(comment.section);
-  const link = appLink(comment.section);
-  await postSlack({
-    // Fallback text (notifications / older clients).
-    text: `:speech_balloon: New PROD comment by ${comment.name} on "${label}" (status: New)`,
-    blocks: [
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: `:speech_balloon: *New PROD comment*\n:bust_in_silhouette: Name: *${comment.name}*\n:round_pushpin: Section: *${label}*\n:label: Status: *New*`,
-        },
-      },
-      {
-        type: "section",
-        text: { type: "mrkdwn", text: `>${comment.text.replace(/\n/g, "\n>")}` },
-      },
-      {
-        type: "context",
-        elements: [
-          { type: "mrkdwn", text: `${comment.version ? `\`${comment.version}\` · ` : ""}<${link}|Open this screen>` },
-        ],
-      },
-    ],
-  });
+// Announce a brand new comment. Prefers the bot token (returns a message ts we
+// can later edit); otherwise falls back to the webhook.
+async function notifyNewComment(comment: Comment): Promise<void> {
+  const channel = process.env.SLACK_CHANNEL_ID;
+  const msg = buildMessage(comment);
+  if (slackBotToken() && channel) {
+    const ts = await slackPost(channel, msg);
+    if (ts) {
+      comment.slackTs = ts;
+      comment.slackChannel = channel;
+    }
+    return;
+  }
+  await postWebhook(msg);
 }
 
-// Incoming webhooks cannot edit past messages, so a status change / delete is
-// announced as a new follow-up message referencing the same comment.
-async function notifySlackStatus(comment: Comment): Promise<void> {
+// Reflect a status change. With a bot token we EDIT the original message in
+// place (no duplicates). When the status becomes "In review" we also mirror
+// the comment into the external client channel (once), and keep that copy in
+// sync afterwards. Without a bot token we fall back to a follow-up webhook post.
+async function notifyStatusChange(comment: Comment): Promise<void> {
+  if (slackBotToken()) {
+    if (comment.slackTs && comment.slackChannel) {
+      await slackUpdate(comment.slackChannel, comment.slackTs, buildMessage(comment));
+    }
+    const extChannel = process.env.SLACK_EXTERNAL_CHANNEL_ID;
+    if (extChannel) {
+      if (comment.status === "inreview" && !comment.slackExternalTs) {
+        const ts = await slackPost(extChannel, buildMessage(comment, true));
+        if (ts) {
+          comment.slackExternalTs = ts;
+          comment.slackExternalChannel = extChannel;
+        }
+      } else if (comment.slackExternalTs && comment.slackExternalChannel) {
+        await slackUpdate(comment.slackExternalChannel, comment.slackExternalTs, buildMessage(comment, true));
+      }
+    }
+    return;
+  }
+
+  // Webhook fallback: cannot edit, so post a compact follow-up.
   const label = sectionLabel(comment.section);
   const link = appLink(comment.section);
   const statusText = STATUS_TEXT[comment.status] || comment.status;
-  const emoji =
-    comment.status === "deleted"
-      ? ":wastebasket:"
-      : comment.status === "resolved"
-      ? ":white_check_mark:"
-      : comment.status === "rejected"
-      ? ":x:"
-      : ":hammer_and_wrench:";
+  const emoji = STATUS_EMOJI[comment.status] || ":speech_balloon:";
   const by = comment.resolvedBy ? ` by *${comment.resolvedBy}*` : "";
   const snippet = comment.text.length > 140 ? `${comment.text.slice(0, 140)}…` : comment.text;
-  await postSlack({
+  await postWebhook({
     text: `${emoji} Comment by ${comment.name} on "${label}" → ${statusText}`,
     blocks: [
       {
@@ -245,10 +343,11 @@ export async function POST(req: Request) {
     ts: Date.now(),
   };
 
+  // Post to Slack first so we can persist the message ts for later in-place edits.
+  await notifyNewComment(comment);
+
   await redis.lpush(KEY, JSON.stringify(comment));
   await redis.ltrim(KEY, 0, MAX_KEEP - 1);
-
-  await notifySlack(comment);
 
   return NextResponse.json({ ok: true, comment });
 }
@@ -353,12 +452,14 @@ export async function PATCH(req: Request) {
     updatedAt: Date.now(),
   };
 
-  await redis.lset(KEY, idx, JSON.stringify(updated));
-
-  // Announce the change in Slack (status change / delete / restore).
+  // Edit the existing Slack message in place (and mirror to the external
+  // channel when moved to "In review"). notifyStatusChange may set new Slack
+  // ts refs on `updated`, so run it BEFORE persisting.
   if (current.status !== updated.status) {
-    await notifySlackStatus(updated);
+    await notifyStatusChange(updated);
   }
+
+  await redis.lset(KEY, idx, JSON.stringify(updated));
 
   return NextResponse.json({ ok: true, comment: updated });
 }

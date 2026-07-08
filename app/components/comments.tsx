@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Screen } from "../lib/types";
 
-type Status = "new" | "inprogress" | "resolved" | "rejected" | "deleted";
+type Status = "new" | "inreview" | "inprogress" | "resolved" | "rejected" | "deleted";
 
 type Comment = {
   id: string;
@@ -34,11 +34,13 @@ const SCREEN_LABELS: Record<string, string> = {
   store: "Store",
 };
 
-const STATUSES: Status[] = ["new", "inprogress", "resolved", "rejected", "deleted"];
+const STATUSES: Status[] = ["new", "inreview", "inprogress", "resolved", "rejected", "deleted"];
 // Statuses a reviewer can move a live comment to via the dropdown.
-const CHANGEABLE: Status[] = ["inprogress", "resolved", "rejected"];
+// "In review" mirrors the comment into the external client channel.
+const CHANGEABLE: Status[] = ["inreview", "inprogress", "resolved", "rejected"];
 const STATUS_LABEL: Record<Status, string> = {
   new: "New",
+  inreview: "In review",
   inprogress: "In progress",
   resolved: "Resolved",
   rejected: "Rejected",
@@ -46,6 +48,7 @@ const STATUS_LABEL: Record<Status, string> = {
 };
 const STATUS_STYLE: Record<Status, string> = {
   new: "bg-[#ef4444] text-white border border-[#ef4444]",
+  inreview: "bg-[#eef2ff] text-[#4338ca] border border-[#c7d2fe]",
   inprogress: "bg-[#fff7e6] text-[#92660a] border border-[#fde6b0]",
   resolved: "bg-[#e9f9ef] text-[#15803d] border border-[#bbe7cb]",
   rejected: "bg-[#fdeaea] text-[#b91c1c] border border-[#f5c2c2]",
@@ -141,9 +144,12 @@ export function CommentsPanel({ screen }: { screen: Screen }) {
     () => (filter === "all" ? screenComments : screenComments.filter((c) => c.status === filter)),
     [screenComments, filter]
   );
-  // Count anything still needing action on this screen (new + in progress).
+  // Count anything still needing action on this screen (new / in review / in progress).
   const actionCount = useMemo(
-    () => screenComments.filter((c) => c.status === "new" || c.status === "inprogress").length,
+    () =>
+      screenComments.filter(
+        (c) => c.status === "new" || c.status === "inreview" || c.status === "inprogress"
+      ).length,
     [screenComments]
   );
 
