@@ -290,6 +290,38 @@ function parseList(raw: Comment[]): Comment[] {
 }
 
 export async function GET(req: Request) {
+  // Temporary Slack diagnostic: /api/comments?diag=1
+  // Returns which env vars are present and the exact Slack API result for a
+  // test post, WITHOUT exposing any secret values. Remove after debugging.
+  if (new URL(req.url).searchParams.get("diag") === "1") {
+    const token = process.env.SLACK_BOT_TOKEN;
+    const channel = process.env.SLACK_CHANNEL_ID;
+    const ext = process.env.SLACK_EXTERNAL_CHANNEL_ID;
+    const env = {
+      hasBotToken: Boolean(token),
+      botTokenPrefix: token ? token.slice(0, 5) : null,
+      hasChannel: Boolean(channel),
+      channelLen: channel ? channel.length : 0,
+      hasExternalChannel: Boolean(ext),
+      hasWebhook: Boolean(process.env.SLACK_WEBHOOK_URL),
+    };
+    let slack: unknown = "skipped (missing token or channel)";
+    if (token && channel) {
+      try {
+        const res = await fetch("https://slack.com/api/chat.postMessage", {
+          method: "POST",
+          headers: { "content-type": "application/json; charset=utf-8", authorization: `Bearer ${token}` },
+          body: JSON.stringify({ channel, text: ":white_check_mark: Slack diagnostic test from oripa-prod" }),
+        });
+        const data = (await res.json()) as Record<string, unknown>;
+        slack = { ok: data.ok, error: data.error ?? null, needed: data.needed ?? null, provided: data.provided ?? null };
+      } catch (e) {
+        slack = { fetchError: String(e) };
+      }
+    }
+    return NextResponse.json({ diag: true, env, slack });
+  }
+
   const redis = getRedis();
   if (!redis) {
     return NextResponse.json(
