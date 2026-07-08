@@ -3281,7 +3281,7 @@ function ShippingFlow({
 }
 
 /* ── Shipping Address page ───────────────────────────────────────────── */
-function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack, onOpenStore }: { lang: Lang; coins: number; addresses: ShippingAddr[]; onAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; onBack: () => void; onOpenStore?: () => void }) {
+function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack, onHome, onOpenStore }: { lang: Lang; coins: number; addresses: ShippingAddr[]; onAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; onBack: () => void; onHome?: () => void; onOpenStore?: () => void }) {
   const t = STR[lang];
   const setAddresses = onAddressesChange;
   const [view, setView] = useState<"main" | "form">("main");
@@ -3440,7 +3440,7 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
 
   return (
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
-      <AppHeader coins={coins} t={t} onOpenStore={onOpenStore} />
+      <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
 
       <div className="relative shrink-0 border-b border-black/10 bg-white px-4 py-3">
         {toast.visible && (
@@ -4696,6 +4696,7 @@ function StorePage({
   coins,
   setCoins,
   onBack,
+  onHome,
   educational = false,
   subscriptionPurchased = false,
   purchasedIds = [] as string[],
@@ -4706,6 +4707,7 @@ function StorePage({
   coins: number;
   setCoins: Dispatch<SetStateAction<number>>;
   onBack: () => void;
+  onHome?: () => void;
   educational?: boolean;
   subscriptionPurchased?: boolean;
   purchasedIds?: string[];
@@ -4743,15 +4745,15 @@ function StorePage({
   return (
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
       {/* Standard app header */}
-      <AppHeader coins={coins} t={t} onHome={onBack} />
+      <AppHeader coins={coins} t={t} onHome={onHome ?? onBack} />
 
       {/* Page title row */}
       <div className="shrink-0 bg-white px-4 py-3 border-b border-black/10">
         <div className="flex items-center gap-2">
-          <button onClick={onBack} aria-label={t.backAria} className="flex h-7 w-7 items-center justify-center text-[#1d2129]">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#B40206" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          <button onClick={onBack} aria-label={t.backAria} className="flex h-8 w-8 items-center justify-center text-[#D10005] hover:bg-black/5">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 12H4M10 6l-6 6 6 6" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
-          <h1 className="text-[15px] font-bold text-[#1d2129]">{t.storeTitle}</h1>
+          <h1 className="text-[20px] font-bold text-[#1d2129]">{t.storeTitle}</h1>
         </div>
       </div>
 
@@ -5240,6 +5242,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
             addresses={shippingAddresses}
             onAddressesChange={setShippingAddresses}
             onBack={() => setScreen("mypage")}
+            onHome={goHome}
             onOpenStore={openStore}
           />
         )}
@@ -5249,6 +5252,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
             coins={coins}
             setCoins={setCoins}
             onBack={() => setScreen(storeReturn)}
+            onHome={goHome}
           />
         )}
         {screen === "coinHistory" && (
