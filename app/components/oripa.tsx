@@ -838,9 +838,23 @@ function BottomNav({ screen, t, onNavigate }: { screen: Screen; t: Dict; onNavig
                   type="button"
                   onClick={navigable ? () => onNavigate?.(it.key) : undefined}
                   aria-label={it.label}
-                  className="-mt-2 active:scale-95"
+                  className="relative -mt-2 flex h-[50px] w-[50px] flex-col items-center justify-center rounded-full text-white active:scale-95"
+                  style={{
+                    background: "radial-gradient(circle at 50% 30%, #f5333c 0%, #e11119 55%, #b30d13 100%)",
+                    boxShadow: "0 4px 10px rgba(209,0,5,0.35)",
+                  }}
                 >
-                  <img src="/nav-store.png" alt={it.label} className="h-[50px] w-[50px] object-contain drop-shadow-[0_4px_10px_rgba(209,0,5,0.35)]" />
+                  {/* glossy highlight */}
+                  <span className="pointer-events-none absolute right-[9px] top-[7px] h-2 w-2 rounded-full bg-white/50 blur-[1px]" />
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="mb-[1px]">
+                    <rect x="4" y="4" width="16" height="16" rx="4" fill="#fff" />
+                    <circle cx="9" cy="9" r="1.6" fill="#e11119" />
+                    <circle cx="15" cy="9" r="1.6" fill="#e11119" />
+                    <circle cx="9" cy="15" r="1.6" fill="#e11119" />
+                    <circle cx="15" cy="15" r="1.6" fill="#e11119" />
+                    <circle cx="12" cy="12" r="1.6" fill="#e11119" />
+                  </svg>
+                  <span className="whitespace-pre-line text-center text-[7.5px] font-bold leading-[1.05]">{t.navGameBtn}</span>
                 </button>
               </div>
             );
