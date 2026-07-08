@@ -122,45 +122,38 @@ function appLink(section?: string): string {
   return section ? `${base}/?screen=${encodeURIComponent(section)}` : `${base}/`;
 }
 
-// A single message block layout, reused for the initial post AND every edit,
+// Keep comments short in Slack so channels stay scannable; the full text is
+// always one click away via the "Open screen" link.
+const SNIPPET_MAX = 240;
+const NOTE_SNIPPET_MAX = 140;
+
+// A single compact message layout, reused for the initial post AND every edit,
 // so status changes just re-render the same message with the new status.
-function buildMessage(comment: Comment, external = false): { text: string; blocks: unknown[] } {
+// Two tight lines: [status · author · section] + comment, then a small meta
+// context line. Link unfurling is disabled by the callers to save space.
+function buildMessage(comment: Comment): { text: string; blocks: unknown[] } {
   const label = sectionLabel(comment.section);
   const link = appLink(comment.section);
   const statusText = STATUS_TEXT[comment.status] || comment.status;
   const emoji = STATUS_EMOJI[comment.status] || ":speech_balloon:";
-  const by = comment.resolvedBy ? ` · handled by *${comment.resolvedBy}*` : "";
-  const heading = external ? "PROD comment — in review" : "PROD comment";
-  const noteBlock =
-    comment.reason && comment.reason.trim()
-      ? [
-          {
-            type: "context" as const,
-            elements: [{ type: "mrkdwn" as const, text: `:memo: *Note:* ${comment.reason.replace(/\n/g, " ")}` }],
-          },
-        ]
-      : [];
+  const by = comment.resolvedBy ? ` → ${comment.resolvedBy}` : "";
+  const full = comment.text.replace(/\s*\n+\s*/g, " ").trim();
+  const snippet = full.length > SNIPPET_MAX ? `${full.slice(0, SNIPPET_MAX)}…` : full;
+  const header = `${emoji} *${statusText}* · *${comment.name}*${by} · _${label}_`;
+
+  const meta: string[] = [];
+  if (comment.version) meta.push(`\`${comment.version}\``);
+  if (comment.reason && comment.reason.trim()) {
+    const r = comment.reason.replace(/\s*\n+\s*/g, " ").trim();
+    meta.push(`:memo: ${r.length > NOTE_SNIPPET_MAX ? `${r.slice(0, NOTE_SNIPPET_MAX)}…` : r}`);
+  }
+  meta.push(`<${link}|Open screen>`);
+
   return {
     text: `${emoji} ${label}: ${comment.name} — ${statusText}`,
     blocks: [
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: `${emoji} *${heading}*\n:bust_in_silhouette: *${comment.name}*${by}\n:round_pushpin: Section: *${label}*\n:label: Status: *${statusText}*`,
-        },
-      },
-      {
-        type: "section",
-        text: { type: "mrkdwn", text: `>${comment.text.replace(/\n/g, "\n>")}` },
-      },
-      ...noteBlock,
-      {
-        type: "context",
-        elements: [
-          { type: "mrkdwn", text: `${comment.version ? `\`${comment.version}\` · ` : ""}<${link}|Open this screen>` },
-        ],
-      },
+      { type: "section", text: { type: "mrkdwn", text: `${header}\n${snippet}` } },
+      { type: "context", elements: [{ type: "mrkdwn", text: meta.join("  ·  ") }] },
     ],
   };
 }
@@ -190,8 +183,15 @@ async function slackApi(method: string, payload: object): Promise<Record<string,
 }
 
 // Post a message to a channel; returns its `ts` (message id) for later edits.
+// unfurl_* off so the link doesn't expand into a big preview card.
 async function slackPost(channel: string, msg: { text: string; blocks: unknown[] }): Promise<string | null> {
-  const data = await slackApi("chat.postMessage", { channel, text: msg.text, blocks: msg.blocks });
+  const data = await slackApi("chat.postMessage", {
+    channel,
+    text: msg.text,
+    blocks: msg.blocks,
+    unfurl_links: false,
+    unfurl_media: false,
+  });
   return (data?.ts as string) ?? null;
 }
 
@@ -227,7 +227,7 @@ async function notifyNewComment(comment: Comment): Promise<void> {
     }
     return;
   }
-  await postWebhook(msg);
+  await postWebhook({ ...msg, unfurl_links: false, unfurl_media: false });
 }
 
 // Reflect a status change. With a bot token we EDIT the original message in
@@ -242,13 +242,13 @@ async function notifyStatusChange(comment: Comment): Promise<void> {
     const extChannel = process.env.SLACK_EXTERNAL_CHANNEL_ID;
     if (extChannel) {
       if (comment.status === "inreview" && !comment.slackExternalTs) {
-        const ts = await slackPost(extChannel, buildMessage(comment, true));
+        const ts = await slackPost(extChannel, buildMessage(comment));
         if (ts) {
           comment.slackExternalTs = ts;
           comment.slackExternalChannel = extChannel;
         }
       } else if (comment.slackExternalTs && comment.slackExternalChannel) {
-        await slackUpdate(comment.slackExternalChannel, comment.slackExternalTs, buildMessage(comment, true));
+        await slackUpdate(comment.slackExternalChannel, comment.slackExternalTs, buildMessage(comment));
       }
     }
     return;
@@ -263,19 +263,19 @@ async function notifyStatusChange(comment: Comment): Promise<void> {
   const snippet = comment.text.length > 140 ? `${comment.text.slice(0, 140)}…` : comment.text;
   await postWebhook({
     text: `${emoji} Comment by ${comment.name} on "${label}" → ${statusText}`,
+    unfurl_links: false,
+    unfurl_media: false,
     blocks: [
       {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: `${emoji} *Comment ${statusText}*${by}\n:bust_in_silhouette: Author: *${comment.name}*\n:round_pushpin: Section: *${label}*`,
+          text: `${emoji} *${statusText}*${by} · *${comment.name}* · _${label}_\n${snippet.replace(/\n/g, " ")}`,
         },
       },
       {
         type: "context",
-        elements: [
-          { type: "mrkdwn", text: `>${snippet.replace(/\n/g, " ")}   ·   <${link}|Open this screen>` },
-        ],
+        elements: [{ type: "mrkdwn", text: `<${link}|Open screen>` }],
       },
     ],
   });
@@ -290,38 +290,6 @@ function parseList(raw: Comment[]): Comment[] {
 }
 
 export async function GET(req: Request) {
-  // Temporary Slack diagnostic: /api/comments?diag=1
-  // Returns which env vars are present and the exact Slack API result for a
-  // test post, WITHOUT exposing any secret values. Remove after debugging.
-  if (new URL(req.url).searchParams.get("diag") === "1") {
-    const token = process.env.SLACK_BOT_TOKEN;
-    const channel = process.env.SLACK_CHANNEL_ID;
-    const ext = process.env.SLACK_EXTERNAL_CHANNEL_ID;
-    const env = {
-      hasBotToken: Boolean(token),
-      botTokenPrefix: token ? token.slice(0, 5) : null,
-      hasChannel: Boolean(channel),
-      channelLen: channel ? channel.length : 0,
-      hasExternalChannel: Boolean(ext),
-      hasWebhook: Boolean(process.env.SLACK_WEBHOOK_URL),
-    };
-    let slack: unknown = "skipped (missing token or channel)";
-    if (token && channel) {
-      try {
-        const res = await fetch("https://slack.com/api/chat.postMessage", {
-          method: "POST",
-          headers: { "content-type": "application/json; charset=utf-8", authorization: `Bearer ${token}` },
-          body: JSON.stringify({ channel, text: ":white_check_mark: Slack diagnostic test from oripa-prod" }),
-        });
-        const data = (await res.json()) as Record<string, unknown>;
-        slack = { ok: data.ok, error: data.error ?? null, needed: data.needed ?? null, provided: data.provided ?? null };
-      } catch (e) {
-        slack = { fetchError: String(e) };
-      }
-    }
-    return NextResponse.json({ diag: true, env, slack });
-  }
-
   const redis = getRedis();
   if (!redis) {
     return NextResponse.json(
