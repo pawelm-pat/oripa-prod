@@ -2468,12 +2468,14 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
   // "My Loot" reuses this screen but shows only the most valuable cards
   // (top UR tier) and hides the Won/Waiting/Shipped tabs.
   const screenTitle = lootMode ? STR[lang].mmItems : STR[lang].prizeHistory;
+  // "Best cards" = the higher rarities (exclude the common "N" tier).
+  const bestOnly = <T extends { rarity: Rarity }>(arr: T[]) => (lootMode ? arr.filter((p) => p.rarity !== "N") : arr);
   const t = STR[lang];
 
   const [tab, setTab] = useState<PrizeTab>("won");
-  const [won, setWon] = useState<WonPrize[]>(lootMode ? INITIAL_WON.filter((p) => p.rarity === "UR") : INITIAL_WON);
-  const [waiting, setWaiting] = useState<WaitingPrize[]>(INITIAL_WAITING);
-  const [shipped] = useState<ShippedPrize[]>(INITIAL_SHIPPED);
+  const [won, setWon] = useState<WonPrize[]>(bestOnly(INITIAL_WON));
+  const [waiting, setWaiting] = useState<WaitingPrize[]>(bestOnly(INITIAL_WAITING));
+  const [shipped] = useState<ShippedPrize[]>(bestOnly(INITIAL_SHIPPED));
 
   const [sortKey, setSortKey] = useState<SortKey>("coinDesc");
   const [sortOpen, setSortOpen] = useState(false);
@@ -2635,8 +2637,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
 
         {/* Top navigation (Won/Waiting/Shipped) stays sticky together with the
             top section (logo, balance, back arrow and title) while the list
-            scrolls beneath it. Hidden in My Loot mode (single list only). */}
-        {!lootMode && (
+            scrolls beneath it. */}
         <div className="flex border-b border-black/10 bg-white px-2">
           {([
             { key: "won", label: t.tabWon },
@@ -2663,7 +2664,6 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
             );
           })}
         </div>
-        )}
       </header>
 
       <div ref={tabScrollRef} className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
