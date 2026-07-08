@@ -792,29 +792,23 @@ function navIcon(key: Screen, color: string) {
     case "quest":
       return maskIcon("/nav-quest.png", color);
     case "store":
-      return (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinejoin="round">
-          <path d="M4 4h16l-1 4H5L4 4z" />
-          <path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8" />
-          <path d="M9.5 20v-5.5h5V20" />
-        </svg>
-      );
+      return maskIcon("/nav-store.png", color);
     default:
       return maskIcon("/nav-mypage.png", color);
   }
 }
 
 // PROD bottom nav. Only the Oripa (lobby) and My Account tabs navigate; the
-// Prize history / Quests / Store tabs are shown but inert. My Account and its
-// sub-screens (Prize History, Shipping Address) all highlight the My Account
-// tab.
+// My Loot / Quests / Store tabs are shown but inert (except My Loot which
+// navigates). My Account and its sub-screens (Prize History, Purchase History,
+// Shipping Address) all highlight the My Account tab.
 function BottomNav({ screen, t, onNavigate }: { screen: Screen; t: Dict; onNavigate?: (s: Screen) => void }) {
-  // Store sits in the middle as a raised circular button (Figma "オリパゲーム").
+  // Order per design: Oripa, My Loot, Quests, Store, My Page.
   const items: { key: Screen; label: string }[] = [
     { key: "oripa", label: t.navOripa },
     { key: "prizeHistory", label: t.navPrizeHistory },
-    { key: "store", label: t.navStore },
     { key: "quest", label: t.navQuest },
+    { key: "store", label: t.navStore },
     { key: "mypage", label: t.navMyPage },
   ];
   const activeKey: Screen =
@@ -830,35 +824,6 @@ function BottomNav({ screen, t, onNavigate }: { screen: Screen; t: Dict; onNavig
           const active = activeKey === it.key;
           const color = active ? "#D10005" : "#1d2129";
           const navigable = it.key === "oripa" || it.key === "mypage" || it.key === "prizeHistory";
-          // Center Store button: a raised circular image (label baked in).
-          if (it.key === "store") {
-            return (
-              <div key={it.key} className="flex flex-1 flex-col items-center justify-end pb-1">
-                <button
-                  type="button"
-                  onClick={navigable ? () => onNavigate?.(it.key) : undefined}
-                  aria-label={it.label}
-                  className="relative -mt-2 flex h-[50px] w-[50px] flex-col items-center justify-center rounded-full text-white active:scale-95"
-                  style={{
-                    background: "radial-gradient(circle at 50% 30%, #f5333c 0%, #e11119 55%, #b30d13 100%)",
-                    boxShadow: "0 4px 10px rgba(209,0,5,0.35)",
-                  }}
-                >
-                  {/* glossy highlight */}
-                  <span className="pointer-events-none absolute right-[9px] top-[7px] h-2 w-2 rounded-full bg-white/50 blur-[1px]" />
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="mb-[1px]">
-                    <rect x="4" y="4" width="16" height="16" rx="4" fill="#fff" />
-                    <circle cx="9" cy="9" r="1.6" fill="#e11119" />
-                    <circle cx="15" cy="9" r="1.6" fill="#e11119" />
-                    <circle cx="9" cy="15" r="1.6" fill="#e11119" />
-                    <circle cx="15" cy="15" r="1.6" fill="#e11119" />
-                    <circle cx="12" cy="12" r="1.6" fill="#e11119" />
-                  </svg>
-                  <span className="whitespace-pre-line text-center text-[7.5px] font-bold leading-[1.05]">{t.navGameBtn}</span>
-                </button>
-              </div>
-            );
-          }
           return (
             <button
               key={it.key}
