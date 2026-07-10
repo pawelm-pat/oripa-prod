@@ -5082,7 +5082,7 @@ function StorePage({
                 <div className="mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5" style={{ background: "#fef3c7" }}>
                   <span className="text-[11px] font-semibold text-[#92400e]">+</span>
                   <GemIcon size={12} />
-                  <span className="text-[11px] font-semibold text-[#92400e]">Free Points 50</span>
+                  <span className="text-[11px] font-semibold text-[#92400e]">Points 50</span>
                 </div>
               </div>
             </div>
