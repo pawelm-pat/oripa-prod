@@ -22,6 +22,7 @@ import type {
 import { STR, type Dict, locTitle } from "../lib/i18n";
 import { HOME_SECTIONS, ALL_ORIPA } from "../data/lobby";
 import { NOTIF_YOU, NOTIF_NOTICE, NOTIF_UNREAD_TOTAL } from "../data/notifications";
+import { LEGAL, type LegalDocKey } from "../data/legal";
 import {
   CATEGORIES,
   DAY,
@@ -310,22 +311,28 @@ function catIcon(key: string, color: string) {
   }
 }
 
-// Terms & Conditions modal, opened from the footer link.
-function TermsOverlay({ lang, onClose }: { lang: Lang; onClose: () => void }) {
-  const t = STR[lang];
+// Legal document reader (Terms of Use, Privacy Policy, SCTA notation).
+// Opened from the footer links and the My Account "Other" section.
+// Body lines starting with "## " render as section headings.
+function LegalOverlay({ lang, doc, onClose }: { lang: Lang; doc: LegalDocKey; onClose: () => void }) {
+  const { title, body } = LEGAL[lang][doc];
   return (
     <div className="absolute inset-0 z-[60] flex items-end justify-center bg-black/60" onClick={onClose}>
       <div className="flex max-h-[86%] w-full flex-col overflow-hidden rounded-t-2xl bg-white" onClick={(e) => e.stopPropagation()}>
         <div className="flex shrink-0 items-center justify-between border-b border-black/10 px-4 py-3">
-          <h3 className="text-[16px] font-extrabold text-[#1d2129]">{t.giTncTitle}</h3>
+          <h3 className="text-[16px] font-bold text-[#1d2129]">{title}</h3>
           <button onClick={onClose} aria-label="Close" className="flex h-8 w-8 items-center justify-center rounded-full text-[#1d2129] hover:bg-black/5">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
           </button>
         </div>
-        <div className="no-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
-          {(t.giTncBody as string[]).map((para, i) => (
-            <p key={i} className="text-[12.5px] leading-relaxed text-[#41464e]">{para}</p>
-          ))}
+        <div className="no-scrollbar min-h-0 flex-1 space-y-2.5 overflow-y-auto px-4 py-4">
+          {body.map((line, i) =>
+            line.startsWith("## ") ? (
+              <h4 key={i} className="pt-2 text-[13.5px] font-bold text-[#1d2129]">{line.slice(3)}</h4>
+            ) : (
+              <p key={i} className="whitespace-pre-line text-[12.5px] leading-relaxed text-[#41464e]">{line}</p>
+            ),
+          )}
         </div>
       </div>
     </div>
@@ -357,13 +364,15 @@ const SOCIAL_ICONS: { key: string; viewBox: string; path: React.ReactNode }[] = 
 
 function SiteFooter({ t }: { t: Dict }) {
   const lang: Lang = t === STR.ja ? "ja" : "en";
-  const [tnc, setTnc] = useState(false);
-  const chip = (label: string) =>
-    label === t.mpTerms ? (
-      <button key={label} onClick={() => setTnc(true)} className="rounded-full bg-white px-3.5 py-2 text-[12px] font-bold text-[#1d2129] active:bg-white/80">{label}</button>
+  const [legalDoc, setLegalDoc] = useState<LegalDocKey | null>(null);
+  const chip = (label: string) => {
+    const doc: LegalDocKey | null = label === t.mpTerms ? "terms" : label === t.mpPrivacy ? "privacy" : label === t.mpLegal ? "legal" : null;
+    return doc ? (
+      <button key={label} onClick={() => setLegalDoc(doc)} className="rounded-full bg-white px-3.5 py-2 text-[12px] font-bold text-[#1d2129] active:bg-white/80">{label}</button>
     ) : (
       <span key={label} className="rounded-full bg-white px-3.5 py-2 text-[12px] font-bold text-[#1d2129]">{label}</span>
     );
+  };
   return (
     <footer className="bg-black px-4 py-7 text-white">
       <img src="/oripa-logo-footer.png" alt="オリパロット" className="h-8 w-auto" />
@@ -396,7 +405,7 @@ function SiteFooter({ t }: { t: Dict }) {
       <p className="text-[10px] font-medium leading-relaxed text-white">{t.ftPurchaseNote}</p>
       <p className="mt-4 text-[10px] font-medium leading-relaxed text-white">{t.ftOperator}</p>
       <p className="mt-4 text-[10px] font-medium text-white">{t.ftCopyright}</p>
-      {tnc && <TermsOverlay lang={lang} onClose={() => setTnc(false)} />}
+      {legalDoc && <LegalOverlay lang={lang} doc={legalDoc} onClose={() => setLegalDoc(null)} />}
     </footer>
   );
 }
@@ -3690,7 +3699,7 @@ function myMenuIcon(key: string) {
 
 function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onOpenMyLoot, onOpenPurchaseHistory, onOpenAnnouncements, onOpenShippingAddress, onHome, onLogout, onOpenStore }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenMyLoot: () => void; onOpenPurchaseHistory: () => void; onOpenAnnouncements: () => void; onOpenShippingAddress: () => void; onHome: () => void; onLogout: () => void; onOpenStore?: () => void }) {
   const t = STR[lang];
-  const [tnc, setTnc] = useState(false);
+  const [legalDoc, setLegalDoc] = useState<LegalDocKey | null>(null);
 
   // "items" (My Loot), "history" (Prize History), "purchases" (Purchase
   // History), "notices" (Announcements) and "shippingAddress" navigate. Every
@@ -3804,15 +3813,15 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
           {/* Other section */}
           <h3 className="mb-2 mt-5 text-[15px] font-extrabold text-[#1d2129]">{t.mpOtherSection}</h3>
           <div className="space-y-2">
-            {linkRow(t.mpTerms, () => setTnc(true))}
-            {linkRow(t.mpPrivacy)}
-            {linkRow(t.mpLegal)}
+            {linkRow(t.mpTerms, () => setLegalDoc("terms"))}
+            {linkRow(t.mpPrivacy, () => setLegalDoc("privacy"))}
+            {linkRow(t.mpLegal, () => setLegalDoc("legal"))}
           </div>
         </div>
 
         <SiteFooter t={t} />
       </div>
-      {tnc && <TermsOverlay lang={lang} onClose={() => setTnc(false)} />}
+      {legalDoc && <LegalOverlay lang={lang} doc={legalDoc} onClose={() => setLegalDoc(null)} />}
     </div>
   );
 }
