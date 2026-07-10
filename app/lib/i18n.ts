@@ -240,7 +240,7 @@ const EN = {
   ftFollow: "Follow us",
   ftCopyright: "© 2026 oripalot.com All rights reserved.",
   ftBlurb: "Oripalot (oripalot.com) lets you enjoy our social games for free anytime. Purchases are not required. Void where prohibited by law. T&Cs apply.",
-  ftLinks: ["About Oripalot", "Customer support", "T&Cs", "Campaign terms", "Responsible play", "Privacy policy", "Legal notice (SCTA)"],
+  ftLinks: ["About Oripalot", "Customer support", "T&Cs", "Campaign terms", "Responsible play", "Privacy policy", "Legal notice (SCTA)", "Basic Policy Against Anti-Social Forces"],
   ftCats: ["Latest", "Trending", "Pokémon TCG", "Limited", "Other", "All"],
   ftSupport: "24/7 Online Support: Contact Us",
   ftPayInquiry: "Inquiries regarding payments within Japan (24-hour service): [Your Phone Number]",
@@ -360,6 +360,7 @@ const EN = {
   mpTerms: "T&Cs",
   mpPrivacy: "Privacy policy",
   mpLegal: "Legal notice (SCTA)",
+  mpAntisocial: "Basic Policy Against Anti-Social Forces",
 
   rafTitle: "Refer a friend",
   rafHeroTitle: "Earn extra rewards when you unlock milestones! Invite friends now!",
@@ -994,7 +995,7 @@ const JA: Dict = {
   ftFollow: "SNSをフォロー",
   ftCopyright: "© 2026 oripalot.com All rights reserved.",
   ftBlurb: "オリパロット（oripalot.com）では、当社のソーシャルゲームをいつでも無料でお楽しみいただけます。購入は必須ではありません。法律で禁止されている地域では無効となります。利用規約が適用されます。",
-  ftLinks: ["オリパロットについて", "カスタマーサポート", "利用規約", "キャンペーン規約", "健全なプレイへの取り組み", "プライバシーポリシー", "特定商取引法に基づく表記"],
+  ftLinks: ["オリパロットについて", "カスタマーサポート", "利用規約", "キャンペーン規約", "健全なプレイへの取り組み", "プライバシーポリシー", "特定商取引法に基づく表記", "反社会的勢力に対する基本方針"],
   ftCats: ["最新オリパ", "人気急上昇", "ポケカ", "限定", "その他", "すべて"],
   ftSupport: "24時間オンラインサポート: お問い合わせ",
   ftPayInquiry: "日本国内のお支払いに関するお問い合わせ（24時間対応）: [電話番号]",
@@ -1114,6 +1115,7 @@ const JA: Dict = {
   mpTerms: "利用規約",
   mpPrivacy: "プライバシーポリシー",
   mpLegal: "特定商取引法に基づく表記",
+  mpAntisocial: "反社会的勢力に対する基本方針",
 
   rafTitle: "友達招待",
   rafHeroTitle: "紹介人数に応じてボーナス特典をロック解除！今すぐ友達を招待しよう！",

@@ -368,7 +368,7 @@ const SOCIAL_ICONS: { key: string; viewBox: string; path: React.ReactNode }[] = 
 function SiteFooter({ t }: { t: Dict }) {
   const openLegal = useContext(LegalNavContext);
   const chip = (label: string) => {
-    const doc: LegalDocKey | null = label === t.mpTerms ? "terms" : label === t.mpPrivacy ? "privacy" : label === t.mpLegal ? "legal" : null;
+    const doc: LegalDocKey | null = label === t.mpTerms ? "terms" : label === t.mpPrivacy ? "privacy" : label === t.mpLegal ? "legal" : label === t.mpAntisocial ? "antisocial" : null;
     return doc ? (
       <button key={label} onClick={() => openLegal(doc)} className="rounded-full bg-white px-3.5 py-2 text-[12px] font-bold text-[#1d2129] active:bg-white/80">{label}</button>
     ) : (
@@ -3817,6 +3817,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
             {linkRow(t.mpTerms, () => openLegal("terms"))}
             {linkRow(t.mpPrivacy, () => openLegal("privacy"))}
             {linkRow(t.mpLegal, () => openLegal("legal"))}
+            {linkRow(t.mpAntisocial, () => openLegal("antisocial"))}
           </div>
         </div>
 

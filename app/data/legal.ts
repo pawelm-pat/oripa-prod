@@ -7,7 +7,7 @@
 
 import type { Lang } from "../lib/types";
 
-export type LegalDocKey = "terms" | "privacy" | "legal";
+export type LegalDocKey = "terms" | "privacy" | "legal" | "antisocial";
 export type LegalDoc = { title: string; body: string[] };
 
 const EN_TERMS: LegalDoc = {
@@ -336,7 +336,21 @@ const JA_LEGAL: LegalDoc = {
   ],
 };
 
+const EN_ANTISOCIAL: LegalDoc = {
+  title: "Basic Policy Against Anti-Social Forces",
+  body: [
+    "To ensure the appropriateness and safety of its business, KS LLC declares that it will sever all relationships with anti-social forces.\nWe hereby establish this basic policy, and all officers and employees will thoroughly comply with it.\n・ The Company severs all relationships with anti-social forces. The Company does not provide funds to, or engage in behind-the-scenes dealings with, anti-social forces.\n・ The Company resolutely refuses any improper demands from anti-social forces.\n・ The Company strives to build close cooperative relationships with external specialist organizations such as the police, the Center for the Elimination of Violence, and attorneys.\n・ Where an improper demand is made by anti-social forces, the Company will, as necessary, take legal action on both civil and criminal fronts.\n・ In taking the measures set out in each item of this policy, the Company will take measures to ensure the safety of the officers and employees who deal with anti-social forces.",
+  ],
+};
+
+const JA_ANTISOCIAL: LegalDoc = {
+  title: "反社会的勢力に対する基本方針",
+  body: [
+    "合同会社KSは、業務の適切性および安全性を確保するため、反社会的勢力との一切の関係を遮断することを宣言します。\nここに基本方針を定め、役職員一同これを徹底して遵守いたします。\n・当社は、反社会的勢力と一切の関係を遮断します。反社会的勢力に対する資金提供や裏取引も、行いません。\n・当社は、反社会的勢力による不当要求を、断固として拒絶します。\n・当社は、警察、暴力追放運動推進センター、弁護士等の外部の専門機関と緊密な連携関係を構築することに努めます。\n・当社は、反社会的勢力からの不当要求が為された場合、必要に応じ、民事および刑事の両面から法的対応を行います。\n・当社は、本方針の各項目において規定する措置を講じるにあたり、反社会的勢力に対応する役職員等の安全等を確保するための措置を講じるものとします。",
+  ],
+};
+
 export const LEGAL: Record<Lang, Record<LegalDocKey, LegalDoc>> = {
-  en: { terms: EN_TERMS, privacy: EN_PRIVACY, legal: EN_LEGAL },
-  ja: { terms: JA_TERMS, privacy: JA_PRIVACY, legal: JA_LEGAL },
+  en: { terms: EN_TERMS, privacy: EN_PRIVACY, legal: EN_LEGAL, antisocial: EN_ANTISOCIAL },
+  ja: { terms: JA_TERMS, privacy: JA_PRIVACY, legal: JA_LEGAL, antisocial: JA_ANTISOCIAL },
 };
