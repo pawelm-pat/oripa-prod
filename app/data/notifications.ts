@@ -5,7 +5,7 @@ import type { NotifItem } from "../lib/types";
 export const NOTIF_YOU: NotifItem[] = [
   { id: "y1", at: "Feb 03, 2026 22:14", atJa: "2026年2月03日 22:14", title: "Your item has been shipped", titleJa: "商品を発送しました", body: "Your prize is on its way. Delivery takes up to 14 business days.", bodyJa: "景品を発送しました。お届けまで最大14営業日かかります。", tracking: "AA123456789JP", unread: true },
   { id: "y2", at: "Feb 02, 2026 18:40", atJa: "2026年2月02日 18:40", title: "Shipping request received", titleJa: "発送リクエストを受け付けました", body: "We have received your shipping request and are preparing your prize.", bodyJa: "発送リクエストを受け付けました。景品の準備を進めています。", unread: true },
-  { id: "y3", at: "Jan 30, 2026 09:12", atJa: "2026年1月30日 09:12", title: "Prizes converted to coins", titleJa: "景品をコインに交換しました", body: "Your selected prizes were converted to Coins.", bodyJa: "選択した景品をオリパコインに交換しました。" },
+  { id: "y3", at: "Jan 30, 2026 09:12", atJa: "2026年1月30日 09:12", title: "Prizes converted to coins", titleJa: "景品をコインに交換しました", body: "Your selected prizes were converted to Coins.", bodyJa: "選択した景品をコインに交換しました。" },
   { id: "y4", at: "Jan 28, 2026 20:05", atJa: "2026年1月28日 20:05", title: "Prize won!", titleJa: "景品が当選しました！", body: "Congratulations! A new prize has been added to your Prize History.", bodyJa: "おめでとうございます！新しい景品が当選履歴に追加されました。" },
 ];
 
