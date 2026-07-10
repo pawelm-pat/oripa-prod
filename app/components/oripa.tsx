@@ -65,7 +65,7 @@ function CoinIcon({ size = 16 }: { size?: number }) {
 function GemIcon({ size = 16 }: { size?: number }) {
   return (
      
-    <img src="/gem.png" alt="" aria-hidden className="shrink-0 inline-block object-contain" style={{ width: size, height: "auto" }} />
+    <img src="/freepoint.png" alt="" aria-hidden className="shrink-0 inline-block object-contain" style={{ width: size, height: "auto" }} />
   );
 }
 
