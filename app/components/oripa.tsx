@@ -44,6 +44,8 @@ import {
 const NotifNavContext = createContext<() => void>(() => {});
 // Tapping the currency balances in the header opens the Coin History screen.
 const CoinHistoryNavContext = createContext<() => void>(() => {});
+// Opening a legal document (Terms / Privacy / SCTA) reader from anywhere.
+const LegalNavContext = createContext<(doc: LegalDocKey) => void>(() => {});
 
 /* ════════════════════════════════════════════════════════════════════
    ORIPA — PROD skeleton (v1.0)
@@ -364,12 +366,11 @@ const SOCIAL_ICONS: { key: string; viewBox: string; path: React.ReactNode }[] = 
 ];
 
 function SiteFooter({ t }: { t: Dict }) {
-  const lang: Lang = t === STR.ja ? "ja" : "en";
-  const [legalDoc, setLegalDoc] = useState<LegalDocKey | null>(null);
+  const openLegal = useContext(LegalNavContext);
   const chip = (label: string) => {
     const doc: LegalDocKey | null = label === t.mpTerms ? "terms" : label === t.mpPrivacy ? "privacy" : label === t.mpLegal ? "legal" : null;
     return doc ? (
-      <button key={label} onClick={() => setLegalDoc(doc)} className="rounded-full bg-white px-3.5 py-2 text-[12px] font-bold text-[#1d2129] active:bg-white/80">{label}</button>
+      <button key={label} onClick={() => openLegal(doc)} className="rounded-full bg-white px-3.5 py-2 text-[12px] font-bold text-[#1d2129] active:bg-white/80">{label}</button>
     ) : (
       <span key={label} className="rounded-full bg-white px-3.5 py-2 text-[12px] font-bold text-[#1d2129]">{label}</span>
     );
@@ -406,7 +407,6 @@ function SiteFooter({ t }: { t: Dict }) {
       <p className="text-[10px] font-medium leading-relaxed text-white">{t.ftPurchaseNote}</p>
       <p className="mt-4 text-[10px] font-medium leading-relaxed text-white">{t.ftOperator}</p>
       <p className="mt-4 text-[10px] font-medium text-white">{t.ftCopyright}</p>
-      {legalDoc && <LegalOverlay lang={lang} doc={legalDoc} onClose={() => setLegalDoc(null)} />}
     </footer>
   );
 }
@@ -3700,7 +3700,7 @@ function myMenuIcon(key: string) {
 
 function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onOpenMyLoot, onOpenPurchaseHistory, onOpenAnnouncements, onOpenShippingAddress, onHome, onLogout, onOpenStore }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenMyLoot: () => void; onOpenPurchaseHistory: () => void; onOpenAnnouncements: () => void; onOpenShippingAddress: () => void; onHome: () => void; onLogout: () => void; onOpenStore?: () => void }) {
   const t = STR[lang];
-  const [legalDoc, setLegalDoc] = useState<LegalDocKey | null>(null);
+  const openLegal = useContext(LegalNavContext);
 
   // "items" (My Loot), "history" (Prize History), "purchases" (Purchase
   // History), "notices" (Announcements) and "shippingAddress" navigate. Every
@@ -3814,15 +3814,14 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
           {/* Other section */}
           <h3 className="mb-2 mt-5 text-[15px] font-extrabold text-[#1d2129]">{t.mpOtherSection}</h3>
           <div className="space-y-2">
-            {linkRow(t.mpTerms, () => setLegalDoc("terms"))}
-            {linkRow(t.mpPrivacy, () => setLegalDoc("privacy"))}
-            {linkRow(t.mpLegal, () => setLegalDoc("legal"))}
+            {linkRow(t.mpTerms, () => openLegal("terms"))}
+            {linkRow(t.mpPrivacy, () => openLegal("privacy"))}
+            {linkRow(t.mpLegal, () => openLegal("legal"))}
           </div>
         </div>
 
         <SiteFooter t={t} />
       </div>
-      {legalDoc && <LegalOverlay lang={lang} doc={legalDoc} onClose={() => setLegalDoc(null)} />}
     </div>
   );
 }
@@ -5169,6 +5168,9 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
   // back returns to wherever it was opened from.
   const [coinHistoryReturn, setCoinHistoryReturn] = useState<Screen>("oripa");
   const openCoinHistory = () => { setCoinHistoryReturn((p) => (screen === "coinHistory" ? p : screen)); setScreen("coinHistory"); };
+  // Legal document reader (Terms / Privacy / SCTA), rendered at the app root so
+  // it overlays correctly no matter where it's triggered (footer, My Account).
+  const [legalDoc, setLegalDoc] = useState<LegalDocKey | null>(null);
   // Bottom-nav navigation: Oripa (lobby), My Loot, Store and My Account tabs are live.
   const navigate = (s: Screen) => {
     if (s === "oripa") { goHome(); return; }
@@ -5182,6 +5184,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
   return (
     <NotifNavContext.Provider value={onLanding ? () => {} : openNotifications}>
     <CoinHistoryNavContext.Provider value={onLanding ? () => {} : openCoinHistory}>
+    <LegalNavContext.Provider value={setLegalDoc}>
     <div className="flex h-full flex-col bg-[#eef0f3]">
       <div className="relative min-h-0 flex-1">
         {/* Keyed on `screen` so each navigation remounts and replays the
@@ -5275,9 +5278,11 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
           />
         )}
         </div>
+        {legalDoc && <LegalOverlay lang={lang} doc={legalDoc} onClose={() => setLegalDoc(null)} />}
       </div>
       {showNav && <BottomNav screen={screen} t={t} onNavigate={navigate} />}
     </div>
+    </LegalNavContext.Provider>
     </CoinHistoryNavContext.Provider>
     </NotifNavContext.Provider>
   );
