@@ -2,11 +2,14 @@ import type { Metadata } from "next";
 import { Noto_Sans_JP, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-// Match the Figma design system (Noto Sans JP). Variable font covers the full
-// weight range (400–900) used across the UI and includes Japanese glyphs.
+// Match the Figma design system (Noto Sans JP). The variable font covers the
+// full weight range (400–900) used across the UI. CJK families are split into
+// 100+ unicode-range files on Google Fonts, so we must NOT restrict to the
+// latin subset (that drops Japanese glyphs) — instead disable preload, which
+// pulls every range incl. Japanese. See vercel/next.js#44594.
 const notoSansJP = Noto_Sans_JP({
   variable: "--font-noto-sans-jp",
-  subsets: ["latin"],
+  preload: false,
   display: "swap",
 });
 
