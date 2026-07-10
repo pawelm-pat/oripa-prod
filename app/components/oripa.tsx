@@ -319,13 +319,14 @@ function LegalOverlay({ lang, doc, onClose }: { lang: Lang; doc: LegalDocKey; on
   return (
     <div className="absolute inset-0 z-[60] flex items-end justify-center bg-black/60" onClick={onClose}>
       <div className="flex max-h-[86%] w-full flex-col overflow-hidden rounded-t-2xl bg-white" onClick={(e) => e.stopPropagation()}>
+        <style>{`.legal-scroll::-webkit-scrollbar{width:7px}.legal-scroll::-webkit-scrollbar-track{background:rgba(0,0,0,0.05);border-radius:9999px}.legal-scroll::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.3);border-radius:9999px}.legal-scroll::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,0.45)}`}</style>
         <div className="flex shrink-0 items-center justify-between border-b border-black/10 px-4 py-3">
           <h3 className="text-[16px] font-bold text-[#1d2129]">{title}</h3>
           <button onClick={onClose} aria-label="Close" className="flex h-8 w-8 items-center justify-center rounded-full text-[#1d2129] hover:bg-black/5">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
           </button>
         </div>
-        <div className="no-scrollbar min-h-0 flex-1 space-y-2.5 overflow-y-auto px-4 py-4">
+        <div className="legal-scroll min-h-0 flex-1 space-y-2.5 overflow-y-auto px-4 py-4" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(0,0,0,0.3) rgba(0,0,0,0.05)" }}>
           {body.map((line, i) =>
             line.startsWith("## ") ? (
               <h4 key={i} className="pt-2 text-[13.5px] font-bold text-[#1d2129]">{line.slice(3)}</h4>
