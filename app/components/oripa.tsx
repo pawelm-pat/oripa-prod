@@ -3888,7 +3888,7 @@ type PurchaseRecord = {
   jpy: number;
 };
 
-const PURCHASE_HISTORY: PurchaseRecord[] = Array.from({ length: 24 }, (_, i) => {
+const PURCHASE_HISTORY: PurchaseRecord[] = Array.from({ length: 18 }, (_, i) => {
   const n = i + 1;
   const coins = [20000, 10000, 5000, 1000, 500][i % 5];
   return {
@@ -3999,7 +3999,7 @@ const COIN_HISTORY_TEMPLATE: Omit<CoinTxn, "id" | "date">[] = [
   { kind: "granted", amount: 5000, sign: "+", currency: "point", paymentId: "35812349", expires: "2027/02/03 at 22:14" },
   { kind: "expired", amount: 500, sign: "-", currency: "point" },
 ];
-const COIN_HISTORY: CoinTxn[] = Array.from({ length: 24 }, (_, i) => ({
+const COIN_HISTORY: CoinTxn[] = Array.from({ length: 18 }, (_, i) => ({
   id: `c${i + 1}`,
   date: `Feb ${((23 - i + 27) % 28) + 1}, 2026, 22:14`,
   ...COIN_HISTORY_TEMPLATE[i % COIN_HISTORY_TEMPLATE.length],
