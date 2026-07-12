@@ -3879,7 +3879,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
 /* ── PurchaseHistoryPage ─────────────────────────────────────────────── */
 type PurchaseRecord = {
   id: string;
-  date: string;
+  ts: number;
   coins: number;
   freePoints: number;
   paymentMethod: string;
@@ -3888,12 +3888,25 @@ type PurchaseRecord = {
   jpy: number;
 };
 
+const DAY_MS = 86_400_000;
+// Fixed reference "now" so mock data + date filtering stay deterministic
+// (no SSR/CSR hydration drift). Records are spread back from this point,
+// and the date-range presets are computed relative to it.
+const PH_BASE = Date.UTC(2026, 1, 3, 22, 14);
+const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function fmtPurchaseDate(ts: number) {
+  const d = new Date(ts);
+  const hh = String(d.getUTCHours()).padStart(2, "0");
+  const mm = String(d.getUTCMinutes()).padStart(2, "0");
+  return `${MONTHS_SHORT[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}, ${hh}:${mm}`;
+}
+
 const PURCHASE_HISTORY: PurchaseRecord[] = Array.from({ length: 18 }, (_, i) => {
   const n = i + 1;
   const coins = [20000, 10000, 5000, 1000, 500][i % 5];
   return {
     id: `ph${n}`,
-    date: `Feb ${((23 - i + 27) % 28) + 1}, 2026, 22:14`,
+    ts: PH_BASE - i * 5 * DAY_MS,
     coins,
     freePoints: Math.round(coins / 40),
     paymentMethod: "Mazooma *****5678",
@@ -3903,26 +3916,129 @@ const PURCHASE_HISTORY: PurchaseRecord[] = Array.from({ length: 18 }, (_, i) => 
   };
 });
 
+type PhRangeKey = "all" | "7d" | "30d" | "90d" | "custom";
+function filterPurchases(list: PurchaseRecord[], range: PhRangeKey, from: string, to: string) {
+  if (range === "custom") {
+    const fromTs = from ? Date.parse(`${from}T00:00:00Z`) : -Infinity;
+    const toTs = to ? Date.parse(`${to}T23:59:59Z`) : Infinity;
+    return list.filter((r) => r.ts >= fromTs && r.ts <= toTs);
+  }
+  if (range === "all") return list;
+  const days = range === "7d" ? 7 : range === "30d" ? 30 : 90;
+  const cutoff = PH_BASE - days * DAY_MS;
+  return list.filter((r) => r.ts >= cutoff);
+}
+
 function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false, onOpenStore }: { lang: Lang; coins: number; onBack: () => void; onHome: () => void; empty?: boolean; onOpenStore?: () => void }) {
   const t = STR[lang];
-  const { items, hasMore, loading, loadMore, pageSize } = usePagedList(PURCHASE_HISTORY);
+  const [range, setRange] = useState<PhRangeKey>("all");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [visible, setVisible] = useState(LOAD_MORE_PAGE);
+  const [loading, setLoading] = useState(false);
+
+  const filtered = useMemo(() => filterPurchases(PURCHASE_HISTORY, range, customFrom, customTo), [range, customFrom, customTo]);
+  const items = filtered.slice(0, visible);
+  const hasMore = visible < filtered.length;
+  const loadMore = () => {
+    if (loading || !hasMore) return;
+    setLoading(true);
+    setTimeout(() => {
+      setVisible((v) => Math.min(v + LOAD_MORE_PAGE, filtered.length));
+      setLoading(false);
+    }, 400);
+  };
+
+  const presets: { key: PhRangeKey; label: string }[] = [
+    { key: "all", label: t.phFilterAll },
+    { key: "7d", label: t.phFilter7 },
+    { key: "30d", label: t.phFilter30 },
+    { key: "90d", label: t.phFilter90 },
+    { key: "custom", label: t.phFilterCustom },
+  ];
+  const activeLabel = presets.find((p) => p.key === range)?.label ?? t.purchaseHistoryFilter;
+
+  const choosePreset = (key: PhRangeKey) => {
+    setRange(key);
+    setVisible(LOAD_MORE_PAGE);
+    if (key !== "custom") setFilterOpen(false);
+  };
+  const applyCustom = () => {
+    setRange("custom");
+    setVisible(LOAD_MORE_PAGE);
+    setFilterOpen(false);
+  };
+  const resetFilter = () => {
+    setRange("all");
+    setCustomFrom("");
+    setCustomTo("");
+    setVisible(LOAD_MORE_PAGE);
+    setFilterOpen(false);
+  };
+
   return (
     <div className="flex h-full flex-col bg-[#eef0f3]">
       <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
 
       {/* Title row */}
-      <div className="shrink-0 flex items-center justify-between border-b border-black/10 bg-white px-4 py-3">
+      <div className="relative z-40 shrink-0 flex items-center justify-between border-b border-black/10 bg-white px-4 py-3">
         <div className="flex items-center gap-2">
           <button onClick={onBack} aria-label={t.backAria} className="flex h-8 w-8 items-center justify-center text-[#D10005] hover:bg-black/5">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 12H4M10 6l-6 6 6 6" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
           <h1 className="text-[16px] font-bold text-[#1d2129]">{t.purchaseHistoryTitle}</h1>
         </div>
-        <button className="flex items-center gap-1.5 rounded-xl border border-black/10 bg-white px-3.5 py-2 text-[14px] font-bold text-[#1d2129] shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D10005" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2.5" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
-          {t.purchaseHistoryFilter}
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D10005" strokeWidth="2.4"><path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg>
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setFilterOpen((o) => !o)}
+            className={`relative z-50 flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-[14px] font-bold shadow-[0_1px_3px_rgba(0,0,0,0.08)] transition ${range === "all" ? "border-black/10 bg-white text-[#1d2129]" : "border-[#D10005] bg-[#fff2f2] text-[#D10005]"}`}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D10005" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2.5" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
+            {range === "all" ? t.purchaseHistoryFilter : activeLabel}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D10005" strokeWidth="2.4" className={`transition-transform ${filterOpen ? "rotate-180" : ""}`}><path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </button>
+
+          {filterOpen && (
+            <>
+              <button aria-hidden tabIndex={-1} className="fixed inset-0 z-40 cursor-default" onClick={() => setFilterOpen(false)} />
+              <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-2xl border border-black/10 bg-white p-2 shadow-[0_12px_32px_rgba(0,0,0,0.18)]">
+                <p className="px-2 pb-1 pt-1.5 text-[11px] font-bold uppercase tracking-wide text-[#8a9099]">{t.phFilterHeading}</p>
+                {presets.map((p) => {
+                  const active = p.key === range;
+                  return (
+                    <button
+                      key={p.key}
+                      onClick={() => choosePreset(p.key)}
+                      className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-[14px] font-medium transition ${active ? "bg-[#fff2f2] text-[#D10005]" : "text-[#1d2129] hover:bg-black/[0.04]"}`}
+                    >
+                      {p.label}
+                      {active && (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                      )}
+                    </button>
+                  );
+                })}
+                {range === "custom" && (
+                  <div className="mt-1 space-y-2 border-t border-black/[0.06] px-2 pt-2.5">
+                    <label className="block">
+                      <span className="mb-1 block text-[11px] font-medium text-[#8a9099]">{t.phFilterFrom}</span>
+                      <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="w-full rounded-lg border border-black/15 px-2.5 py-1.5 text-[13px] text-[#1d2129] outline-none focus:border-[#D10005]" />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1 block text-[11px] font-medium text-[#8a9099]">{t.phFilterTo}</span>
+                      <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="w-full rounded-lg border border-black/15 px-2.5 py-1.5 text-[13px] text-[#1d2129] outline-none focus:border-[#D10005]" />
+                    </label>
+                    <button onClick={applyCustom} className="w-full rounded-lg bg-[#D10005] py-2 text-[13px] font-bold text-white transition active:scale-[0.98]">{t.phFilterApply}</button>
+                  </div>
+                )}
+                {range !== "all" && (
+                  <button onClick={resetFilter} className="mt-1 w-full rounded-xl px-3 py-2 text-[13px] font-medium text-[#8a9099] transition hover:bg-black/[0.04]">{t.phFilterReset}</button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
@@ -3936,17 +4052,20 @@ function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false, onOpe
         {/* Purchase records */}
         {!empty && (
           <div className="space-y-2 px-3 pb-6">
+            {items.length === 0 && (
+              <p className="px-1 py-16 text-center text-[13px] text-[#9aa0a8]">{t.phFilterNone}</p>
+            )}
             {items.map((rec, i) => {
               const isCompleted = rec.status === "Completed";
               const statusLabel = isCompleted ? t.purchaseStatusCompleted : t.purchaseStatusCancelled;
               const statusColor = isCompleted ? "#16a34a" : "#D10005";
               return (
-                <div key={rec.id} className="animate-fade-slide rounded-xl bg-white px-4 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.07)]" style={{ animationDelay: `${(i % pageSize) * 70}ms` }}>
+                <div key={rec.id} className="animate-fade-slide rounded-xl bg-white px-4 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.07)]" style={{ animationDelay: `${(i % LOAD_MORE_PAGE) * 70}ms` }}>
                   {/* Date + status */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-1.5 text-[12px] text-[#8a9099]">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></svg>
-                      {rec.date}
+                      {fmtPurchaseDate(rec.ts)}
                     </div>
                     <span className="shrink-0 text-[13px] font-medium" style={{ color: statusColor }}>{statusLabel}</span>
                   </div>
