@@ -47,6 +47,10 @@ const CoinHistoryNavContext = createContext<() => void>(() => {});
 // Opening a legal document (Terms / Privacy / SCTA) reader from anywhere.
 const LegalNavContext = createContext<(doc: LegalDocKey) => void>(() => {});
 
+// Preserve the My Page scroll offset across remounts (each screen change
+// remounts via key={screen}), so returning from a sub-screen keeps position.
+let myPageScrollTop = 0;
+
 /* ════════════════════════════════════════════════════════════════════
    ORIPA — PROD skeleton (v1.0)
    Trimmed near-production preview. Only these surfaces are live:
@@ -3701,6 +3705,13 @@ function myMenuIcon(key: string) {
 function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onOpenMyLoot, onOpenPurchaseHistory, onOpenAnnouncements, onOpenShippingAddress, onHome, onLogout, onOpenStore }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenMyLoot: () => void; onOpenPurchaseHistory: () => void; onOpenAnnouncements: () => void; onOpenShippingAddress: () => void; onHome: () => void; onLogout: () => void; onOpenStore?: () => void }) {
   const t = STR[lang];
   const openLegal = useContext(LegalNavContext);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  // Restore the last scroll offset when re-entering My Page (e.g. after going
+  // back from a sub-screen) instead of jumping to the top.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = myPageScrollTop;
+  }, []);
 
   // "items" (My Loot), "history" (Prize History), "purchases" (Purchase
   // History), "notices" (Announcements) and "shippingAddress" navigate. Every
@@ -3726,7 +3737,11 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
   return (
     <div className="flex h-full flex-col bg-[#eef0f3]">
       <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
-      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
+      <div
+        ref={scrollRef}
+        onScroll={(e) => { myPageScrollTop = e.currentTarget.scrollTop; }}
+        className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto"
+      >
         <div className="px-3 py-4">
           {/* Profile card */}
           <div className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-[0_1px_4px_rgba(0,0,0,0.08)]">
