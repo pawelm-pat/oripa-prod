@@ -51,6 +51,40 @@ const LegalNavContext = createContext<(doc: LegalDocKey) => void>(() => {});
 // remounts via key={screen}), so returning from a sub-screen keeps position.
 let myPageScrollTop = 0;
 
+// Lazy "Load more" pagination. Reveals `pageSize` rows at a time; newly
+// revealed rows animate in one-by-one (staggered) via `animate-fade-slide`.
+const LOAD_MORE_PAGE = 6;
+function usePagedList<T>(all: T[], pageSize = LOAD_MORE_PAGE) {
+  const [visible, setVisible] = useState(pageSize);
+  const [loading, setLoading] = useState(false);
+  const hasMore = visible < all.length;
+  const loadMore = () => {
+    if (loading || !hasMore) return;
+    setLoading(true);
+    // Small delay to emulate fetching, keeping the reveal smooth.
+    setTimeout(() => {
+      setVisible((v) => Math.min(v + pageSize, all.length));
+      setLoading(false);
+    }, 400);
+  };
+  return { items: all.slice(0, visible), hasMore, loading, loadMore, pageSize };
+}
+
+function LoadMoreButton({ t, loading, onClick }: { t: Dict; loading: boolean; onClick: () => void }) {
+  return (
+    <div className="flex justify-center pt-2 pb-4">
+      <button
+        onClick={onClick}
+        disabled={loading}
+        className="flex items-center gap-2 rounded-full border border-[#D10005] bg-white px-7 py-2.5 text-[13px] font-bold text-[#D10005] shadow-[0_1px_3px_rgba(0,0,0,0.08)] transition active:scale-[0.97] disabled:opacity-70"
+      >
+        {loading && <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#D10005] border-t-transparent" />}
+        {loading ? t.loadingMore : t.loadMore}
+      </button>
+    </div>
+  );
+}
+
 /* ════════════════════════════════════════════════════════════════════
    ORIPA — PROD skeleton (v1.0)
    Trimmed near-production preview. Only these surfaces are live:
@@ -3854,17 +3888,24 @@ type PurchaseRecord = {
   jpy: number;
 };
 
-const PURCHASE_HISTORY: PurchaseRecord[] = [
-  { id: "ph1", date: "Feb 3, 2026, 22:14", coins: 20000, freePoints: 500, paymentMethod: "Mazooma *****5678", paymentId: "35812349", status: "Completed", jpy: 52000 },
-  { id: "ph2", date: "Feb 3, 2026, 22:14", coins: 20000, freePoints: 500, paymentMethod: "Mazooma *******5678", paymentId: "35812349", status: "Cancelled", jpy: 52000 },
-  { id: "ph3", date: "Feb 3, 2026, 22:14", coins: 20000, freePoints: 500, paymentMethod: "Mazooma *****5678", paymentId: "35812349", status: "Completed", jpy: 52000 },
-  { id: "ph4", date: "Feb 3, 2026, 22:14", coins: 20000, freePoints: 500, paymentMethod: "Mazooma *****5678", paymentId: "35812349", status: "Completed", jpy: 52000 },
-  { id: "ph5", date: "Feb 3, 2026, 22:14", coins: 20000, freePoints: 500, paymentMethod: "Mazooma *****5678", paymentId: "35812349", status: "Completed", jpy: 52000 },
-  { id: "ph6", date: "Feb 3, 2026, 22:14", coins: 20000, freePoints: 500, paymentMethod: "Mazooma *****5678", paymentId: "35812349", status: "Completed", jpy: 52000 },
-];
+const PURCHASE_HISTORY: PurchaseRecord[] = Array.from({ length: 24 }, (_, i) => {
+  const n = i + 1;
+  const coins = [20000, 10000, 5000, 1000, 500][i % 5];
+  return {
+    id: `ph${n}`,
+    date: `Feb ${((23 - i + 27) % 28) + 1}, 2026, 22:14`,
+    coins,
+    freePoints: Math.round(coins / 40),
+    paymentMethod: "Mazooma *****5678",
+    paymentId: `358123${(49 - i + 100).toString().padStart(2, "0")}`,
+    status: i % 6 === 1 ? "Cancelled" : "Completed",
+    jpy: coins * 2.6,
+  };
+});
 
 function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false, onOpenStore }: { lang: Lang; coins: number; onBack: () => void; onHome: () => void; empty?: boolean; onOpenStore?: () => void }) {
   const t = STR[lang];
+  const { items, hasMore, loading, loadMore, pageSize } = usePagedList(PURCHASE_HISTORY);
   return (
     <div className="flex h-full flex-col bg-[#eef0f3]">
       <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
@@ -3895,12 +3936,12 @@ function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false, onOpe
         {/* Purchase records */}
         {!empty && (
           <div className="space-y-2 px-3 pb-6">
-            {PURCHASE_HISTORY.map((rec) => {
+            {items.map((rec, i) => {
               const isCompleted = rec.status === "Completed";
               const statusLabel = isCompleted ? t.purchaseStatusCompleted : t.purchaseStatusCancelled;
               const statusColor = isCompleted ? "#16a34a" : "#D10005";
               return (
-                <div key={rec.id} className="rounded-xl bg-white px-4 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.07)]">
+                <div key={rec.id} className="animate-fade-slide rounded-xl bg-white px-4 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.07)]" style={{ animationDelay: `${(i % pageSize) * 70}ms` }}>
                   {/* Date + status */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-1.5 text-[12px] text-[#8a9099]">
@@ -3927,6 +3968,7 @@ function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false, onOpe
                 </div>
               );
             })}
+            {hasMore && <LoadMoreButton t={t} loading={loading} onClick={loadMore} />}
           </div>
         )}
 
@@ -3949,22 +3991,23 @@ type CoinTxn = {
   expires?: string;
 };
 
-const COIN_HISTORY: CoinTxn[] = [
-  { id: "c1", kind: "superGacha", date: "Feb 3, 2026, 22:14", amount: 5000, sign: "-", currency: "coin" },
-  { id: "c2", kind: "gacha", date: "Feb 3, 2026, 22:14", amount: 2000, sign: "-", currency: "coin" },
-  { id: "c3", kind: "once", date: "Feb 3, 2026, 22:14", amount: 50, sign: "-", currency: "point" },
-  { id: "c4", kind: "purchased", date: "Feb 3, 2026, 22:14", amount: 5000, sign: "+", currency: "coin", paymentId: "35812349", expires: "2027/02/03 at 22:14" },
-  { id: "c5", kind: "granted", date: "Feb 3, 2026, 22:14", amount: 5000, sign: "+", currency: "point", paymentId: "35812349", expires: "2027/02/03 at 22:14" },
-  { id: "c6", kind: "expired", date: "Feb 3, 2026, 22:14", amount: 500, sign: "-", currency: "point" },
-  { id: "c7", kind: "superGacha", date: "Feb 3, 2026, 22:14", amount: 5000, sign: "-", currency: "coin" },
-  { id: "c8", kind: "gacha", date: "Feb 3, 2026, 22:14", amount: 2000, sign: "-", currency: "coin" },
-  { id: "c9", kind: "once", date: "Feb 3, 2026, 22:14", amount: 50, sign: "-", currency: "point" },
-  { id: "c10", kind: "purchased", date: "Feb 3, 2026, 22:14", amount: 5000, sign: "+", currency: "coin", paymentId: "35812349", expires: "2027/02/03 at 22:14" },
-  { id: "c11", kind: "granted", date: "Feb 3, 2026, 22:14", amount: 5000, sign: "+", currency: "point", paymentId: "35812349", expires: "2027/02/03 at 22:14" },
+const COIN_HISTORY_TEMPLATE: Omit<CoinTxn, "id" | "date">[] = [
+  { kind: "superGacha", amount: 5000, sign: "-", currency: "coin" },
+  { kind: "gacha", amount: 2000, sign: "-", currency: "coin" },
+  { kind: "once", amount: 50, sign: "-", currency: "point" },
+  { kind: "purchased", amount: 5000, sign: "+", currency: "coin", paymentId: "35812349", expires: "2027/02/03 at 22:14" },
+  { kind: "granted", amount: 5000, sign: "+", currency: "point", paymentId: "35812349", expires: "2027/02/03 at 22:14" },
+  { kind: "expired", amount: 500, sign: "-", currency: "point" },
 ];
+const COIN_HISTORY: CoinTxn[] = Array.from({ length: 24 }, (_, i) => ({
+  id: `c${i + 1}`,
+  date: `Feb ${((23 - i + 27) % 28) + 1}, 2026, 22:14`,
+  ...COIN_HISTORY_TEMPLATE[i % COIN_HISTORY_TEMPLATE.length],
+}));
 
 function CoinHistoryPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: Lang; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void }) {
   const t = STR[lang];
+  const { items, hasMore, loading, loadMore, pageSize } = usePagedList(COIN_HISTORY);
   const clock = (
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></svg>
   );
@@ -4019,13 +4062,13 @@ function CoinHistoryPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
 
         {/* Transactions */}
         <div className="space-y-2 pb-6">
-          {COIN_HISTORY.map((tx) => {
+          {items.map((tx, i) => {
             const isCoin = tx.currency === "coin";
             const positive = tx.sign === "+";
             const amountColor = !isCoin ? "#2f6fed" : positive ? "#E8890C" : "#1d2129";
             const subLabel = sub(tx.kind);
             return (
-              <div key={tx.id} className="rounded-xl bg-white px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.07)]">
+              <div key={tx.id} className="animate-fade-slide rounded-xl bg-white px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.07)]" style={{ animationDelay: `${(i % pageSize) * 70}ms` }}>
                 <div className="flex items-center gap-1.5 text-[13px] font-medium text-[#8a9099]">
                   {clock}
                   {tx.date}
@@ -4047,6 +4090,7 @@ function CoinHistoryPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
               </div>
             );
           })}
+          {hasMore && <LoadMoreButton t={t} loading={loading} onClick={loadMore} />}
         </div>
 
         <SiteFooter t={t} />
