@@ -36,47 +36,60 @@ export function DevPanels({ screen }: { screen: Screen }) {
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         <p className="text-[12.5px] leading-relaxed text-[#5c626b]">{req.summary}</p>
 
-        {req.functionality.length > 0 && (
-          <section className="mt-4">
-            <h4 className="text-[11px] font-bold uppercase tracking-wide text-[#8a9099]">Functionality</h4>
-            <ul className="mt-2 space-y-1.5">
-              {req.functionality.map((item, i) => (
-                <li key={i} className="flex gap-2 text-[12.5px] leading-relaxed text-[#2a2f36]">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="mt-[3px] shrink-0"><path d="M20 6L9 17l-5-5" /></svg>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+        {req.groups.map((g, gi) => (
+          <section key={gi} className="mt-5">
+            <h4 className="flex items-center gap-2 text-[12.5px] font-bold text-[#1d2129]">
+              <span className="h-3.5 w-1 shrink-0 rounded-full bg-[#2563eb]" />
+              {g.title}
+            </h4>
 
-        {req.validation && req.validation.length > 0 && (
-          <section className="mt-4">
-            <h4 className="text-[11px] font-bold uppercase tracking-wide text-[#8a9099]">Validation & rules</h4>
-            <ul className="mt-2 space-y-1.5">
-              {req.validation.map((item, i) => (
-                <li key={i} className="flex gap-2 text-[12.5px] leading-relaxed text-[#2a2f36]">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-[3px] shrink-0"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z" /></svg>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+            {g.items.length > 0 && (
+              <ul className="mt-2 space-y-2">
+                {g.items.map((it, i) => {
+                  const text = typeof it === "string" ? it : it.text;
+                  const sub = typeof it === "string" ? undefined : it.sub;
+                  return (
+                    <li key={i} className="text-[12.5px] leading-relaxed text-[#2a2f36]">
+                      <div className="flex gap-2">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="mt-[3px] shrink-0"><path d="M20 6L9 17l-5-5" /></svg>
+                        <span>{text}</span>
+                      </div>
+                      {sub && sub.length > 0 && (
+                        <ul className="ml-[23px] mt-1 space-y-1 border-l border-black/10 pl-3">
+                          {sub.map((s, si) => (
+                            <li key={si} className="text-[11.5px] leading-relaxed text-[#5c626b]">{s}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
 
-        {req.tbc && req.tbc.length > 0 && (
-          <section className="mt-4">
-            <h4 className="text-[11px] font-bold uppercase tracking-wide text-[#b45309]">TBC / TBA</h4>
-            <ul className="mt-2 space-y-1.5">
-              {req.tbc.map((item, i) => (
-                <li key={i} className="flex gap-2 text-[12.5px] leading-relaxed text-[#7c5312]">
-                  <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#f59e0b]" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
+            {g.validation && g.validation.length > 0 && (
+              <div className="mt-2 rounded-lg bg-[#eff6ff] px-3 py-2">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-[#2563eb]">Validation & rules</p>
+                <ul className="mt-1 space-y-1">
+                  {g.validation.map((v, i) => (
+                    <li key={i} className="text-[11.5px] leading-relaxed text-[#2a2f36]">{v}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {g.tbc && g.tbc.length > 0 && (
+              <div className="mt-2 rounded-lg bg-[#fff7ed] px-3 py-2">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-[#b45309]">TBC / TBA</p>
+                <ul className="mt-1 space-y-1">
+                  {g.tbc.map((v, i) => (
+                    <li key={i} className="text-[11.5px] leading-relaxed text-[#7c5312]">{v}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </section>
-        )}
+        ))}
       </div>
 
       <div className="border-t border-black/10 px-4 py-2.5">
