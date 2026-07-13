@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Lang, Screen } from "./lib/types";
 import { LangToggle, PhoneApp, UpdatePrompt, VersionBadge } from "./components/oripa";
 import { CommentsPanel } from "./components/comments";
+import { DevPanels } from "./components/devpanels";
 
 // Near-production shell: renders only the phone experience. Entry point is the
 // logged-out lobby (V1); the internal POC config panel / flow-map are dropped.
@@ -31,6 +32,7 @@ export default function Page() {
         <PhoneApp lang={lang} noHistory={false} onScreenChange={setScreen} />
       </div>
 
+      <DevPanels screen={screen} />
       <CommentsPanel screen={screen} />
       <UpdatePrompt />
       <VersionBadge />
