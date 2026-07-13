@@ -87,6 +87,51 @@ const APP_HEADER_GROUP: ReqGroup = {
   ],
 };
 
+// Search + quick-filter + sort behaviour shared by the logged-out and
+// logged-in home feeds (the "Narrow down" bottom sheet + sort dropdown).
+const NARROW_DOWN_ITEMS: ReqItem[] = [
+  {
+    text: "Narrow down (filter) — opens a bottom sheet from the toolbar",
+    sub: [
+      "Search field at the top: placeholder 'Search packs & cards' (オリパ・カードを検索).",
+      "Quick-filter chips (multi-select toggles): Most popular, New Arrivals, Only a few left, PSA10 confirmed, High return, Pokémon, One Piece, BOX.",
+      "Clear resets every quick filter and the search text; Apply just closes the sheet (search + filters already apply live in the feed behind it).",
+      "The 'Narrow down' button shows a red count badge equal to the number of active quick filters.",
+      "Sheet closes on Apply, the X button, or tapping the dimmed backdrop.",
+    ],
+  },
+  {
+    text: "Search behaviour",
+    sub: [
+      "Typing filters the feed live (no submit / search button needed) by matching the pack title, case-insensitively, in the current language.",
+      "While a search is active the results are drawn from the whole catalogue (all categories, ignoring the selected category) and shown as a 2-column grid of compact cards.",
+      "When nothing matches, 'No packs match your search.' (一致するオリパがありません。) is shown.",
+    ],
+  },
+  {
+    text: "Sort (dropdown on the right of the toolbar)",
+    sub: [
+      "Options: Recommended order, Most popular, Newest, Price: Low to High, Price: High to Low.",
+      "The active option is highlighted in red; selecting one closes the dropdown and reorders the feed.",
+    ],
+  },
+];
+
+const NARROW_DOWN_TBC = [
+  "Quick-filter chips and the sort options are POC placeholders — they thin/reorder the sample list rather than applying real pack attributes (rarity, price, category, stock). Wire to real data.",
+];
+
+// The "Recommended" / themed-lane behaviour of the home feed.
+const RECOMMENDED_ITEM: ReqItem = {
+  text: "Recommended & themed sections",
+  sub: [
+    "In the 'All' view the feed is split into themed lanes: Recommended, New Arrivals, Just Added, Hot, Trending, Pokémon, Limited, Last Chance, Others, Oripa List.",
+    "The Recommended lane is emphasised with a red background framed by curved top and bottom dividers.",
+    "When a single category is selected, its top 2 packs are promoted into a red 'Recommended' block (same curved dividers) and the remaining packs list below it.",
+    "Each themed lane shows a 'See all' link that switches the feed to that lane's category.",
+  ],
+};
+
 // ── Screens ───────────────────────────────────────────────────────────────
 
 export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
@@ -114,15 +159,15 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
       {
         title: "Top navigation",
         items: [
-          "Category chips: All, New (新着), Hot (人気), Pokémon (ポケモン), Limited (限定), Others (その他); the active chip shows a red label and underline.",
-          "Sort control: Recommended, Most popular, Newest, Price low→high, Price high→low.",
-          { text: "Narrow down filter", sub: ["Opens a sheet with a search field and quick-filter chips.", "Clear resets filters + search; Apply closes the sheet."] },
+          "Category chips: All, New (新着), Hot (人気), Pokémon (ポケモン), Limited (限定), Others (その他); the active chip shows a red label + underline. The 'All' chip is a fixed black tab pinned to the left edge.",
+          ...NARROW_DOWN_ITEMS,
         ],
-        validation: ["Search filters the feed live; when nothing matches, 'No packs match your search.' is shown."],
+        tbc: [...NARROW_DOWN_TBC],
       },
       {
         title: "Oripa Draws",
         items: [
+          RECOMMENDED_ITEM,
           "Oripa cards show tags, artwork, price, remaining stock and remaining time.",
           { text: "Draw / Free draw / View", sub: ["All route the visitor to the Sign Up screen (an account is required)."] },
         ],
@@ -236,18 +281,16 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
       {
         title: "Top navigation",
         items: [
-          "Sticky category bar: All, New, Hot, Pokémon, Limited, Others; the active chip shows a red label + underline.",
-          "Sort control and a Narrow down sheet (search + quick filters, Clear/Apply).",
-          { text: "Themed section 'See all'", sub: ["Switches the feed to that section's category."] },
-          { text: "Category switch scroll behaviour", sub: ["Scrolls the feed so the category bar returns to the top only if the promo banner has scrolled out of view."] },
+          "Sticky category bar (stays pinned under the header while the feed scrolls): All, New, Hot, Pokémon, Limited, Others; the active chip shows a red label + underline; the 'All' chip is a fixed black tab pinned to the left edge.",
+          ...NARROW_DOWN_ITEMS,
+          { text: "Category switch scroll behaviour", sub: ["When switching category, the feed scrolls so the category bar returns to the top only if the promo banner has already scrolled out of view; if the banner is still visible the scroll position is left untouched."] },
         ],
-        validation: ["Search filters the feed live; empty search shows 'No packs match your search.'"],
+        tbc: [...NARROW_DOWN_TBC],
       },
       {
         title: "Oripa Draws",
         items: [
-          "Themed sections (Recommended, New Arrivals, Just Added, Hot, Trending, Pokémon, Limited, Last Chance, Others, Oripa List).",
-          "Recommended section (and the top 2 items in any single category) are emphasised with a red background and dividers.",
+          RECOMMENDED_ITEM,
           "Cards show tags, artwork, price, remaining stock and remaining time.",
         ],
         tbc: [

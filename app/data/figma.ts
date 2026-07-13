@@ -9,22 +9,24 @@ export const FIGMA_FILE_NAME = "OripaLot---UI-Creative-Template";
 export const FIGMA_DEFAULT_NODE = "3-2";
 
 // Per-screen Figma frame node-ids. Fill these in as the matching frames are
-// identified in the Figma file (use the node-id from the frame's share link,
-// e.g. "3-2"). Screens without an entry fall back to FIGMA_DEFAULT_NODE.
+// identified in the Figma file (use the node-id from the frame's "Copy link to
+// selection", e.g. "3-2"). Screens without an entry fall back to
+// FIGMA_DEFAULT_NODE. Comments show the target frame name in the Figma Layers
+// panel (English "(EN)" frames, since the app defaults to English).
 export const FIGMA_NODES: Partial<Record<Screen, string>> = {
-  // landing: "3-2",
-  // signup: "",
-  // login: "",
-  // oripa: "",
-  // notifications: "",
-  // prizeHistory: "",
-  // myLoot: "",
-  // purchaseHistory: "",
-  // coinHistory: "",
-  // store: "",
-  // shippingAddress: "",
-  // mypage: "",
-  // quest: "",
+  // landing:         "", // (EN) Homepage
+  // signup:          "", // (EN) Registration
+  // login:           "", // TBC — no dedicated Login frame found
+  // oripa:           "", // (EN) Oripa Gacha & Loot & Winning History Page
+  // prizeHistory:    "", // (EN) Oripa Gacha & Loot & Winning History Page
+  // myLoot:          "", // (EN) Oripa Gacha & Loot & Winning History Page
+  // notifications:   "", // (EN) Notifications
+  // purchaseHistory: "", // (EN) My Purchases
+  // coinHistory:     "", // (EN) Coin History
+  // store:           "", // (EN) Store
+  // shippingAddress: "", // TBC — likely inside (EN) My Account
+  // mypage:          "", // (EN) My Account
+  // quest:           "", // TBC — no dedicated Quests frame found
 };
 
 export function nodeForScreen(screen: Screen): string {
