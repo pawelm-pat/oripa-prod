@@ -37,6 +37,16 @@ export function figmaFileUrl(node: string): string {
 
 // Embeddable viewer URL (requires the file's link sharing to allow "Anyone with
 // the link can view"). Renders inside an <iframe>.
+// Uses the modern embed endpoint and focuses on the given frame:
+//  - node-id      : the frame to open
+//  - hide-ui=1    : hide the Figma toolbar/side panels
+//  - scaling=contain : fit the referenced frame to the viewport (zoom to frame)
 export function figmaEmbedUrl(node: string): string {
-  return `https://www.figma.com/embed?embed_host=oripa-prod&url=${encodeURIComponent(figmaFileUrl(node))}`;
+  const params = new URLSearchParams({
+    "node-id": node,
+    "embed-host": "oripa-prod",
+    "hide-ui": "1",
+    scaling: "contain",
+  });
+  return `https://embed.figma.com/design/${FIGMA_FILE_KEY}/${FIGMA_FILE_NAME}?${params.toString()}`;
 }

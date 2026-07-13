@@ -22,8 +22,10 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
       "Promotional banner carousel auto-rotates every 5 seconds; tapping a dot jumps to that slide (7 slides).",
       "Full oripa lobby feed: category chips, sort control, Narrow down filter and oripa cards.",
       "Any card tap, Draw, Free draw or View routes the visitor to the Sign Up screen.",
-      "Footer legal links (T&Cs, Privacy policy, SCTA, Anti-Social Forces policy) open the legal overlay.",
       "Bottom navigation bar is hidden on this screen.",
+      "Global footer (bottom of the page): product logo, copyright, company blurb, link groups, follow/social icons and support & payment info.",
+      "Footer legal links (T&Cs, Privacy policy, Legal notice (SCTA), Basic Policy Against Anti-Social Forces) open the legal overlay.",
+      "Footer shows the Japan payment-inquiry support phone number (050-1724-7952); all footer text is white.",
     ],
     validation: [
       "All draw/view interactions require an account, so they redirect to Sign Up.",
@@ -93,6 +95,9 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
       "Recommended section (and the top 2 items in any single category) are emphasised with a red background and dividers.",
       "Sort control (Recommended, Most popular, Newest, Price low→high, Price high→low) and a Narrow down sheet (search + quick filters).",
       "Switching category scrolls the feed so the category bar returns to the top only if the promo banner has scrolled out of view.",
+      "Global footer (bottom of the feed): product logo, copyright, company blurb, link groups, follow/social icons and support & payment info.",
+      "Footer legal links (T&Cs, Privacy policy, Legal notice (SCTA), Basic Policy Against Anti-Social Forces) open the legal overlay.",
+      "Footer shows the Japan payment-inquiry support phone number (050-1724-7952); all footer text is white.",
     ],
     validation: [
       "Search filters the feed live; when nothing matches, 'No packs match your search.' is shown.",
@@ -102,6 +107,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
       "Card artwork uses a shared placeholder image (real per-oripa art pending).",
       "Card price/tags are static placeholders.",
       "Header Points value is a fixed placeholder (10,000).",
+      "Footer non-legal links (About, Customer support, category chips, social icons) do nothing.",
     ],
   },
 
