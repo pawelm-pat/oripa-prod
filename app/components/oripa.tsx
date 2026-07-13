@@ -3937,6 +3937,10 @@ function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false, onOpe
   const [filterOpen, setFilterOpen] = useState(false);
   const [visible, setVisible] = useState(LOAD_MORE_PAGE);
   const [loading, setLoading] = useState(false);
+  const [filtering, setFiltering] = useState(false);
+  const filterTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (filterTimer.current) clearTimeout(filterTimer.current); }, []);
 
   const filtered = useMemo(() => filterPurchases(PURCHASE_HISTORY, range, customFrom, customTo), [range, customFrom, customTo]);
   const items = filtered.slice(0, visible);
@@ -3950,6 +3954,14 @@ function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false, onOpe
     }, 400);
   };
 
+  // Brief loading pass so applying a period feels live (skeleton → reveal).
+  const runFilterPass = () => {
+    setVisible(LOAD_MORE_PAGE);
+    setFiltering(true);
+    if (filterTimer.current) clearTimeout(filterTimer.current);
+    filterTimer.current = setTimeout(() => setFiltering(false), 500);
+  };
+
   const presets: { key: PhRangeKey; label: string }[] = [
     { key: "all", label: t.phFilterAll },
     { key: "7d", label: t.phFilter7 },
@@ -3961,20 +3973,22 @@ function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false, onOpe
 
   const choosePreset = (key: PhRangeKey) => {
     setRange(key);
-    setVisible(LOAD_MORE_PAGE);
-    if (key !== "custom") setFilterOpen(false);
+    if (key !== "custom") {
+      setFilterOpen(false);
+      runFilterPass();
+    }
   };
   const applyCustom = () => {
     setRange("custom");
-    setVisible(LOAD_MORE_PAGE);
     setFilterOpen(false);
+    runFilterPass();
   };
   const resetFilter = () => {
     setRange("all");
     setCustomFrom("");
     setCustomTo("");
-    setVisible(LOAD_MORE_PAGE);
     setFilterOpen(false);
+    runFilterPass();
   };
 
   return (
@@ -4049,8 +4063,25 @@ function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false, onOpe
           <p className="px-4 py-20 text-center text-[14px] text-[#9aa0a8]">{t.purchaseEmpty}</p>
         )}
 
+        {/* Filtering skeleton */}
+        {!empty && filtering && (
+          <div className="space-y-2 px-3 pb-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="animate-pulse rounded-xl bg-white px-4 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.07)]" style={{ animationDelay: `${i * 90}ms` }}>
+                <div className="flex items-center justify-between">
+                  <div className="h-3 w-28 rounded bg-black/10" />
+                  <div className="h-3 w-16 rounded bg-black/10" />
+                </div>
+                <div className="mt-2.5 h-4 w-24 rounded bg-black/10" />
+                <div className="mt-1.5 h-3 w-20 rounded bg-black/[0.07]" />
+                <div className="mt-3 h-3 w-40 rounded bg-black/[0.06]" />
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Purchase records */}
-        {!empty && (
+        {!empty && !filtering && (
           <div className="space-y-2 px-3 pb-6">
             {items.length === 0 && (
               <p className="px-1 py-16 text-center text-[13px] text-[#9aa0a8]">{t.phFilterNone}</p>
