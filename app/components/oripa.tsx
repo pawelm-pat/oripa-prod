@@ -4271,6 +4271,14 @@ const LIMITED_BUNDLES: LimitedBundle[] = [
   { id: "lb5", name: "Mega Pack",     coins: 50000, freePoints: 15000, jpy: 24000, originalJpy: 48000, remaining: 3,  total: 10, discount: 50 },
 ];
 
+type CardPack = { id: string; name: string; usd: number; credits: number; spins: number };
+const CARD_PACKS: CardPack[] = [
+  { id: "cp1", name: "Pocket Monsters Pack", usd: 9.99,  credits: 100,  spins: 10 },
+  { id: "cp2", name: "Big Bonanza Pack",     usd: 19.99, credits: 200,  spins: 20 },
+  { id: "cp3", name: "Collector's Vault",    usd: 49.99, credits: 500,  spins: 20 },
+  { id: "cp4", name: "Grand Chase Pack",     usd: 99.99, credits: 1000, spins: 20 },
+];
+
 function CardBrandIcon({ brand }: { brand: string }) {
   const b = brand.toLowerCase();
   if (b === "visa") return <span className="inline-block min-w-[36px] text-center text-[13px] font-black italic" style={{ color: "#1a1f71" }}>VISA</span>;
@@ -4961,6 +4969,12 @@ function StorePage({
     setSelectedPkg(pkg);
   }
 
+  function handlePackPurchase(pack: CardPack) {
+    const jpy = Math.round(pack.usd * 150);
+    const pkg: PointPackage = { id: pack.id, coins: pack.credits, freePoints: 0, jpy, inrApprox: jpy * 0.613 };
+    setSelectedPkg(pkg);
+  }
+
   return (
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
       {/* Standard app header */}
@@ -5078,6 +5092,43 @@ function StorePage({
             </div>
           </div>
         )}
+
+        {/* Buy a pack */}
+        <div className="px-4 pt-4 pb-1">
+          <div className="mb-2.5 flex items-center gap-2">
+            <p className="text-[14px] font-extrabold text-[#1d2129]">{t.storePackSection}</p>
+          </div>
+          <div className="no-scrollbar flex gap-3 overflow-x-auto pb-2">
+            {CARD_PACKS.map((pack, idx) => (
+              <div
+                key={pack.id}
+                className="flex w-[176px] shrink-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-[#1b1b20] shadow-[0_2px_10px_rgba(0,0,0,0.25)]"
+              >
+                <div className="relative h-[96px] w-full overflow-hidden bg-gradient-to-br from-[#1a1a2e] to-[#16213e]">
+                  <img src={`/carousel-${(idx % 3) + 1}.png`} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                </div>
+                <div className="flex flex-1 flex-col gap-1 p-2.5">
+                  <p className="line-clamp-1 text-[12px] font-bold text-white">{t.storePackNames[idx] ?? pack.name}</p>
+                  <p className="text-[10px] font-semibold text-white/80">
+                    ${pack.usd.toFixed(2)} · {t.storePackCredits(pack.credits)} · {t.storePackSpins(pack.spins)}
+                  </p>
+                  <p className="flex items-center gap-1 text-[9px] leading-snug text-white/45">
+                    {t.storePackMinCard} ·
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="#f5a623" className="shrink-0"><path d="M12 2l2.4 6.3L21 9l-5 4.3L17.3 21 12 17.1 6.7 21 8 13.3 3 9l6.6-.7z" /></svg>
+                    {t.storePackBigWins}
+                  </p>
+                  <button
+                    onClick={() => handlePackPurchase(pack)}
+                    className="mt-auto rounded-lg px-3 py-2 text-[12px] font-bold text-white active:scale-[0.98]"
+                    style={{ background: "linear-gradient(90deg,#f5a623,#ff7a00)" }}
+                  >
+                    {t.storePackBuyOpen}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* Limited Bundles */}
         <div className="px-4 pt-4 pb-3">
