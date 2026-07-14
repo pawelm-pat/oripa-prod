@@ -4316,7 +4316,7 @@ function PackCardList({ t }: { t: Dict }) {
               className="mt-1 w-full rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-white active:scale-[0.98]"
               style={{ background: "#e60012" }}
             >
-              {t.storePackBuyOpen} · ¥{pack.jpy.toLocaleString()}
+              ¥{pack.jpy.toLocaleString()}
             </button>
           </div>
         </div>
