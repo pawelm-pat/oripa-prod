@@ -159,6 +159,34 @@ export function LangToggle({ lang, setLang }: { lang: Lang; setLang: (l: Lang) =
   );
 }
 
+// Experiment control (sandbox): pick the slot-game skin. Sits outside the phone
+// frame under the language toggle. "Real slot" is parked/disabled for now.
+export function SlotVersionToggle({ version, setVersion }: { version: 1 | 2; setVersion: (v: 1 | 2) => void }) {
+  const opts: [1 | 2, string, boolean][] = [[1, "Classic", true], [2, "Real slot", false]];
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <span className="text-[9px] font-semibold uppercase tracking-wider text-white/45">Slot skin</span>
+      <div className="flex items-center rounded-full border border-black/15 bg-white p-0.5">
+        {opts.map(([v, label, enabled]) => {
+          const active = version === v;
+          return (
+            <button
+              key={v}
+              disabled={!enabled}
+              onClick={() => enabled && setVersion(v)}
+              title={enabled ? undefined : "Coming soon"}
+              className="whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-bold transition disabled:cursor-not-allowed"
+              style={{ background: active ? "#D10005" : "transparent", color: active ? "#fff" : enabled ? "#8a9099" : "#cfd3d9" }}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function BalancePill({ coins, t, onOpenStore }: { coins: number; t: Dict; onOpenStore?: () => void }) {
   const openCoinHistory = useContext(CoinHistoryNavContext);
   return (
@@ -5391,7 +5419,7 @@ function StorePage({
   );
 }
 
-export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void }) {
+export function PhoneApp({ lang, noHistory, onScreenChange, slotVersion = 1 }: { lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; slotVersion?: 1 | 2 }) {
   const t = STR[lang];
   const [screen, setScreen] = useState<Screen>("landing");
   const [prevScreen, setPrevScreen] = useState<Screen>("oripa");
@@ -5561,6 +5589,8 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
             credits={slotReq.credits}
             spins={slotReq.spins}
             lang={lang}
+            version={slotVersion}
+            onExchange={(c) => setCoins((v) => v + c)}
             header={
               <AppHeader
                 coins={coins}

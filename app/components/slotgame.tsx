@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Lang, Rarity } from "../lib/types";
-import { RARITY_IMG } from "../data/prizes";
+import { RARITY_IMG, RARITY_META } from "../data/prizes";
 
 /* ─────────────────────────────────────────────────────────────────────────
    Slot game (pack opening). Opened from the Store "Buy a pack" CTA.
@@ -19,10 +19,16 @@ type Props = {
   credits: number;
   spins: number;
   lang: Lang;
+  // Skin: 1 = Classic, 2 = Real slot (controlled from outside the frame).
+  version: 1 | 2;
   // Real app header (white bar with logo + balance) kept visible above the game.
   header?: ReactNode;
+  // Convert selected won cards to app coins from the summary screen.
+  onExchange?: (coins: number) => void;
   onClose: () => void;
 };
+
+const SHIP_MIN_COINS = 1500;
 
 // Shared font + surface so the game matches the app shell (white header + the
 // light app body). Noto Sans JP is inherited from the body but set explicitly.
@@ -61,6 +67,15 @@ const STR = {
     backToShop: "Back to shop",
     openAnother: "Open another",
     noCards: "No cards won this time.",
+    exchange: "Exchange to coins",
+    requestShip: "Request shipping",
+    reset: "Reset",
+    coinsUnit: "coins",
+    selectHint: "Select cards to exchange for coins, or request shipping (min 1,500 coins).",
+    tapToSelect: "Tap cards to select",
+    exchanged: (n: number, c: number) => `Exchanged ${n} card${n > 1 ? "s" : ""} for ${c.toLocaleString()} coins`,
+    shipRequested: "Shipping requested",
+    shortfall: (n: number) => `Select ${n.toLocaleString()} more coins to request shipping`,
     version1: "Classic",
     version2: "Real slot",
     balance: "Balance",
@@ -91,6 +106,15 @@ const STR = {
     backToShop: "ショップに戻る",
     openAnother: "もう一つ開ける",
     noCards: "今回はカードを獲得できませんでした。",
+    exchange: "コインに交換",
+    requestShip: "発送を申請",
+    reset: "リセット",
+    coinsUnit: "コイン",
+    selectHint: "カードを選んでコインに交換、または発送を申請（最低1,500コイン）。",
+    tapToSelect: "カードをタップして選択",
+    exchanged: (n: number, c: number) => `${n}枚を${c.toLocaleString()}コインに交換しました`,
+    shipRequested: "発送を申請しました",
+    shortfall: (n: number) => `発送申請にはあと${n.toLocaleString()}コイン必要です`,
     version1: "クラシック",
     version2: "リアルスロット",
     balance: "残高",
@@ -268,7 +292,7 @@ function JackpotBadge({ label, mult, tone }: { label: string; mult: string; tone
   );
 }
 
-export function SlotGame({ packName, credits, spins, lang, header, onClose }: Props) {
+export function SlotGame({ packName, credits, spins, lang, version, header, onExchange, onClose }: Props) {
   const L = STR[lang === "ja" ? "ja" : "en"];
   const costPerSpin = Math.max(1, Math.round(credits / spins));
 
@@ -281,8 +305,9 @@ export function SlotGame({ packName, credits, spins, lang, header, onClose }: Pr
   const [reveal, setReveal] = useState<{ cards: WonCard[]; big: boolean } | null>(null);
   const [phase, setPhase] = useState<"play" | "summary">("play");
   const [quick, setQuick] = useState(false);
-  // Experiment toggle: 1 = current "Classic" look, 2 = "Real slot" casino grid.
-  const [version, setVersion] = useState<1 | 2>(1);
+  // Summary: selected won-card ids + a transient confirmation toast.
+  const [picked, setPicked] = useState<Set<number>>(new Set());
+  const [toast, setToast] = useState<string | null>(null);
 
   const idRef = useRef(0);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -389,61 +414,124 @@ export function SlotGame({ packName, credits, spins, lang, header, onClose }: Pr
     setReveal(null);
     setSpinning(false);
     setSpinKey(0);
+    setPicked(new Set());
     setPhase("play");
   }, [spins]);
 
-  /* ── Summary ── */
+  /* ── Summary: stack of won cards, selectable to exchange or ship ── */
+  const coinOf = (r: Rarity) => RARITY_META[r].coin;
+  const pickedCards = won.filter((c) => picked.has(c.id));
+  const pickedTotal = pickedCards.reduce((s, c) => s + coinOf(c.rarity), 0);
+  const canShip = pickedTotal >= SHIP_MIN_COINS;
+  const togglePick = (id: number) =>
+    setPicked((p) => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const showToast = (msg: string) => { setToast(msg); after(2200, () => setToast(null)); };
+  const doExchange = () => {
+    if (picked.size === 0) return;
+    const ids = new Set(picked);
+    const n = ids.size, total = pickedTotal;
+    onExchange?.(total);
+    setWon((list) => list.filter((c) => !ids.has(c.id)));
+    setPicked(new Set());
+    showToast(L.exchanged(n, total));
+  };
+  const doShip = () => {
+    if (picked.size === 0 || !canShip) return;
+    const ids = new Set(picked);
+    setWon((list) => list.filter((c) => !ids.has(c.id)));
+    setPicked(new Set());
+    showToast(L.shipRequested);
+  };
+
   if (phase === "summary") {
     return (
       <div className="absolute inset-0 z-[70] flex flex-col text-[#1d2129]" style={{ animation: "slotIn .25s ease", background: SURFACE, fontFamily: FONT }}>
         {header}
-        <div className="flex-1 overflow-y-auto px-4 pt-5 pb-4">
-          <h2 className="text-[18px] font-extrabold leading-tight">
-            <span style={{ color: "#D10005" }}>{packName}</span>
-            <span className="text-[#1d2129]"> {lang === "ja" ? "— あなたのストック" : "— your stack"}</span>
-          </h2>
-          <p className="mt-1 text-[11px] font-medium text-[#8a9099]">{L.summary(credits, spins, won.length)}</p>
+        {/* Compact top toolbar with small Back to shop / Open another CTAs */}
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-black/10 bg-white px-4 py-2.5">
+          <div className="min-w-0">
+            <p className="truncate text-[14px] font-extrabold leading-tight" style={{ color: "#D10005" }}>{packName}</p>
+            <p className="text-[10px] font-medium text-[#8a9099]">{L.summary(credits, spins, won.length)}</p>
+          </div>
+          <div className="flex shrink-0 gap-1.5">
+            <button onClick={onClose} className="rounded-lg border border-[#e5e8ec] bg-white px-2.5 py-1.5 text-[11px] font-bold text-[#1d2129] active:scale-95">{L.backToShop}</button>
+            <button onClick={openAnother} className="rounded-lg px-2.5 py-1.5 text-[11px] font-extrabold text-white active:scale-95" style={{ background: "#D10005" }}>{L.openAnother}</button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4">
           {won.length === 0 ? (
             <p className="mt-10 text-center text-[13px] text-[#8a9099]">{L.noCards}</p>
           ) : (
-            <div className="mt-4 grid grid-cols-3 gap-3">
-              {won.map((c) => (
-                <div key={c.id} className="flex flex-col items-center">
-                  <img src={RARITY_IMG[c.rarity]} alt="" className="w-full rounded-lg object-cover" style={{ aspectRatio: "5/7", boxShadow: "0 2px 8px rgba(0,0,0,0.18)" }} />
-                  <p className="mt-1.5 text-center text-[10px] font-bold leading-tight">{lang === "ja" ? c.nameJa : c.name}</p>
-                  <p className="text-[8px] font-extrabold uppercase tracking-wide" style={{ color: RARITY_COLOR[c.rarity] }}>{L.rarity[c.rarity]}</p>
-                </div>
-              ))}
-            </div>
+            <>
+              {picked.size === 0 && <p className="mb-2 text-[11px] font-semibold text-[#8a9099]">{L.tapToSelect}</p>}
+              <div className="grid grid-cols-3 gap-3">
+                {won.map((c) => {
+                  const sel = picked.has(c.id);
+                  return (
+                    <button key={c.id} onClick={() => togglePick(c.id)} className="flex flex-col items-center text-center active:scale-[0.98]">
+                      <div className="relative w-full">
+                        <img
+                          src={RARITY_IMG[c.rarity]}
+                          alt=""
+                          className="w-full rounded-lg object-cover transition"
+                          style={{ aspectRatio: "5/7", boxShadow: sel ? "0 0 0 3px #D10005, 0 2px 10px rgba(209,0,5,0.35)" : "0 2px 8px rgba(0,0,0,0.18)", opacity: sel ? 1 : 0.96 }}
+                        />
+                        <span
+                          className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 text-white transition"
+                          style={{ background: sel ? "#D10005" : "rgba(0,0,0,0.25)", borderColor: sel ? "#fff" : "rgba(255,255,255,0.85)" }}
+                        >
+                          {sel && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7" /></svg>}
+                        </span>
+                      </div>
+                      <p className="mt-1.5 line-clamp-1 w-full text-[10px] font-bold leading-tight">{lang === "ja" ? c.nameJa : c.name}</p>
+                      <p className="text-[9px] font-extrabold tabular-nums" style={{ color: RARITY_COLOR[c.rarity] }}>{coinOf(c.rarity).toLocaleString()} {L.coinsUnit}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
-        <div className="flex shrink-0 gap-3 border-t border-black/10 bg-white px-4 py-3">
-          <button onClick={onClose} className="flex-1 rounded-xl border border-[#e5e8ec] bg-white py-3 text-[14px] font-bold text-[#1d2129] active:scale-[0.99]">{L.backToShop}</button>
-          <button onClick={openAnother} className="flex-1 rounded-xl py-3 text-[14px] font-extrabold text-white active:scale-[0.99]" style={{ background: "#D10005" }}>{L.openAnother}</button>
-        </div>
+
+        {/* Selection action bar — mirrors the draw-results exchange/ship CTAs */}
+        {won.length > 0 && picked.size > 0 && (
+          <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
+            <div className="mb-2 flex items-center justify-between text-[11px] font-semibold">
+              <span className="text-[#8a9099]">{picked.size} · {pickedTotal.toLocaleString()} {L.coinsUnit}</span>
+              <button onClick={() => setPicked(new Set())} className="text-[#8a9099] underline">{L.reset}</button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => { if (!canShip) { showToast(L.shortfall(SHIP_MIN_COINS - pickedTotal)); return; } doShip(); }}
+                className="rounded-xl border-2 py-2 text-[12.5px] font-bold leading-tight transition"
+                style={{ borderColor: "#f5670a", color: "#f5670a", background: "#fff", opacity: canShip ? 1 : 0.6 }}
+              >
+                {L.requestShip} · {picked.size}
+                <span className="mt-0.5 block text-[10px] font-semibold opacity-80">{pickedTotal.toLocaleString()} {L.coinsUnit}</span>
+              </button>
+              <button
+                onClick={doExchange}
+                className="rounded-xl py-2 text-[12.5px] font-bold leading-tight text-white transition"
+                style={{ background: "linear-gradient(180deg,#ff5a5f,#c8061a)" }}
+              >
+                {L.exchange} · {picked.size}
+                <span className="mt-0.5 block text-[10px] font-semibold opacity-90">{pickedTotal.toLocaleString()} {L.coinsUnit}</span>
+              </button>
+            </div>
+            <p className="mt-1.5 text-center text-[10.5px] leading-tight text-[#8a9099]">{L.selectHint}</p>
+          </div>
+        )}
+
+        {toast && (
+          <div className="pointer-events-none absolute bottom-24 left-1/2 z-[85] -translate-x-1/2 rounded-full px-4 py-2 text-[12px] font-bold text-white shadow-[0_6px_20px_rgba(0,0,0,0.4)]" style={{ background: "#1d2129", animation: "slotIn .25s ease" }}>{toast}</div>
+        )}
         <style>{`@keyframes slotIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}`}</style>
       </div>
     );
   }
 
   /* ── Shared bits used by both versions ── */
-  const toggleNode = (
-    <div className="shrink-0 px-4 pt-3">
-      <div className="mx-auto flex w-full max-w-[240px] rounded-full bg-black/[0.06] p-1" style={{ boxShadow: "inset 0 1px 2px rgba(0,0,0,0.12)" }}>
-        {([1, 2] as const).map((v) => (
-          <button
-            key={v}
-            onClick={() => setVersion(v)}
-            className="flex-1 rounded-full py-1.5 text-[12px] font-bold transition-colors"
-            style={version === v ? { background: "#D10005", color: "#fff", boxShadow: "0 1px 4px rgba(209,0,5,0.4)" } : { color: "#6b7280" }}
-          >
-            {v === 1 ? L.version1 : L.version2}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
   const revealNode = reveal && (
     <div className="absolute inset-0 z-[80] flex items-center justify-center bg-black/60 px-6" onClick={dismissReveal}>
       <div className="w-full max-w-[300px] rounded-2xl bg-white p-5 text-center" style={{ animation: "revealPop .3s cubic-bezier(.2,.9,.3,1.2)" }} onClick={(e) => e.stopPropagation()}>
@@ -483,7 +571,6 @@ export function SlotGame({ packName, credits, spins, lang, header, onClose }: Pr
         <div aria-hidden className="pointer-events-none absolute inset-0 z-0" style={{ background: "radial-gradient(120% 55% at 50% 4%, rgba(209,0,5,0.28), transparent 60%)" }} />
         <div className="relative z-10 flex min-h-0 flex-1 flex-col">
         {header}
-        {toggleNode}
 
         {/* Themed banner with animated 3D monster mascot */}
         <div className="shrink-0 px-4 pt-4">
@@ -645,7 +732,6 @@ export function SlotGame({ packName, credits, spins, lang, header, onClose }: Pr
   return (
     <div className="absolute inset-0 z-[70] flex flex-col text-[#1d2129]" style={{ animation: "slotIn .25s ease", background: SURFACE, fontFamily: FONT }}>
       {header}
-      {toggleNode}
       {/* Game status bar */}
       <div className="shrink-0 px-4 pt-4">
         <div className="flex items-center justify-between">
