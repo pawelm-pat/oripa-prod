@@ -4271,12 +4271,12 @@ const LIMITED_BUNDLES: LimitedBundle[] = [
   { id: "lb5", name: "Mega Pack",     coins: 50000, freePoints: 15000, jpy: 24000, originalJpy: 48000, remaining: 3,  total: 10, discount: 50 },
 ];
 
-type CardPack = { id: string; name: string; usd: number; credits: number; spins: number };
+type CardPack = { id: string; name: string; jpy: number; credits: number; spins: number; image: string };
 const CARD_PACKS: CardPack[] = [
-  { id: "cp1", name: "Pocket Monsters Pack", usd: 9.99,  credits: 100,  spins: 10 },
-  { id: "cp2", name: "Big Bonanza Pack",     usd: 19.99, credits: 200,  spins: 20 },
-  { id: "cp3", name: "Collector's Vault",    usd: 49.99, credits: 500,  spins: 20 },
-  { id: "cp4", name: "Grand Chase Pack",     usd: 99.99, credits: 1000, spins: 20 },
+  { id: "cp1", name: "Pocket Monsters Pack", jpy: 1500,  credits: 100,  spins: 10, image: "/pack-pocket-monsters.png" },
+  { id: "cp2", name: "Big Bonanza Pack",     jpy: 3000,  credits: 200,  spins: 20, image: "/pack-big-bonanza.png" },
+  { id: "cp3", name: "Collector's Vault",    jpy: 7500,  credits: 500,  spins: 20, image: "/pack-collectors-vault.png" },
+  { id: "cp4", name: "Grand Chase Pack",     jpy: 15000, credits: 1000, spins: 20, image: "/pack-grand-chase.png" },
 ];
 
 function CardBrandIcon({ brand }: { brand: string }) {
@@ -4970,8 +4970,7 @@ function StorePage({
   }
 
   function handlePackPurchase(pack: CardPack) {
-    const jpy = Math.round(pack.usd * 150);
-    const pkg: PointPackage = { id: pack.id, coins: pack.credits, freePoints: 0, jpy, inrApprox: jpy * 0.613 };
+    const pkg: PointPackage = { id: pack.id, coins: pack.credits, freePoints: 0, jpy: pack.jpy, inrApprox: pack.jpy * 0.613 };
     setSelectedPkg(pkg);
   }
 
@@ -5102,17 +5101,17 @@ function StorePage({
             {CARD_PACKS.map((pack, idx) => (
               <div
                 key={pack.id}
-                className="flex w-[176px] shrink-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-[#1b1b20] shadow-[0_2px_10px_rgba(0,0,0,0.25)]"
+                className="flex w-[176px] shrink-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-[#14141a] shadow-[0_2px_10px_rgba(0,0,0,0.25)]"
               >
-                <div className="relative h-[96px] w-full overflow-hidden bg-gradient-to-br from-[#1a1a2e] to-[#16213e]">
-                  <img src={`/carousel-${(idx % 3) + 1}.png`} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                <div className="relative h-[150px] w-full overflow-hidden bg-[#0b0b10]">
+                  <img src={pack.image} alt="" className="absolute inset-0 h-full w-full object-contain" />
                 </div>
                 <div className="flex flex-1 flex-col gap-1 p-2.5">
-                  <p className="line-clamp-1 text-[12px] font-bold text-white">{t.storePackNames[idx] ?? pack.name}</p>
-                  <p className="text-[10px] font-semibold text-white/80">
-                    ${pack.usd.toFixed(2)} · {t.storePackCredits(pack.credits)} · {t.storePackSpins(pack.spins)}
+                  <p className="line-clamp-1 text-[12px] font-bold leading-snug text-white">{t.storePackNames[idx] ?? pack.name}</p>
+                  <p className="text-[10px] font-medium text-white/80">
+                    ¥{pack.jpy.toLocaleString()} · {t.storePackCredits(pack.credits)} · {t.storePackSpins(pack.spins)}
                   </p>
-                  <p className="flex items-center gap-1 text-[9px] leading-snug text-white/45">
+                  <p className="flex items-center gap-1 text-[9px] font-normal leading-snug text-white/45">
                     {t.storePackMinCard} ·
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="#f5a623" className="shrink-0"><path d="M12 2l2.4 6.3L21 9l-5 4.3L17.3 21 12 17.1 6.7 21 8 13.3 3 9l6.6-.7z" /></svg>
                     {t.storePackBigWins}
