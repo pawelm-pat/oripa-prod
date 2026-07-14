@@ -20,6 +20,7 @@ import type {
   WonPrize,
 } from "../lib/types";
 import { STR, type Dict, locTitle } from "../lib/i18n";
+import { SlotGame } from "./slotgame";
 import { HOME_SECTIONS, ALL_ORIPA } from "../data/lobby";
 import { NOTIF_YOU, NOTIF_NOTICE, NOTIF_UNREAD_TOTAL } from "../data/notifications";
 import { LEGAL, type LegalDocKey } from "../data/legal";
@@ -4943,6 +4944,7 @@ function StorePage({
 }) {
   const t = STR[lang];
   const [selectedPkg, setSelectedPkg] = useState<PointPackage | null>(null);
+  const [slotPack, setSlotPack] = useState<CardPack | null>(null);
   const [eduOpen, setEduOpen] = useState(true);
   const [loyaltyOpen, setLoyaltyOpen] = useState(false);
   const [subActive, setSubActive] = useState(subscriptionPurchased);
@@ -4970,8 +4972,7 @@ function StorePage({
   }
 
   function handlePackPurchase(pack: CardPack) {
-    const pkg: PointPackage = { id: pack.id, coins: pack.credits, freePoints: 0, jpy: pack.jpy, inrApprox: pack.jpy * 0.613 };
-    setSelectedPkg(pkg);
+    setSlotPack(pack);
   }
 
   return (
@@ -5368,6 +5369,15 @@ function StorePage({
           savedCards={savedCards}
           onSaveCard={(card) => setSavedCards(prev => [card, ...prev])}
           onDeleteCard={(idx) => setSavedCards(prev => prev.filter((_, i) => i !== idx))}
+        />
+      )}
+      {slotPack && (
+        <SlotGame
+          packName={t.storePackNames[CARD_PACKS.indexOf(slotPack)] ?? slotPack.name}
+          credits={slotPack.credits}
+          spins={slotPack.spins}
+          lang={lang}
+          onClose={() => setSlotPack(null)}
         />
       )}
     </div>
