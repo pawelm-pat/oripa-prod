@@ -47,6 +47,9 @@ const NotifNavContext = createContext<() => void>(() => {});
 const CoinHistoryNavContext = createContext<() => void>(() => {});
 // Opening a legal document (Terms / Privacy / SCTA) reader from anywhere.
 const LegalNavContext = createContext<(doc: LegalDocKey) => void>(() => {});
+// Opening the pack slot game from anywhere (Store or the home pack swimlane).
+type SlotReq = { name: string; credits: number; spins: number };
+const SlotNavContext = createContext<(req: SlotReq) => void>(() => {});
 
 // Preserve the My Page scroll offset across remounts (each screen change
 // remounts via key={screen}), so returning from a sub-screen keeps position.
@@ -674,6 +677,13 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
                 </section>
                 {/* Curved divider transitioning red -> white (below the section) */}
                 <img src="/home-divider-bottom.png" alt="" className="-mt-px block w-full" />
+                {/* Buy-a-pack swimlane sits directly below the recommended oripa. */}
+                <div className="px-3.5 py-3.5">
+                  <div className="mb-2.5 flex items-center gap-1.5">
+                    <h3 className="flex items-center gap-1.5 text-[15px] font-extrabold text-[#1d2129]">{sectionIcon("cards", false)}{t.storePackSection}</h3>
+                  </div>
+                  <PackCardList t={t} />
+                </div>
               </div>
             );
           }
@@ -4280,6 +4290,41 @@ const CARD_PACKS: CardPack[] = [
   { id: "cp4", name: "Grand Chase Pack",     jpy: 15000, credits: 1000, spins: 20, image: "/pack-grand-chase.png" },
 ];
 
+// Horizontal "Buy a pack" swimlane. Shared by the Store and the home feed so
+// the card styling stays in sync; tapping a pack opens the slot game.
+function PackCardList({ t }: { t: Dict }) {
+  const openSlot = useContext(SlotNavContext);
+  const open = (pack: CardPack, idx: number) =>
+    openSlot({ name: t.storePackNames[idx] ?? pack.name, credits: pack.credits, spins: pack.spins });
+  return (
+    <div className="no-scrollbar flex gap-3 overflow-x-auto pb-2">
+      {CARD_PACKS.map((pack, idx) => (
+        <div
+          key={pack.id}
+          onClick={() => open(pack, idx)}
+          role="button"
+          className="flex w-[150px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-xl border-2 border-[#e5e8ec] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.09)] active:scale-[0.98]"
+        >
+          <div className="h-[150px] w-full px-1.5 pt-1.5">
+            <img src={pack.image} alt="" className="h-full w-full object-contain" />
+          </div>
+          <div className="flex flex-1 flex-col gap-0.5 px-2 pb-2 pt-0.5">
+            <p className="line-clamp-1 text-[11px] font-bold leading-snug text-[#1d2129]">{t.storePackNames[idx] ?? pack.name}</p>
+            <p className="line-clamp-1 text-[9px] font-medium text-[#8a9099]">{t.storePackCredits(pack.credits)} · {t.storePackSpins(pack.spins)}</p>
+            <button
+              onClick={(e) => { e.stopPropagation(); open(pack, idx); }}
+              className="mt-1 w-full rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-white active:scale-[0.98]"
+              style={{ background: "#e60012" }}
+            >
+              {t.storePackBuyOpen} · ¥{pack.jpy.toLocaleString()}
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function CardBrandIcon({ brand }: { brand: string }) {
   const b = brand.toLowerCase();
   if (b === "visa") return <span className="inline-block min-w-[36px] text-center text-[13px] font-black italic" style={{ color: "#1a1f71" }}>VISA</span>;
@@ -4944,7 +4989,6 @@ function StorePage({
 }) {
   const t = STR[lang];
   const [selectedPkg, setSelectedPkg] = useState<PointPackage | null>(null);
-  const [slotPack, setSlotPack] = useState<CardPack | null>(null);
   const [eduOpen, setEduOpen] = useState(true);
   const [loyaltyOpen, setLoyaltyOpen] = useState(false);
   const [subActive, setSubActive] = useState(subscriptionPurchased);
@@ -4969,10 +5013,6 @@ function StorePage({
   function handleBundlePurchase(bundle: LimitedBundle) {
     const pkg: PointPackage = { id: bundle.id, coins: bundle.coins, freePoints: bundle.freePoints, jpy: bundle.jpy, inrApprox: bundle.jpy * 0.613, originalJpy: bundle.originalJpy };
     setSelectedPkg(pkg);
-  }
-
-  function handlePackPurchase(pack: CardPack) {
-    setSlotPack(pack);
   }
 
   return (
@@ -5098,31 +5138,7 @@ function StorePage({
           <div className="mb-2.5 flex items-center gap-2">
             <p className="text-[14px] font-extrabold text-[#1d2129]">{t.storePackSection}</p>
           </div>
-          <div className="no-scrollbar flex gap-3 overflow-x-auto pb-2">
-            {CARD_PACKS.map((pack, idx) => (
-              <div
-                key={pack.id}
-                onClick={() => handlePackPurchase(pack)}
-                role="button"
-                className="flex w-[128px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-xl border-2 border-[#e5e8ec] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.09)] active:scale-[0.98]"
-              >
-                <div className="h-[150px] w-full px-1.5 pt-1.5">
-                  <img src={pack.image} alt="" className="h-full w-full object-contain" />
-                </div>
-                <div className="flex flex-1 flex-col gap-0.5 px-2 pb-2 pt-0.5">
-                  <p className="line-clamp-1 text-[11px] font-bold leading-snug text-[#1d2129]">{t.storePackNames[idx] ?? pack.name}</p>
-                  <p className="line-clamp-1 text-[9px] font-medium text-[#8a9099]">{t.storePackCredits(pack.credits)} · {t.storePackSpins(pack.spins)}</p>
-                  <button
-                    onClick={() => handlePackPurchase(pack)}
-                    className="mt-1 w-full rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-white active:scale-[0.98]"
-                    style={{ background: "#e60012" }}
-                  >
-                    {t.storePackBuyOpen} · ¥{pack.jpy.toLocaleString()}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+          <PackCardList t={t} />
         </div>
 
         {/* Limited Bundles */}
@@ -5371,15 +5387,6 @@ function StorePage({
           onDeleteCard={(idx) => setSavedCards(prev => prev.filter((_, i) => i !== idx))}
         />
       )}
-      {slotPack && (
-        <SlotGame
-          packName={t.storePackNames[CARD_PACKS.indexOf(slotPack)] ?? slotPack.name}
-          credits={slotPack.credits}
-          spins={slotPack.spins}
-          lang={lang}
-          onClose={() => setSlotPack(null)}
-        />
-      )}
     </div>
   );
 }
@@ -5436,6 +5443,9 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
   // Legal document reader (Terms / Privacy / SCTA), rendered at the app root so
   // it overlays correctly no matter where it's triggered (footer, My Account).
   const [legalDoc, setLegalDoc] = useState<LegalDocKey | null>(null);
+  // Pack slot game, rendered at the app root so it overlays correctly whether
+  // opened from the Store or the home-page pack swimlane.
+  const [slotReq, setSlotReq] = useState<SlotReq | null>(null);
   // Bottom-nav navigation: Oripa (lobby), My Loot, Store and My Account tabs are live.
   const navigate = (s: Screen) => {
     if (s === "oripa") { goHome(); return; }
@@ -5450,6 +5460,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
     <NotifNavContext.Provider value={onLanding ? () => {} : openNotifications}>
     <CoinHistoryNavContext.Provider value={onLanding ? () => {} : openCoinHistory}>
     <LegalNavContext.Provider value={setLegalDoc}>
+    <SlotNavContext.Provider value={setSlotReq}>
     <div className="flex h-full flex-col bg-[#eef0f3]">
       <div className="relative min-h-0 flex-1">
         {/* Keyed on `screen` so each navigation remounts and replays the
@@ -5544,9 +5555,19 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
         )}
         </div>
         {legalDoc && <LegalOverlay lang={lang} doc={legalDoc} onClose={() => setLegalDoc(null)} />}
+        {slotReq && (
+          <SlotGame
+            packName={slotReq.name}
+            credits={slotReq.credits}
+            spins={slotReq.spins}
+            lang={lang}
+            onClose={() => setSlotReq(null)}
+          />
+        )}
       </div>
       {showNav && <BottomNav screen={screen} t={t} onNavigate={navigate} />}
     </div>
+    </SlotNavContext.Provider>
     </LegalNavContext.Provider>
     </CoinHistoryNavContext.Provider>
     </NotifNavContext.Provider>
