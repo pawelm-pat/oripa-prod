@@ -166,30 +166,59 @@ function Reel({ spinKey, target, durationMs }: { spinKey: number; target: string
    but in the oripa brand (deep red felt, gold accents, Noto Sans JP). */
 const GRID_COLS = 5;
 const GRID_ROWS = 3;
-const GCELL = 58;
+const GCELL = 60;
 
-type Sym = { label: string; color: string };
+// Symbols are oripa trading cards: high-value tiles use the real rarity card
+// art, low-value tiles are clean rank "card faces" (10/J/Q/K/A).
+type Sym =
+  | { kind: "card"; img: string; glow: string }
+  | { kind: "rank"; label: string; color: string };
+
 const GRID_SYMBOLS: Sym[] = [
-  { label: "10", color: "#16a34a" },
-  { label: "J", color: "#2f6fed" },
-  { label: "Q", color: "#7c3aed" },
-  { label: "K", color: "#e0113b" },
-  { label: "A", color: "#e8a91d" },
-  { label: "★", color: "#ff7a00" },
-  { label: "7", color: "#D10005" },
+  { kind: "rank", label: "10", color: "#16a34a" },
+  { kind: "rank", label: "J", color: "#2f6fed" },
+  { kind: "rank", label: "Q", color: "#7c3aed" },
+  { kind: "rank", label: "K", color: "#e0113b" },
+  { kind: "rank", label: "A", color: "#e8a91d" },
+  { kind: "card", img: RARITY_IMG.N, glow: "#8a9099" },
+  { kind: "card", img: RARITY_IMG.SR, glow: "#2f6fed" },
+  { kind: "card", img: RARITY_IMG.UR, glow: "#D10005" },
 ];
+
+// Weighted reel strip — ranks are common, cards get rarer toward UR.
+const WEIGHTED: Sym[] = (() => {
+  const w: [Sym, number][] = [
+    [GRID_SYMBOLS[0], 4], [GRID_SYMBOLS[1], 4], [GRID_SYMBOLS[2], 4],
+    [GRID_SYMBOLS[3], 3], [GRID_SYMBOLS[4], 3],
+    [GRID_SYMBOLS[5], 3], [GRID_SYMBOLS[6], 2], [GRID_SYMBOLS[7], 1],
+  ];
+  const out: Sym[] = [];
+  for (const [s, n] of w) for (let i = 0; i < n; i++) out.push(s);
+  return out;
+})();
 
 function SymbolTile({ sym }: { sym: Sym }) {
   return (
-    <div className="flex items-center justify-center p-[3px]" style={{ height: GCELL, width: GCELL }}>
+    <div className="p-[2.5px]" style={{ height: GCELL, width: GCELL }}>
       <div
-        className="flex h-full w-full items-center justify-center rounded-lg"
-        style={{
-          background: `linear-gradient(160deg, rgba(255,255,255,0.28), rgba(0,0,0,0.28)), ${sym.color}`,
-          boxShadow: "inset 0 1px 2px rgba(255,255,255,0.35), 0 1px 3px rgba(0,0,0,0.45)",
-        }}
+        className="relative h-full w-full overflow-hidden rounded-lg"
+        style={{ border: "1.5px solid rgba(255,215,107,0.5)", boxShadow: "0 1px 3px rgba(0,0,0,0.5)" }}
       >
-        <span className="text-[22px] font-black text-white" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>{sym.label}</span>
+        {sym.kind === "card" ? (
+          <>
+            <img src={sym.img} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            <span className="pointer-events-none absolute inset-0 rounded-lg" style={{ boxShadow: `inset 0 0 12px ${sym.glow}` }} />
+          </>
+        ) : (
+          <div
+            className="flex h-full w-full items-center justify-center"
+            style={{ background: `linear-gradient(160deg, rgba(255,255,255,0.92), rgba(255,255,255,0.62)), ${sym.color}` }}
+          >
+            <span className="text-[26px] font-black leading-none" style={{ color: sym.color, textShadow: "0 1px 0 rgba(255,255,255,0.7)" }}>{sym.label}</span>
+          </div>
+        )}
+        {/* top gloss */}
+        <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.3), transparent)" }} />
       </div>
     </div>
   );
@@ -201,7 +230,7 @@ function GridColumn({ spinKey, durationMs, delayMs }: { spinKey: number; duratio
   const strip = useMemo(() => {
     const n = spinKey === 0 ? GRID_ROWS : 22;
     const arr: Sym[] = [];
-    for (let i = 0; i < n; i++) arr.push(GRID_SYMBOLS[(Math.random() * GRID_SYMBOLS.length) | 0]);
+    for (let i = 0; i < n; i++) arr.push(WEIGHTED[(Math.random() * WEIGHTED.length) | 0]);
     return arr;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spinKey]);
@@ -227,12 +256,14 @@ function GridColumn({ spinKey, durationMs, delayMs }: { spinKey: number; duratio
   );
 }
 
-// A jackpot tier plaque (MINOR / MAJOR / GRAND).
+// A jackpot tier plaque (MINOR / MAJOR / GRAND) with a gilded bevel.
 function JackpotBadge({ label, mult, tone }: { label: string; mult: string; tone: [string, string] }) {
   return (
-    <div className="flex-1 rounded-lg px-2 py-1 text-center" style={{ background: `linear-gradient(180deg, ${tone[0]}, ${tone[1]})`, boxShadow: "inset 0 1px 1px rgba(255,255,255,0.4), 0 2px 4px rgba(0,0,0,0.4)" }}>
-      <p className="text-[13px] font-black leading-none text-white" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>{mult}</p>
-      <p className="mt-0.5 text-[8px] font-extrabold uppercase tracking-wider text-white/90">{label}</p>
+    <div className="flex-1 rounded-lg p-[2px]" style={{ background: "linear-gradient(180deg,#ffe6a3,#8a5e12)", boxShadow: "0 2px 6px rgba(0,0,0,0.5)" }}>
+      <div className="rounded-[6px] px-2 py-1 text-center" style={{ background: `linear-gradient(180deg, ${tone[0]}, ${tone[1]})`, boxShadow: "inset 0 1px 1px rgba(255,255,255,0.45)" }}>
+        <p className="text-[13px] font-black leading-none text-white" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.55)" }}>{mult}</p>
+        <p className="mt-0.5 text-[8px] font-extrabold uppercase tracking-wider text-white/95">{label}</p>
+      </div>
     </div>
   );
 }
@@ -447,6 +478,10 @@ export function SlotGame({ packName, credits, spins, lang, header, onClose }: Pr
     const creditsLeft = Math.max(0, credits - creditsSpent);
     return (
       <div className="absolute inset-0 z-[70] flex flex-col text-white" style={{ animation: "slotIn .25s ease", background: "linear-gradient(180deg,#2a0608 0%,#160305 55%,#0b0203 100%)", fontFamily: FONT }}>
+        {/* Immersive scene backdrop: existing banner art, blurred + darkened */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 z-0" style={{ backgroundImage: "url(/oripa-banner-2.png)", backgroundSize: "cover", backgroundPosition: "center", opacity: 0.15, filter: "blur(7px)" }} />
+        <div aria-hidden className="pointer-events-none absolute inset-0 z-0" style={{ background: "radial-gradient(120% 55% at 50% 4%, rgba(209,0,5,0.28), transparent 60%)" }} />
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col">
         {header}
         {toggleNode}
 
@@ -473,27 +508,32 @@ export function SlotGame({ packName, credits, spins, lang, header, onClose }: Pr
         {/* Grid */}
         <div className="flex flex-1 flex-col justify-center px-4">
           <div
-            className="relative mx-auto rounded-2xl p-2"
-            style={{ background: "linear-gradient(180deg,#1a0405,#0c0203)", border: "2px solid rgba(255,215,107,0.35)", boxShadow: "0 8px 30px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,0,0,0.6)" }}
+            className="relative mx-auto rounded-2xl p-[3px]"
+            style={{ background: "linear-gradient(180deg,#ffe6a3,#8a5e12)", boxShadow: "0 10px 34px rgba(0,0,0,0.65)" }}
           >
-            <div className="flex gap-1">
-              {Array.from({ length: GRID_COLS }).map((_, c) => (
-                <GridColumn
-                  key={c}
-                  spinKey={spinKey}
-                  durationMs={quick ? 420 : 850}
-                  delayMs={c * (quick ? 90 : 170)}
-                />
-              ))}
-            </div>
-            {/* Win amount flourish */}
-            {reveal && (
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <span className="rounded-lg px-3 py-1 text-[24px] font-black text-white" style={{ background: "rgba(0,0,0,0.55)", textShadow: "0 0 14px rgba(255,211,107,0.9)", animation: "revealPop .3s ease" }}>
-                  +{reveal.cards.length}
-                </span>
+            <div
+              className="relative overflow-hidden rounded-[14px] p-2"
+              style={{ background: "linear-gradient(180deg,#1a0405,#0a0102)", boxShadow: "inset 0 0 26px rgba(0,0,0,0.9)" }}
+            >
+              <div className="flex gap-1">
+                {Array.from({ length: GRID_COLS }).map((_, c) => (
+                  <GridColumn
+                    key={c}
+                    spinKey={spinKey}
+                    durationMs={quick ? 420 : 850}
+                    delayMs={c * (quick ? 90 : 170)}
+                  />
+                ))}
               </div>
-            )}
+              {/* Win amount flourish */}
+              {reveal && (
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                  <span className="rounded-lg px-4 py-1.5 text-[26px] font-black text-white" style={{ background: "rgba(0,0,0,0.6)", textShadow: "0 0 16px rgba(255,211,107,0.95)", animation: "revealPop .3s ease" }}>
+                    +{reveal.cards.length}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Jackpot tiers */}
@@ -562,6 +602,7 @@ export function SlotGame({ packName, credits, spins, lang, header, onClose }: Pr
               <p className="text-[13px] font-extrabold tabular-nums" style={{ color: "#ffd36b" }}>{won.length}</p>
             </div>
           </div>
+        </div>
         </div>
 
         {revealNode}
