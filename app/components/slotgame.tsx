@@ -61,6 +61,17 @@ const STR = {
     backToShop: "Back to shop",
     openAnother: "Open another",
     noCards: "No cards won this time.",
+    version1: "Classic",
+    version2: "Real slot",
+    balance: "Balance",
+    spinSize: "Spin size",
+    winLabel: "Win",
+    jpMinor: "MINOR",
+    jpMajor: "MAJOR",
+    jpGrand: "GRAND",
+    featSpins: "Extra spins",
+    featRows: "Extra rows",
+    featBoost: "Boosters",
     rarity: { N: "Common", SR: "Rare", UR: "Ultra Rare" } as Record<Rarity, string>,
   },
   ja: {
@@ -80,6 +91,17 @@ const STR = {
     backToShop: "ショップに戻る",
     openAnother: "もう一つ開ける",
     noCards: "今回はカードを獲得できませんでした。",
+    version1: "クラシック",
+    version2: "リアルスロット",
+    balance: "残高",
+    spinSize: "ベット",
+    winLabel: "配当",
+    jpMinor: "マイナー",
+    jpMajor: "メジャー",
+    jpGrand: "グランド",
+    featSpins: "追加スピン",
+    featRows: "追加ライン",
+    featBoost: "ブースター",
     rarity: { N: "ノーマル", SR: "レア", UR: "ウルトラレア" } as Record<Rarity, string>,
   },
 };
@@ -138,6 +160,83 @@ function Reel({ spinKey, target, durationMs }: { spinKey: number; target: string
   );
 }
 
+/* ── Version 2: "real slot" casino grid ─────────────────────────────────────
+   A 5×3 themed grid with glossy symbol tiles, jackpot tiers, a big central
+   spin button and a control cluster — modelled on a classic hold-and-win slot
+   but in the oripa brand (deep red felt, gold accents, Noto Sans JP). */
+const GRID_COLS = 5;
+const GRID_ROWS = 3;
+const GCELL = 58;
+
+type Sym = { label: string; color: string };
+const GRID_SYMBOLS: Sym[] = [
+  { label: "10", color: "#16a34a" },
+  { label: "J", color: "#2f6fed" },
+  { label: "Q", color: "#7c3aed" },
+  { label: "K", color: "#e0113b" },
+  { label: "A", color: "#e8a91d" },
+  { label: "★", color: "#ff7a00" },
+  { label: "7", color: "#D10005" },
+];
+
+function SymbolTile({ sym }: { sym: Sym }) {
+  return (
+    <div className="flex items-center justify-center p-[3px]" style={{ height: GCELL, width: GCELL }}>
+      <div
+        className="flex h-full w-full items-center justify-center rounded-lg"
+        style={{
+          background: `linear-gradient(160deg, rgba(255,255,255,0.28), rgba(0,0,0,0.28)), ${sym.color}`,
+          boxShadow: "inset 0 1px 2px rgba(255,255,255,0.35), 0 1px 3px rgba(0,0,0,0.45)",
+        }}
+      >
+        <span className="text-[22px] font-black text-white" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>{sym.label}</span>
+      </div>
+    </div>
+  );
+}
+
+// One reel column of the 5×3 grid: scrolls a random strip and stops after
+// `durationMs` (+ a per-column `delayMs` stagger) leaving GRID_ROWS visible.
+function GridColumn({ spinKey, durationMs, delayMs }: { spinKey: number; durationMs: number; delayMs: number }) {
+  const strip = useMemo(() => {
+    const n = spinKey === 0 ? GRID_ROWS : 22;
+    const arr: Sym[] = [];
+    for (let i = 0; i < n; i++) arr.push(GRID_SYMBOLS[(Math.random() * GRID_SYMBOLS.length) | 0]);
+    return arr;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spinKey]);
+
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (spinKey === 0) return;
+    const el = ref.current;
+    if (!el) return;
+    el.style.transition = "none";
+    el.style.transform = "translateY(0)";
+    void el.offsetHeight;
+    el.style.transition = `transform ${durationMs}ms cubic-bezier(.16,.84,.28,1) ${delayMs}ms`;
+    el.style.transform = `translateY(${-(strip.length - GRID_ROWS) * GCELL}px)`;
+  }, [spinKey, strip, durationMs, delayMs]);
+
+  return (
+    <div className="relative overflow-hidden" style={{ height: GRID_ROWS * GCELL, width: GCELL }}>
+      <div ref={ref}>
+        {strip.map((s, i) => <SymbolTile key={i} sym={s} />)}
+      </div>
+    </div>
+  );
+}
+
+// A jackpot tier plaque (MINOR / MAJOR / GRAND).
+function JackpotBadge({ label, mult, tone }: { label: string; mult: string; tone: [string, string] }) {
+  return (
+    <div className="flex-1 rounded-lg px-2 py-1 text-center" style={{ background: `linear-gradient(180deg, ${tone[0]}, ${tone[1]})`, boxShadow: "inset 0 1px 1px rgba(255,255,255,0.4), 0 2px 4px rgba(0,0,0,0.4)" }}>
+      <p className="text-[13px] font-black leading-none text-white" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>{mult}</p>
+      <p className="mt-0.5 text-[8px] font-extrabold uppercase tracking-wider text-white/90">{label}</p>
+    </div>
+  );
+}
+
 export function SlotGame({ packName, credits, spins, lang, header, onClose }: Props) {
   const L = STR[lang === "ja" ? "ja" : "en"];
   const costPerSpin = Math.max(1, Math.round(credits / spins));
@@ -151,6 +250,8 @@ export function SlotGame({ packName, credits, spins, lang, header, onClose }: Pr
   const [reveal, setReveal] = useState<{ cards: WonCard[]; big: boolean } | null>(null);
   const [phase, setPhase] = useState<"play" | "summary">("play");
   const [quick, setQuick] = useState(false);
+  // Experiment toggle: 1 = current "Classic" look, 2 = "Real slot" casino grid.
+  const [version, setVersion] = useState<1 | 2>(1);
 
   const idRef = useRef(0);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -294,10 +395,186 @@ export function SlotGame({ packName, credits, spins, lang, header, onClose }: Pr
     );
   }
 
-  /* ── Play ── */
+  /* ── Shared bits used by both versions ── */
+  const toggleNode = (
+    <div className="shrink-0 px-4 pt-3">
+      <div className="mx-auto flex w-full max-w-[240px] rounded-full bg-black/[0.06] p-1" style={{ boxShadow: "inset 0 1px 2px rgba(0,0,0,0.12)" }}>
+        {([1, 2] as const).map((v) => (
+          <button
+            key={v}
+            onClick={() => setVersion(v)}
+            className="flex-1 rounded-full py-1.5 text-[12px] font-bold transition-colors"
+            style={version === v ? { background: "#D10005", color: "#fff", boxShadow: "0 1px 4px rgba(209,0,5,0.4)" } : { color: "#6b7280" }}
+          >
+            {v === 1 ? L.version1 : L.version2}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const revealNode = reveal && (
+    <div className="absolute inset-0 z-[80] flex items-center justify-center bg-black/60 px-6" onClick={dismissReveal}>
+      <div className="w-full max-w-[300px] rounded-2xl bg-white p-5 text-center" style={{ animation: "revealPop .3s cubic-bezier(.2,.9,.3,1.2)" }} onClick={(e) => e.stopPropagation()}>
+        {reveal.big && <p className="mb-2 text-[15px] font-black tracking-wide" style={{ color: "#D10005" }}>{L.bigWin}</p>}
+        <div className={`flex items-end justify-center ${reveal.cards.length > 1 ? "gap-2" : ""}`}>
+          {reveal.cards.map((c, i) => (
+            <img
+              key={c.id}
+              src={RARITY_IMG[c.rarity]}
+              alt=""
+              className="rounded-lg object-cover"
+              style={{
+                width: reveal.cards.length > 1 ? 84 : 150,
+                aspectRatio: "5/7",
+                boxShadow: `0 4px 20px ${RARITY_COLOR[c.rarity]}66`,
+                transform: reveal.cards.length > 1 ? `rotate(${(i - (reveal.cards.length - 1) / 2) * 8}deg)` : undefined,
+              }}
+            />
+          ))}
+        </div>
+        <p className="mt-3 text-[16px] font-extrabold text-[#1d2129]">{lang === "ja" ? reveal.cards[0].nameJa : reveal.cards[0].name}{reveal.cards.length > 1 ? ` ×${reveal.cards.length}` : ""}</p>
+        <p className="text-[11px] font-extrabold uppercase tracking-widest" style={{ color: RARITY_COLOR[reveal.cards[0].rarity] }}>{L.rarity[reveal.cards[0].rarity]}</p>
+        <button onClick={dismissReveal} className="mt-4 w-full rounded-xl py-3 text-[14px] font-extrabold text-white active:scale-[0.99]" style={{ background: "#D10005" }}>{L.keepSpinning}</button>
+      </div>
+    </div>
+  );
+
+  const styleNode = <style>{`@keyframes slotIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}@keyframes revealPop{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:none}}`}</style>;
+
+  /* ── Version 2: real slot casino grid ── */
+  if (version === 2) {
+    const creditsLeft = Math.max(0, credits - creditsSpent);
+    return (
+      <div className="absolute inset-0 z-[70] flex flex-col text-white" style={{ animation: "slotIn .25s ease", background: "linear-gradient(180deg,#2a0608 0%,#160305 55%,#0b0203 100%)", fontFamily: FONT }}>
+        {header}
+        {toggleNode}
+
+        {/* Themed banner */}
+        <div className="shrink-0 px-4 pt-3">
+          <div className="relative flex h-[74px] items-center justify-between overflow-hidden rounded-xl px-4" style={{ background: "linear-gradient(120deg,#7a0a0f,#D10005 60%,#ff7a00)", boxShadow: "inset 0 1px 2px rgba(255,255,255,0.25), 0 3px 10px rgba(0,0,0,0.5)" }}>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/80">ORIPA</p>
+              <p className="text-[20px] font-black leading-none tracking-tight" style={{ textShadow: "0 2px 4px rgba(0,0,0,0.4)" }}>JACKPOT</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[9px] font-semibold uppercase tracking-widest text-white/70">{L.spinsLeft(spinsLeft)}</p>
+              <p className="text-[13px] font-extrabold" style={{ color: "#ffd36b" }}>{packName}</p>
+            </div>
+          </div>
+          {/* Feature pills (decorative) */}
+          <div className="mt-2.5 flex gap-2">
+            {[L.featSpins, L.featRows, L.featBoost].map((f, i) => (
+              <div key={f} className="flex-1 rounded-full py-1.5 text-center text-[10px] font-extrabold uppercase tracking-wide text-white" style={{ background: "rgba(0,0,0,0.35)", border: `1.5px solid ${["#e0113b", "#e8a91d", "#2f6fed"][i]}` }}>{f}</div>
+            ))}
+          </div>
+        </div>
+
+        {/* Grid */}
+        <div className="flex flex-1 flex-col justify-center px-4">
+          <div
+            className="relative mx-auto rounded-2xl p-2"
+            style={{ background: "linear-gradient(180deg,#1a0405,#0c0203)", border: "2px solid rgba(255,215,107,0.35)", boxShadow: "0 8px 30px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,0,0,0.6)" }}
+          >
+            <div className="flex gap-1">
+              {Array.from({ length: GRID_COLS }).map((_, c) => (
+                <GridColumn
+                  key={c}
+                  spinKey={spinKey}
+                  durationMs={quick ? 420 : 850}
+                  delayMs={c * (quick ? 90 : 170)}
+                />
+              ))}
+            </div>
+            {/* Win amount flourish */}
+            {reveal && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <span className="rounded-lg px-3 py-1 text-[24px] font-black text-white" style={{ background: "rgba(0,0,0,0.55)", textShadow: "0 0 14px rgba(255,211,107,0.9)", animation: "revealPop .3s ease" }}>
+                  +{reveal.cards.length}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Jackpot tiers */}
+          <div className="mt-3 flex gap-2">
+            <JackpotBadge label={L.jpMinor} mult="100x" tone={["#c97b2c", "#7a3d0e"]} />
+            <JackpotBadge label={L.jpMajor} mult="500x" tone={["#c9ccd2", "#7c8088"]} />
+            <JackpotBadge label={L.jpGrand} mult="5000x" tone={["#ffd36b", "#c8930f"]} />
+          </div>
+        </div>
+
+        {/* Spin cluster */}
+        <div className="shrink-0 px-4 pb-4 pt-1">
+          <div className="flex items-center justify-between">
+            <button onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-full text-white/70 active:text-white" style={{ background: "rgba(255,255,255,0.08)" }} aria-label={L.exit}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg>
+            </button>
+            <button
+              onClick={() => setQuick((q) => !q)}
+              className="flex h-11 w-11 items-center justify-center rounded-full active:scale-95"
+              style={{ background: "rgba(255,255,255,0.08)", color: quick ? "#ffd36b" : "rgba(255,255,255,0.7)" }}
+              aria-label={L.quickSpin}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h7l-1 8 10-12h-7z" /></svg>
+            </button>
+
+            {/* Big central spin button */}
+            <button
+              onClick={doSpin}
+              disabled={spinning || spinsLeft <= 0}
+              className="relative flex h-[74px] w-[74px] items-center justify-center rounded-full active:scale-95 disabled:opacity-60"
+              style={{ background: "radial-gradient(circle at 50% 35%,#ff5a3c,#D10005)", boxShadow: "0 0 0 4px rgba(255,215,107,0.55), 0 6px 18px rgba(209,0,5,0.55)" }}
+              aria-label="Spin"
+            >
+              {spinning ? (
+                <span className="h-6 w-6 rounded-[3px] bg-white" />
+              ) : (
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round"><path d="M21 12a9 9 0 1 1-3-6.7" /><path d="M21 3v5h-5" /></svg>
+              )}
+            </button>
+
+            <button
+              onClick={fastForward}
+              className="flex h-11 w-11 items-center justify-center rounded-full text-white/70 active:text-white"
+              style={{ background: "rgba(255,255,255,0.08)" }}
+              aria-label={L.fastForward}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M4 5l7 7-7 7zM13 5l7 7-7 7z" /></svg>
+            </button>
+            <div className="flex h-11 w-11 items-center justify-center rounded-full text-white/70" style={{ background: "rgba(255,255,255,0.08)" }}>
+              <span className="text-[15px]">🎴</span>
+            </div>
+          </div>
+
+          {/* Balance bar */}
+          <div className="mt-3 flex items-center justify-between border-t border-white/10 pt-2.5 text-white">
+            <div>
+              <p className="text-[9px] font-medium uppercase tracking-wide text-white/50">{L.balance}</p>
+              <p className="text-[13px] font-extrabold tabular-nums">{creditsLeft.toLocaleString()} cr</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[9px] font-medium uppercase tracking-wide text-white/50">{L.spinSize}</p>
+              <p className="text-[13px] font-extrabold tabular-nums">{costPerSpin} cr</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[9px] font-medium uppercase tracking-wide text-white/50">{L.winLabel}</p>
+              <p className="text-[13px] font-extrabold tabular-nums" style={{ color: "#ffd36b" }}>{won.length}</p>
+            </div>
+          </div>
+        </div>
+
+        {revealNode}
+        {styleNode}
+      </div>
+    );
+  }
+
+  /* ── Version 1: Classic ── */
   return (
     <div className="absolute inset-0 z-[70] flex flex-col text-[#1d2129]" style={{ animation: "slotIn .25s ease", background: SURFACE, fontFamily: FONT }}>
       {header}
+      {toggleNode}
       {/* Game status bar */}
       <div className="shrink-0 px-4 pt-4">
         <div className="flex items-center justify-between">
@@ -364,35 +641,8 @@ export function SlotGame({ packName, credits, spins, lang, header, onClose }: Pr
         </div>
       </div>
 
-      {/* Card reveal */}
-      {reveal && (
-        <div className="absolute inset-0 z-[80] flex items-center justify-center bg-black/60 px-6" onClick={dismissReveal}>
-          <div className="w-full max-w-[300px] rounded-2xl bg-white p-5 text-center" style={{ animation: "revealPop .3s cubic-bezier(.2,.9,.3,1.2)" }} onClick={(e) => e.stopPropagation()}>
-            {reveal.big && <p className="mb-2 text-[15px] font-black tracking-wide" style={{ color: "#D10005" }}>{L.bigWin}</p>}
-            <div className={`flex items-end justify-center ${reveal.cards.length > 1 ? "gap-2" : ""}`}>
-              {reveal.cards.map((c, i) => (
-                <img
-                  key={c.id}
-                  src={RARITY_IMG[c.rarity]}
-                  alt=""
-                  className="rounded-lg object-cover"
-                  style={{
-                    width: reveal.cards.length > 1 ? 84 : 150,
-                    aspectRatio: "5/7",
-                    boxShadow: `0 4px 20px ${RARITY_COLOR[c.rarity]}66`,
-                    transform: reveal.cards.length > 1 ? `rotate(${(i - (reveal.cards.length - 1) / 2) * 8}deg)` : undefined,
-                  }}
-                />
-              ))}
-            </div>
-            <p className="mt-3 text-[16px] font-extrabold text-[#1d2129]">{lang === "ja" ? reveal.cards[0].nameJa : reveal.cards[0].name}{reveal.cards.length > 1 ? ` ×${reveal.cards.length}` : ""}</p>
-            <p className="text-[11px] font-extrabold uppercase tracking-widest" style={{ color: RARITY_COLOR[reveal.cards[0].rarity] }}>{L.rarity[reveal.cards[0].rarity]}</p>
-            <button onClick={dismissReveal} className="mt-4 w-full rounded-xl py-3 text-[14px] font-extrabold text-white active:scale-[0.99]" style={{ background: "#D10005" }}>{L.keepSpinning}</button>
-          </div>
-        </div>
-      )}
-
-      <style>{`@keyframes slotIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}@keyframes revealPop{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:none}}`}</style>
+      {revealNode}
+      {styleNode}
     </div>
   );
 }
