@@ -471,7 +471,7 @@ export function SlotGame({ packName, credits, spins, lang, header, onClose }: Pr
     </div>
   );
 
-  const styleNode = <style>{`@keyframes slotIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}@keyframes revealPop{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:none}}`}</style>;
+  const styleNode = <style>{`@keyframes slotIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}@keyframes revealPop{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:none}}@keyframes slotShimmer{0%{transform:translateX(-160%) skewX(-18deg)}60%,100%{transform:translateX(460%) skewX(-18deg)}}@keyframes ctaPulse{0%,100%{box-shadow:0 0 0 4px rgba(255,215,107,0.5),0 6px 18px rgba(209,0,5,0.55)}50%{box-shadow:0 0 0 8px rgba(255,215,107,0.16),0 6px 24px rgba(209,0,5,0.75)}}@keyframes paylinePulse{0%,100%{opacity:.5;box-shadow:0 0 8px rgba(255,215,107,0.5)}50%{opacity:1;box-shadow:0 0 18px rgba(255,215,107,0.95)}}@keyframes jpGlow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.18)}}`}</style>;
 
   /* ── Version 2: real slot casino grid ── */
   if (version === 2) {
@@ -488,11 +488,12 @@ export function SlotGame({ packName, credits, spins, lang, header, onClose }: Pr
         {/* Themed banner */}
         <div className="shrink-0 px-4 pt-3">
           <div className="relative flex h-[74px] items-center justify-between overflow-hidden rounded-xl px-4" style={{ background: "linear-gradient(120deg,#7a0a0f,#D10005 60%,#ff7a00)", boxShadow: "inset 0 1px 2px rgba(255,255,255,0.25), 0 3px 10px rgba(0,0,0,0.5)" }}>
-            <div>
+            <div className="pointer-events-none absolute inset-y-0 left-0 w-1/4" style={{ background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.28),transparent)", animation: "slotShimmer 4s ease-in-out infinite" }} />
+            <div className="relative">
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/80">ORIPA</p>
               <p className="text-[20px] font-black leading-none tracking-tight" style={{ textShadow: "0 2px 4px rgba(0,0,0,0.4)" }}>JACKPOT</p>
             </div>
-            <div className="text-right">
+            <div className="relative text-right">
               <p className="text-[9px] font-semibold uppercase tracking-widest text-white/70">{L.spinsLeft(spinsLeft)}</p>
               <p className="text-[13px] font-extrabold" style={{ color: "#ffd36b" }}>{packName}</p>
             </div>
@@ -525,6 +526,15 @@ export function SlotGame({ packName, credits, spins, lang, header, onClose }: Pr
                   />
                 ))}
               </div>
+              {/* Top / bottom depth shadow over the reel window */}
+              <div className="pointer-events-none absolute inset-0 rounded-[14px]" style={{ boxShadow: "inset 0 16px 20px -12px rgba(0,0,0,0.95), inset 0 -16px 20px -12px rgba(0,0,0,0.95)" }} />
+              {/* Centre payline — subtle at rest, lights up on a win */}
+              <div
+                className="pointer-events-none absolute inset-x-2 top-1/2 h-[2px] -translate-y-1/2 rounded-full"
+                style={{ background: "linear-gradient(90deg,transparent,#ffd36b,transparent)", animation: reveal ? "paylinePulse .5s ease-in-out infinite" : "paylinePulse 3s ease-in-out infinite" }}
+              />
+              {/* Idle shimmer sweep across the glass */}
+              <div className="pointer-events-none absolute inset-y-0 left-0 w-1/4" style={{ background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.10),transparent)", animation: "slotShimmer 5s ease-in-out infinite" }} />
               {/* Win amount flourish */}
               {reveal && (
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -540,7 +550,9 @@ export function SlotGame({ packName, credits, spins, lang, header, onClose }: Pr
           <div className="mt-3 flex gap-2">
             <JackpotBadge label={L.jpMinor} mult="100x" tone={["#c97b2c", "#7a3d0e"]} />
             <JackpotBadge label={L.jpMajor} mult="500x" tone={["#c9ccd2", "#7c8088"]} />
-            <JackpotBadge label={L.jpGrand} mult="5000x" tone={["#ffd36b", "#c8930f"]} />
+            <div style={{ animation: "jpGlow 2.2s ease-in-out infinite" }} className="flex-1">
+              <JackpotBadge label={L.jpGrand} mult="5000x" tone={["#ffd36b", "#c8930f"]} />
+            </div>
           </div>
         </div>
 
@@ -564,7 +576,7 @@ export function SlotGame({ packName, credits, spins, lang, header, onClose }: Pr
               onClick={doSpin}
               disabled={spinning || spinsLeft <= 0}
               className="relative flex h-[74px] w-[74px] items-center justify-center rounded-full active:scale-95 disabled:opacity-60"
-              style={{ background: "radial-gradient(circle at 50% 35%,#ff5a3c,#D10005)", boxShadow: "0 0 0 4px rgba(255,215,107,0.55), 0 6px 18px rgba(209,0,5,0.55)" }}
+              style={{ background: "radial-gradient(circle at 50% 35%,#ff5a3c,#D10005)", boxShadow: "0 0 0 4px rgba(255,215,107,0.55), 0 6px 18px rgba(209,0,5,0.55)", animation: spinning || spinsLeft <= 0 ? undefined : "ctaPulse 1.8s ease-in-out infinite" }}
               aria-label="Spin"
             >
               {spinning ? (
