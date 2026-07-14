@@ -5561,6 +5561,14 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
             credits={slotReq.credits}
             spins={slotReq.spins}
             lang={lang}
+            header={
+              <AppHeader
+                coins={coins}
+                t={t}
+                onHome={() => { setSlotReq(null); goHome(); }}
+                onOpenStore={() => { setSlotReq(null); openStore(); }}
+              />
+            }
             onClose={() => setSlotReq(null)}
           />
         )}

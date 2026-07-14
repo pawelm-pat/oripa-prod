@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Lang, Rarity } from "../lib/types";
 import { RARITY_IMG } from "../data/prizes";
 
@@ -19,8 +19,15 @@ type Props = {
   credits: number;
   spins: number;
   lang: Lang;
+  // Real app header (white bar with logo + balance) kept visible above the game.
+  header?: ReactNode;
   onClose: () => void;
 };
+
+// Shared font + surface so the game matches the app shell (white header, black
+// footer). Noto Sans JP is inherited from the body but set explicitly too.
+const FONT = "var(--font-noto-sans-jp), system-ui, sans-serif";
+const SURFACE = "#000";
 
 const SYMBOLS = ["🍒", "⭐", "🔔", "7️⃣", "💎", "🍀"] as const;
 
@@ -110,7 +117,7 @@ function Reel({ spinKey, target, durationMs }: { spinKey: number; target: string
 
   return (
     <div
-      className="relative flex-1 overflow-hidden rounded-xl border border-white/10 bg-[#17171d]"
+      className="relative flex-1 overflow-hidden rounded-xl border border-white/10 bg-[#1c1c24]"
       style={{ height: CELL_H, boxShadow: "inset 0 2px 10px rgba(0,0,0,0.5)" }}
     >
       {spinKey === 0 ? (
@@ -131,7 +138,7 @@ function Reel({ spinKey, target, durationMs }: { spinKey: number; target: string
   );
 }
 
-export function SlotGame({ packName, credits, spins, lang, onClose }: Props) {
+export function SlotGame({ packName, credits, spins, lang, header, onClose }: Props) {
   const L = STR[lang === "ja" ? "ja" : "en"];
   const costPerSpin = Math.max(1, Math.round(credits / spins));
 
@@ -256,7 +263,8 @@ export function SlotGame({ packName, credits, spins, lang, onClose }: Props) {
   /* ── Summary ── */
   if (phase === "summary") {
     return (
-      <div className="absolute inset-0 z-[70] flex flex-col bg-[#0d0d12] text-white" style={{ animation: "slotIn .25s ease" }}>
+      <div className="absolute inset-0 z-[70] flex flex-col text-white" style={{ animation: "slotIn .25s ease", background: SURFACE, fontFamily: FONT }}>
+        {header}
         <div className="flex-1 overflow-y-auto px-4 pt-5 pb-4">
           <h2 className="text-[18px] font-extrabold leading-tight">
             <span style={{ color: "#D10005" }}>{packName}</span>
@@ -288,8 +296,9 @@ export function SlotGame({ packName, credits, spins, lang, onClose }: Props) {
 
   /* ── Play ── */
   return (
-    <div className="absolute inset-0 z-[70] flex flex-col bg-[#0d0d12] text-white" style={{ animation: "slotIn .25s ease" }}>
-      {/* Header */}
+    <div className="absolute inset-0 z-[70] flex flex-col text-white" style={{ animation: "slotIn .25s ease", background: SURFACE, fontFamily: FONT }}>
+      {header}
+      {/* Game status bar */}
       <div className="shrink-0 px-4 pt-4">
         <div className="flex items-center justify-between">
           <p className="text-[13px] font-bold">
@@ -313,7 +322,7 @@ export function SlotGame({ packName, credits, spins, lang, onClose }: Props) {
 
       {/* Reels */}
       <div className="flex flex-1 flex-col justify-center px-4">
-        <div className="relative rounded-2xl border border-white/10 bg-[#101016] p-3" style={{ boxShadow: "0 8px 30px rgba(0,0,0,0.4)" }}>
+        <div className="relative rounded-2xl border border-white/10 bg-[#141420] p-3" style={{ boxShadow: "0 8px 30px rgba(0,0,0,0.4)" }}>
           <div className="flex gap-2.5">
             <Reel spinKey={spinKey} target={targets[0]} durationMs={quick ? 500 : 1000} />
             <Reel spinKey={spinKey} target={targets[1]} durationMs={quick ? 620 : 1450} />
@@ -330,8 +339,8 @@ export function SlotGame({ packName, credits, spins, lang, onClose }: Props) {
         <button
           onClick={doSpin}
           disabled={spinning || spinsLeft <= 0}
-          className="relative flex w-full items-center justify-center rounded-2xl py-3.5 text-[16px] font-extrabold text-white active:scale-[0.99] disabled:opacity-60"
-          style={{ background: "linear-gradient(90deg,#f5a623,#D10005)" }}
+          className="relative flex w-full items-center justify-center rounded-xl py-3.5 text-[16px] font-extrabold text-white active:scale-[0.99] disabled:opacity-60"
+          style={{ background: "#D10005" }}
         >
           {spinning ? (
             <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
