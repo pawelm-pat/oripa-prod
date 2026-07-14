@@ -143,7 +143,7 @@ const EN_PRIVACY: LegalDoc = {
     "The Company's Privacy Policy may be revised as necessary. If the Privacy Policy is revised, the Company will announce it on its website, so please check periodically. Unless otherwise specified by the Company, the revised Privacy Policy takes effect from the time it is posted on the site.",
     "## 9. Contact",
     "For inquiries regarding the Company's handling of personal information, please contact us below.",
-    "Company: KS LLC\nAddress: Hirokoji Bldg. 8, 1-7-6 Ueno, Taito-ku, Tokyo 110-0005",
+    "Company: KS LLC\nAddress: Hirokoji Bldg. 8, 1-7-6 Ueno, Taito-ku, Tokyo 110-0005\nEmail: info@ks-limited.com",
   ],
 };
 
@@ -168,7 +168,7 @@ const EN_LEGAL: LegalDoc = {
     "The shipping-request deadline for cards obtained via gacha (pack) is 7 days from the date obtained. Cards for which no shipping request is made within the period are automatically converted into Coins (or the rights lapse).",
     "## Licenses and Certifications",
     "Antique Dealer Business License\nNo. 306692618707\nTokyo Metropolitan Public Safety Commission\nGodogaisha KS",
-    "## Business Name and Contact",
+    "## Operation Company Name and Contact",
     "KS LLC\nRepresentative Member: 木崎優典\n〒110-0005 Hirokoji Bldg. 8, 1-7-6 Ueno, Taito-ku, Tokyo\nPhone: \nEmail: info@ks-limited.com",
   ],
 };
@@ -306,7 +306,7 @@ const JA_PRIVACY: LegalDoc = {
     "当社のプライバシーポリシーは、必要に応じて改定する場合があります。プライバシーポリシーを改定した場合には、その旨を当社サイト上で告知いたしますので、定期的にご確認くださいますようお願いいたします。変更後のプライバシーポリシーは、当社が別途定める場合を除き、当サイトに掲載した時点から効力を生じるものとします。",
     "## 9. お問い合わせ先",
     "当社の個人情報の取扱いに関するお問い合わせは下記までご連絡ください。",
-    "社名：合同会社KS\n住所：〒110-0005 東京都台東区上野1-7-6広小路ビル8",
+    "社名：合同会社KS\n住所：〒110-0005 東京都台東区上野1-7-6広小路ビル8\nEメール: info@ks-limited.com",
   ],
 };
 
@@ -331,7 +331,7 @@ const JA_LEGAL: LegalDoc = {
     "ガチャ（パック）で獲得したカードの発送請求期限は、獲得日から７日間とします。期限内に発送請求がなされなかったカードは、自動的にコインへ還元（または権利失効）となります。",
     "## 許認可と資格",
     "古物商営業許可\n第306692618707号\n東京都公安委員会\n合同会社ＫＳ",
-    "## 事業者の名称および連絡先",
+    "## 運営者の名称および連絡先",
     "合同会社KS\n代表社員　木崎優典\n〒110-0005 東京都台東区上野1-7-6広小路ビル8\n電話番号：\nメールアドレス：info@ks-limited.com",
   ],
 };
