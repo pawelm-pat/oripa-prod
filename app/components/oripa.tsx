@@ -5101,24 +5101,20 @@ function StorePage({
             {CARD_PACKS.map((pack, idx) => (
               <div
                 key={pack.id}
-                className="flex w-[176px] shrink-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-[#14141a] shadow-[0_2px_10px_rgba(0,0,0,0.25)]"
+                onClick={() => handlePackPurchase(pack)}
+                role="button"
+                className="flex w-[128px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-xl border-2 border-[#e5e8ec] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.09)] active:scale-[0.98]"
               >
-                <div className="relative h-[150px] w-full overflow-hidden bg-[#0b0b10]">
-                  <img src={pack.image} alt="" className="absolute inset-0 h-full w-full object-contain" />
+                <div className="h-[150px] w-full px-1.5 pt-1.5">
+                  <img src={pack.image} alt="" className="h-full w-full object-contain" />
                 </div>
-                <div className="flex flex-1 flex-col gap-1 p-2.5">
-                  <p className="line-clamp-1 text-[12px] font-bold leading-snug text-white">{t.storePackNames[idx] ?? pack.name}</p>
-                  <p className="text-[10px] font-medium text-white/80">
-                    ¥{pack.jpy.toLocaleString()} · {t.storePackCredits(pack.credits)} · {t.storePackSpins(pack.spins)}
-                  </p>
-                  <p className="flex items-center gap-1 text-[9px] font-normal leading-snug text-white/45">
-                    {t.storePackMinCard} ·
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="#f5a623" className="shrink-0"><path d="M12 2l2.4 6.3L21 9l-5 4.3L17.3 21 12 17.1 6.7 21 8 13.3 3 9l6.6-.7z" /></svg>
-                    {t.storePackBigWins}
-                  </p>
+                <div className="flex flex-1 flex-col gap-0.5 px-2 pb-2 pt-0.5">
+                  <p className="line-clamp-1 text-[11px] font-bold leading-snug text-[#1d2129]">{t.storePackNames[idx] ?? pack.name}</p>
+                  <p className="text-[13px] font-extrabold leading-none text-[#1d2129]">¥{pack.jpy.toLocaleString()}</p>
+                  <p className="line-clamp-1 text-[9px] font-medium text-[#8a9099]">{t.storePackCredits(pack.credits)} · {t.storePackSpins(pack.spins)}</p>
                   <button
                     onClick={() => handlePackPurchase(pack)}
-                    className="mt-auto rounded-lg px-3 py-2 text-[12px] font-bold text-white active:scale-[0.98]"
+                    className="mt-1 w-full rounded-lg py-1.5 text-[11px] font-bold text-white active:scale-[0.98]"
                     style={{ background: "linear-gradient(90deg,#f5a623,#ff7a00)" }}
                   >
                     {t.storePackBuyOpen}
