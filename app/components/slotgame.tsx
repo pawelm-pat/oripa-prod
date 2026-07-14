@@ -471,7 +471,7 @@ export function SlotGame({ packName, credits, spins, lang, header, onClose }: Pr
     </div>
   );
 
-  const styleNode = <style>{`@keyframes slotIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}@keyframes revealPop{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:none}}@keyframes slotShimmer{0%{transform:translateX(-160%) skewX(-18deg)}60%,100%{transform:translateX(460%) skewX(-18deg)}}@keyframes ctaPulse{0%,100%{box-shadow:0 0 0 4px rgba(255,215,107,0.5),0 6px 18px rgba(209,0,5,0.55)}50%{box-shadow:0 0 0 8px rgba(255,215,107,0.16),0 6px 24px rgba(209,0,5,0.75)}}@keyframes paylinePulse{0%,100%{opacity:.5;box-shadow:0 0 8px rgba(255,215,107,0.5)}50%{opacity:1;box-shadow:0 0 18px rgba(255,215,107,0.95)}}@keyframes jpGlow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.18)}}`}</style>;
+  const styleNode = <style>{`@keyframes slotIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}@keyframes revealPop{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:none}}@keyframes slotShimmer{0%{transform:translateX(-160%) skewX(-18deg)}60%,100%{transform:translateX(460%) skewX(-18deg)}}@keyframes ctaPulse{0%,100%{box-shadow:0 0 0 4px rgba(255,215,107,0.5),0 6px 18px rgba(209,0,5,0.55)}50%{box-shadow:0 0 0 8px rgba(255,215,107,0.16),0 6px 24px rgba(209,0,5,0.75)}}@keyframes paylinePulse{0%,100%{opacity:.5;box-shadow:0 0 8px rgba(255,215,107,0.5)}50%{opacity:1;box-shadow:0 0 18px rgba(255,215,107,0.95)}}@keyframes jpGlow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.18)}}@keyframes monsterBob{0%,100%{transform:translateY(0) rotate(-1.5deg)}50%{transform:translateY(-7px) rotate(1.5deg)}}@keyframes pillBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}`}</style>;
 
   /* ── Version 2: real slot casino grid ── */
   if (version === 2) {
@@ -485,23 +485,41 @@ export function SlotGame({ packName, credits, spins, lang, header, onClose }: Pr
         {header}
         {toggleNode}
 
-        {/* Themed banner */}
-        <div className="shrink-0 px-4 pt-3">
-          <div className="relative flex h-[74px] items-center justify-between overflow-hidden rounded-xl px-4" style={{ background: "linear-gradient(120deg,#7a0a0f,#D10005 60%,#ff7a00)", boxShadow: "inset 0 1px 2px rgba(255,255,255,0.25), 0 3px 10px rgba(0,0,0,0.5)" }}>
-            <div className="pointer-events-none absolute inset-y-0 left-0 w-1/4" style={{ background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.28),transparent)", animation: "slotShimmer 4s ease-in-out infinite" }} />
-            <div className="relative">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/80">ORIPA</p>
-              <p className="text-[20px] font-black leading-none tracking-tight" style={{ textShadow: "0 2px 4px rgba(0,0,0,0.4)" }}>JACKPOT</p>
+        {/* Themed banner with animated 3D monster mascot */}
+        <div className="shrink-0 px-4 pt-4">
+          <div className="relative">
+            {/* Gradient card (clipped) */}
+            <div className="relative flex h-[92px] items-center overflow-hidden rounded-2xl" style={{ background: "linear-gradient(120deg,#3a0509 0%,#a80a10 52%,#ff8a1e 100%)", border: "1.5px solid rgba(255,215,107,0.55)", boxShadow: "inset 0 1px 2px rgba(255,255,255,0.3), 0 6px 18px rgba(0,0,0,0.55)" }}>
+              <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(90% 120% at 18% 30%, rgba(255,220,150,0.35), transparent 60%)" }} />
+              <div className="pointer-events-none absolute inset-y-0 left-0 w-1/4" style={{ background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.28),transparent)", animation: "slotShimmer 4.5s ease-in-out infinite" }} />
+              <div className="relative z-10 max-w-[58%] pl-4">
+                <p className="text-[9px] font-bold uppercase tracking-[0.22em]" style={{ color: "#ffd36b" }}>{L.spinsLeft(spinsLeft)}</p>
+                <p className="mt-0.5 text-[18px] font-black leading-[1.05] text-white" style={{ textShadow: "0 1px 0 #b8860b, 0 2px 0 #8a5e12, 0 3px 5px rgba(0,0,0,0.55)" }}>{packName}</p>
+              </div>
             </div>
-            <div className="relative text-right">
-              <p className="text-[9px] font-semibold uppercase tracking-widest text-white/70">{L.spinsLeft(spinsLeft)}</p>
-              <p className="text-[13px] font-extrabold" style={{ color: "#ffd36b" }}>{packName}</p>
-            </div>
+            {/* Floating monster — overflows the top of the card, gently bobbing */}
+            <img
+              src="/monster-pokemon.png"
+              alt=""
+              className="pointer-events-none absolute right-1 bottom-0 z-20 h-[120px] w-auto"
+              style={{ animation: "monsterBob 3s ease-in-out infinite", filter: "drop-shadow(0 8px 10px rgba(0,0,0,0.5))", transformOrigin: "bottom center" }}
+            />
           </div>
-          {/* Feature pills (decorative) */}
-          <div className="mt-2.5 flex gap-2">
-            {[L.featSpins, L.featRows, L.featBoost].map((f, i) => (
-              <div key={f} className="flex-1 rounded-full py-1.5 text-center text-[10px] font-extrabold uppercase tracking-wide text-white" style={{ background: "rgba(0,0,0,0.35)", border: `1.5px solid ${["#e0113b", "#e8a91d", "#2f6fed"][i]}` }}>{f}</div>
+          {/* Feature buttons — raised 3D pills, gently bobbing (staggered) */}
+          <div className="mt-3 flex gap-2">
+            {([[L.featSpins, "#ff3b46", "#c40812", "#7a050b"], [L.featRows, "#ffcf4d", "#d69512", "#8a5e0a"], [L.featBoost, "#59a2ff", "#1e5fd0", "#123b8a"]] as [string, string, string, string][]).map(([f, top, bottom, edge], i) => (
+              <div
+                key={f}
+                className="flex-1 rounded-xl px-1 py-2 text-center"
+                style={{
+                  background: `linear-gradient(180deg, ${top}, ${bottom})`,
+                  border: "1px solid rgba(255,255,255,0.3)",
+                  boxShadow: `inset 0 1px 1px rgba(255,255,255,0.55), 0 4px 0 ${edge}, 0 6px 9px rgba(0,0,0,0.45)`,
+                  animation: `pillBob 2.6s ease-in-out ${i * 0.28}s infinite`,
+                }}
+              >
+                <span className="text-[10px] font-black uppercase tracking-wide text-white" style={{ textShadow: "0 1px 1px rgba(0,0,0,0.45)" }}>{f}</span>
+              </div>
             ))}
           </div>
         </div>
