@@ -5110,14 +5110,13 @@ function StorePage({
                 </div>
                 <div className="flex flex-1 flex-col gap-0.5 px-2 pb-2 pt-0.5">
                   <p className="line-clamp-1 text-[11px] font-bold leading-snug text-[#1d2129]">{t.storePackNames[idx] ?? pack.name}</p>
-                  <p className="text-[13px] font-extrabold leading-none text-[#1d2129]">¥{pack.jpy.toLocaleString()}</p>
                   <p className="line-clamp-1 text-[9px] font-medium text-[#8a9099]">{t.storePackCredits(pack.credits)} · {t.storePackSpins(pack.spins)}</p>
                   <button
                     onClick={() => handlePackPurchase(pack)}
-                    className="mt-1 w-full rounded-lg py-1.5 text-[11px] font-bold text-white active:scale-[0.98]"
-                    style={{ background: "linear-gradient(90deg,#f5a623,#ff7a00)" }}
+                    className="mt-1 w-full rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-white active:scale-[0.98]"
+                    style={{ background: "#e60012" }}
                   >
-                    {t.storePackBuyOpen}
+                    {t.storePackBuyOpen} · ¥{pack.jpy.toLocaleString()}
                   </button>
                 </div>
               </div>
