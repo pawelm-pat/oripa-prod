@@ -723,7 +723,7 @@ function SlotStyle() {
 @keyframes sgsheen{to{transform:translateX(100%)}}
 .sg-root .stackbar{display:flex;align-items:center;gap:10px}
 .sg-root .stack{position:relative;width:52px;height:48px;border:none;background:none;cursor:pointer;flex-shrink:0}
-.sg-root .stack .pileimg{position:absolute;left:50%;top:50%;width:30px;height:40px;border-radius:5px;object-fit:cover;border:1.5px solid rgba(209,0,5,.35);box-shadow:0 3px 7px rgba(0,0,0,.18)}
+.sg-root .stack .pileimg{position:absolute;left:50%;top:50%;width:30px;height:40px;border-radius:5px;object-fit:contain;background:linear-gradient(180deg,#fff,#f0f2f5);border:1.5px solid rgba(209,0,5,.35);box-shadow:0 3px 7px rgba(0,0,0,.18)}
 .sg-root .stack .p1{transform:translate(-50%,-50%)}
 .sg-root .stack .p2{transform:translate(-50%,-50%) rotate(-9deg) translateX(-4px)}
 .sg-root .stack .p3{transform:translate(-50%,-50%) rotate(10deg) translateX(4px)}
@@ -746,8 +746,8 @@ function SlotStyle() {
 /* Each column is a curved chrome drum: brushed metal poles, bright specular centre */
 .sg-root .col{position:relative;flex:1;border-radius:10px;overflow:hidden;perspective:640px;background:linear-gradient(180deg,#7f858e 0%,#b7bcc4 10%,#e9ecf0 30%,#ffffff 50%,#e9ecf0 70%,#b7bcc4 90%,#7f858e 100%);box-shadow:inset 1.5px 0 2px rgba(255,255,255,.7),inset -1.5px 0 2px rgba(0,0,0,.28),inset 0 12px 16px -8px rgba(0,0,0,.5),inset 0 -12px 16px -8px rgba(0,0,0,.5)}
 .sg-root .strip{display:flex;flex-direction:column;gap:3px;padding:3px;transform-style:preserve-3d;will-change:transform}
-.sg-root .cell{aspect-ratio:1;border-radius:8px;background:transparent;border:1.5px solid transparent;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;backface-visibility:hidden}
-.sg-root .cell img{width:88%;height:88%;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+.sg-root .cell{aspect-ratio:1;border-radius:8px;background:radial-gradient(ellipse 62% 54% at 50% 48%,rgba(0,0,0,.14),rgba(0,0,0,0) 70%);border:1.5px solid transparent;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;backface-visibility:hidden}
+.sg-root .cell img{width:88%;height:88%;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,.45))}
 /* Curve the drum by tilting the poles away from the viewer */
 .sg-root .strip .cell:nth-child(1){transform:rotateX(34deg);filter:brightness(.72)}
 .sg-root .strip .cell:nth-child(2){transform:rotateX(11deg)}
