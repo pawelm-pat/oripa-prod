@@ -257,6 +257,8 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
   const idRef = useRef(0);
   const restGridRef = useRef<number[][] | null>(null);
   const spinningRef = useRef(false);
+  const [spinning, setSpinning] = useState(false);
+  const setSpin = (v: boolean) => { spinningRef.current = v; setSpinning(v); };
   const tokenRef = useRef(0);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -369,13 +371,13 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
 
     const afterWin = () => {
       flyCards(cards, preWon, () => {
-        spinningRef.current = false;
+        setSpin(false);
         if (sessionOver) { setStatusDom(L.stackComplete, "hint-win"); at(Q ? 450 : 800, () => setPhase("summary")); }
         else { setStatusDom(isBig ? L.bankedBig(winN) : L.banked, "hint-win"); tick(); }
       });
     };
     const finishDry = () => {
-      spinningRef.current = false;
+      setSpin(false);
       setStatusDom(nearMiss ? L.soClose : "", nearMiss ? "hint-near" : "");
       if (sessionOver) at(Q ? 400 : 800, () => setPhase("summary"));
       else tick();
@@ -385,17 +387,15 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
       restGridRef.current = finalG;
       tick();
       if (!hit) { finishDry(); return; }
-      spinningRef.current = true;
+      setSpin(true);
       afterRevealRef.current = afterWin;
       setReveal({ cards, big: isBig, done: sessionOver });
       return;
     }
 
-    spinningRef.current = true;
+    setSpin(true);
     const token = ++tokenRef.current;
     const live = () => tokenRef.current === token && rootRef.current;
-    const btn = rootQ(".spin-btn") as HTMLButtonElement | null;
-    if (btn) btn.disabled = true;
     setStatusDom("", "");
     updateBarDom(preWon);
 
@@ -632,7 +632,7 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
           </div>
 
           <div className="status">{spinIndexRef.current === 0 ? L.winsDrop : ""}</div>
-          <button className="spin-btn" onClick={doSpin} disabled={creditsLeftRef.current <= 0}>{L.spin(spinCost)}</button>
+          <button className="spin-btn" onClick={doSpin} disabled={spinning || creditsLeftRef.current <= 0}>{L.spin(spinCost)}</button>
           <div className="aux">
             <button onClick={() => { if (!spinningRef.current) onClose(); }}>{L.exit}</button>
             <button onClick={() => { if (!spinningRef.current) setQuick((q) => !q); }} style={{ color: quick ? BRAND : undefined }}>{L.quickSpin(quick)}</button>
