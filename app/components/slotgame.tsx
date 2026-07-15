@@ -614,14 +614,20 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
           </div>
 
           <div className="cab">
-            <div className="grid">
-              {grid.map((col, ci) => (
-                <div className="col" data-col={ci} key={ci}>
-                  {col.map((s, ri) => (
-                    <div className="cell" data-cell={`${ci}-${ri}`} key={ri}><img src={SYMS[s]} alt="" /></div>
-                  ))}
-                </div>
-              ))}
+            <div className="reelframe">
+              <div className="grid">
+                {grid.map((col, ci) => (
+                  <div className="col" data-col={ci} key={ci}>
+                    <div className="strip">
+                      {col.map((s, ri) => (
+                        <div className="cell" data-cell={`${ci}-${ri}`} key={ri}><img src={SYMS[s]} alt="" /></div>
+                      ))}
+                    </div>
+                    <span className="reel-glass" />
+                    <span className="payline" />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -728,23 +734,42 @@ function SlotStyle() {
 @keyframes sgbadgebump{40%{transform:scale(1.4)}}
 .sg-root .bar-sub{font-size:10px;color:var(--dim);margin-top:6px}
 .sg-root .bar-sub b{color:var(--brand)}
-.sg-root .cab{position:relative;border-radius:18px;padding:11px;margin:12px 0;background:linear-gradient(180deg,#fff,#f4f5f7);border:2px solid rgba(209,0,5,.28);box-shadow:0 0 0 3px #fff,0 0 0 5px rgba(209,0,5,.12),0 8px 24px rgba(0,0,0,.08)}
+.sg-root .cab{position:relative;border-radius:20px;padding:9px;margin:12px 0;background:linear-gradient(180deg,#fff,#f4f5f7);border:2px solid rgba(209,0,5,.30);box-shadow:0 0 0 3px #fff,0 0 0 5px rgba(209,0,5,.12),0 10px 26px rgba(0,0,0,.10)}
 .sg-root .cab.winflash{animation:sgcabwin .6s ease-in-out 2}
-@keyframes sgcabwin{50%{border-color:rgba(22,163,74,.85);box-shadow:0 0 0 3px #fff,0 0 24px rgba(22,163,74,.45),0 8px 24px rgba(0,0,0,.08)}}
+@keyframes sgcabwin{50%{border-color:rgba(22,163,74,.85);box-shadow:0 0 0 3px #fff,0 0 24px rgba(22,163,74,.45),0 10px 26px rgba(0,0,0,.10)}}
 .sg-root .cab.goldflash{animation:sgcabgold .55s ease-in-out 3}
-@keyframes sgcabgold{50%{border-color:var(--brand);box-shadow:0 0 0 3px #fff,0 0 32px rgba(209,0,5,.45),0 8px 24px rgba(0,0,0,.08)}}
-.sg-root .grid{display:flex;gap:5px}
-.sg-root .col{flex:1;display:flex;flex-direction:column;gap:5px;border-radius:11px}
-.sg-root .cell{aspect-ratio:1;border-radius:10px;background:linear-gradient(180deg,#f8f9fb,#eef0f3 70%);border:1px solid #e2e5ea;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.06);position:relative}
-.sg-root .cell img{width:88%;height:88%;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,.18))}
-.sg-root .col.spin .cell img{animation:sgreelblur .09s linear infinite}
-@keyframes sgreelblur{0%{transform:translateY(-16%);filter:blur(1.6px) brightness(1.05)}100%{transform:translateY(16%);filter:blur(1.6px) brightness(1.05)}}
-.sg-root .col.land .cell img{animation:sgreelland .3s cubic-bezier(.2,1.5,.4,1)}
-@keyframes sgreelland{from{transform:translateY(-46%) scale(1.14)}}
-.sg-root .col.hold .cell{border-color:rgba(209,0,5,.75);animation:sgholdpulse .45s ease-in-out infinite}
-@keyframes sgholdpulse{50%{box-shadow:0 0 14px rgba(209,0,5,.45),inset 0 1px 3px rgba(0,0,0,.06)}}
+@keyframes sgcabgold{50%{border-color:var(--brand);box-shadow:0 0 0 3px #fff,0 0 32px rgba(209,0,5,.45),0 10px 26px rgba(0,0,0,.10)}}
+/* Metallic reel deck holding the five drums */
+.sg-root .reelframe{position:relative;border-radius:14px;padding:7px;background:linear-gradient(180deg,#c6cad2,#eef0f3 14%,#dde1e7 50%,#eef0f3 86%,#c6cad2);box-shadow:inset 0 2px 3px rgba(255,255,255,.95),inset 0 -3px 6px rgba(0,0,0,.16),0 3px 10px rgba(0,0,0,.10)}
+.sg-root .grid{display:flex;gap:6px}
+/* Each column is a curved 3D drum: light in the middle, shaded at the poles */
+.sg-root .col{position:relative;flex:1;border-radius:12px;overflow:hidden;perspective:600px;background:linear-gradient(180deg,#cdd2da 0%,#ffffff 42%,#ffffff 58%,#cdd2da 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.65),inset 0 11px 15px -8px rgba(0,0,0,.4),inset 0 -11px 15px -8px rgba(0,0,0,.4)}
+.sg-root .strip{display:flex;flex-direction:column;gap:4px;padding:4px;transform-style:preserve-3d;will-change:transform}
+.sg-root .cell{aspect-ratio:1;border-radius:9px;background:linear-gradient(180deg,#ffffff,#f0f2f5);border:1px solid rgba(226,229,234,.9);display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.08);position:relative;backface-visibility:hidden}
+.sg-root .cell img{width:86%;height:86%;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,.20))}
+/* Curve the reel by tilting the poles away from the viewer */
+.sg-root .strip .cell:nth-child(1){transform:rotateX(32deg);filter:brightness(.80)}
+.sg-root .strip .cell:nth-child(2){transform:rotateX(10deg)}
+.sg-root .strip .cell:nth-child(3){transform:rotateX(-12deg)}
+.sg-root .strip .cell:nth-child(4){transform:rotateX(-34deg);filter:brightness(.78)}
+/* Glass cylinder shading + centre gloss over the drum */
+.sg-root .reel-glass{position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:12px;background:linear-gradient(180deg,rgba(12,15,22,.45) 0%,rgba(12,15,22,0) 24%,rgba(255,255,255,.26) 49%,rgba(12,15,22,0) 74%,rgba(12,15,22,.45) 100%)}
+/* Payline runs through the judged row */
+.sg-root .payline{position:absolute;left:0;right:0;top:37.5%;height:2px;transform:translateY(-50%);z-index:4;pointer-events:none;background:linear-gradient(90deg,rgba(209,0,5,0),rgba(209,0,5,.65) 30%,rgba(209,0,5,.65) 70%,rgba(209,0,5,0));box-shadow:0 0 8px rgba(209,0,5,.45)}
+/* Spinning: the whole drum rolls, symbols sweep with motion blur */
+.sg-root .col.spin .strip{animation:sgdrum .19s linear infinite}
+@keyframes sgdrum{0%{transform:translateY(-7%)}100%{transform:translateY(7%)}}
+.sg-root .col.spin .cell img{animation:sgreelblur .07s linear infinite}
+@keyframes sgreelblur{0%{transform:translateY(-82%);filter:blur(1.9px) brightness(1.04)}100%{transform:translateY(82%);filter:blur(1.9px) brightness(1.04)}}
+/* Landing bounce */
+.sg-root .col.land .strip{animation:sgstripland .34s cubic-bezier(.2,1.4,.4,1)}
+@keyframes sgstripland{from{transform:translateY(-7%)}}
+.sg-root .col.land .cell img{animation:sgreelland .34s cubic-bezier(.2,1.5,.4,1)}
+@keyframes sgreelland{from{transform:translateY(-54%) scale(1.16)}}
+.sg-root .col.hold{box-shadow:inset 0 0 0 2px rgba(209,0,5,.7),inset 0 11px 15px -8px rgba(0,0,0,.4),inset 0 -11px 15px -8px rgba(0,0,0,.4);animation:sgholdpulse .5s ease-in-out infinite}
+@keyframes sgholdpulse{50%{box-shadow:inset 0 0 0 2px rgba(209,0,5,1),0 0 16px rgba(209,0,5,.45)}}
 .sg-root .cell.win-cell{border-color:rgba(22,163,74,.9)}
-.sg-root .cell.win-cell::after{content:"";position:absolute;inset:0;border-radius:10px;box-shadow:0 0 14px rgba(22,163,74,.55),inset 0 0 10px rgba(22,163,74,.25);animation:sgwinpulse .7s ease-in-out infinite}
+.sg-root .cell.win-cell::after{content:"";position:absolute;inset:0;border-radius:9px;box-shadow:0 0 14px rgba(22,163,74,.55),inset 0 0 10px rgba(22,163,74,.25);animation:sgwinpulse .7s ease-in-out infinite;z-index:2}
 @keyframes sgwinpulse{50%{opacity:.35}}
 .sg-root .cell.win-cell img{animation:sgwinpop .5s cubic-bezier(.2,1.7,.4,1)}
 @keyframes sgwinpop{45%{transform:scale(1.22)}}
