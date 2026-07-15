@@ -17,6 +17,11 @@ import { RARITY_META } from "../data/prizes";
    ───────────────────────────────────────────────────────────────────────── */
 
 const FONT = "var(--font-noto-sans-jp), system-ui, sans-serif";
+const SURFACE = "#eef0f3";
+const INK = "#1d2129";
+const MUTED = "#8a9099";
+const BRAND = "#D10005";
+const SHIP = "#f5670a";
 const SHIP_MIN_COINS = 1500;
 
 type DemoRarity = "COMMON" | "RARE" | "CHASE";
@@ -345,7 +350,7 @@ export function SlotGame({ packId, packName, credits, spins, lang, header, onExc
 
   function confetti(el: Element | null, chase: boolean) {
     if (!el) return;
-    const colors = chase ? ["#B16CEA", "#FFB300", "#fff"] : ["#FFB300", "#FF6B4A", "#38D9A9", "#fff"];
+    const colors = chase ? [BRAND, SHIP, "#fff"] : [BRAND, SHIP, "#16a34a", "#fff"];
     for (let i = 0; i < (chase ? 26 : 16); i++) {
       const d = document.createElement("div");
       d.className = "confetti";
@@ -520,38 +525,38 @@ export function SlotGame({ packId, packName, credits, spins, lang, header, onExc
   /* ── Summary screen ── */
   if (phase === "summary") {
     return (
-      <div ref={rootRef} className="sg-root absolute inset-0 z-[70] flex flex-col" style={{ fontFamily: FONT, background: "radial-gradient(900px 500px at 50% -10%,rgba(255,179,0,.07),transparent 60%),#0A0A12", color: "#F2F2F7" }}>
+      <div ref={rootRef} className="sg-root absolute inset-0 z-[70] flex flex-col text-[#1d2129]" style={{ fontFamily: FONT, background: SURFACE }}>
         {header}
-        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-white/10 px-4 py-2.5">
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-black/10 bg-white px-4 py-2.5">
           <div className="min-w-0">
-            <p className="sg-grad truncate text-[14px] font-extrabold leading-tight">{packName}</p>
-            <p className="text-[10px] font-medium" style={{ color: "#9A9AAE" }}>{L.summary(credits, spins, won.length)}</p>
+            <p className="truncate text-[14px] font-extrabold leading-tight" style={{ color: BRAND }}>{packName}</p>
+            <p className="text-[10px] font-medium" style={{ color: MUTED }}>{L.summary(credits, spins, won.length)}</p>
           </div>
           <div className="flex shrink-0 gap-1.5">
-            <button onClick={onClose} className="rounded-lg border border-white/15 px-2.5 py-1.5 text-[11px] font-bold text-white active:scale-95">{L.backToShop}</button>
-            <button onClick={onClose} className="sg-gold rounded-lg px-2.5 py-1.5 text-[11px] font-extrabold active:scale-95" style={{ color: "#241000" }}>{L.openAnother}</button>
+            <button onClick={onClose} className="rounded-lg border border-[#e5e8ec] bg-white px-2.5 py-1.5 text-[11px] font-bold text-[#1d2129] active:scale-95">{L.backToShop}</button>
+            <button onClick={onClose} className="rounded-lg px-2.5 py-1.5 text-[11px] font-extrabold text-white active:scale-95" style={{ background: BRAND }}>{L.openAnother}</button>
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4">
           {won.length === 0 ? (
-            <p className="mt-10 text-center text-[13px]" style={{ color: "#9A9AAE" }}>{L.noCards}</p>
+            <p className="mt-10 text-center text-[13px]" style={{ color: MUTED }}>{L.noCards}</p>
           ) : (
             <>
-              {picked.size === 0 && <p className="mb-2 text-[11px] font-semibold" style={{ color: "#9A9AAE" }}>{L.tapToSelect}</p>}
+              {picked.size === 0 && <p className="mb-2 text-[11px] font-semibold" style={{ color: MUTED }}>{L.tapToSelect}</p>}
               <div className="grid grid-cols-3 gap-3">
                 {won.map((c) => {
                   const sel = picked.has(c.id);
                   return (
                     <button key={c.id} onClick={() => togglePick(c.id)} className="flex flex-col items-center text-center active:scale-[0.98]">
                       <div className="relative w-full">
-                        <img src={c.img} alt="" className="w-full rounded-lg object-cover transition" style={{ aspectRatio: "5/7", boxShadow: sel ? "0 0 0 3px #FFB300, 0 2px 10px rgba(255,179,0,0.4)" : "0 2px 8px rgba(0,0,0,0.5)", opacity: sel ? 1 : 0.9 }} />
-                        <span className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 transition" style={{ background: sel ? "#FFB300" : "rgba(0,0,0,0.4)", borderColor: sel ? "#fff" : "rgba(255,255,255,0.7)", color: "#241000" }}>
+                        <img src={c.img} alt="" className="w-full rounded-lg object-cover transition" style={{ aspectRatio: "5/7", boxShadow: sel ? `0 0 0 3px ${BRAND}, 0 2px 10px rgba(209,0,5,0.35)` : "0 2px 8px rgba(0,0,0,0.18)", opacity: sel ? 1 : 0.96 }} />
+                        <span className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 text-white transition" style={{ background: sel ? BRAND : "rgba(0,0,0,0.25)", borderColor: sel ? "#fff" : "rgba(255,255,255,0.85)" }}>
                           {sel && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7" /></svg>}
                         </span>
                       </div>
-                      <p className="mt-1.5 line-clamp-1 w-full text-[10px] font-bold leading-tight text-white">{lang === "ja" ? c.nameJa : c.name}</p>
-                      <p className="text-[8.5px] font-extrabold uppercase tracking-wider" style={{ color: c.demoRarity === "CHASE" ? "#B16CEA" : c.demoRarity === "RARE" ? "#FFB300" : "#9A9AAE" }}>{L.rarity[c.rarity]} · {coinOf(c.rarity).toLocaleString()}</p>
+                      <p className="mt-1.5 line-clamp-1 w-full text-[10px] font-bold leading-tight text-[#1d2129]">{lang === "ja" ? c.nameJa : c.name}</p>
+                      <p className="text-[8.5px] font-extrabold uppercase tracking-wider" style={{ color: c.demoRarity === "CHASE" ? BRAND : c.demoRarity === "RARE" ? SHIP : MUTED }}>{L.rarity[c.rarity]} · {coinOf(c.rarity).toLocaleString()}</p>
                     </button>
                   );
                 })}
@@ -561,25 +566,25 @@ export function SlotGame({ packId, packName, credits, spins, lang, header, onExc
         </div>
 
         {won.length > 0 && picked.size > 0 && (
-          <div className="shrink-0 border-t border-white/10 px-3 pb-3 pt-2" style={{ background: "rgba(10,8,22,.6)", boxShadow: "0 -8px 24px rgba(0,0,0,0.35)" }}>
+          <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
             <div className="mb-2 flex items-center justify-between text-[11px] font-semibold">
-              <span style={{ color: "#9A9AAE" }}>{picked.size} · {pickedTotal.toLocaleString()} {L.coinsUnit}</span>
-              <button onClick={() => setPicked(new Set())} className="underline" style={{ color: "#9A9AAE" }}>{L.reset}</button>
+              <span style={{ color: MUTED }}>{picked.size} · {pickedTotal.toLocaleString()} {L.coinsUnit}</span>
+              <button onClick={() => setPicked(new Set())} className="underline" style={{ color: MUTED }}>{L.reset}</button>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => { if (!canShip) { showToast(L.shortfall(SHIP_MIN_COINS - pickedTotal)); return; } doShip(); }} className="rounded-xl border-2 py-2 text-[12.5px] font-bold leading-tight transition" style={{ borderColor: "#FFB300", color: "#FFB300", background: "transparent", opacity: canShip ? 1 : 0.6 }}>
+              <button onClick={() => { if (!canShip) { showToast(L.shortfall(SHIP_MIN_COINS - pickedTotal)); return; } doShip(); }} className="rounded-xl border-2 py-2 text-[12.5px] font-bold leading-tight transition" style={{ borderColor: SHIP, color: SHIP, background: "#fff", opacity: canShip ? 1 : 0.6 }}>
                 {L.requestShip} · {picked.size}
                 <span className="mt-0.5 block text-[10px] font-semibold opacity-80">{pickedTotal.toLocaleString()} {L.coinsUnit}</span>
               </button>
-              <button onClick={doExchange} className="sg-gold rounded-xl py-2 text-[12.5px] font-bold leading-tight transition" style={{ color: "#241000" }}>
+              <button onClick={doExchange} className="rounded-xl py-2 text-[12.5px] font-bold leading-tight text-white transition" style={{ background: "linear-gradient(180deg,#ff5a5f,#c8061a)" }}>
                 {L.exchange} · {picked.size}
                 <span className="mt-0.5 block text-[10px] font-semibold opacity-90">{pickedTotal.toLocaleString()} {L.coinsUnit}</span>
               </button>
             </div>
-            <p className="mt-1.5 text-center text-[10.5px] leading-tight" style={{ color: "#9A9AAE" }}>{L.selectHint}</p>
+            <p className="mt-1.5 text-center text-[10.5px] leading-tight" style={{ color: MUTED }}>{L.selectHint}</p>
           </div>
         )}
-        {toast && <div className="pointer-events-none absolute bottom-24 left-1/2 z-[85] -translate-x-1/2 rounded-full px-4 py-2 text-[12px] font-bold text-white shadow-[0_6px_20px_rgba(0,0,0,0.5)]" style={{ background: "#191226" }}>{toast}</div>}
+        {toast && <div className="pointer-events-none absolute bottom-24 left-1/2 z-[85] -translate-x-1/2 rounded-full px-4 py-2 text-[12px] font-bold text-white shadow-[0_6px_20px_rgba(0,0,0,0.4)]" style={{ background: INK }}>{toast}</div>}
         <SlotStyle />
       </div>
     );
@@ -594,14 +599,14 @@ export function SlotGame({ packId, packName, credits, spins, lang, header, onExc
   const revCard = reveal?.cards[0];
 
   return (
-    <div ref={rootRef} className="sg-root absolute inset-0 z-[70] flex flex-col" style={{ fontFamily: FONT, background: "radial-gradient(900px 500px at 50% -10%,rgba(255,179,0,.07),transparent 60%),#0A0A12", color: "#F2F2F7" }}>
+    <div ref={rootRef} className="sg-root absolute inset-0 z-[70] flex flex-col text-[#1d2129]" style={{ fontFamily: FONT, background: SURFACE }}>
       {header}
       <div className="flex-1 overflow-y-auto px-3.5 pb-6 pt-3">
         <div className="room">
           <div className="bar-wrap">
             <div className="bar-label">
-              <span>{packName} · {lang === "ja" ? "残り" : ""}<b style={{ color: "#F2F2F7" }} className="spins-n">{spinsLeft}</b>{lang === "ja" ? "回" : " spins left"}</span>
-              <span className="crnum"><span className="pct-n">{pct}</span><span style={{ fontSize: 11, color: "#9A9AAE" }}>{L.toPayout}</span></span>
+              <span>{packName} · {lang === "ja" ? "残り" : ""}<b className="spins-n" style={{ color: INK }}>{spinsLeft}</b>{lang === "ja" ? "回" : " spins left"}</span>
+              <span className="crnum"><span className="pct-n">{pct}</span><span style={{ fontSize: 11, color: MUTED }}>{L.toPayout}</span></span>
             </div>
             <div className="stackbar">
               <div className="bar" style={{ flex: 1 }}><div className="fill" style={{ width: pct + "%" }} /></div>
@@ -637,7 +642,7 @@ export function SlotGame({ packId, packName, credits, spins, lang, header, onExc
           <button className="spin-btn" onClick={doSpin} disabled={creditsLeftRef.current <= 0}>{L.spin(spinCost)}</button>
           <div className="aux">
             <button onClick={() => { if (!spinningRef.current) onClose(); }}>{L.exit}</button>
-            <button onClick={() => { if (!spinningRef.current) setQuick((q) => !q); }} style={{ color: quick ? "#FFB300" : undefined }}>{L.quickSpin(quick)}</button>
+            <button onClick={() => { if (!spinningRef.current) setQuick((q) => !q); }} style={{ color: quick ? BRAND : undefined }}>{L.quickSpin(quick)}</button>
             <button onClick={fastForward}>{L.fastForward}</button>
           </div>
         </div>
@@ -647,7 +652,7 @@ export function SlotGame({ packId, packName, credits, spins, lang, header, onExc
       {phase === "intro" && (
         <div className={`intro ${introGo ? "go" : ""}`} onClick={endIntro}>
           <div className="i-rays" />
-          <div className="i-pack" style={{ background: cat.hue }}><img src={cat.packImg} alt="" /></div>
+          <div className="i-pack"><img src={cat.packImg} alt="" /></div>
           <div className="i-burst" />
           <div className="i-tip">{L.tapOpen}</div>
         </div>
@@ -668,9 +673,9 @@ export function SlotGame({ packId, packName, credits, spins, lang, header, onExc
       {reveal && reveal.big && (
         <div className="ovl" onClick={dismissReveal}>
           <div className="rev" style={{ maxWidth: 360 }} onClick={(e) => e.stopPropagation()}>
-            <div className="chasebanner" style={{ color: "#FFB300" }}>{L.bigWin}</div>
+            <div className="chasebanner" style={{ color: BRAND }}>{L.bigWin}</div>
             <div className="r-name">{L.cardsInSpin(reveal.cards.length)}</div>
-            {reveal.cards.some((c) => c.demoRarity === "CHASE") && <div className="r-rar" style={{ color: "#B16CEA" }}>{L.chaseIncluded}</div>}
+            {reveal.cards.some((c) => c.demoRarity === "CHASE") && <div className="r-rar" style={{ color: BRAND }}>{L.chaseIncluded}</div>}
             <div className="sum-cards stagger" style={{ margin: "12px 0 4px", maxHeight: "46vh", overflowY: "auto" }}>
               {[...reveal.cards].sort((a, b) => ({ CHASE: 0, RARE: 1, COMMON: 2 }[a.demoRarity] - { CHASE: 0, RARE: 1, COMMON: 2 }[b.demoRarity])).map((cd, i) => (
                 <div className={`sc ${rarityCls(cd.demoRarity)}`} style={{ animationDelay: Math.min(i * 60, 700) + "ms" }} key={cd.id}>
@@ -701,7 +706,7 @@ export function SlotGame({ packId, packName, credits, spins, lang, header, onExc
                 ))}
               </div>
             ) : (
-              <p style={{ fontSize: 12, color: "#63637A", padding: "16px 0" }}>{lang === "ja" ? "まだありません" : "Nothing yet — keep spinning."}</p>
+              <p style={{ fontSize: 12, color: MUTED, padding: "16px 0" }}>{lang === "ja" ? "まだありません" : "Nothing yet — keep spinning."}</p>
             )}
             <button onClick={() => setStackOpen(false)}>{lang === "ja" ? "閉じる" : "Close"}</button>
           </div>
@@ -713,120 +718,115 @@ export function SlotGame({ packId, packName, credits, spins, lang, header, onExc
   );
 }
 
-/* Scoped styles ported from the reference (keyframes prefixed sg- to avoid
-   clashes with the app's own animations). */
+/* Scoped styles — Oripa brand palette (light surface + brand red CTAs). */
 function SlotStyle() {
   return (
     <style>{`
-.sg-root{--acc:#FFB300;--acc2:#FF6B4A;--good:#38D9A9;--chase:#B16CEA;--muted:#9A9AAE;--dim:#63637A;--text:#F2F2F7;--gold:linear-gradient(180deg,#ffd76a,#ffb300 45%,#ff8a3d);--grad:linear-gradient(92deg,#FFB300,#FF6B4A)}
+.sg-root{--brand:#D10005;--ship:#f5670a;--good:#16a34a;--muted:#8a9099;--dim:#a0a6af;--text:#1d2129;--surface:#eef0f3;--cta:#D10005}
 .sg-root *{box-sizing:border-box}
-.sg-grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
-.sg-gold{background:var(--gold);box-shadow:0 6px 16px rgba(255,150,40,.4),inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(140,50,0,.3)}
-.sg-root .room{position:relative;border:1px solid rgba(255,190,80,.22);border-radius:22px;padding:14px 13px;box-shadow:0 22px 55px rgba(0,0,0,.55);overflow:hidden;isolation:isolate}
-.sg-root .room::before{content:"";position:absolute;inset:0;background:url(/slot/room-bg.jpg) center/cover;opacity:.85;z-index:-2}
-.sg-root .room::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,6,18,.35),rgba(8,6,18,.68) 55%,rgba(8,6,18,.82));z-index:-1}
-.sg-root .bar-wrap{margin-bottom:4px;background:rgba(10,8,22,.55);border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:10px 11px;backdrop-filter:blur(6px)}
+.sg-root .room{position:relative;border:1px solid #e5e8ec;border-radius:20px;padding:14px 13px;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.06);overflow:hidden}
+.sg-root .bar-wrap{margin-bottom:4px;background:#f7f8fa;border:1px solid #e5e8ec;border-radius:14px;padding:10px 11px}
 .sg-root .bar-label{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px;font-weight:800;color:var(--muted);margin-bottom:7px}
 .sg-root .bar-label span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .sg-root .bar-label .crnum{font-size:15px;color:var(--text);white-space:nowrap;flex-shrink:0}
-.sg-root .bar{height:18px;border-radius:999px;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.13);overflow:hidden;box-shadow:inset 0 2px 5px rgba(0,0,0,.65)}
-.sg-root .fill{position:relative;height:100%;border-radius:999px;background:var(--grad);transition:width .5s cubic-bezier(.22,.61,.36,1);box-shadow:0 0 14px rgba(255,150,40,.55);overflow:hidden}
-.sg-root .fill::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.4) 50%,transparent 80%);transform:translateX(-100%);animation:sgsheen 2.4s linear infinite}
+.sg-root .bar{height:14px;border-radius:999px;background:rgba(0,0,0,.08);border:none;overflow:hidden}
+.sg-root .fill{position:relative;height:100%;border-radius:999px;background:var(--brand);transition:width .5s cubic-bezier(.22,.61,.36,1);overflow:hidden}
+.sg-root .fill::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.45) 50%,transparent 80%);transform:translateX(-100%);animation:sgsheen 2.4s linear infinite}
 @keyframes sgsheen{to{transform:translateX(100%)}}
 .sg-root .stackbar{display:flex;align-items:center;gap:10px}
 .sg-root .stack{position:relative;width:52px;height:48px;border:none;background:none;cursor:pointer;flex-shrink:0}
-.sg-root .stack .pileimg{position:absolute;left:50%;top:50%;width:30px;height:40px;border-radius:5px;object-fit:cover;border:1.5px solid rgba(255,215,120,.55);box-shadow:0 3px 7px rgba(0,0,0,.55)}
+.sg-root .stack .pileimg{position:absolute;left:50%;top:50%;width:30px;height:40px;border-radius:5px;object-fit:cover;border:1.5px solid rgba(209,0,5,.35);box-shadow:0 3px 7px rgba(0,0,0,.18)}
 .sg-root .stack .p1{transform:translate(-50%,-50%)}
 .sg-root .stack .p2{transform:translate(-50%,-50%) rotate(-9deg) translateX(-4px)}
 .sg-root .stack .p3{transform:translate(-50%,-50%) rotate(10deg) translateX(4px)}
-.sg-root .stack b{position:absolute;right:-4px;top:-6px;min-width:20px;height:20px;border-radius:999px;background:var(--gold);color:#1a0e00;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 5px;box-shadow:0 2px 8px rgba(0,0,0,.5);z-index:2}
+.sg-root .stack b{position:absolute;right:-4px;top:-6px;min-width:20px;height:20px;border-radius:999px;background:var(--brand);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 5px;box-shadow:0 2px 8px rgba(209,0,5,.35);z-index:2}
 .sg-root .stack.bump .pileimg,.sg-root .stack.bump b{animation:sgstackbump .35s cubic-bezier(.2,1.6,.4,1)}
 @keyframes sgstackbump{40%{transform:translate(-50%,-50%) scale(1.28)}}
 .sg-root .stack.bump b{animation:sgbadgebump .35s cubic-bezier(.2,1.6,.4,1)}
 @keyframes sgbadgebump{40%{transform:scale(1.4)}}
 .sg-root .bar-sub{font-size:10px;color:var(--dim);margin-top:6px}
-.sg-root .bar-sub b{color:var(--acc)}
-.sg-root .cab{position:relative;border-radius:20px;padding:11px;margin:12px 0;background:linear-gradient(180deg,rgba(64,38,102,.75),rgba(18,12,34,.9) 60%);border:1px solid rgba(255,195,80,.5);box-shadow:0 0 0 3px rgba(20,12,40,.85),0 0 0 4px rgba(255,190,80,.28),0 16px 42px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.18),inset 0 0 40px rgba(120,60,200,.22)}
+.sg-root .bar-sub b{color:var(--brand)}
+.sg-root .cab{position:relative;border-radius:18px;padding:11px;margin:12px 0;background:linear-gradient(180deg,#fff,#f4f5f7);border:2px solid rgba(209,0,5,.28);box-shadow:0 0 0 3px #fff,0 0 0 5px rgba(209,0,5,.12),0 8px 24px rgba(0,0,0,.08)}
 .sg-root .cab.winflash{animation:sgcabwin .6s ease-in-out 2}
-@keyframes sgcabwin{50%{border-color:rgba(56,217,169,.9);box-shadow:0 0 0 3px rgba(20,12,40,.85),0 0 30px rgba(56,217,169,.55),0 16px 42px rgba(0,0,0,.6)}}
+@keyframes sgcabwin{50%{border-color:rgba(22,163,74,.85);box-shadow:0 0 0 3px #fff,0 0 24px rgba(22,163,74,.45),0 8px 24px rgba(0,0,0,.08)}}
 .sg-root .cab.goldflash{animation:sgcabgold .55s ease-in-out 3}
-@keyframes sgcabgold{50%{border-color:#ffd76a;box-shadow:0 0 0 3px rgba(20,12,40,.85),0 0 44px rgba(255,200,80,.8),0 16px 42px rgba(0,0,0,.6)}}
+@keyframes sgcabgold{50%{border-color:var(--brand);box-shadow:0 0 0 3px #fff,0 0 32px rgba(209,0,5,.45),0 8px 24px rgba(0,0,0,.08)}}
 .sg-root .grid{display:flex;gap:5px}
 .sg-root .col{flex:1;display:flex;flex-direction:column;gap:5px;border-radius:11px}
-.sg-root .cell{aspect-ratio:1;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(6,4,16,.88) 62%);border:1px solid rgba(255,255,255,.10);display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:inset 0 2px 7px rgba(0,0,0,.6);position:relative}
-.sg-root .cell img{width:88%;height:88%;object-fit:contain;filter:drop-shadow(0 3px 5px rgba(0,0,0,.55))}
+.sg-root .cell{aspect-ratio:1;border-radius:10px;background:linear-gradient(180deg,#f8f9fb,#eef0f3 70%);border:1px solid #e2e5ea;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.06);position:relative}
+.sg-root .cell img{width:88%;height:88%;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,.18))}
 .sg-root .col.spin .cell img{animation:sgreelblur .09s linear infinite}
-@keyframes sgreelblur{0%{transform:translateY(-16%);filter:blur(1.6px) brightness(1.1)}100%{transform:translateY(16%);filter:blur(1.6px) brightness(1.1)}}
+@keyframes sgreelblur{0%{transform:translateY(-16%);filter:blur(1.6px) brightness(1.05)}100%{transform:translateY(16%);filter:blur(1.6px) brightness(1.05)}}
 .sg-root .col.land .cell img{animation:sgreelland .3s cubic-bezier(.2,1.5,.4,1)}
 @keyframes sgreelland{from{transform:translateY(-46%) scale(1.14)}}
-.sg-root .col.hold .cell{border-color:rgba(255,195,70,.9);animation:sgholdpulse .45s ease-in-out infinite}
-@keyframes sgholdpulse{50%{box-shadow:0 0 18px rgba(255,185,55,.75),inset 0 2px 7px rgba(0,0,0,.6)}}
-.sg-root .cell.win-cell{border-color:rgba(56,217,169,.95)}
-.sg-root .cell.win-cell::after{content:"";position:absolute;inset:0;border-radius:10px;box-shadow:0 0 16px rgba(56,217,169,.7),inset 0 0 12px rgba(56,217,169,.35);animation:sgwinpulse .7s ease-in-out infinite}
+.sg-root .col.hold .cell{border-color:rgba(209,0,5,.75);animation:sgholdpulse .45s ease-in-out infinite}
+@keyframes sgholdpulse{50%{box-shadow:0 0 14px rgba(209,0,5,.45),inset 0 1px 3px rgba(0,0,0,.06)}}
+.sg-root .cell.win-cell{border-color:rgba(22,163,74,.9)}
+.sg-root .cell.win-cell::after{content:"";position:absolute;inset:0;border-radius:10px;box-shadow:0 0 14px rgba(22,163,74,.55),inset 0 0 10px rgba(22,163,74,.25);animation:sgwinpulse .7s ease-in-out infinite}
 @keyframes sgwinpulse{50%{opacity:.35}}
 .sg-root .cell.win-cell img{animation:sgwinpop .5s cubic-bezier(.2,1.7,.4,1)}
 @keyframes sgwinpop{45%{transform:scale(1.22)}}
-.sg-root .sweep{position:absolute;background:linear-gradient(90deg,transparent,rgba(255,225,140,.95),transparent);height:5px;border-radius:4px;z-index:4;pointer-events:none;animation:sgsweepx .75s cubic-bezier(.3,.6,.3,1) both;box-shadow:0 0 14px rgba(255,215,120,.8)}
+.sg-root .sweep{position:absolute;background:linear-gradient(90deg,transparent,rgba(209,0,5,.9),transparent);height:4px;border-radius:4px;z-index:4;pointer-events:none;animation:sgsweepx .75s cubic-bezier(.3,.6,.3,1) both;box-shadow:0 0 12px rgba(209,0,5,.55)}
 @keyframes sgsweepx{from{transform:translateX(-30%) scaleX(.15);opacity:0}30%{opacity:1}to{transform:translateX(30%) scaleX(1.05);opacity:0}}
-.sg-root .bigsplash{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:6;pointer-events:none;font-size:46px;font-weight:900;letter-spacing:.04em;background:linear-gradient(180deg,#fff3c4,#ffd76a 38%,#ff9a3d 70%,#ff6b4a);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 0 rgba(120,40,0,.55)) drop-shadow(0 8px 22px rgba(0,0,0,.6));animation:sgsplash .9s cubic-bezier(.2,1.4,.4,1) both}
+.sg-root .bigsplash{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:6;pointer-events:none;font-size:42px;font-weight:900;letter-spacing:.04em;color:var(--brand);text-shadow:0 2px 0 rgba(255,255,255,.9),0 6px 18px rgba(209,0,5,.35);animation:sgsplash .9s cubic-bezier(.2,1.4,.4,1) both}
 @keyframes sgsplash{from{transform:scale(.2) rotate(-7deg);opacity:0}55%{transform:scale(1.12) rotate(2deg)}to{transform:scale(1)}}
 .sg-root .shake{animation:sgshake .5s cubic-bezier(.36,.07,.19,.97)}
 @keyframes sgshake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(3px)}30%,50%,70%{transform:translateX(-5px)}40%,60%{transform:translateX(5px)}}
 .sg-root .confetti{position:absolute;width:8px;height:8px;border-radius:2px;z-index:30;pointer-events:none;animation:sgconf 1s ease-out forwards}
 @keyframes sgconf{to{transform:translate(var(--dx),var(--dy)) rotate(540deg);opacity:0}}
-.sg-root .status{min-height:34px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:13.5px;font-weight:800;color:var(--muted);margin-bottom:10px;line-height:1.35}
-.sg-root .status.hint-near{color:var(--acc)}
+.sg-root .status{min-height:34px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:13px;font-weight:800;color:var(--muted);margin-bottom:10px;line-height:1.35}
+.sg-root .status.hint-near{color:var(--ship)}
 .sg-root .status.hint-win{color:var(--good)}
-.sg-root .spin-btn{position:relative;width:100%;border:none;border-radius:18px;padding:17px;font-size:17px;font-weight:900;letter-spacing:.05em;cursor:pointer;background:var(--gold);color:#241000;box-shadow:0 10px 28px rgba(255,150,40,.45),inset 0 1px 0 rgba(255,255,255,.6),inset 0 -3px 0 rgba(140,50,0,.35);transition:transform .12s;text-shadow:0 1px 0 rgba(255,255,255,.35)}
+.sg-root .spin-btn{position:relative;width:100%;border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:900;letter-spacing:.04em;cursor:pointer;background:var(--brand);color:#fff;box-shadow:0 6px 18px rgba(209,0,5,.28);transition:transform .12s}
 .sg-root .spin-btn:not(:disabled){animation:sgbtnring 2.6s ease-in-out infinite}
-@keyframes sgbtnring{50%{box-shadow:0 10px 34px rgba(255,170,50,.65),inset 0 1px 0 rgba(255,255,255,.6),inset 0 -3px 0 rgba(140,50,0,.35)}}
+@keyframes sgbtnring{50%{box-shadow:0 8px 24px rgba(209,0,5,.42)}}
 .sg-root .spin-btn:active{transform:scale(.97)}
 .sg-root .spin-btn:disabled{opacity:.55;cursor:default;transform:none;animation:none}
 .sg-root .aux{display:flex;justify-content:space-between;margin-top:12px;position:relative;z-index:1}
-.sg-root .aux button{border:none;background:none;color:rgba(255,255,255,.55);font-size:11.5px;font-weight:700;cursor:pointer;text-decoration:underline;padding:6px 2px}
-.sg-root .flycard{position:absolute;width:44px;height:58px;border-radius:7px;overflow:hidden;z-index:55;pointer-events:none;border:1.5px solid rgba(255,220,140,.85);box-shadow:0 8px 20px rgba(0,0,0,.6),0 0 18px rgba(255,190,80,.45);transition:transform .55s cubic-bezier(.3,.75,.35,1),opacity .55s}
+.sg-root .aux button{border:none;background:none;color:var(--muted);font-size:11.5px;font-weight:700;cursor:pointer;text-decoration:underline;padding:6px 2px}
+.sg-root .flycard{position:absolute;width:44px;height:58px;border-radius:7px;overflow:hidden;z-index:55;pointer-events:none;border:1.5px solid rgba(209,0,5,.45);box-shadow:0 8px 20px rgba(0,0,0,.25),0 0 12px rgba(209,0,5,.25);transition:transform .55s cubic-bezier(.3,.75,.35,1),opacity .55s}
 .sg-root .flycard img{width:100%;height:100%;object-fit:cover}
-.sg-root .intro{position:absolute;inset:0;z-index:70;background:radial-gradient(700px 700px at 50% 42%,rgba(80,40,140,.55),rgba(5,4,12,.97) 70%);display:flex;align-items:center;justify-content:center;cursor:pointer}
-.sg-root .i-rays{position:absolute;width:640px;height:640px;background:conic-gradient(from 0deg,transparent 0 14deg,rgba(255,195,80,.14) 14deg 22deg,transparent 22deg 40deg,rgba(255,195,80,.10) 40deg 48deg,transparent 48deg 72deg,rgba(255,195,80,.14) 72deg 80deg,transparent 80deg 104deg,rgba(255,195,80,.10) 104deg 112deg,transparent 112deg 140deg,rgba(255,195,80,.14) 140deg 148deg,transparent 148deg 176deg,rgba(255,195,80,.10) 176deg 184deg,transparent 184deg 212deg,rgba(255,195,80,.14) 212deg 220deg,transparent 220deg 248deg,rgba(255,195,80,.10) 248deg 256deg,transparent 256deg 284deg,rgba(255,195,80,.14) 284deg 292deg,transparent 292deg 320deg,rgba(255,195,80,.10) 320deg 328deg,transparent 328deg);border-radius:50%;animation:sgrayspin 9s linear infinite;mask:radial-gradient(circle,black 0 58%,transparent 72%)}
+.sg-root .intro{position:absolute;inset:0;z-index:70;background:radial-gradient(700px 700px at 50% 42%,rgba(209,0,5,.12),rgba(238,240,243,.98) 70%);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.sg-root .i-rays{position:absolute;width:640px;height:640px;background:conic-gradient(from 0deg,transparent 0 14deg,rgba(209,0,5,.10) 14deg 22deg,transparent 22deg 40deg,rgba(209,0,5,.08) 40deg 48deg,transparent 48deg 72deg,rgba(209,0,5,.10) 72deg 80deg,transparent 80deg 104deg,rgba(209,0,5,.08) 104deg 112deg,transparent 112deg 140deg,rgba(209,0,5,.10) 140deg 148deg,transparent 148deg 176deg,rgba(209,0,5,.08) 176deg 184deg,transparent 184deg 212deg,rgba(209,0,5,.10) 212deg 220deg,transparent 220deg 248deg,rgba(209,0,5,.08) 248deg 256deg,transparent 256deg 284deg,rgba(209,0,5,.10) 284deg 292deg,transparent 292deg 320deg,rgba(209,0,5,.08) 320deg 328deg,transparent 328deg);border-radius:50%;animation:sgrayspin 9s linear infinite;mask:radial-gradient(circle,black 0 58%,transparent 72%)}
 @keyframes sgrayspin{to{transform:rotate(360deg)}}
-.sg-root .i-pack{position:relative;width:196px;height:258px;border-radius:18px;overflow:hidden;box-shadow:0 26px 60px rgba(0,0,0,.7),0 0 0 1.5px rgba(255,215,130,.7),0 0 46px rgba(255,180,60,.5);animation:sgpackin .75s cubic-bezier(.2,1.4,.4,1) both,sgpackfloat 2.4s ease-in-out .75s infinite}
-.sg-root .i-pack img{width:100%;height:100%;object-fit:cover}
-.sg-root .i-pack::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 25%,rgba(255,255,255,.4) 46%,transparent 62%);transform:translateX(-130%);animation:sgpackshine 1.5s ease .4s infinite}
+.sg-root .i-pack{position:relative;width:196px;height:258px;border-radius:18px;overflow:hidden;background:#fff;box-shadow:0 18px 40px rgba(0,0,0,.18),0 0 0 2px rgba(209,0,5,.35),0 0 28px rgba(209,0,5,.2);animation:sgpackin .75s cubic-bezier(.2,1.4,.4,1) both,sgpackfloat 2.4s ease-in-out .75s infinite}
+.sg-root .i-pack img{width:100%;height:100%;object-fit:contain;padding:8px}
+.sg-root .i-pack::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 25%,rgba(255,255,255,.5) 46%,transparent 62%);transform:translateX(-130%);animation:sgpackshine 1.5s ease .4s infinite}
 @keyframes sgpackin{from{transform:scale(.3) translateY(90px) rotate(-8deg);opacity:0}60%{transform:scale(1.06) translateY(-6px) rotate(1.5deg)}to{transform:scale(1)}}
 @keyframes sgpackfloat{50%{transform:translateY(-7px)}}
 @keyframes sgpackshine{to{transform:translateX(130%)}}
-.sg-root .i-burst{position:absolute;width:60px;height:60px;border-radius:50%;background:radial-gradient(circle,#fff8e0,rgba(255,205,90,.85) 40%,transparent 70%);transform:scale(0);opacity:0;pointer-events:none}
+.sg-root .i-burst{position:absolute;width:60px;height:60px;border-radius:50%;background:radial-gradient(circle,#fff,rgba(209,0,5,.55) 40%,transparent 70%);transform:scale(0);opacity:0;pointer-events:none}
 .sg-root .intro.go .i-burst{animation:sgburst .6s ease-out both}
 @keyframes sgburst{20%{opacity:1}to{transform:scale(22);opacity:0}}
 .sg-root .intro.go .i-pack{animation:sgpackout .5s ease-in both}
-@keyframes sgpackout{to{transform:scale(1.5);opacity:0;filter:brightness(2.4)}}
+@keyframes sgpackout{to{transform:scale(1.5);opacity:0;filter:brightness(2.2)}}
 .sg-root .intro.go .i-rays{opacity:0;transition:opacity .4s}
-.sg-root .i-tip{position:absolute;bottom:9%;font-size:11px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.55);animation:sgtippulse 1.4s ease-in-out infinite}
+.sg-root .i-tip{position:absolute;bottom:9%;font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);animation:sgtippulse 1.4s ease-in-out infinite}
 @keyframes sgtippulse{50%{opacity:.4}}
-.sg-root .ovl{position:absolute;inset:0;background:rgba(4,4,10,.85);display:flex;align-items:center;justify-content:center;z-index:40;padding:20px;backdrop-filter:blur(3px)}
-.sg-root .rev{background:linear-gradient(180deg,#191226,#100b1c);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:26px 22px;text-align:center;max-width:320px;width:100%;animation:sgpop .35s cubic-bezier(.2,1.4,.4,1);box-shadow:0 30px 70px rgba(0,0,0,.6)}
+.sg-root .ovl{position:absolute;inset:0;background:rgba(29,33,41,.55);display:flex;align-items:center;justify-content:center;z-index:40;padding:20px;backdrop-filter:blur(3px)}
+.sg-root .rev{background:#fff;border:1px solid #e5e8ec;border-radius:20px;padding:26px 22px;text-align:center;max-width:320px;width:100%;animation:sgpop .35s cubic-bezier(.2,1.4,.4,1);box-shadow:0 24px 50px rgba(0,0,0,.22)}
 @keyframes sgpop{from{transform:scale(.7);opacity:0}}
-.sg-root .rev .big-card{position:relative;width:176px;height:235px;border-radius:14px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;box-shadow:0 16px 38px rgba(0,0,0,.6);overflow:hidden;animation:sgcardflip .55s cubic-bezier(.2,1.4,.4,1) both}
+.sg-root .rev .big-card{position:relative;width:176px;height:235px;border-radius:14px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 28px rgba(0,0,0,.2);overflow:hidden;animation:sgcardflip .55s cubic-bezier(.2,1.4,.4,1) both}
 @keyframes sgcardflip{from{transform:rotateY(85deg) scale(.72);opacity:0}}
 .sg-root .rev .big-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .sg-root .rev .big-card::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 28%,rgba(255,255,255,.38) 46%,transparent 62%);transform:translateX(-130%);animation:sgcardshine 1s ease .45s forwards}
 @keyframes sgcardshine{to{transform:translateX(130%)}}
-.sg-root .rev .r-name{font-size:17px;font-weight:800}
+.sg-root .rev .r-name{font-size:17px;font-weight:800;color:var(--text)}
 .sg-root .rev .r-rar{font-size:10.5px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;margin-top:4px}
-.sg-root .rev button{margin-top:16px;width:100%;border:none;border-radius:12px;padding:13px;font-weight:800;cursor:pointer;background:var(--gold);color:#241000;font-size:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 0 rgba(140,50,0,.3)}
-.sg-root .r-COMMON .r-rar{color:var(--muted)} .sg-root .r-RARE .r-rar{color:var(--acc)} .sg-root .r-CHASE .r-rar{color:var(--chase)}
-.sg-root .r-RARE .big-card{box-shadow:0 0 42px rgba(255,179,0,.45)}
-.sg-root .r-CHASE .big-card{box-shadow:0 0 60px rgba(177,108,234,.6)}
-.sg-root .chasebanner{font-size:12px;font-weight:800;letter-spacing:.2em;color:var(--chase);margin-bottom:6px}
+.sg-root .rev button{margin-top:16px;width:100%;border:none;border-radius:12px;padding:13px;font-weight:800;cursor:pointer;background:var(--brand);color:#fff;font-size:14px;box-shadow:0 4px 14px rgba(209,0,5,.28)}
+.sg-root .r-COMMON .r-rar{color:var(--muted)} .sg-root .r-RARE .r-rar{color:var(--ship)} .sg-root .r-CHASE .r-rar{color:var(--brand)}
+.sg-root .r-RARE .big-card{box-shadow:0 0 28px rgba(245,103,10,.35)}
+.sg-root .r-CHASE .big-card{box-shadow:0 0 36px rgba(209,0,5,.4)}
+.sg-root .chasebanner{font-size:12px;font-weight:800;letter-spacing:.2em;color:var(--brand);margin-bottom:6px}
 .sg-root .sum-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:10px}
-.sg-root .sc{border:1px solid rgba(255,255,255,.10);border-radius:12px;background:rgba(255,255,255,.045);padding:10px 6px;text-align:center;position:relative}
+.sg-root .sc{border:1px solid #e5e8ec;border-radius:12px;background:#f7f8fa;padding:10px 6px;text-align:center;position:relative}
 .sg-root .sum-cards.stagger .sc{animation:sgtilein .45s cubic-bezier(.2,1.3,.4,1) both}
 @keyframes sgtilein{from{transform:translateY(14px) scale(.85);opacity:0}}
 .sg-root .sc .aimg{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:8px;display:block}
 .sg-root .sc .n{font-size:10.5px;font-weight:800;margin-top:5px;line-height:1.3;color:var(--text)}
 .sg-root .sc .r{font-size:8.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin-top:2px}
-.sg-root .sc.CHASE{box-shadow:0 0 18px rgba(177,108,234,.35);border-color:rgba(177,108,234,.5)}
-.sg-root .sc.CHASE .r{color:var(--chase)} .sg-root .sc.RARE .r{color:var(--acc)} .sg-root .sc.COMMON .r{color:var(--muted)}
+.sg-root .sc.CHASE{box-shadow:0 0 14px rgba(209,0,5,.2);border-color:rgba(209,0,5,.4)}
+.sg-root .sc.CHASE .r{color:var(--brand)} .sg-root .sc.RARE .r{color:var(--ship)} .sg-root .sc.COMMON .r{color:var(--muted)}
 @media(prefers-reduced-motion:reduce){.sg-root *{animation:none!important;transition:none!important}}
 `}</style>
   );
