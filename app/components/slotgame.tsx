@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer, useRef, useState, type ReactNode } from "react";
+import { useEffect, useReducer, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { Lang, Rarity } from "../lib/types";
 import { RARITY_META } from "../data/prizes";
 
@@ -264,7 +264,6 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
   if (!restGridRef.current) restGridRef.current = newRestGrid();
 
   const [phase, setPhase] = useState<"intro" | "play" | "summary">(reduceMotion() ? "play" : "intro");
-  const [introGo, setIntroGo] = useState(false);
   const [quick, setQuick] = useState(false);
   const [reveal, setReveal] = useState<{ cards: WonCard[]; big: boolean; done: boolean } | null>(null);
   const [stackOpen, setStackOpen] = useState(false);
@@ -274,24 +273,10 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
   const at = (ms: number, fn: () => void) => { const t = setTimeout(fn, ms); timersRef.current.push(t); return t; };
   useEffect(() => {
     // Preload art so reels/reveals never pop in blank.
-    [...cat.pool.map((c) => c.img), cat.chase.img, packImage, ...SYMS].forEach((s) => { const im = new Image(); im.src = s; });
+    [...cat.pool.map((c) => c.img), cat.chase.img, packImage, "/slot/gacha-bg.jpg", "/slot/crack-mask.png", ...SYMS].forEach((s) => { const im = new Image(); im.src = s; });
     return () => { timersRef.current.forEach(clearTimeout); tokenRef.current++; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Intro auto-advance.
-  useEffect(() => {
-    if (phase !== "intro") return;
-    const t = at(1600, endIntro);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase]);
-
-  function endIntro() {
-    if (introGo) return;
-    setIntroGo(true);
-    at(560, () => setPhase("play"));
-  }
 
   const rootQ = (sel: string) => rootRef.current?.querySelector(sel) as HTMLElement | null;
   const setStatusDom = (msg: string, cls = "") => {
@@ -650,14 +635,9 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
         </div>
       </div>
 
-      {/* Pack-open intro — PackSpin POC anime rays + the store pack image */}
+      {/* Pack-open intro — the POC gacha "draw" sequence with the pack's art */}
       {phase === "intro" && (
-        <div className={`intro ${introGo ? "go" : ""}`} onClick={endIntro}>
-          <div className="i-rays" />
-          <div className="i-pack" style={{ background: cat.hue }}><img src={packImage} alt="" /></div>
-          <div className="i-burst" />
-          <div className="i-tip">{L.tapOpen}</div>
-        </div>
+        <PackOpenIntro image={packImage} name={packName} lang={lang} onDone={() => setPhase("play")} />
       )}
 
       {/* Reveal overlay */}
@@ -788,23 +768,6 @@ function SlotStyle() {
 .sg-root .aux button{border:none;background:none;color:var(--muted);font-size:11.5px;font-weight:700;cursor:pointer;text-decoration:underline;padding:6px 2px}
 .sg-root .flycard{position:absolute;width:44px;height:58px;border-radius:7px;overflow:hidden;z-index:55;pointer-events:none;border:1.5px solid rgba(209,0,5,.45);box-shadow:0 8px 20px rgba(0,0,0,.25),0 0 12px rgba(209,0,5,.25);transition:transform .55s cubic-bezier(.3,.75,.35,1),opacity .55s}
 .sg-root .flycard img{width:100%;height:100%;object-fit:cover}
-.sg-root .intro{position:absolute;inset:0;z-index:70;background:radial-gradient(700px 700px at 50% 42%,rgba(80,40,140,.55),rgba(5,4,12,.97) 70%);display:flex;align-items:center;justify-content:center;cursor:pointer}
-.sg-root .i-rays{position:absolute;width:640px;height:640px;background:conic-gradient(from 0deg,transparent 0 14deg,rgba(255,195,80,.14) 14deg 22deg,transparent 22deg 40deg,rgba(255,195,80,.10) 40deg 48deg,transparent 48deg 72deg,rgba(255,195,80,.14) 72deg 80deg,transparent 80deg 104deg,rgba(255,195,80,.10) 104deg 112deg,transparent 112deg 140deg,rgba(255,195,80,.14) 140deg 148deg,transparent 148deg 176deg,rgba(255,195,80,.10) 176deg 184deg,transparent 184deg 212deg,rgba(255,195,80,.14) 212deg 220deg,transparent 220deg 248deg,rgba(255,195,80,.10) 248deg 256deg,transparent 256deg 284deg,rgba(255,195,80,.14) 284deg 292deg,transparent 292deg 320deg,rgba(255,195,80,.10) 320deg 328deg,transparent 328deg);border-radius:50%;animation:sgrayspin 9s linear infinite;mask:radial-gradient(circle,black 0 58%,transparent 72%)}
-@keyframes sgrayspin{to{transform:rotate(360deg)}}
-.sg-root .i-pack{position:relative;width:196px;height:258px;border-radius:18px;overflow:hidden;box-shadow:0 26px 60px rgba(0,0,0,.7),0 0 0 1.5px rgba(255,215,130,.7),0 0 46px rgba(255,180,60,.5);animation:sgpackin .75s cubic-bezier(.2,1.4,.4,1) both,sgpackfloat 2.4s ease-in-out .75s infinite}
-.sg-root .i-pack img{width:100%;height:100%;object-fit:contain;padding:6px}
-.sg-root .i-pack::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 25%,rgba(255,255,255,.4) 46%,transparent 62%);transform:translateX(-130%);animation:sgpackshine 1.5s ease .4s infinite;pointer-events:none}
-@keyframes sgpackin{from{transform:scale(.3) translateY(90px) rotate(-8deg);opacity:0}60%{transform:scale(1.06) translateY(-6px) rotate(1.5deg)}to{transform:scale(1)}}
-@keyframes sgpackfloat{50%{transform:translateY(-7px)}}
-@keyframes sgpackshine{to{transform:translateX(130%)}}
-.sg-root .i-burst{position:absolute;width:60px;height:60px;border-radius:50%;background:radial-gradient(circle,#fff8e0,rgba(255,205,90,.85) 40%,transparent 70%);transform:scale(0);opacity:0;pointer-events:none}
-.sg-root .intro.go .i-burst{animation:sgburst .6s ease-out both}
-@keyframes sgburst{20%{opacity:1}to{transform:scale(22);opacity:0}}
-.sg-root .intro.go .i-pack{animation:sgpackout .5s ease-in both}
-@keyframes sgpackout{to{transform:scale(1.5);opacity:0;filter:brightness(2.4)}}
-.sg-root .intro.go .i-rays{opacity:0;transition:opacity .4s}
-.sg-root .i-tip{position:absolute;bottom:9%;font-size:11px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.55);animation:sgtippulse 1.4s ease-in-out infinite}
-@keyframes sgtippulse{50%{opacity:.4}}
 .sg-root .ovl{position:absolute;inset:0;background:rgba(29,33,41,.55);display:flex;align-items:center;justify-content:center;z-index:40;padding:20px;backdrop-filter:blur(3px)}
 .sg-root .rev{background:#fff;border:1px solid #e5e8ec;border-radius:20px;padding:26px 22px;text-align:center;max-width:320px;width:100%;animation:sgpop .35s cubic-bezier(.2,1.4,.4,1);box-shadow:0 24px 50px rgba(0,0,0,.22)}
 @keyframes sgpop{from{transform:scale(.7);opacity:0}}
@@ -831,5 +794,186 @@ function SlotStyle() {
 .sg-root .sc.CHASE .r{color:var(--brand)} .sg-root .sc.RARE .r{color:var(--ship)} .sg-root .sc.COMMON .r{color:var(--muted)}
 @media(prefers-reduced-motion:reduce){.sg-root *{animation:none!important;transition:none!important}}
 `}</style>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Pack-open intro — a faithful port of the oripa-poc "draw" gacha sequence
+   (charge → breaking → flash → settle) using the selected pack's artwork and
+   the anime backdrop, before the slot cabinet appears.
+   ───────────────────────────────────────────────────────────────────────── */
+function PackOpenIntro({ image, name, lang, onDone }: { image: string; name: string; lang: Lang; onDone: () => void }) {
+  const H = 4;                 // crack steps
+  const X = 1300;              // charge duration (ms)
+  const STEP = 520;            // per-crack step
+  const P = STEP * H;          // total breaking window
+  const END = X + P + 1000 + 750;
+
+  const [g, setG] = useState<"charge" | "breaking" | "flash" | "settle">("charge");
+  const [m, setM] = useState(0);
+  const doneRef = useRef(false);
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
+
+  const finish = () => { if (doneRef.current) return; doneRef.current = true; onDoneRef.current(); };
+
+  useEffect(() => {
+    if (reduceMotion()) { finish(); return; }
+    const ts: ReturnType<typeof setTimeout>[] = [];
+    ts.push(setTimeout(() => setG("breaking"), X));
+    for (let t = 1; t <= H; t++) ts.push(setTimeout(() => setM(t), X + STEP * t));
+    ts.push(setTimeout(() => setG("flash"), X + P));
+    ts.push(setTimeout(() => setG("settle"), X + P + 1000));
+    ts.push(setTimeout(finish, END));
+    return () => ts.forEach(clearTimeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const conv = Array.from({ length: 16 }).map((_, t) => {
+    const a = (t / 16) * Math.PI * 2, r = 150 + (t % 5) * 26;
+    return { dx: Math.round(Math.cos(a) * r), dy: Math.round(Math.sin(a) * r), d: (t % 8) * 0.14 };
+  });
+  const sparks = Array.from({ length: 18 }).map((_, t) => {
+    const a = (t / 18) * Math.PI * 2, r = 90 + (t % 4) * 30;
+    return { dx: Math.round(Math.cos(a) * r), dy: Math.round(Math.sin(a) * r), d: (t % 6) * 0.12 };
+  });
+  const petals = Array.from({ length: 14 }).map((_, t) => ({ left: (37 * t) % 100, delay: (t % 7) * 0.5, dur: 4 + (t % 5), size: 8 + (t % 4) * 4 }));
+  const bokeh = Array.from({ length: 12 }).map((_, t) => {
+    const s = 6 + (t % 4) * 5;
+    const bg = t % 3 === 0 ? "rgba(255,225,150,.9)" : t % 3 === 1 ? "rgba(255,150,200,.85)" : "rgba(160,200,255,.85)";
+    return { left: (53 * t) % 100, size: s, bg, dur: 3.4 + (t % 5) * 0.7, delay: (t % 6) * 0.55 };
+  });
+
+  const o = m / H, c = 0.3 + 0.7 * o;
+  const eyebrow = lang === "ja" ? "ガチャ" : "DRAW";
+  const status = g === "charge" ? (lang === "ja" ? "チャージ中…" : "CHARGING…") : g === "breaking" ? (lang === "ja" ? "開封中…" : "OPENING…") : g === "flash" ? (lang === "ja" ? "オープン!!" : "OPEN!!") : "";
+  const packBox: CSSProperties = { width: 212, height: 300 };
+  const packImg: CSSProperties = { height: 300, width: "auto", maxWidth: 212, objectFit: "contain" };
+  const maskBase: CSSProperties = {
+    WebkitMaskImage: "url(/slot/crack-mask.png)", maskImage: "url(/slot/crack-mask.png)",
+    WebkitMaskSize: "auto 100%", maskSize: "auto 100%", WebkitMaskPosition: "center", maskPosition: "center",
+    WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat",
+  };
+
+  return (
+    <div
+      className="absolute inset-0 z-[70] flex items-center justify-center overflow-hidden"
+      style={{ fontFamily: FONT, opacity: g === "settle" ? 0 : 1, transition: "opacity 750ms ease", cursor: "pointer" }}
+      onClick={finish}
+    >
+      <style>{`
+        @keyframes gaSky { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+        @keyframes gaRays { to { transform: rotate(360deg); } }
+        @keyframes gaRaysRev { to { transform: rotate(-360deg); } }
+        @keyframes gaFocus { 0%{opacity:.15; transform:scale(1.4)} 50%{opacity:.5; transform:scale(1)} 100%{opacity:.15; transform:scale(1.4)} }
+        @keyframes gaPulse { 0%,100% { transform: scale(.9); opacity:.7 } 50% { transform: scale(1.2); opacity:1 } }
+        @keyframes gaFloat { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-10px) } }
+        @keyframes gaText { 0%{opacity:0; transform:translateY(14px) scale(.85)} 40%{opacity:1; transform:translateY(0) scale(1.06)} 60%{transform:scale(1)} 100%{opacity:1} }
+        @keyframes gaLabelZoom { 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.16) } }
+        @keyframes gaPetal { 0%{ transform: translateY(-40px) rotate(0); opacity:0 } 12%{opacity:.9} 100%{ transform: translateY(760px) rotate(420deg); opacity:0 } }
+        @keyframes gaStreak { 0%{ transform: translateX(-60%) skewX(-18deg); opacity:0 } 40%{opacity:.8} 100%{ transform: translateX(160%) skewX(-18deg); opacity:0 } }
+        @keyframes gaPackJolt { 0%{ transform: scale(1) rotate(0) } 14%{ transform: scale(1.1) rotate(-5deg) } 30%{ transform: scale(.97) rotate(5deg) } 46%{ transform: scale(1.05) rotate(-3deg) } 64%{ transform: scale(1) rotate(2deg) } 100%{ transform: scale(1) rotate(0) } }
+        @keyframes gaPackBob { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-6px) } }
+        @keyframes gaCrackPop { 0%{ opacity:0; transform: scale(.4) } 40%{ opacity:1; transform: scale(1.25) } 100%{ opacity:0; transform: scale(1.6) } }
+        @keyframes gaSplitL { 0%{ transform: translate(0,0) rotate(0); opacity:1 } 100%{ transform: translate(-180px,40px) rotate(-26deg); opacity:0 } }
+        @keyframes gaSplitR { 0%{ transform: translate(0,0) rotate(0); opacity:1 } 100%{ transform: translate(180px,40px) rotate(26deg); opacity:0 } }
+        @keyframes gaShock { 0%{ transform: scale(.2); opacity:.9 } 100%{ transform: scale(2.6); opacity:0 } }
+        @keyframes gaBurstFlash { 0%{ opacity:0 } 18%{ opacity:1 } 60%{ opacity:.85 } 100%{ opacity:0 } }
+        @keyframes gaPackIn { 0%{ opacity:0; transform: translateY(60px) scale(.3) rotate(-8deg) } 60%{ opacity:1; transform: translateY(0) scale(1.06) rotate(2deg) } 100%{ transform: translateY(0) scale(1) rotate(0) } }
+        @keyframes gaChargeShake { 0%,100%{ transform: translate(0,0) rotate(0) } 25%{ transform: translate(-2px,1px) rotate(-1.2deg) } 50%{ transform: translate(2px,-1px) rotate(1.2deg) } 75%{ transform: translate(-1px,1px) rotate(-.8deg) } }
+        @keyframes gaConverge { 0%{ transform: translate(var(--dx),var(--dy)) scale(.2); opacity:0 } 25%{ opacity:1 } 100%{ transform: translate(0,0) scale(1); opacity:0 } }
+        @keyframes gaAura { 0%,100%{ transform: scale(.85); opacity:.5 } 50%{ transform: scale(1.18); opacity:.95 } }
+        @keyframes gaBokeh { 0%{ transform: translateY(40px) scale(.6); opacity:0 } 15%{ opacity:.85 } 85%{ opacity:.7 } 100%{ transform: translateY(-220px) scale(1.1); opacity:0 } }
+        @keyframes gaSpark { 0% { transform: translate(0,0) scale(0); opacity:0 } 25% { opacity:1 } 100% { transform: translate(var(--dx),var(--dy)) scale(1.1); opacity:0 } }
+        @keyframes gaCirclePulse { 0%,100%{ opacity:.45; transform: scale(.97) } 50%{ opacity:.85; transform: scale(1.03) } }
+        @keyframes gaBgZoom { 0%{ transform: scale(1.04) } 50%{ transform: scale(1.14) } 100%{ transform: scale(1.04) } }
+        @keyframes gaFadeIn { from{ opacity:0 } to{ opacity:1 } }
+        @keyframes gaCrackBeam { 0%{ opacity:.2 } 50%{ opacity:1 } 100%{ opacity:.6 } }
+        @keyframes gaSeamPulse { 0%,100%{ opacity:.85 } 50%{ opacity:1 } }
+      `}</style>
+
+      {/* Backdrop layers */}
+      <div className="absolute inset-0" style={{ background: "linear-gradient(125deg,#3a0d6b,#7a1648,#c81d6b,#2a0b3f,#10081f)", backgroundSize: "400% 400%", animation: "gaSky 6s ease infinite" }} />
+      <div className="absolute h-[150vh] w-[150vh]" style={{ animation: "gaRays 14s linear infinite", background: "repeating-conic-gradient(from 0deg, rgba(255,255,255,.10) 0deg 2deg, rgba(255,255,255,0) 2deg 6deg)", WebkitMaskImage: "radial-gradient(circle, transparent 18%, #000 60%)", maskImage: "radial-gradient(circle, transparent 18%, #000 60%)" }} />
+      <div className="absolute h-[150vh] w-[150vh]" style={{ animation: "gaFocus 2.6s ease-in-out infinite", background: "repeating-conic-gradient(from 0deg, rgba(255,210,90,.16) 0deg 1deg, rgba(255,210,90,0) 1deg 7deg)", WebkitMaskImage: "radial-gradient(circle, transparent 22%, #000 64%)", maskImage: "radial-gradient(circle, transparent 22%, #000 64%)" }} />
+      <div className="absolute h-[620px] w-[620px]" style={{ animation: "gaRaysRev 10s linear infinite", background: "conic-gradient(from 0deg, rgba(255,210,80,0) 0deg, rgba(255,210,80,.34) 10deg, rgba(255,210,80,0) 22deg, rgba(255,210,80,.34) 34deg, rgba(255,210,80,0) 46deg, rgba(255,210,80,.34) 58deg, rgba(255,210,80,0) 70deg)", borderRadius: "9999px", WebkitMaskImage: "radial-gradient(circle, #000 24%, transparent 70%)", maskImage: "radial-gradient(circle, #000 24%, transparent 70%)" }} />
+      <svg className="pointer-events-none absolute h-[480px] w-[480px]" viewBox="0 0 200 200" style={{ animation: "gaRays 22s linear infinite, gaCirclePulse 3s ease-in-out infinite" }}>
+        <circle cx="100" cy="100" r="94" fill="none" stroke="rgba(255,228,150,.55)" strokeWidth="1.4" strokeDasharray="4 6" />
+        <circle cx="100" cy="100" r="86" fill="none" stroke="rgba(255,228,150,.3)" strokeWidth="0.8" />
+        {Array.from({ length: 24 }).map((_, t) => { const a = (t / 24) * Math.PI * 2; return <line key={t} x1={100 + 78 * Math.cos(a)} y1={100 + 78 * Math.sin(a)} x2={100 + 86 * Math.cos(a)} y2={100 + 86 * Math.sin(a)} stroke="rgba(255,228,150,.5)" strokeWidth="1" />; })}
+      </svg>
+      <svg className="pointer-events-none absolute h-[330px] w-[330px]" viewBox="0 0 200 200" style={{ animation: "gaRaysRev 16s linear infinite", opacity: 0.6 }}>
+        <polygon points="100,16 121,76 184,76 133,113 152,173 100,136 48,173 67,113 16,76 79,76" fill="none" stroke="rgba(255,228,150,.5)" strokeWidth="1.2" strokeLinejoin="round" />
+        <circle cx="100" cy="100" r="62" fill="none" stroke="rgba(255,228,150,.4)" strokeWidth="1" strokeDasharray="2 7" />
+      </svg>
+      {bokeh.map((b, t) => (
+        <span key={`b${t}`} className="absolute bottom-[-20px] rounded-full" style={{ left: `${b.left}%`, width: b.size, height: b.size, background: `radial-gradient(circle at 30% 30%, #fff, ${b.bg})`, animation: `gaBokeh ${b.dur}s ease-in ${b.delay}s infinite`, filter: "blur(0.3px) drop-shadow(0 0 6px rgba(255,235,170,.7))" }} />
+      ))}
+      {petals.map((p, t) => (
+        <span key={`p${t}`} className="absolute top-0 rounded-full" style={{ left: `${p.left}%`, width: p.size, height: p.size, background: "radial-gradient(circle at 30% 30%, #ffd6ec, #ff77b6)", animation: `gaPetal ${p.dur}s linear ${p.delay}s infinite`, filter: "drop-shadow(0 0 4px rgba(255,150,200,.6))" }} />
+      ))}
+      {Array.from({ length: 4 }).map((_, t) => (
+        <span key={`s${t}`} className="absolute h-[3px] w-1/2 rounded-full bg-white/70" style={{ top: `${18 + 20 * t}%`, animation: `gaStreak ${1.1 + 0.2 * t}s ease-in ${0.25 * t}s infinite` }} />
+      ))}
+      <img src="/slot/gacha-bg.jpg" alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover" style={{ animation: "gaFadeIn .6s ease both, gaBgZoom 12s ease-in-out infinite" }} />
+      <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(circle at 50% 46%, rgba(0,0,0,0) 30%, rgba(0,0,0,.35) 72%, rgba(0,0,0,.6) 100%)" }} />
+      <div className="absolute h-[300px] w-[300px] rounded-full" style={{ background: "radial-gradient(circle, rgba(255,230,140,.55), rgba(255,150,40,0) 70%)", animation: "gaPulse 1.3s ease-in-out infinite" }} />
+
+      {/* Charge */}
+      {g === "charge" && (
+        <div className="relative flex items-center justify-center">
+          <span className="pointer-events-none absolute h-[280px] w-[280px] rounded-full" style={{ background: "radial-gradient(circle, rgba(255,235,150,.6), rgba(255,150,40,0) 68%)", animation: "gaAura 1s ease-in-out infinite" }} />
+          {conv.map((e, t) => (
+            <span key={t} className="absolute h-2 w-2 rounded-full bg-white" style={{ ["--dx" as string]: `${e.dx}px`, ["--dy" as string]: `${e.dy}px`, animation: `gaConverge ${0.9 + e.d}s ease-in ${e.d}s infinite`, boxShadow: "0 0 8px 2px rgba(255,235,160,.95)" }} />
+          ))}
+          <div className="relative" style={{ animation: "gaPackIn 700ms cubic-bezier(.2,.8,.2,1) both, gaChargeShake 240ms ease-in-out 760ms infinite", filter: "drop-shadow(0 0 40px rgba(255,210,120,.9))" }}>
+            <img src={image} alt="" style={packImg} draggable={false} />
+          </div>
+        </div>
+      )}
+
+      {/* Breaking */}
+      {g === "breaking" && (
+        <div className="relative flex items-center justify-center" style={{ animation: "gaPackBob 1.3s ease-in-out infinite" }}>
+          <div className="relative" style={{ ...packBox, animation: "gaPackJolt 460ms cubic-bezier(.36,.07,.19,.97) both", filter: `drop-shadow(0 0 ${22 + 9 * m}px rgba(255,205,110,.9))` }}>
+            <img src={image} alt="" className="absolute inset-0 m-auto" style={packImg} draggable={false} />
+            <span className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ width: "150%", height: "120%", background: "radial-gradient(ellipse 40% 55% at 50% 48%, rgba(255,255,255,.9), rgba(255,230,140,.45) 48%, rgba(255,200,80,0) 74%)", opacity: 0.85 * c, mixBlendMode: "screen", animation: "gaCrackBeam 460ms ease-out both" }} />
+            <div className="pointer-events-none absolute inset-0 m-auto" style={{ ...packBox, clipPath: `inset(${(1 - o) * 50}% 0% ${(1 - o) * 50}% 0%)` }}>
+              <div className="absolute inset-0" style={{ background: "#0a0014", transform: "scale(1.06)", filter: "blur(0.5px)", ...maskBase }} />
+              <div className="absolute inset-0" style={{ background: "#ffffff", opacity: c, animation: "gaSeamPulse 600ms ease-in-out infinite", filter: "drop-shadow(0 0 6px rgba(255,235,160,1)) drop-shadow(0 0 16px rgba(255,200,90,.85))", ...maskBase }} />
+            </div>
+            <span className="pointer-events-none absolute left-1/2 top-1/2 h-44 w-44 -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ background: "radial-gradient(circle, rgba(255,255,255,1), rgba(255,220,120,0) 70%)", animation: "gaCrackPop 460ms ease-out both" }} />
+          </div>
+        </div>
+      )}
+
+      {/* Flash / split */}
+      {g === "flash" && (
+        <>
+          <div className="pointer-events-none absolute inset-0 bg-white" style={{ animation: "gaBurstFlash 1000ms ease-out forwards" }} />
+          <span className="pointer-events-none absolute h-[260px] w-[260px] rounded-full" style={{ border: "6px solid rgba(255,235,160,.9)", animation: "gaShock 700ms ease-out forwards", boxShadow: "0 0 40px rgba(255,210,120,.8)" }} />
+          <div className="relative" style={packBox}>
+            <div className="absolute inset-0 flex items-center justify-center" style={{ clipPath: "inset(0 50% 0 0)", animation: "gaSplitL 700ms cubic-bezier(.4,0,.6,1) forwards" }}>
+              <img src={image} alt="" style={packImg} draggable={false} />
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center" style={{ clipPath: "inset(0 0 0 50%)", animation: "gaSplitR 700ms cubic-bezier(.4,0,.6,1) forwards" }}>
+              <img src={image} alt="" style={packImg} draggable={false} />
+            </div>
+          </div>
+          {sparks.map((e, t) => (
+            <span key={t} className="absolute h-2.5 w-2.5 rounded-full bg-white" style={{ ["--dx" as string]: `${e.dx}px`, ["--dy" as string]: `${e.dy}px`, animation: `gaSpark ${1.1 + e.d}s ease-out ${e.d}s`, boxShadow: "0 0 10px 3px rgba(255,235,160,.95)" }} />
+          ))}
+        </>
+      )}
+
+      {g === "settle" && <div className="pointer-events-none absolute inset-0 bg-white" />}
+
+      {/* Titles */}
+      <div className="absolute top-[60px] left-0 right-0 flex flex-col items-center text-center px-6" style={{ animation: "gaText .7s ease both" }}>
+        <span className="text-[12px] font-extrabold uppercase tracking-[0.42em] text-white/85">{eyebrow}</span>
+        <span className="mt-1 inline-block max-w-full truncate whitespace-nowrap rounded-xl px-5 py-1.5 text-[24px] font-black italic leading-none tracking-[0.02em] text-white" style={{ background: "linear-gradient(135deg,#ff3b4e,#B40206)", border: "2px solid rgba(255,255,255,.85)", boxShadow: "0 4px 18px rgba(230,0,18,.6)", textShadow: "0 2px 8px rgba(120,0,10,.6)", animation: "gaLabelZoom 1.5s ease-in-out infinite" }}>{name}</span>
+      </div>
+      <p className="absolute bottom-[80px] text-center text-[30px] font-black italic tracking-[0.14em] text-white" style={{ animation: "gaText .7s ease both", textShadow: "0 2px 16px rgba(255,180,60,.85)" }}>{status}</p>
+    </div>
   );
 }
