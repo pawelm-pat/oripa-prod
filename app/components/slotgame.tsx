@@ -734,28 +734,33 @@ function SlotStyle() {
 @keyframes sgbadgebump{40%{transform:scale(1.4)}}
 .sg-root .bar-sub{font-size:10px;color:var(--dim);margin-top:6px}
 .sg-root .bar-sub b{color:var(--brand)}
-.sg-root .cab{position:relative;border-radius:20px;padding:9px;margin:12px 0;background:linear-gradient(180deg,#fff,#f4f5f7);border:2px solid rgba(209,0,5,.30);box-shadow:0 0 0 3px #fff,0 0 0 5px rgba(209,0,5,.12),0 10px 26px rgba(0,0,0,.10)}
+/* Bold red cabinet frame with a silver outer ring */
+.sg-root .cab{position:relative;border-radius:22px;padding:9px;margin:12px 0;background:linear-gradient(180deg,#ff3238,#D10005 50%,#9c0004);box-shadow:0 0 0 2px #c2c7cf,0 0 0 5px #eef0f3,0 0 20px rgba(209,0,5,.30),0 10px 26px rgba(0,0,0,.16)}
 .sg-root .cab.winflash{animation:sgcabwin .6s ease-in-out 2}
-@keyframes sgcabwin{50%{border-color:rgba(22,163,74,.85);box-shadow:0 0 0 3px #fff,0 0 24px rgba(22,163,74,.45),0 10px 26px rgba(0,0,0,.10)}}
+@keyframes sgcabwin{50%{box-shadow:0 0 0 2px #16a34a,0 0 0 5px #eef0f3,0 0 26px rgba(22,163,74,.55),0 10px 26px rgba(0,0,0,.16)}}
 .sg-root .cab.goldflash{animation:sgcabgold .55s ease-in-out 3}
-@keyframes sgcabgold{50%{border-color:var(--brand);box-shadow:0 0 0 3px #fff,0 0 32px rgba(209,0,5,.45),0 10px 26px rgba(0,0,0,.10)}}
-/* Metallic reel deck holding the five drums */
-.sg-root .reelframe{position:relative;border-radius:14px;padding:7px;background:linear-gradient(180deg,#c6cad2,#eef0f3 14%,#dde1e7 50%,#eef0f3 86%,#c6cad2);box-shadow:inset 0 2px 3px rgba(255,255,255,.95),inset 0 -3px 6px rgba(0,0,0,.16),0 3px 10px rgba(0,0,0,.10)}
-.sg-root .grid{display:flex;gap:6px}
-/* Each column is a curved 3D drum: light in the middle, shaded at the poles */
-.sg-root .col{position:relative;flex:1;border-radius:12px;overflow:hidden;perspective:600px;background:linear-gradient(180deg,#cdd2da 0%,#ffffff 42%,#ffffff 58%,#cdd2da 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.65),inset 0 11px 15px -8px rgba(0,0,0,.4),inset 0 -11px 15px -8px rgba(0,0,0,.4)}
-.sg-root .strip{display:flex;flex-direction:column;gap:4px;padding:4px;transform-style:preserve-3d;will-change:transform}
-.sg-root .cell{aspect-ratio:1;border-radius:9px;background:linear-gradient(180deg,#ffffff,#f0f2f5);border:1px solid rgba(226,229,234,.9);display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.08);position:relative;backface-visibility:hidden}
-.sg-root .cell img{width:86%;height:86%;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,.20))}
-/* Curve the reel by tilting the poles away from the viewer */
-.sg-root .strip .cell:nth-child(1){transform:rotateX(32deg);filter:brightness(.80)}
-.sg-root .strip .cell:nth-child(2){transform:rotateX(10deg)}
-.sg-root .strip .cell:nth-child(3){transform:rotateX(-12deg)}
-.sg-root .strip .cell:nth-child(4){transform:rotateX(-34deg);filter:brightness(.78)}
-/* Glass cylinder shading + centre gloss over the drum */
-.sg-root .reel-glass{position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:12px;background:linear-gradient(180deg,rgba(12,15,22,.45) 0%,rgba(12,15,22,0) 24%,rgba(255,255,255,.26) 49%,rgba(12,15,22,0) 74%,rgba(12,15,22,.45) 100%)}
-/* Payline runs through the judged row */
-.sg-root .payline{position:absolute;left:0;right:0;top:37.5%;height:2px;transform:translateY(-50%);z-index:4;pointer-events:none;background:linear-gradient(90deg,rgba(209,0,5,0),rgba(209,0,5,.65) 30%,rgba(209,0,5,.65) 70%,rgba(209,0,5,0));box-shadow:0 0 8px rgba(209,0,5,.45)}
+@keyframes sgcabgold{50%{box-shadow:0 0 0 2px #ffd24a,0 0 0 5px #eef0f3,0 0 34px rgba(255,180,60,.6),0 10px 26px rgba(0,0,0,.16)}}
+/* Polished chrome bezel holding the drums */
+.sg-root .reelframe{position:relative;border-radius:15px;padding:7px 8px;background:linear-gradient(180deg,#eef1f5,#c3c8d0 8%,#f6f8fa 30%,#dfe3e9 52%,#f6f8fa 74%,#c3c8d0 92%,#eef1f5);box-shadow:inset 0 2px 3px rgba(255,255,255,.95),inset 0 -2px 4px rgba(0,0,0,.22),inset 0 0 0 1px rgba(0,0,0,.10),0 2px 6px rgba(0,0,0,.14)}
+.sg-root .grid{display:flex;gap:5px}
+/* Each column is a curved chrome drum: brushed metal poles, bright specular centre */
+.sg-root .col{position:relative;flex:1;border-radius:10px;overflow:hidden;perspective:640px;background:linear-gradient(180deg,#7f858e 0%,#b7bcc4 10%,#e9ecf0 30%,#ffffff 50%,#e9ecf0 70%,#b7bcc4 90%,#7f858e 100%);box-shadow:inset 1.5px 0 2px rgba(255,255,255,.7),inset -1.5px 0 2px rgba(0,0,0,.28),inset 0 12px 16px -8px rgba(0,0,0,.5),inset 0 -12px 16px -8px rgba(0,0,0,.5)}
+.sg-root .strip{display:flex;flex-direction:column;gap:3px;padding:3px;transform-style:preserve-3d;will-change:transform}
+.sg-root .cell{aspect-ratio:1;border-radius:8px;background:transparent;border:1.5px solid transparent;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;backface-visibility:hidden}
+.sg-root .cell img{width:88%;height:88%;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+/* Curve the drum by tilting the poles away from the viewer */
+.sg-root .strip .cell:nth-child(1){transform:rotateX(34deg);filter:brightness(.72)}
+.sg-root .strip .cell:nth-child(2){transform:rotateX(11deg)}
+.sg-root .strip .cell:nth-child(3){transform:rotateX(-13deg)}
+.sg-root .strip .cell:nth-child(4){transform:rotateX(-36deg);filter:brightness(.70)}
+/* Chrome specular gloss + cylinder shading over the drum */
+.sg-root .reel-glass{position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:10px;background:linear-gradient(180deg,rgba(10,12,18,.5) 0%,rgba(10,12,18,0) 22%,rgba(255,255,255,.5) 49%,rgba(255,255,255,.06) 55%,rgba(10,12,18,0) 78%,rgba(10,12,18,.5) 100%)}
+/* Red payline through the judged row */
+.sg-root .payline{position:absolute;left:0;right:0;top:37.5%;height:2px;transform:translateY(-50%);z-index:4;pointer-events:none;background:linear-gradient(90deg,rgba(209,0,5,0),rgba(209,0,5,.8) 30%,rgba(209,0,5,.8) 70%,rgba(209,0,5,0));box-shadow:0 0 9px rgba(209,0,5,.6)}
+/* Red diamond markers on both sides of the deck at the payline */
+.sg-root .reelframe::before,.sg-root .reelframe::after{content:"";position:absolute;top:38.5%;width:11px;height:11px;transform:translateY(-50%) rotate(45deg);background:linear-gradient(135deg,#ff3238,#b00004);box-shadow:0 0 8px rgba(209,0,5,.6),inset 0 0 0 1px rgba(255,255,255,.5);z-index:6}
+.sg-root .reelframe::before{left:-3px}
+.sg-root .reelframe::after{right:-3px}
 /* Spinning: the whole drum rolls, symbols sweep with motion blur */
 .sg-root .col.spin .strip{animation:sgdrum .19s linear infinite}
 @keyframes sgdrum{0%{transform:translateY(-7%)}100%{transform:translateY(7%)}}
@@ -766,10 +771,10 @@ function SlotStyle() {
 @keyframes sgstripland{from{transform:translateY(-7%)}}
 .sg-root .col.land .cell img{animation:sgreelland .34s cubic-bezier(.2,1.5,.4,1)}
 @keyframes sgreelland{from{transform:translateY(-54%) scale(1.16)}}
-.sg-root .col.hold{box-shadow:inset 0 0 0 2px rgba(209,0,5,.7),inset 0 11px 15px -8px rgba(0,0,0,.4),inset 0 -11px 15px -8px rgba(0,0,0,.4);animation:sgholdpulse .5s ease-in-out infinite}
-@keyframes sgholdpulse{50%{box-shadow:inset 0 0 0 2px rgba(209,0,5,1),0 0 16px rgba(209,0,5,.45)}}
-.sg-root .cell.win-cell{border-color:rgba(22,163,74,.9)}
-.sg-root .cell.win-cell::after{content:"";position:absolute;inset:0;border-radius:9px;box-shadow:0 0 14px rgba(22,163,74,.55),inset 0 0 10px rgba(22,163,74,.25);animation:sgwinpulse .7s ease-in-out infinite;z-index:2}
+.sg-root .col.hold{animation:sgholdpulse .5s ease-in-out infinite}
+@keyframes sgholdpulse{50%{box-shadow:inset 0 0 0 2px rgba(209,0,5,.9),0 0 16px rgba(209,0,5,.5),inset 0 12px 16px -8px rgba(0,0,0,.5),inset 0 -12px 16px -8px rgba(0,0,0,.5)}}
+.sg-root .cell.win-cell{border-color:rgba(22,163,74,.95)}
+.sg-root .cell.win-cell::after{content:"";position:absolute;inset:0;border-radius:8px;box-shadow:0 0 14px rgba(22,163,74,.6),inset 0 0 10px rgba(22,163,74,.3);animation:sgwinpulse .7s ease-in-out infinite;z-index:2}
 @keyframes sgwinpulse{50%{opacity:.35}}
 .sg-root .cell.win-cell img{animation:sgwinpop .5s cubic-bezier(.2,1.7,.4,1)}
 @keyframes sgwinpop{45%{transform:scale(1.22)}}
