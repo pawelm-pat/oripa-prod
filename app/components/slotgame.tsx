@@ -32,6 +32,8 @@ type WonCard = { id: number; name: string; nameJa: string; rarity: Rarity; demoR
 type Props = {
   packId: string;
   packName: string;
+  // Store pack artwork used for the pack-open intro animation.
+  packImage: string;
   credits: number;
   spins: number;
   lang: Lang;
@@ -240,7 +242,7 @@ const STR = {
   },
 };
 
-export function SlotGame({ packId, packName, credits, spins, lang, header, onExchange, onClose }: Props) {
+export function SlotGame({ packId, packName, packImage, credits, spins, lang, header, onExchange, onClose }: Props) {
   const L = STR[lang];
   const cat = CATALOG.find((c) => c.id === packId) ?? CATALOG[0];
   const spinCost = Math.max(1, Math.round(credits / Math.max(1, spins)));
@@ -272,7 +274,7 @@ export function SlotGame({ packId, packName, credits, spins, lang, header, onExc
   const at = (ms: number, fn: () => void) => { const t = setTimeout(fn, ms); timersRef.current.push(t); return t; };
   useEffect(() => {
     // Preload art so reels/reveals never pop in blank.
-    [...cat.pool.map((c) => c.img), cat.chase.img, cat.packImg, ...SYMS].forEach((s) => { const im = new Image(); im.src = s; });
+    [...cat.pool.map((c) => c.img), cat.chase.img, packImage, ...SYMS].forEach((s) => { const im = new Image(); im.src = s; });
     return () => { timersRef.current.forEach(clearTimeout); tokenRef.current++; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -648,11 +650,11 @@ export function SlotGame({ packId, packName, credits, spins, lang, header, onExc
         </div>
       </div>
 
-      {/* Pack-open intro */}
+      {/* Pack-open intro — PackSpin POC anime rays + the store pack image */}
       {phase === "intro" && (
         <div className={`intro ${introGo ? "go" : ""}`} onClick={endIntro}>
           <div className="i-rays" />
-          <div className="i-pack"><img src={cat.packImg} alt="" /></div>
+          <div className="i-pack" style={{ background: cat.hue }}><img src={packImage} alt="" /></div>
           <div className="i-burst" />
           <div className="i-tip">{L.tapOpen}</div>
         </div>
@@ -786,22 +788,22 @@ function SlotStyle() {
 .sg-root .aux button{border:none;background:none;color:var(--muted);font-size:11.5px;font-weight:700;cursor:pointer;text-decoration:underline;padding:6px 2px}
 .sg-root .flycard{position:absolute;width:44px;height:58px;border-radius:7px;overflow:hidden;z-index:55;pointer-events:none;border:1.5px solid rgba(209,0,5,.45);box-shadow:0 8px 20px rgba(0,0,0,.25),0 0 12px rgba(209,0,5,.25);transition:transform .55s cubic-bezier(.3,.75,.35,1),opacity .55s}
 .sg-root .flycard img{width:100%;height:100%;object-fit:cover}
-.sg-root .intro{position:absolute;inset:0;z-index:70;background:radial-gradient(700px 700px at 50% 42%,rgba(209,0,5,.12),rgba(238,240,243,.98) 70%);display:flex;align-items:center;justify-content:center;cursor:pointer}
-.sg-root .i-rays{position:absolute;width:640px;height:640px;background:conic-gradient(from 0deg,transparent 0 14deg,rgba(209,0,5,.10) 14deg 22deg,transparent 22deg 40deg,rgba(209,0,5,.08) 40deg 48deg,transparent 48deg 72deg,rgba(209,0,5,.10) 72deg 80deg,transparent 80deg 104deg,rgba(209,0,5,.08) 104deg 112deg,transparent 112deg 140deg,rgba(209,0,5,.10) 140deg 148deg,transparent 148deg 176deg,rgba(209,0,5,.08) 176deg 184deg,transparent 184deg 212deg,rgba(209,0,5,.10) 212deg 220deg,transparent 220deg 248deg,rgba(209,0,5,.08) 248deg 256deg,transparent 256deg 284deg,rgba(209,0,5,.10) 284deg 292deg,transparent 292deg 320deg,rgba(209,0,5,.08) 320deg 328deg,transparent 328deg);border-radius:50%;animation:sgrayspin 9s linear infinite;mask:radial-gradient(circle,black 0 58%,transparent 72%)}
+.sg-root .intro{position:absolute;inset:0;z-index:70;background:radial-gradient(700px 700px at 50% 42%,rgba(80,40,140,.55),rgba(5,4,12,.97) 70%);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.sg-root .i-rays{position:absolute;width:640px;height:640px;background:conic-gradient(from 0deg,transparent 0 14deg,rgba(255,195,80,.14) 14deg 22deg,transparent 22deg 40deg,rgba(255,195,80,.10) 40deg 48deg,transparent 48deg 72deg,rgba(255,195,80,.14) 72deg 80deg,transparent 80deg 104deg,rgba(255,195,80,.10) 104deg 112deg,transparent 112deg 140deg,rgba(255,195,80,.14) 140deg 148deg,transparent 148deg 176deg,rgba(255,195,80,.10) 176deg 184deg,transparent 184deg 212deg,rgba(255,195,80,.14) 212deg 220deg,transparent 220deg 248deg,rgba(255,195,80,.10) 248deg 256deg,transparent 256deg 284deg,rgba(255,195,80,.14) 284deg 292deg,transparent 292deg 320deg,rgba(255,195,80,.10) 320deg 328deg,transparent 328deg);border-radius:50%;animation:sgrayspin 9s linear infinite;mask:radial-gradient(circle,black 0 58%,transparent 72%)}
 @keyframes sgrayspin{to{transform:rotate(360deg)}}
-.sg-root .i-pack{position:relative;width:196px;height:258px;border-radius:18px;overflow:hidden;background:#fff;box-shadow:0 18px 40px rgba(0,0,0,.18),0 0 0 2px rgba(209,0,5,.35),0 0 28px rgba(209,0,5,.2);animation:sgpackin .75s cubic-bezier(.2,1.4,.4,1) both,sgpackfloat 2.4s ease-in-out .75s infinite}
-.sg-root .i-pack img{width:100%;height:100%;object-fit:contain;padding:8px}
-.sg-root .i-pack::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 25%,rgba(255,255,255,.5) 46%,transparent 62%);transform:translateX(-130%);animation:sgpackshine 1.5s ease .4s infinite}
+.sg-root .i-pack{position:relative;width:196px;height:258px;border-radius:18px;overflow:hidden;box-shadow:0 26px 60px rgba(0,0,0,.7),0 0 0 1.5px rgba(255,215,130,.7),0 0 46px rgba(255,180,60,.5);animation:sgpackin .75s cubic-bezier(.2,1.4,.4,1) both,sgpackfloat 2.4s ease-in-out .75s infinite}
+.sg-root .i-pack img{width:100%;height:100%;object-fit:contain;padding:6px}
+.sg-root .i-pack::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 25%,rgba(255,255,255,.4) 46%,transparent 62%);transform:translateX(-130%);animation:sgpackshine 1.5s ease .4s infinite;pointer-events:none}
 @keyframes sgpackin{from{transform:scale(.3) translateY(90px) rotate(-8deg);opacity:0}60%{transform:scale(1.06) translateY(-6px) rotate(1.5deg)}to{transform:scale(1)}}
 @keyframes sgpackfloat{50%{transform:translateY(-7px)}}
 @keyframes sgpackshine{to{transform:translateX(130%)}}
-.sg-root .i-burst{position:absolute;width:60px;height:60px;border-radius:50%;background:radial-gradient(circle,#fff,rgba(209,0,5,.55) 40%,transparent 70%);transform:scale(0);opacity:0;pointer-events:none}
+.sg-root .i-burst{position:absolute;width:60px;height:60px;border-radius:50%;background:radial-gradient(circle,#fff8e0,rgba(255,205,90,.85) 40%,transparent 70%);transform:scale(0);opacity:0;pointer-events:none}
 .sg-root .intro.go .i-burst{animation:sgburst .6s ease-out both}
 @keyframes sgburst{20%{opacity:1}to{transform:scale(22);opacity:0}}
 .sg-root .intro.go .i-pack{animation:sgpackout .5s ease-in both}
-@keyframes sgpackout{to{transform:scale(1.5);opacity:0;filter:brightness(2.2)}}
+@keyframes sgpackout{to{transform:scale(1.5);opacity:0;filter:brightness(2.4)}}
 .sg-root .intro.go .i-rays{opacity:0;transition:opacity .4s}
-.sg-root .i-tip{position:absolute;bottom:9%;font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);animation:sgtippulse 1.4s ease-in-out infinite}
+.sg-root .i-tip{position:absolute;bottom:9%;font-size:11px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.55);animation:sgtippulse 1.4s ease-in-out infinite}
 @keyframes sgtippulse{50%{opacity:.4}}
 .sg-root .ovl{position:absolute;inset:0;background:rgba(29,33,41,.55);display:flex;align-items:center;justify-content:center;z-index:40;padding:20px;backdrop-filter:blur(3px)}
 .sg-root .rev{background:#fff;border:1px solid #e5e8ec;border-radius:20px;padding:26px 22px;text-align:center;max-width:320px;width:100%;animation:sgpop .35s cubic-bezier(.2,1.4,.4,1);box-shadow:0 24px 50px rgba(0,0,0,.22)}
