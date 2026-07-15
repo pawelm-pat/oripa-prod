@@ -48,7 +48,7 @@ const CoinHistoryNavContext = createContext<() => void>(() => {});
 // Opening a legal document (Terms / Privacy / SCTA) reader from anywhere.
 const LegalNavContext = createContext<(doc: LegalDocKey) => void>(() => {});
 // Opening the pack slot game from anywhere (Store or the home pack swimlane).
-type SlotReq = { name: string; credits: number; spins: number };
+type SlotReq = { id: string; name: string; credits: number; spins: number };
 const SlotNavContext = createContext<(req: SlotReq) => void>(() => {});
 
 // Preserve the My Page scroll offset across remounts (each screen change
@@ -4323,7 +4323,7 @@ const CARD_PACKS: CardPack[] = [
 function PackCardList({ t }: { t: Dict }) {
   const openSlot = useContext(SlotNavContext);
   const open = (pack: CardPack, idx: number) =>
-    openSlot({ name: t.storePackNames[idx] ?? pack.name, credits: pack.credits, spins: pack.spins });
+    openSlot({ id: pack.id, name: t.storePackNames[idx] ?? pack.name, credits: pack.credits, spins: pack.spins });
   return (
     <div className="no-scrollbar flex gap-3 overflow-x-auto pb-2">
       {CARD_PACKS.map((pack, idx) => (
@@ -5585,6 +5585,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, slotVersion = 1 }: {
         {legalDoc && <LegalOverlay lang={lang} doc={legalDoc} onClose={() => setLegalDoc(null)} />}
         {slotReq && (
           <SlotGame
+            packId={slotReq.id}
             packName={slotReq.name}
             credits={slotReq.credits}
             spins={slotReq.spins}
