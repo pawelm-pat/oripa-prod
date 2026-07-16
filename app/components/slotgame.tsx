@@ -614,7 +614,7 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
           </div>
 
           <div className="cab">
-            <img className="frame-img" src="/slot/frame.png" alt="" aria-hidden="true" />
+            <img className="frame-img" src="/slot/frame-neon.png" alt="" aria-hidden="true" />
             <div className="reelframe">
               <div className="grid">
                 {grid.map((col, ci) => (
@@ -742,8 +742,8 @@ function SlotStyle() {
 @keyframes sgcabwin{50%{filter:drop-shadow(0 0 20px rgba(22,163,74,.75)) drop-shadow(0 14px 28px rgba(0,0,0,.22))}}
 .sg-root .cab.goldflash{animation:sgcabgold .55s ease-in-out 3}
 @keyframes sgcabgold{50%{filter:drop-shadow(0 0 24px rgba(255,180,60,.8)) drop-shadow(0 14px 28px rgba(0,0,0,.22))}}
-/* Reels fill the transparent window of frame.png (window insets: 10% x, 13.85% y) */
-.sg-root .reelframe{position:absolute;top:13.85%;left:10%;right:10%;bottom:13.85%;z-index:1;overflow:hidden;border-radius:10px}
+/* Reels fill the transparent window of frame-neon.png (measured insets, tucked ~0.6% under the neon) */
+.sg-root .reelframe{position:absolute;top:6.9%;left:6.7%;right:6.9%;bottom:15.8%;z-index:1;overflow:hidden;border-radius:14px}
 .sg-root .grid{display:flex;gap:7px;height:100%}
 /* Each column is a brushed-steel cylinder: dark steel poles, bright specular centre */
 .sg-root .col{position:relative;flex:1;height:100%;border-radius:6px;overflow:hidden;perspective:640px;background:linear-gradient(180deg,#3c4048 0%,#565b64 7%,#868c96 20%,#c2c7ce 38%,#e8ebef 50%,#c2c7ce 62%,#868c96 80%,#565b64 93%,#3c4048 100%);box-shadow:inset 2px 0 3px rgba(255,255,255,.35),inset -2px 0 3px rgba(0,0,0,.4),0 1px 2px rgba(0,0,0,.3)}
