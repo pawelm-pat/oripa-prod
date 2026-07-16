@@ -13,16 +13,19 @@
 import type { CSSProperties } from "react";
 
 export const REEL_SYMBOLS = [
-  "/slot/sym-diamond.png",
-  "/slot/sym-ruby.png",
-  "/slot/sym-star.png",
   "/slot/sym-emerald.png",
-  "/slot/sym-amber.png",
   "/slot/sym-bluestar.png",
-  "/slot/sym-card.png",
+  "/slot/sym-amber.png",
+  "/slot/sym-amethyst.png",
+  "/slot/sym-ruby.png",
+  "/slot/sym-char-white.png",
+  "/slot/sym-char-purple.png",
+  "/slot/sym-char-blonde.png",
+  "/slot/sym-char-red.png",
+  "/slot/sym-char-hero.png",
 ];
 /** Index of the premium "card" symbol (three across the pay row = a win). */
-export const CARD_SYMBOL = 6;
+export const CARD_SYMBOL = 9;
 
 export type SlotReelsProps = {
   /** [col][row] symbol indices into `symbols`. Falsy → a showcase spread of all items. */

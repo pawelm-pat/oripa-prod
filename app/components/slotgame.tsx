@@ -91,13 +91,16 @@ const CATALOG: PackCat[] = [
     chase: { name: "Eternal Dragon", img: "/slot/chase-grand.png" } },
 ];
 
-/* Slot symbols — gem/star set matching the concept + the CARD hit symbol (last). */
+/* Slot symbols — sliced 1:1 from the reel artwork: 5 faceted gems + 4 character cards
+   (ambient), and the hero card as the CARD hit symbol (last → three across = win). */
 const SYMS = [
-  "/slot/sym-diamond.png", "/slot/sym-ruby.png", "/slot/sym-star.png",
-  "/slot/sym-emerald.png", "/slot/sym-amber.png", "/slot/sym-bluestar.png",
-  "/slot/sym-card.png",
+  "/slot/sym-emerald.png", "/slot/sym-bluestar.png", "/slot/sym-amber.png",
+  "/slot/sym-amethyst.png", "/slot/sym-ruby.png",
+  "/slot/sym-char-white.png", "/slot/sym-char-purple.png",
+  "/slot/sym-char-blonde.png", "/slot/sym-char-red.png",
+  "/slot/sym-char-hero.png",
 ];
-const CARD_SYM = 6;
+const CARD_SYM = 9;
 const COLS = 5, ROWS = 3, PAYROW = 1;
 
 /* ── Slot engine ──────────────────────────────────────────────────────── */
@@ -601,9 +604,9 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
             <div className="stackbar">
               <div className="bar" style={{ flex: 1 }}><div className="fill" style={{ width: pct + "%" }} /></div>
               <button className="stack" onClick={() => { if (!spinningRef.current) setStackOpen(true); }} aria-label="Your card stack">
-                <img className="pileimg p3" src="/slot/sym-card.png" alt="" />
-                <img className="pileimg p2" src="/slot/sym-card.png" alt="" />
-                <img className="pileimg p1" src="/slot/sym-card.png" alt="" />
+                <img className="pileimg p3" src="/slot/sym-char-hero.png" alt="" />
+                <img className="pileimg p2" src="/slot/sym-char-hero.png" alt="" />
+                <img className="pileimg p1" src="/slot/sym-char-hero.png" alt="" />
                 <b>{shownWon}</b>
               </button>
             </div>
