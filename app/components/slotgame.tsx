@@ -735,7 +735,7 @@ function SlotStyle() {
 .sg-root .bar-sub{font-size:10px;color:var(--dim);margin-top:6px}
 .sg-root .bar-sub b{color:var(--brand)}
 /* Bold rounded red cabinet with a glossy bevel and chrome outer ring */
-.sg-root .cab{position:relative;border-radius:26px;padding:11px;margin:12px 0;background:linear-gradient(180deg,#ff4a50 0%,#e2060b 42%,#a80206 100%);box-shadow:inset 0 2px 3px rgba(255,255,255,.55),inset 0 -3px 7px rgba(0,0,0,.4),0 0 0 2px #bcc1ca,0 0 0 6px #e9ecf0,0 0 22px rgba(209,0,5,.28),0 14px 30px rgba(0,0,0,.20)}
+.sg-root .cab{position:relative;border-radius:26px;padding:11px;margin:12px 0;background:linear-gradient(180deg,#ff4a50 0%,#e2060b 42%,#a80206 100%);box-shadow:inset 0 2px 3px rgba(255,255,255,.55),inset 0 -3px 7px rgba(0,0,0,.4),0 0 0 2px #bcc1ca,0 0 0 6px #e9ecf0,0 0 26px 3px rgba(255,45,55,.5),0 14px 30px rgba(0,0,0,.20)}
 .sg-root .cab.winflash{animation:sgcabwin .6s ease-in-out 2}
 @keyframes sgcabwin{50%{box-shadow:0 0 0 2px #16a34a,0 0 0 6px #eef0f3,0 0 26px rgba(22,163,74,.55),0 14px 30px rgba(0,0,0,.20)}}
 .sg-root .cab.goldflash{animation:sgcabgold .55s ease-in-out 3}
@@ -744,17 +744,17 @@ function SlotStyle() {
 .sg-root .reelframe{position:relative;border-radius:18px;padding:9px;background:linear-gradient(180deg,#f6f8fb 0%,#c4c9d1 10%,#f2f4f7 30%,#d7dbe1 52%,#f2f4f7 74%,#c4c9d1 92%,#f6f8fb 100%);box-shadow:inset 0 2px 3px rgba(255,255,255,.95),inset 0 -3px 6px rgba(0,0,0,.28),inset 0 0 0 1px rgba(0,0,0,.12),0 3px 8px rgba(0,0,0,.16)}
 .sg-root .grid{display:flex;gap:7px}
 /* Each column is a brushed-steel cylinder: dark steel poles, bright specular centre */
-.sg-root .col{position:relative;flex:1;border-radius:11px;overflow:hidden;perspective:640px;background:linear-gradient(180deg,#4b4f57 0%,#6b7079 8%,#aeb4bd 22%,#e9edf2 42%,#ffffff 50%,#e9edf2 58%,#aeb4bd 78%,#6b7079 92%,#4b4f57 100%);box-shadow:inset 2px 0 3px rgba(255,255,255,.5),inset -2px 0 3px rgba(0,0,0,.35),inset 0 16px 20px -10px rgba(0,0,0,.65),inset 0 -16px 20px -10px rgba(0,0,0,.65),0 1px 2px rgba(0,0,0,.3)}
+.sg-root .col{position:relative;flex:1;border-radius:11px;overflow:hidden;perspective:640px;background:linear-gradient(180deg,#3c4048 0%,#565b64 7%,#868c96 20%,#c2c7ce 38%,#e8ebef 50%,#c2c7ce 62%,#868c96 80%,#565b64 93%,#3c4048 100%);box-shadow:inset 2px 0 3px rgba(255,255,255,.35),inset -2px 0 3px rgba(0,0,0,.4),0 1px 2px rgba(0,0,0,.3)}
 .sg-root .strip{display:flex;flex-direction:column;gap:3px;padding:3px;transform-style:preserve-3d;will-change:transform}
-.sg-root .cell{aspect-ratio:1;border-radius:8px;background:radial-gradient(ellipse 62% 54% at 50% 48%,rgba(0,0,0,.12),rgba(0,0,0,0) 70%);border:1.5px solid transparent;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;backface-visibility:hidden}
-.sg-root .cell img{width:88%;height:88%;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
+.sg-root .cell{aspect-ratio:1;border-radius:8px;background:transparent;border:1.5px solid transparent;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;backface-visibility:hidden}
+.sg-root .cell img{width:88%;height:88%;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.55))}
 /* Curve the drum by tilting the poles away from the viewer */
 .sg-root .strip .cell:nth-child(1){transform:rotateX(34deg)}
 .sg-root .strip .cell:nth-child(2){transform:rotateX(11deg)}
 .sg-root .strip .cell:nth-child(3){transform:rotateX(-13deg)}
 .sg-root .strip .cell:nth-child(4){transform:rotateX(-36deg)}
-/* Cylinder shading: strong dark poles + a thin specular streak at the centre */
-.sg-root .reel-glass{position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:11px;background:linear-gradient(180deg,rgba(6,8,14,.62) 0%,rgba(6,8,14,0) 20%,rgba(255,255,255,.28) 48%,rgba(255,255,255,.05) 52%,rgba(6,8,14,0) 80%,rgba(6,8,14,.62) 100%)}
+/* Cylinder shading: strong dark poles, faint centre sheen (continuous drum) */
+.sg-root .reel-glass{position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:11px;background:linear-gradient(180deg,rgba(4,6,12,.6) 0%,rgba(4,6,12,0) 18%,rgba(255,255,255,.14) 49%,rgba(4,6,12,0) 82%,rgba(4,6,12,.6) 100%)}
 /* Red payline through the judged row */
 .sg-root .payline{position:absolute;left:0;right:0;top:37.5%;height:2px;transform:translateY(-50%);z-index:4;pointer-events:none;background:linear-gradient(90deg,rgba(209,0,5,0),rgba(209,0,5,.8) 30%,rgba(209,0,5,.8) 70%,rgba(209,0,5,0));box-shadow:0 0 9px rgba(209,0,5,.6)}
 /* Red diamond markers on both sides of the deck at the payline */
