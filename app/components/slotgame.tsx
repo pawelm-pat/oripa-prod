@@ -614,6 +614,7 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
           </div>
 
           <div className="cab">
+            <img className="frame-img" src="/slot/frame.png" alt="" aria-hidden="true" />
             <div className="reelframe">
               <div className="grid">
                 {grid.map((col, ci) => (
@@ -734,39 +735,29 @@ function SlotStyle() {
 @keyframes sgbadgebump{40%{transform:scale(1.4)}}
 .sg-root .bar-sub{font-size:10px;color:var(--dim);margin-top:6px}
 .sg-root .bar-sub b{color:var(--brand)}
-/* Bold rounded red cabinet with a glossy bevel and chrome outer ring */
-/* Cabinet frame = exported PNG (9-slice so it scales); red glow via drop-shadow */
-.sg-root .cab{position:relative;margin:12px 0;border:26px solid transparent;border-image:url(/slot/frame-border.png) 90 stretch;filter:drop-shadow(0 0 10px rgba(255,45,55,.45)) drop-shadow(0 14px 28px rgba(0,0,0,.22))}
+/* Cabinet = exported PNG frame overlay; reels sit in its transparent window (1:1 with the PNG) */
+.sg-root .cab{position:relative;margin:12px 0;filter:drop-shadow(0 0 10px rgba(255,45,55,.4)) drop-shadow(0 14px 28px rgba(0,0,0,.22))}
+.sg-root .frame-img{position:relative;display:block;width:100%;height:auto;z-index:2;pointer-events:none;user-select:none}
 .sg-root .cab.winflash{animation:sgcabwin .6s ease-in-out 2}
 @keyframes sgcabwin{50%{filter:drop-shadow(0 0 20px rgba(22,163,74,.75)) drop-shadow(0 14px 28px rgba(0,0,0,.22))}}
 .sg-root .cab.goldflash{animation:sgcabgold .55s ease-in-out 3}
 @keyframes sgcabgold{50%{filter:drop-shadow(0 0 24px rgba(255,180,60,.8)) drop-shadow(0 14px 28px rgba(0,0,0,.22))}}
-/* Reels sit inside the PNG window (bezel is part of the frame art) */
-.sg-root .reelframe{position:relative;padding:5px;background:transparent;box-shadow:none}
-.sg-root .grid{display:flex;gap:7px}
+/* Reels fill the transparent window of frame.png (window insets: 10% x, 13.85% y) */
+.sg-root .reelframe{position:absolute;top:13.85%;left:10%;right:10%;bottom:13.85%;z-index:1;overflow:hidden;border-radius:10px}
+.sg-root .grid{display:flex;gap:7px;height:100%}
 /* Each column is a brushed-steel cylinder: dark steel poles, bright specular centre */
-.sg-root .col{position:relative;flex:1;border-radius:11px;overflow:hidden;perspective:640px;background:linear-gradient(180deg,#3c4048 0%,#565b64 7%,#868c96 20%,#c2c7ce 38%,#e8ebef 50%,#c2c7ce 62%,#868c96 80%,#565b64 93%,#3c4048 100%);box-shadow:inset 2px 0 3px rgba(255,255,255,.35),inset -2px 0 3px rgba(0,0,0,.4),0 1px 2px rgba(0,0,0,.3)}
-.sg-root .strip{display:flex;flex-direction:column;gap:3px;padding:3px;transform-style:preserve-3d;will-change:transform}
-.sg-root .cell{aspect-ratio:1;border-radius:8px;background:transparent;border:1.5px solid transparent;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;backface-visibility:hidden}
+.sg-root .col{position:relative;flex:1;height:100%;border-radius:6px;overflow:hidden;perspective:640px;background:linear-gradient(180deg,#3c4048 0%,#565b64 7%,#868c96 20%,#c2c7ce 38%,#e8ebef 50%,#c2c7ce 62%,#868c96 80%,#565b64 93%,#3c4048 100%);box-shadow:inset 2px 0 3px rgba(255,255,255,.35),inset -2px 0 3px rgba(0,0,0,.4),0 1px 2px rgba(0,0,0,.3)}
+.sg-root .strip{display:flex;flex-direction:column;gap:3px;padding:3px;height:100%;transform-style:preserve-3d;will-change:transform}
+.sg-root .cell{flex:1;min-height:0;border-radius:8px;background:transparent;border:1.5px solid transparent;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;backface-visibility:hidden}
 .sg-root .cell img{width:88%;height:88%;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.55))}
 /* Curve the drum by tilting the poles away from the viewer (3 rows) */
 .sg-root .strip .cell:nth-child(1){transform:rotateX(30deg)}
 .sg-root .strip .cell:nth-child(2){transform:rotateX(0deg)}
 .sg-root .strip .cell:nth-child(3){transform:rotateX(-30deg)}
 /* Cylinder shading: strong dark poles, faint centre sheen (continuous drum) */
-.sg-root .reel-glass{position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:11px;background:linear-gradient(180deg,rgba(4,6,12,.6) 0%,rgba(4,6,12,0) 18%,rgba(255,255,255,.14) 49%,rgba(4,6,12,0) 82%,rgba(4,6,12,.6) 100%)}
-/* Continuous red laser payline across the whole deck */
-.sg-root .payline{position:absolute;left:7px;right:7px;top:50%;height:3px;transform:translateY(-50%);z-index:5;pointer-events:none;background:linear-gradient(90deg,rgba(255,40,50,0),rgba(255,40,50,.95) 12%,rgba(255,140,140,1) 50%,rgba(255,40,50,.95) 88%,rgba(255,40,50,0));box-shadow:0 0 10px 1px rgba(255,40,50,.85),0 0 22px 3px rgba(255,40,50,.5)}
-/* Red diamond markers on both sides of the deck at the payline */
-.sg-root .reelframe::before,.sg-root .reelframe::after{content:"";position:absolute;top:50%;width:13px;height:13px;transform:translateY(-50%) rotate(45deg);background:linear-gradient(135deg,#ff5157,#b00004);box-shadow:0 0 9px rgba(255,40,50,.75),inset 0 0 0 1px rgba(255,255,255,.5);z-index:7}
-.sg-root .reelframe::before{left:-20px}
-.sg-root .reelframe::after{right:-20px}
-/* Red payline through the judged row */
-.sg-root .payline{position:absolute;left:0;right:0;top:37.5%;height:2px;transform:translateY(-50%);z-index:4;pointer-events:none;background:linear-gradient(90deg,rgba(209,0,5,0),rgba(209,0,5,.8) 30%,rgba(209,0,5,.8) 70%,rgba(209,0,5,0));box-shadow:0 0 9px rgba(209,0,5,.6)}
-/* Red diamond markers on both sides of the deck at the payline */
-.sg-root .reelframe::before,.sg-root .reelframe::after{content:"";position:absolute;top:38.5%;width:11px;height:11px;transform:translateY(-50%) rotate(45deg);background:linear-gradient(135deg,#ff3238,#b00004);box-shadow:0 0 8px rgba(209,0,5,.6),inset 0 0 0 1px rgba(255,255,255,.5);z-index:6}
-.sg-root .reelframe::before{left:-3px}
-.sg-root .reelframe::after{right:-3px}
+.sg-root .reel-glass{position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:6px;background:linear-gradient(180deg,rgba(4,6,12,.6) 0%,rgba(4,6,12,0) 18%,rgba(255,255,255,.14) 49%,rgba(4,6,12,0) 82%,rgba(4,6,12,.6) 100%)}
+/* Continuous red laser payline across the whole deck (centre row) */
+.sg-root .payline{position:absolute;left:0;right:0;top:50%;height:3px;transform:translateY(-50%);z-index:5;pointer-events:none;background:linear-gradient(90deg,rgba(255,40,50,0),rgba(255,40,50,.95) 12%,rgba(255,140,140,1) 50%,rgba(255,40,50,.95) 88%,rgba(255,40,50,0));box-shadow:0 0 10px 1px rgba(255,40,50,.85),0 0 22px 3px rgba(255,40,50,.5)}
 /* Spinning: the whole drum rolls, symbols sweep with motion blur */
 .sg-root .col.spin .strip{animation:sgdrum .19s linear infinite}
 @keyframes sgdrum{0%{transform:translateY(-7%)}100%{transform:translateY(7%)}}
