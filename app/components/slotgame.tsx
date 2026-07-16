@@ -614,11 +614,18 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
 
           <div className="cab">
             <img className="frame-img" src="/slot/frame-neon.png" alt="" aria-hidden="true" />
-            {/* Reels = the design PNG (payline baked in); it rolls with blur while spinning */}
-            <div className={`reelframe${spinning ? " rolling" : ""}`}>
-              <div className="rolls-track">
-                <div className="rolls-face" />
-                <div className="rolls-face" />
+            {/* Reels sliced from the design PNG into 5 columns so each spins/stops on its
+                own (driven by the existing per-column .spin/.hold/.land classes) */}
+            <div className="reelframe">
+              <div className="rgrid">
+                {Array.from({ length: COLS }).map((_, ci) => (
+                  <div className="rcol" data-col={ci} key={ci}>
+                    <div className="rtrack">
+                      <div className="rface" style={{ backgroundPositionX: `${(ci / (COLS - 1)) * 100}%` }} />
+                      <div className="rface" style={{ backgroundPositionX: `${(ci / (COLS - 1)) * 100}%` }} />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -735,13 +742,20 @@ function SlotStyle() {
 @keyframes sgcabgold{50%{filter:drop-shadow(0 0 24px rgba(255,180,60,.8)) drop-shadow(0 14px 28px rgba(0,0,0,.22))}}
 /* Reels fill the transparent window of frame-neon.png (measured insets, tucked ~0.6% under the neon) */
 .sg-root .reelframe{position:absolute;top:6.9%;left:6.7%;right:6.9%;bottom:15.8%;z-index:1;overflow:hidden;border-radius:14px}
-/* Reels rendered from the design PNG. Two stacked faces so a -50% roll loops seamlessly */
-.sg-root .rolls-track{position:absolute;left:0;right:0;top:0;height:200%;display:flex;flex-direction:column;will-change:transform}
-.sg-root .rolls-face{flex:1;min-height:0;background:url(/slot/rolls-design.png) center/100% 100% no-repeat}
-.sg-root .reelframe.rolling .rolls-track{animation:sgrolldesign .45s linear infinite}
-@keyframes sgrolldesign{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
-.sg-root .reelframe.rolling .rolls-face{filter:blur(1.4px) brightness(1.03)}
-@media (prefers-reduced-motion:reduce){.sg-root .reelframe.rolling .rolls-track{animation:none}.sg-root .reelframe.rolling .rolls-face{filter:none}}
+/* Reels sliced from the design PNG into 5 columns. Each column shows one fifth of the
+   image (background-size:500%) and holds two stacked faces so a -50% roll loops
+   seamlessly. Spins/stops are driven per-column by the .spin/.hold/.land classes. */
+.sg-root .rgrid{position:absolute;inset:0;display:flex;height:100%}
+.sg-root .rcol{position:relative;flex:1;height:100%;overflow:hidden}
+.sg-root .rtrack{position:absolute;left:0;right:0;top:0;height:200%;display:flex;flex-direction:column;will-change:transform}
+.sg-root .rface{flex:1;min-height:0;background-image:url(/slot/rolls-design.png);background-size:500% 100%;background-repeat:no-repeat}
+.sg-root .rcol.spin .rtrack{animation:sgcolroll .4s linear infinite}
+.sg-root .rcol.spin .rface{filter:blur(1.6px) brightness(1.03)}
+@keyframes sgcolroll{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
+.sg-root .rcol.land .rtrack{animation:sgcolland .36s cubic-bezier(.2,1.5,.4,1)}
+@keyframes sgcolland{0%{transform:translateY(-7%)}60%{transform:translateY(1.6%)}100%{transform:translateY(0)}}
+.sg-root .rcol.hold{animation:sgholdpulse .5s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.sg-root .rcol.spin .rtrack,.sg-root .rcol.land .rtrack{animation:none}.sg-root .rcol.spin .rface{filter:none}}
 .sg-root .grid{display:flex;gap:7px;height:100%}
 /* Each column is a brushed-steel cylinder: dark steel poles, bright specular centre */
 .sg-root .col{position:relative;flex:1;height:100%;border-radius:6px;overflow:hidden;perspective:640px;background:linear-gradient(180deg,#3c4048 0%,#565b64 7%,#868c96 20%,#c2c7ce 38%,#e8ebef 50%,#c2c7ce 62%,#868c96 80%,#565b64 93%,#3c4048 100%);box-shadow:inset 2px 0 3px rgba(255,255,255,.35),inset -2px 0 3px rgba(0,0,0,.4),0 1px 2px rgba(0,0,0,.3)}
