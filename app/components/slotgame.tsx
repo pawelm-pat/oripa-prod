@@ -588,7 +588,6 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
   const pct = Math.round((spent / credits) * 100);
   const spinsLeft = Math.ceil(creditsLeftRef.current / spinCost);
   const shownWon = wonRef.current.length;
-  const grid = restGridRef.current!;
   const revCard = reveal?.cards[0];
 
   return (
@@ -621,18 +620,13 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
 
           <div className="cab">
             <img className="frame-img" src="/slot/frame-neon.png" alt="" aria-hidden="true" />
-            {/* Each column is an independent drum of symbol cells: its own spin speed and
-                staggered stop, landing on random symbols (cards only on a win) */}
+            {/* Each column is one sliced roll strip; it scrolls on its own speed while
+                spinning and stops staggered when you hit SPIN (driven by .spin/.hold/.land) */}
             <div className="reelframe">
-              <div className="grid">
-                {grid.map((col, ci) => (
-                  <div className="col" data-col={ci} key={ci}>
-                    <div className="strip">
-                      {col.map((s, ri) => (
-                        <div className="cell" data-cell={`${ci}-${ri}`} key={ri}><img src={SYMS[s]} alt="" /></div>
-                      ))}
-                    </div>
-                    <span className="reel-glass" />
+              <div className="rgrid">
+                {Array.from({ length: COLS }).map((_, ci) => (
+                  <div className="rcol" data-col={ci} key={ci}>
+                    <div className="rtrack" style={{ backgroundImage: `url(/slot/rolls/roll-${ci + 1}.png)` }} />
                   </div>
                 ))}
               </div>
@@ -752,6 +746,23 @@ function SlotStyle() {
 @keyframes sgcabgold{50%{filter:drop-shadow(0 0 24px rgba(255,180,60,.8)) drop-shadow(0 14px 28px rgba(0,0,0,.22))}}
 /* Reels fill the transparent window of frame-neon.png (measured insets, tucked ~0.6% under the neon) */
 .sg-root .reelframe{position:absolute;top:6.9%;left:6.7%;right:6.9%;bottom:15.8%;z-index:1;overflow:hidden;border-radius:14px}
+/* Sliced roll strips as reels. Each column shows one strip (top:0, size 100%×50% of a
+   200%-tall track that repeats) so a -50% roll loops seamlessly; per-column speeds keep
+   the five reels out of sync. The payline is a separate overlay (healed out of the art). */
+.sg-root .rgrid{position:absolute;inset:0;display:flex;height:100%}
+.sg-root .rcol{position:relative;flex:1;height:100%;overflow:hidden;border-radius:6px}
+.sg-root .rtrack{position:absolute;left:0;right:0;top:0;height:200%;background-repeat:repeat-y;background-size:100% 50%;background-position:top center;will-change:transform;transform:translateY(0)}
+.sg-root .rcol.spin .rtrack{animation:sgcolroll .4s linear infinite;filter:blur(1.6px) brightness(1.04)}
+@keyframes sgcolroll{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
+.sg-root .rcol.land .rtrack{animation:sgcolland .42s cubic-bezier(.18,1.5,.4,1)}
+@keyframes sgcolland{0%{transform:translateY(-9%)}55%{transform:translateY(2.2%)}100%{transform:translateY(0)}}
+.sg-root .rcol.hold{animation:sgholdpulse .5s ease-in-out infinite}
+.sg-root .rcol.spin:nth-child(1) .rtrack{animation-duration:.34s}
+.sg-root .rcol.spin:nth-child(2) .rtrack{animation-duration:.44s}
+.sg-root .rcol.spin:nth-child(3) .rtrack{animation-duration:.39s}
+.sg-root .rcol.spin:nth-child(4) .rtrack{animation-duration:.5s}
+.sg-root .rcol.spin:nth-child(5) .rtrack{animation-duration:.37s}
+@media (prefers-reduced-motion:reduce){.sg-root .rcol.spin .rtrack,.sg-root .rcol.land .rtrack{animation:none;filter:none}}
 .sg-root .grid{display:flex;gap:7px;height:100%}
 /* Each column is a brushed-steel cylinder: dark steel poles, bright specular centre */
 .sg-root .col{position:relative;flex:1;height:100%;border-radius:6px;overflow:hidden;perspective:640px;background:linear-gradient(180deg,#3c4048 0%,#565b64 7%,#868c96 20%,#c2c7ce 38%,#e8ebef 50%,#c2c7ce 62%,#868c96 80%,#565b64 93%,#3c4048 100%);box-shadow:inset 2px 0 3px rgba(255,255,255,.35),inset -2px 0 3px rgba(0,0,0,.4),0 1px 2px rgba(0,0,0,.3)}
