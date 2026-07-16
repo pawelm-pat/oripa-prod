@@ -91,14 +91,14 @@ const CATALOG: PackCat[] = [
     chase: { name: "Eternal Dragon", img: "/slot/chase-grand.png" } },
 ];
 
-/* Slot symbols — 8 ambient + the CARD hit symbol (index 8). */
+/* Slot symbols — gem/star set matching the concept + the CARD hit symbol (last). */
 const SYMS = [
-  "/slot/sym-bell.png", "/slot/sym-ruby.png", "/slot/sym-seven.png", "/slot/sym-clover.png",
-  "/slot/sym-coins.png", "/slot/sym-diamond.png", "/slot/sym-star.png", "/slot/sym-horseshoe.png",
+  "/slot/sym-diamond.png", "/slot/sym-ruby.png", "/slot/sym-star.png",
+  "/slot/sym-emerald.png", "/slot/sym-amber.png", "/slot/sym-bluestar.png",
   "/slot/sym-card.png",
 ];
-const CARD_SYM = 8;
-const COLS = 5, ROWS = 4, PAYROW = 1;
+const CARD_SYM = 6;
+const COLS = 5, ROWS = 3, PAYROW = 1;
 
 /* ── Slot engine ──────────────────────────────────────────────────────── */
 const V2 = {
@@ -132,7 +132,7 @@ function drawDemoCard(cat: PackCat): { name: string; img: string; demoRarity: De
   return { name: pick.name, img: pick.img, demoRarity: rarity };
 }
 
-const randAmb = () => Math.floor(Math.random() * 8);
+const randAmb = () => Math.floor(Math.random() * CARD_SYM);
 function newRestGrid(): number[][] {
   return Array.from({ length: COLS }, () => Array.from({ length: ROWS }, randAmb));
 }
@@ -624,10 +624,10 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
                       ))}
                     </div>
                     <span className="reel-glass" />
-                    <span className="payline" />
                   </div>
                 ))}
               </div>
+              <span className="payline" />
             </div>
           </div>
 
@@ -735,26 +735,33 @@ function SlotStyle() {
 .sg-root .bar-sub{font-size:10px;color:var(--dim);margin-top:6px}
 .sg-root .bar-sub b{color:var(--brand)}
 /* Bold rounded red cabinet with a glossy bevel and chrome outer ring */
-.sg-root .cab{position:relative;border-radius:26px;padding:11px;margin:12px 0;background:linear-gradient(180deg,#ff4a50 0%,#e2060b 42%,#a80206 100%);box-shadow:inset 0 2px 3px rgba(255,255,255,.55),inset 0 -3px 7px rgba(0,0,0,.4),0 0 0 2px #bcc1ca,0 0 0 6px #e9ecf0,0 0 26px 3px rgba(255,45,55,.5),0 14px 30px rgba(0,0,0,.20)}
+/* Bold red cabinet with silver outer bevel, glossy top and a glowing red inner neon */
+.sg-root .cab{position:relative;border-radius:28px;padding:13px;margin:12px 0;background:linear-gradient(180deg,#ff5157 0%,#e30a10 45%,#a60206 100%);box-shadow:0 0 0 3px #d7dbe1,0 0 0 5px #aeb4bd,inset 0 2px 3px rgba(255,255,255,.6),inset 0 -4px 8px rgba(0,0,0,.4),0 0 26px 3px rgba(255,45,55,.5),0 16px 32px rgba(0,0,0,.22)}
+.sg-root .cab::before{content:"";position:absolute;inset:6px;border-radius:22px;pointer-events:none;box-shadow:inset 0 0 0 2px rgba(255,110,115,.9),inset 0 0 12px rgba(255,60,70,.7);z-index:2}
 .sg-root .cab.winflash{animation:sgcabwin .6s ease-in-out 2}
-@keyframes sgcabwin{50%{box-shadow:0 0 0 2px #16a34a,0 0 0 6px #eef0f3,0 0 26px rgba(22,163,74,.55),0 14px 30px rgba(0,0,0,.20)}}
+@keyframes sgcabwin{50%{box-shadow:0 0 0 3px #d7dbe1,0 0 0 5px #aeb4bd,0 0 30px 4px rgba(22,163,74,.6),0 16px 32px rgba(0,0,0,.22)}}
 .sg-root .cab.goldflash{animation:sgcabgold .55s ease-in-out 3}
-@keyframes sgcabgold{50%{box-shadow:0 0 0 2px #ffd24a,0 0 0 6px #eef0f3,0 0 34px rgba(255,180,60,.6),0 14px 30px rgba(0,0,0,.20)}}
+@keyframes sgcabgold{50%{box-shadow:0 0 0 3px #d7dbe1,0 0 0 5px #aeb4bd,0 0 38px 5px rgba(255,180,60,.65),0 16px 32px rgba(0,0,0,.22)}}
 /* Polished chrome bezel holding the drums */
-.sg-root .reelframe{position:relative;border-radius:18px;padding:9px;background:linear-gradient(180deg,#f6f8fb 0%,#c4c9d1 10%,#f2f4f7 30%,#d7dbe1 52%,#f2f4f7 74%,#c4c9d1 92%,#f6f8fb 100%);box-shadow:inset 0 2px 3px rgba(255,255,255,.95),inset 0 -3px 6px rgba(0,0,0,.28),inset 0 0 0 1px rgba(0,0,0,.12),0 3px 8px rgba(0,0,0,.16)}
+.sg-root .reelframe{position:relative;border-radius:16px;padding:8px;background:linear-gradient(180deg,#f6f8fb 0%,#c4c9d1 10%,#f2f4f7 30%,#d7dbe1 52%,#f2f4f7 74%,#c4c9d1 92%,#f6f8fb 100%);box-shadow:inset 0 2px 3px rgba(255,255,255,.95),inset 0 -3px 6px rgba(0,0,0,.28),inset 0 0 0 1px rgba(0,0,0,.12),0 3px 8px rgba(0,0,0,.16)}
 .sg-root .grid{display:flex;gap:7px}
 /* Each column is a brushed-steel cylinder: dark steel poles, bright specular centre */
 .sg-root .col{position:relative;flex:1;border-radius:11px;overflow:hidden;perspective:640px;background:linear-gradient(180deg,#3c4048 0%,#565b64 7%,#868c96 20%,#c2c7ce 38%,#e8ebef 50%,#c2c7ce 62%,#868c96 80%,#565b64 93%,#3c4048 100%);box-shadow:inset 2px 0 3px rgba(255,255,255,.35),inset -2px 0 3px rgba(0,0,0,.4),0 1px 2px rgba(0,0,0,.3)}
 .sg-root .strip{display:flex;flex-direction:column;gap:3px;padding:3px;transform-style:preserve-3d;will-change:transform}
 .sg-root .cell{aspect-ratio:1;border-radius:8px;background:transparent;border:1.5px solid transparent;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;backface-visibility:hidden}
 .sg-root .cell img{width:88%;height:88%;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.55))}
-/* Curve the drum by tilting the poles away from the viewer */
-.sg-root .strip .cell:nth-child(1){transform:rotateX(34deg)}
-.sg-root .strip .cell:nth-child(2){transform:rotateX(11deg)}
-.sg-root .strip .cell:nth-child(3){transform:rotateX(-13deg)}
-.sg-root .strip .cell:nth-child(4){transform:rotateX(-36deg)}
+/* Curve the drum by tilting the poles away from the viewer (3 rows) */
+.sg-root .strip .cell:nth-child(1){transform:rotateX(30deg)}
+.sg-root .strip .cell:nth-child(2){transform:rotateX(0deg)}
+.sg-root .strip .cell:nth-child(3){transform:rotateX(-30deg)}
 /* Cylinder shading: strong dark poles, faint centre sheen (continuous drum) */
 .sg-root .reel-glass{position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:11px;background:linear-gradient(180deg,rgba(4,6,12,.6) 0%,rgba(4,6,12,0) 18%,rgba(255,255,255,.14) 49%,rgba(4,6,12,0) 82%,rgba(4,6,12,.6) 100%)}
+/* Continuous red laser payline across the whole deck */
+.sg-root .payline{position:absolute;left:7px;right:7px;top:50%;height:3px;transform:translateY(-50%);z-index:5;pointer-events:none;background:linear-gradient(90deg,rgba(255,40,50,0),rgba(255,40,50,.95) 12%,rgba(255,140,140,1) 50%,rgba(255,40,50,.95) 88%,rgba(255,40,50,0));box-shadow:0 0 10px 1px rgba(255,40,50,.85),0 0 22px 3px rgba(255,40,50,.5)}
+/* Red diamond markers on both sides of the deck at the payline */
+.sg-root .reelframe::before,.sg-root .reelframe::after{content:"";position:absolute;top:50%;width:12px;height:12px;transform:translateY(-50%) rotate(45deg);background:linear-gradient(135deg,#ff5157,#b00004);box-shadow:0 0 9px rgba(255,40,50,.7),inset 0 0 0 1px rgba(255,255,255,.5);z-index:7}
+.sg-root .reelframe::before{left:-4px}
+.sg-root .reelframe::after{right:-4px}
 /* Red payline through the judged row */
 .sg-root .payline{position:absolute;left:0;right:0;top:37.5%;height:2px;transform:translateY(-50%);z-index:4;pointer-events:none;background:linear-gradient(90deg,rgba(209,0,5,0),rgba(209,0,5,.8) 30%,rgba(209,0,5,.8) 70%,rgba(209,0,5,0));box-shadow:0 0 9px rgba(209,0,5,.6)}
 /* Red diamond markers on both sides of the deck at the payline */
