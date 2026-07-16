@@ -620,17 +620,13 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
 
           <div className="cab">
             <img className="frame-img" src="/slot/frame-neon.png" alt="" aria-hidden="true" />
-            {/* Each column is an evenly-spaced drum (equal cells): the top 3 cells are that
-                column's design lineup, extra cells give a clean roll. Two stacked copies so a
-                -50% roll loops seamlessly; per-column speeds keep the five reels independent. */}
+            {/* Each column is one sliced roll strip; it scrolls on its own speed while
+                spinning and stops staggered when you hit SPIN (driven by .spin/.hold/.land) */}
             <div className="reelframe">
               <div className="rgrid">
                 {Array.from({ length: COLS }).map((_, ci) => (
                   <div className="rcol" data-col={ci} key={ci}>
-                    <div className="rtrack2">
-                      <div className="band" style={{ backgroundImage: `url(/slot/rolls/band-${ci + 1}.png)` }} />
-                      <div className="band" style={{ backgroundImage: `url(/slot/rolls/band-${ci + 1}.png)` }} />
-                    </div>
+                    <div className="rtrack" style={{ backgroundImage: `url(/slot/rolls/roll-${ci + 1}.png)` }} />
                   </div>
                 ))}
               </div>
@@ -750,27 +746,23 @@ function SlotStyle() {
 @keyframes sgcabgold{50%{filter:drop-shadow(0 0 24px rgba(255,180,60,.8)) drop-shadow(0 14px 28px rgba(0,0,0,.22))}}
 /* Reels fill the transparent window of frame-neon.png (measured insets, tucked ~0.6% under the neon) */
 .sg-root .reelframe{position:absolute;top:6.9%;left:6.7%;right:6.9%;bottom:15.8%;z-index:1;overflow:hidden;border-radius:14px}
-/* Evenly-spaced reel drums. Each rcol holds a track of two identical 8-cell bands
-   (height 533.334% of the window → each cell = window/3, so 3 rows show). translateY 0
-   shows the top 3 cells (the design lineup); a -50% roll loops seamlessly. A glass
-   overlay darkens the poles for drum depth; per-column speeds keep reels independent. */
+/* Sliced roll strips as reels. Each column shows one strip (top:0, size 100%×50% of a
+   200%-tall track that repeats) so a -50% roll loops seamlessly; per-column speeds keep
+   the five reels out of sync. The payline is a separate overlay (healed out of the art). */
 .sg-root .rgrid{position:absolute;inset:0;display:flex;height:100%}
 .sg-root .rcol{position:relative;flex:1;height:100%;overflow:hidden;border-radius:6px}
-.sg-root .rcol::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:6px;background:linear-gradient(180deg,rgba(4,6,12,.5) 0%,rgba(4,6,12,0) 20%,rgba(255,255,255,.10) 50%,rgba(4,6,12,0) 80%,rgba(4,6,12,.5) 100%)}
-.sg-root .rtrack2{position:absolute;top:0;left:0;width:100%;height:533.334%;will-change:transform;transform:translateY(0)}
-.sg-root .band{width:100%;height:50%;background-repeat:no-repeat;background-position:center;background-size:100% 100%}
-.sg-root .rcol.spin .rtrack2{animation:sgband .5s linear infinite}
-.sg-root .rcol.spin .band{filter:blur(1.5px) brightness(1.03)}
-@keyframes sgband{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
-.sg-root .rcol.land .rtrack2{animation:sgbandland .42s cubic-bezier(.18,1.5,.4,1)}
-@keyframes sgbandland{0%{transform:translateY(-6%)}55%{transform:translateY(1.6%)}100%{transform:translateY(0)}}
+.sg-root .rtrack{position:absolute;left:0;right:0;top:0;height:200%;background-repeat:repeat-y;background-size:100% 50%;background-position:top center;will-change:transform;transform:translateY(0)}
+.sg-root .rcol.spin .rtrack{animation:sgcolroll .4s linear infinite;filter:blur(1.6px) brightness(1.04)}
+@keyframes sgcolroll{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
+.sg-root .rcol.land .rtrack{animation:sgcolland .42s cubic-bezier(.18,1.5,.4,1)}
+@keyframes sgcolland{0%{transform:translateY(-9%)}55%{transform:translateY(2.2%)}100%{transform:translateY(0)}}
 .sg-root .rcol.hold{animation:sgholdpulse .5s ease-in-out infinite}
-.sg-root .rcol.spin:nth-child(1) .rtrack2{animation-duration:.42s}
-.sg-root .rcol.spin:nth-child(2) .rtrack2{animation-duration:.54s}
-.sg-root .rcol.spin:nth-child(3) .rtrack2{animation-duration:.48s}
-.sg-root .rcol.spin:nth-child(4) .rtrack2{animation-duration:.6s}
-.sg-root .rcol.spin:nth-child(5) .rtrack2{animation-duration:.45s}
-@media (prefers-reduced-motion:reduce){.sg-root .rcol.spin .rtrack2,.sg-root .rcol.land .rtrack2{animation:none}.sg-root .rcol.spin .band{filter:none}}
+.sg-root .rcol.spin:nth-child(1) .rtrack{animation-duration:.34s}
+.sg-root .rcol.spin:nth-child(2) .rtrack{animation-duration:.44s}
+.sg-root .rcol.spin:nth-child(3) .rtrack{animation-duration:.39s}
+.sg-root .rcol.spin:nth-child(4) .rtrack{animation-duration:.5s}
+.sg-root .rcol.spin:nth-child(5) .rtrack{animation-duration:.37s}
+@media (prefers-reduced-motion:reduce){.sg-root .rcol.spin .rtrack,.sg-root .rcol.land .rtrack{animation:none;filter:none}}
 .sg-root .grid{display:flex;gap:7px;height:100%}
 /* Each column is a brushed-steel cylinder: dark steel poles, bright specular centre */
 .sg-root .col{position:relative;flex:1;height:100%;border-radius:6px;overflow:hidden;perspective:640px;background:linear-gradient(180deg,#3c4048 0%,#565b64 7%,#868c96 20%,#c2c7ce 38%,#e8ebef 50%,#c2c7ce 62%,#868c96 80%,#565b64 93%,#3c4048 100%);box-shadow:inset 2px 0 3px rgba(255,255,255,.35),inset -2px 0 3px rgba(0,0,0,.4),0 1px 2px rgba(0,0,0,.3)}
