@@ -404,9 +404,12 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
       const col = rootQ(`[data-col="${ci}"]`);
       if (!col) continue;
       col.classList.remove("land"); col.classList.add("spin");
+      // Each column cycles symbols at its own cadence so the five reels are visibly out
+      // of sync (never one moving block), and each cell rolls its own random item.
+      const swapMs = 48 + ci * 13;
       ivs[ci] = setInterval(() => {
         col.querySelectorAll<HTMLImageElement>(".cell img").forEach((img) => { img.src = SYMS[randAmb()]; });
-      }, 85);
+      }, swapMs);
     }
     const clearAll = () => ivs.forEach((iv) => iv && clearInterval(iv));
 
@@ -582,6 +585,7 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
   const pct = Math.round((spent / credits) * 100);
   const spinsLeft = Math.ceil(creditsLeftRef.current / spinCost);
   const shownWon = wonRef.current.length;
+  const grid = restGridRef.current!;
   const revCard = reveal?.cards[0];
 
   return (
@@ -614,19 +618,22 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
 
           <div className="cab">
             <img className="frame-img" src="/slot/frame-neon.png" alt="" aria-hidden="true" />
-            {/* Reels sliced from the design PNG into 5 columns so each spins/stops on its
-                own (driven by the existing per-column .spin/.hold/.land classes) */}
+            {/* Each column is an independent drum of symbol cells: its own spin speed and
+                staggered stop, landing on random symbols (cards only on a win) */}
             <div className="reelframe">
-              <div className="rgrid">
-                {Array.from({ length: COLS }).map((_, ci) => (
-                  <div className="rcol" data-col={ci} key={ci}>
-                    <div className="rtrack">
-                      <div className="rface" style={{ backgroundPositionX: `${(ci / (COLS - 1)) * 100}%` }} />
-                      <div className="rface" style={{ backgroundPositionX: `${(ci / (COLS - 1)) * 100}%` }} />
+              <div className="grid">
+                {grid.map((col, ci) => (
+                  <div className="col" data-col={ci} key={ci}>
+                    <div className="strip">
+                      {col.map((s, ri) => (
+                        <div className="cell" data-cell={`${ci}-${ri}`} key={ri}><img src={SYMS[s]} alt="" /></div>
+                      ))}
                     </div>
+                    <span className="reel-glass" />
                   </div>
                 ))}
               </div>
+              <span className="payline" />
             </div>
           </div>
 
@@ -742,20 +749,6 @@ function SlotStyle() {
 @keyframes sgcabgold{50%{filter:drop-shadow(0 0 24px rgba(255,180,60,.8)) drop-shadow(0 14px 28px rgba(0,0,0,.22))}}
 /* Reels fill the transparent window of frame-neon.png (measured insets, tucked ~0.6% under the neon) */
 .sg-root .reelframe{position:absolute;top:6.9%;left:6.7%;right:6.9%;bottom:15.8%;z-index:1;overflow:hidden;border-radius:14px}
-/* Reels sliced from the design PNG into 5 columns. Each column shows one fifth of the
-   image (background-size:500%) and holds two stacked faces so a -50% roll loops
-   seamlessly. Spins/stops are driven per-column by the .spin/.hold/.land classes. */
-.sg-root .rgrid{position:absolute;inset:0;display:flex;height:100%}
-.sg-root .rcol{position:relative;flex:1;height:100%;overflow:hidden}
-.sg-root .rtrack{position:absolute;left:0;right:0;top:0;height:200%;display:flex;flex-direction:column;will-change:transform}
-.sg-root .rface{flex:1;min-height:0;background-image:url(/slot/rolls-design.png);background-size:500% 100%;background-repeat:no-repeat}
-.sg-root .rcol.spin .rtrack{animation:sgcolroll .4s linear infinite}
-.sg-root .rcol.spin .rface{filter:blur(1.6px) brightness(1.03)}
-@keyframes sgcolroll{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
-.sg-root .rcol.land .rtrack{animation:sgcolland .36s cubic-bezier(.2,1.5,.4,1)}
-@keyframes sgcolland{0%{transform:translateY(-7%)}60%{transform:translateY(1.6%)}100%{transform:translateY(0)}}
-.sg-root .rcol.hold{animation:sgholdpulse .5s ease-in-out infinite}
-@media (prefers-reduced-motion:reduce){.sg-root .rcol.spin .rtrack,.sg-root .rcol.land .rtrack{animation:none}.sg-root .rcol.spin .rface{filter:none}}
 .sg-root .grid{display:flex;gap:7px;height:100%}
 /* Each column is a brushed-steel cylinder: dark steel poles, bright specular centre */
 .sg-root .col{position:relative;flex:1;height:100%;border-radius:6px;overflow:hidden;perspective:640px;background:linear-gradient(180deg,#3c4048 0%,#565b64 7%,#868c96 20%,#c2c7ce 38%,#e8ebef 50%,#c2c7ce 62%,#868c96 80%,#565b64 93%,#3c4048 100%);box-shadow:inset 2px 0 3px rgba(255,255,255,.35),inset -2px 0 3px rgba(0,0,0,.4),0 1px 2px rgba(0,0,0,.3)}
@@ -772,9 +765,20 @@ function SlotStyle() {
 .sg-root .payline{position:absolute;left:0;right:0;top:50%;height:3px;transform:translateY(-50%);z-index:5;pointer-events:none;background:linear-gradient(90deg,rgba(255,40,50,0),rgba(255,40,50,.95) 12%,rgba(255,140,140,1) 50%,rgba(255,40,50,.95) 88%,rgba(255,40,50,0));box-shadow:0 0 10px 1px rgba(255,40,50,.85),0 0 22px 3px rgba(255,40,50,.5)}
 /* Spinning: the whole drum rolls, symbols sweep with motion blur */
 .sg-root .col.spin .strip{animation:sgdrum .19s linear infinite}
-@keyframes sgdrum{0%{transform:translateY(-7%)}100%{transform:translateY(7%)}}
+@keyframes sgdrum{0%{transform:translateY(-11%)}100%{transform:translateY(11%)}}
 .sg-root .col.spin .cell img{animation:sgreelblur .07s linear infinite}
-@keyframes sgreelblur{0%{transform:translateY(-82%);filter:blur(1.9px) brightness(1.04)}100%{transform:translateY(82%);filter:blur(1.9px) brightness(1.04)}}
+@keyframes sgreelblur{0%{transform:translateY(-88%);filter:blur(2px) brightness(1.05)}100%{transform:translateY(88%);filter:blur(2px) brightness(1.05)}}
+/* Each of the five drums runs at its own speed so they spin independently, not as one block */
+.sg-root .col.spin:nth-child(1) .strip{animation-duration:.165s}
+.sg-root .col.spin:nth-child(2) .strip{animation-duration:.225s}
+.sg-root .col.spin:nth-child(3) .strip{animation-duration:.195s}
+.sg-root .col.spin:nth-child(4) .strip{animation-duration:.255s}
+.sg-root .col.spin:nth-child(5) .strip{animation-duration:.18s}
+.sg-root .col.spin:nth-child(1) .cell img{animation-duration:.055s}
+.sg-root .col.spin:nth-child(2) .cell img{animation-duration:.078s}
+.sg-root .col.spin:nth-child(3) .cell img{animation-duration:.066s}
+.sg-root .col.spin:nth-child(4) .cell img{animation-duration:.084s}
+.sg-root .col.spin:nth-child(5) .cell img{animation-duration:.06s}
 /* Landing bounce */
 .sg-root .col.land .strip{animation:sgstripland .34s cubic-bezier(.2,1.4,.4,1)}
 @keyframes sgstripland{from{transform:translateY(-7%)}}
