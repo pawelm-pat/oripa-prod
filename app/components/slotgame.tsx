@@ -582,7 +582,6 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
   const pct = Math.round((spent / credits) * 100);
   const spinsLeft = Math.ceil(creditsLeftRef.current / spinCost);
   const shownWon = wonRef.current.length;
-  const grid = restGridRef.current!;
   const revCard = reveal?.cards[0];
 
   return (
@@ -615,20 +614,12 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
 
           <div className="cab">
             <img className="frame-img" src="/slot/frame-neon.png" alt="" aria-hidden="true" />
-            <div className="reelframe">
-              <div className="grid">
-                {grid.map((col, ci) => (
-                  <div className="col" data-col={ci} key={ci}>
-                    <div className="strip">
-                      {col.map((s, ri) => (
-                        <div className="cell" data-cell={`${ci}-${ri}`} key={ri}><img src={SYMS[s]} alt="" /></div>
-                      ))}
-                    </div>
-                    <span className="reel-glass" />
-                  </div>
-                ))}
+            {/* Reels = the design PNG (payline baked in); it rolls with blur while spinning */}
+            <div className={`reelframe${spinning ? " rolling" : ""}`}>
+              <div className="rolls-track">
+                <div className="rolls-face" />
+                <div className="rolls-face" />
               </div>
-              <span className="payline" />
             </div>
           </div>
 
@@ -744,6 +735,13 @@ function SlotStyle() {
 @keyframes sgcabgold{50%{filter:drop-shadow(0 0 24px rgba(255,180,60,.8)) drop-shadow(0 14px 28px rgba(0,0,0,.22))}}
 /* Reels fill the transparent window of frame-neon.png (measured insets, tucked ~0.6% under the neon) */
 .sg-root .reelframe{position:absolute;top:6.9%;left:6.7%;right:6.9%;bottom:15.8%;z-index:1;overflow:hidden;border-radius:14px}
+/* Reels rendered from the design PNG. Two stacked faces so a -50% roll loops seamlessly */
+.sg-root .rolls-track{position:absolute;left:0;right:0;top:0;height:200%;display:flex;flex-direction:column;will-change:transform}
+.sg-root .rolls-face{flex:1;min-height:0;background:url(/slot/rolls-design.png) center/100% 100% no-repeat}
+.sg-root .reelframe.rolling .rolls-track{animation:sgrolldesign .45s linear infinite}
+@keyframes sgrolldesign{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
+.sg-root .reelframe.rolling .rolls-face{filter:blur(1.4px) brightness(1.03)}
+@media (prefers-reduced-motion:reduce){.sg-root .reelframe.rolling .rolls-track{animation:none}.sg-root .reelframe.rolling .rolls-face{filter:none}}
 .sg-root .grid{display:flex;gap:7px;height:100%}
 /* Each column is a brushed-steel cylinder: dark steel poles, bright specular centre */
 .sg-root .col{position:relative;flex:1;height:100%;border-radius:6px;overflow:hidden;perspective:640px;background:linear-gradient(180deg,#3c4048 0%,#565b64 7%,#868c96 20%,#c2c7ce 38%,#e8ebef 50%,#c2c7ce 62%,#868c96 80%,#565b64 93%,#3c4048 100%);box-shadow:inset 2px 0 3px rgba(255,255,255,.35),inset -2px 0 3px rgba(0,0,0,.4),0 1px 2px rgba(0,0,0,.3)}
