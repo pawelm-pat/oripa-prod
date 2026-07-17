@@ -205,6 +205,8 @@ const STR = {
     selectHint: "Select cards to exchange for coins, or request shipping (min 1,500 coins).",
     selectHintSingle: "Exchange this card for coins, or request shipping (min 1,500 coins).",
     tapToSelect: "Tap cards to select",
+    itemSelected: "Selected",
+    itemSelect: "Select",
     exchanged: (n: number, c: number) => `Exchanged ${n} card${n > 1 ? "s" : ""} for ${c.toLocaleString()} coins`,
     shipRequested: "Shipping requested",
     shortfall: (n: number) => `Select ${n.toLocaleString()} more coins to request shipping`,
@@ -250,6 +252,8 @@ const STR = {
     selectHint: "カードを選んでコインに交換、または発送を申請（最低1,500コイン）。",
     selectHintSingle: "このカードをコインに交換、または発送を申請（最低1,500コイン）。",
     tapToSelect: "カードをタップして選択",
+    itemSelected: "選択中",
+    itemSelect: "選択",
     exchanged: (n: number, c: number) => `${n}枚を${c.toLocaleString()}コインに交換しました`,
     shipRequested: "発送を申請しました",
     shortfall: (n: number) => `発送申請にはあと${n.toLocaleString()}コイン必要です`,
@@ -576,19 +580,32 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
           ) : (
             <>
               {picked.size === 0 && <p className="mb-2 text-[11px] font-semibold" style={{ color: MUTED }}>{L.tapToSelect}</p>}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-3">
                 {won.map((c) => {
                   const isSel = picked.has(c.id);
+                  const rc = c.demoRarity === "CHASE" ? BRAND : c.demoRarity === "RARE" ? SHIP : MUTED;
                   return (
-                    <button key={c.id} onClick={() => togglePick(c.id)} className="flex flex-col items-center text-center active:scale-[0.98]">
-                      <div className="relative w-full">
-                        <img src={c.img} alt="" className="w-full rounded-lg object-cover transition" style={{ aspectRatio: "5/7", boxShadow: isSel ? `0 0 0 3px ${BRAND}, 0 2px 10px rgba(209,0,5,0.35)` : "0 2px 8px rgba(0,0,0,0.18)", opacity: isSel ? 1 : 0.96 }} />
-                        <span className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 text-white transition" style={{ background: isSel ? BRAND : "rgba(0,0,0,0.25)", borderColor: isSel ? "#fff" : "rgba(255,255,255,0.85)" }}>
-                          {isSel && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7" /></svg>}
-                        </span>
+                    <button
+                      key={c.id}
+                      onClick={() => togglePick(c.id)}
+                      className="flex w-full gap-3 rounded-2xl bg-white p-2.5 text-left shadow-[0_1px_4px_rgba(0,0,0,0.08)] transition active:scale-[0.995]"
+                      style={{ border: isSel ? "2.5px solid #FF7A1A" : "1.5px solid rgba(0,0,0,0.08)" }}
+                    >
+                      <img src={c.img} alt="" className="shrink-0 rounded-lg object-cover" style={{ width: 82, aspectRatio: "5/7", boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }} />
+                      <div className="flex min-w-0 flex-1 flex-col">
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="text-[11px] font-extrabold uppercase tracking-wider" style={{ color: rc }}>{L.rarity[c.rarity]}</span>
+                          <span className="flex shrink-0 items-center gap-1 text-[11px] font-bold" style={{ color: isSel ? "#FF7A1A" : MUTED }}>
+                            {isSel ? L.itemSelected : L.itemSelect}
+                            <svg width="15" height="15" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill={isSel ? "#FF7A1A" : "#c9ced6"} /><path d="M6 10l3 3 5-5" stroke="white" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
+                          </span>
+                        </div>
+                        <p className="mt-1.5 text-[14px] font-bold leading-tight text-[#1d2129]">{lang === "ja" ? c.nameJa : c.name}</p>
+                        <div className="mt-auto flex items-center justify-center gap-1.5 rounded-xl border border-black/10 bg-white pb-2 pt-2" style={{ marginTop: 8 }}>
+                          <span className="inline-block h-[18px] w-[18px] rounded-full" style={{ background: "radial-gradient(circle at 35% 30%, #ffe9a8, #f5a623 60%, #e08600)" }} />
+                          <span className="text-[18px] font-bold text-[#1d2129]">{coinOf(c.rarity).toLocaleString()}</span>
+                        </div>
                       </div>
-                      <p className="mt-1.5 line-clamp-1 w-full text-[10px] font-bold leading-tight text-[#1d2129]">{lang === "ja" ? c.nameJa : c.name}</p>
-                      <p className="text-[8.5px] font-extrabold uppercase tracking-wider" style={{ color: c.demoRarity === "CHASE" ? BRAND : c.demoRarity === "RARE" ? SHIP : MUTED }}>{L.rarity[c.rarity]} · {coinOf(c.rarity).toLocaleString()}</p>
                     </button>
                   );
                 })}
@@ -818,7 +835,6 @@ function SlotStyle() {
 .sg-root .rcol.spin:nth-child(4) .rtrack{animation-duration:.5s}
 .sg-root .rcol.spin:nth-child(5) .rtrack{animation-duration:.37s}
 @media (prefers-reduced-motion:reduce){.sg-root .rcol.spin .rtrack,.sg-root .rcol.land .rtrack{animation:none;filter:none}}
-.sg-root .grid{display:flex;gap:7px;height:100%}
 /* Each column is a brushed-steel cylinder: dark steel poles, bright specular centre */
 .sg-root .col{position:relative;flex:1;height:100%;border-radius:6px;overflow:hidden;perspective:640px;background:linear-gradient(180deg,#3c4048 0%,#565b64 7%,#868c96 20%,#c2c7ce 38%,#e8ebef 50%,#c2c7ce 62%,#868c96 80%,#565b64 93%,#3c4048 100%);box-shadow:inset 2px 0 3px rgba(255,255,255,.35),inset -2px 0 3px rgba(0,0,0,.4),0 1px 2px rgba(0,0,0,.3)}
 .sg-root .strip{display:flex;flex-direction:column;gap:3px;padding:3px;height:100%;transform-style:preserve-3d;will-change:transform}
