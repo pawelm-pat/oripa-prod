@@ -184,6 +184,11 @@ const STR = {
     bankIt: "Bank it →",
     bankThem: "Bank them →",
     takeStack: "Take your stack ✓",
+    addToLoot: "Add to My Loot →",
+    addThemToLoot: "Add them to My Loot →",
+    exchangeFreeSpin: "Exchange for a free spin ⟳",
+    freeSpinRound: "FREE SPIN ROUND",
+    freeSpinSub: "On the house — this spin won't use any of your spins",
     bigWin: "💥 BIG WIN 💥",
     cardsInSpin: (n: number) => `${n} cards in one spin`,
     chaseIncluded: "★ chase included ★",
@@ -223,6 +228,11 @@ const STR = {
     bankIt: "獲得する →",
     bankThem: "まとめて獲得 →",
     takeStack: "ストックを受け取る ✓",
+    addToLoot: "My Lootに追加 →",
+    addThemToLoot: "まとめてMy Lootに追加 →",
+    exchangeFreeSpin: "フリースピンに交換 ⟳",
+    freeSpinRound: "フリースピンラウンド",
+    freeSpinSub: "サービススピン — 回数を消費しません",
     bigWin: "💥 大当たり 💥",
     cardsInSpin: (n: number) => `1スピンで${n}枚`,
     chaseIncluded: "★ チェイス含む ★",
@@ -274,6 +284,7 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
   const [stackOpen, setStackOpen] = useState(false);
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const [toast, setToast] = useState<string | null>(null);
+  const [freeBanner, setFreeBanner] = useState(false);
 
   const at = (ms: number, fn: () => void) => { const t = setTimeout(fn, ms); timersRef.current.push(t); return t; };
   useEffect(() => {
@@ -355,14 +366,16 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
     }
   }
 
-  function doSpin() {
-    if (spinningRef.current || creditsLeftRef.current <= 0) return;
+  function doSpin(free = false) {
+    if (spinningRef.current) return;
+    if (!free && creditsLeftRef.current <= 0) return;
     const winN = decideSpin(creditsLeftRef.current, spinCost, wonRef.current.length, dryStreakRef.current);
     const hit = winN > 0, isBig = winN > 1;
     const cards = Array.from({ length: winN }, () => makeCard());
 
     spinIndexRef.current += 1;
-    creditsLeftRef.current -= spinCost;
+    // Free spins are on the house — they never consume a paid spin/credit.
+    if (!free) creditsLeftRef.current -= spinCost;
     if (hit) { wonRef.current = [...wonRef.current, ...cards]; dryStreakRef.current = 0; }
     else dryStreakRef.current += 1;
     const sessionOver = creditsLeftRef.current <= 0;
@@ -399,7 +412,7 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
     setSpin(true);
     const token = ++tokenRef.current;
     const live = () => tokenRef.current === token && rootRef.current;
-    setStatusDom("", "");
+    setStatusDom(free ? L.freeSpinRound : "", free ? "hint-win" : "");
     updateBarDom(preWon);
 
     const ivs: (ReturnType<typeof setInterval> | null)[] = [];
@@ -484,6 +497,20 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
     const fn = afterRevealRef.current;
     afterRevealRef.current = () => {};
     fn();
+  }
+
+  // Trade the just-won card(s) for a bonus spin. The card is given up (never
+  // banked), we flash a "Free spin round" banner, then auto-spin a free spin
+  // that doesn't cost a paid spin. The reel lock is held through the banner so
+  // no manual spin can sneak in.
+  function exchangeForFreeSpin() {
+    const ids = new Set((reveal?.cards ?? []).map((c) => c.id));
+    wonRef.current = wonRef.current.filter((c) => !ids.has(c.id));
+    afterRevealRef.current = () => {};
+    setReveal(null);
+    tick();
+    setFreeBanner(true);
+    at(1250, () => { setFreeBanner(false); setSpin(false); doSpin(true); });
   }
 
   /* ── Summary helpers (exchange / ship) ── */
@@ -635,7 +662,7 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
           </div>
 
           <div className="status">{spinIndexRef.current === 0 ? L.winsDrop : ""}</div>
-          <button className="spin-btn" onClick={doSpin} disabled={spinning || creditsLeftRef.current <= 0}>{L.spin(spinCost)}</button>
+          <button className="spin-btn" onClick={() => doSpin()} disabled={spinning || creditsLeftRef.current <= 0}>{L.spin(spinCost)}</button>
           <div className="aux">
             <button onClick={() => { if (!spinningRef.current) onClose(); }}>{L.exit}</button>
             <button onClick={() => { if (!spinningRef.current) setQuick((q) => !q); }} style={{ color: quick ? BRAND : undefined }}>{L.quickSpin(quick)}</button>
@@ -657,7 +684,10 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
             <div className="big-card"><img src={revCard.img} alt="" /></div>
             <div className="r-name">{revCard.name}</div>
             <div className="r-rar">{revCard.demoRarity}</div>
-            <button onClick={dismissReveal}>{reveal.done ? L.takeStack : L.bankIt}</button>
+            <div className="rev-cta">
+              <button className="cta-loot" onClick={dismissReveal}>{reveal.done ? L.takeStack : L.addToLoot}</button>
+              <button className="cta-free" onClick={exchangeForFreeSpin}>{L.exchangeFreeSpin}</button>
+            </div>
           </div>
         </div>
       )}
@@ -676,7 +706,20 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
                 </div>
               ))}
             </div>
-            <button onClick={dismissReveal}>{reveal.done ? L.takeStack : L.bankThem}</button>
+            <div className="rev-cta">
+              <button className="cta-loot" onClick={dismissReveal}>{reveal.done ? L.takeStack : L.addThemToLoot}</button>
+              <button className="cta-free" onClick={exchangeForFreeSpin}>{L.exchangeFreeSpin}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Free-spin round banner — shows briefly, then the bonus spin auto-starts */}
+      {freeBanner && (
+        <div className="ovl free-ovl">
+          <div className="free-banner">
+            <div className="fb-badge">{L.freeSpinRound}</div>
+            <div className="fb-sub">{L.freeSpinSub}</div>
           </div>
         </div>
       )}
@@ -836,6 +879,17 @@ function SlotStyle() {
 .sg-root .rev .r-name{font-size:17px;font-weight:800;color:var(--text)}
 .sg-root .rev .r-rar{font-size:10.5px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;margin-top:4px}
 .sg-root .rev button{margin-top:16px;width:100%;border:none;border-radius:12px;padding:13px;font-weight:800;cursor:pointer;background:var(--brand);color:#fff;font-size:14px;box-shadow:0 4px 14px rgba(209,0,5,.28)}
+.sg-root .rev-cta{display:flex;flex-direction:column;gap:9px;margin-top:16px}
+.sg-root .rev-cta button{margin-top:0}
+.sg-root .rev-cta .cta-loot{background:var(--brand);color:#fff}
+.sg-root .rev-cta .cta-free{background:#fff;color:var(--brand);border:2px solid var(--brand);box-shadow:none;padding:11px}
+.sg-root .rev-cta .cta-free:active{background:#fff5f5}
+.sg-root .free-ovl{background:rgba(29,33,41,.42);z-index:45}
+.sg-root .free-banner{text-align:center;animation:sgfreein .5s cubic-bezier(.2,1.5,.4,1) both}
+.sg-root .fb-badge{display:inline-block;background:linear-gradient(135deg,#ff3b4e,#B40206);color:#fff;font-weight:900;font-size:26px;letter-spacing:.05em;padding:16px 30px;border-radius:18px;border:2px solid rgba(255,255,255,.92);box-shadow:0 12px 34px rgba(209,0,5,.5);text-shadow:0 2px 8px rgba(120,0,10,.45);animation:sgfreepulse 1.1s ease-in-out infinite}
+.sg-root .fb-sub{margin:14px auto 0;max-width:280px;color:#fff;font-size:12.5px;font-weight:700;line-height:1.4;text-shadow:0 1px 6px rgba(0,0,0,.55)}
+@keyframes sgfreein{from{transform:scale(.6) translateY(12px);opacity:0}}
+@keyframes sgfreepulse{50%{transform:scale(1.05)}}
 .sg-root .r-COMMON .r-rar{color:var(--muted)} .sg-root .r-RARE .r-rar{color:var(--ship)} .sg-root .r-CHASE .r-rar{color:var(--brand)}
 .sg-root .r-RARE .big-card{box-shadow:0 0 28px rgba(245,103,10,.35)}
 .sg-root .r-CHASE .big-card{box-shadow:0 0 36px rgba(209,0,5,.4)}
