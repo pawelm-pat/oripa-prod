@@ -203,6 +203,7 @@ const STR = {
     reset: "Reset",
     coinsUnit: "coins",
     selectHint: "Select cards to exchange for coins, or request shipping (min 1,500 coins).",
+    selectHintSingle: "Exchange this card for coins, or request shipping (min 1,500 coins).",
     tapToSelect: "Tap cards to select",
     exchanged: (n: number, c: number) => `Exchanged ${n} card${n > 1 ? "s" : ""} for ${c.toLocaleString()} coins`,
     shipRequested: "Shipping requested",
@@ -247,6 +248,7 @@ const STR = {
     reset: "リセット",
     coinsUnit: "コイン",
     selectHint: "カードを選んでコインに交換、または発送を申請（最低1,500コイン）。",
+    selectHintSingle: "このカードをコインに交換、または発送を申請（最低1,500コイン）。",
     tapToSelect: "カードをタップして選択",
     exchanged: (n: number, c: number) => `${n}枚を${c.toLocaleString()}コインに交換しました`,
     shipRequested: "発送を申請しました",
@@ -516,14 +518,18 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
   /* ── Summary helpers (exchange / ship) ── */
   const coinOf = (r: Rarity) => RARITY_META[r].coin;
   const won = wonRef.current;
-  const pickedCards = won.filter((c) => picked.has(c.id));
+  // A lone card is auto-selected so the Exchange / Request shipping CTAs are
+  // available immediately — tap-to-select only applies when 2+ cards are won.
+  const singleCard = won.length === 1;
+  const sel = singleCard ? new Set<number>(won.map((c) => c.id)) : picked;
+  const pickedCards = won.filter((c) => sel.has(c.id));
   const pickedTotal = pickedCards.reduce((s, c) => s + coinOf(c.rarity), 0);
   const canShip = pickedTotal >= SHIP_MIN_COINS;
   const togglePick = (id: number) => setPicked((p) => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const showToast = (msg: string) => { setToast(msg); at(2200, () => setToast(null)); };
   const doExchange = () => {
-    if (picked.size === 0) return;
-    const ids = new Set(picked);
+    if (sel.size === 0) return;
+    const ids = new Set(sel);
     const n = ids.size, total = pickedTotal;
     onExchange?.(total);
     wonRef.current = won.filter((c) => !ids.has(c.id));
@@ -532,8 +538,8 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
     tick();
   };
   const doShip = () => {
-    if (picked.size === 0 || !canShip) return;
-    const ids = new Set(picked);
+    if (sel.size === 0 || !canShip) return;
+    const ids = new Set(sel);
     wonRef.current = won.filter((c) => !ids.has(c.id));
     setPicked(new Set());
     showToast(L.shipRequested);
@@ -561,18 +567,24 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
         <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4">
           {won.length === 0 ? (
             <p className="mt-10 text-center text-[13px]" style={{ color: MUTED }}>{L.noCards}</p>
+          ) : singleCard ? (
+            <div className="flex flex-col items-center pt-2">
+              <img src={won[0].img} alt="" className="w-[168px] rounded-xl object-cover" style={{ aspectRatio: "5/7", boxShadow: "0 10px 26px rgba(0,0,0,0.22)" }} />
+              <p className="mt-3 text-center text-[15px] font-extrabold leading-tight text-[#1d2129]">{lang === "ja" ? won[0].nameJa : won[0].name}</p>
+              <p className="mt-1 text-[10.5px] font-extrabold uppercase tracking-wider" style={{ color: won[0].demoRarity === "CHASE" ? BRAND : won[0].demoRarity === "RARE" ? SHIP : MUTED }}>{L.rarity[won[0].rarity]} · {coinOf(won[0].rarity).toLocaleString()} {L.coinsUnit}</p>
+            </div>
           ) : (
             <>
               {picked.size === 0 && <p className="mb-2 text-[11px] font-semibold" style={{ color: MUTED }}>{L.tapToSelect}</p>}
               <div className="grid grid-cols-3 gap-3">
                 {won.map((c) => {
-                  const sel = picked.has(c.id);
+                  const isSel = picked.has(c.id);
                   return (
                     <button key={c.id} onClick={() => togglePick(c.id)} className="flex flex-col items-center text-center active:scale-[0.98]">
                       <div className="relative w-full">
-                        <img src={c.img} alt="" className="w-full rounded-lg object-cover transition" style={{ aspectRatio: "5/7", boxShadow: sel ? `0 0 0 3px ${BRAND}, 0 2px 10px rgba(209,0,5,0.35)` : "0 2px 8px rgba(0,0,0,0.18)", opacity: sel ? 1 : 0.96 }} />
-                        <span className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 text-white transition" style={{ background: sel ? BRAND : "rgba(0,0,0,0.25)", borderColor: sel ? "#fff" : "rgba(255,255,255,0.85)" }}>
-                          {sel && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7" /></svg>}
+                        <img src={c.img} alt="" className="w-full rounded-lg object-cover transition" style={{ aspectRatio: "5/7", boxShadow: isSel ? `0 0 0 3px ${BRAND}, 0 2px 10px rgba(209,0,5,0.35)` : "0 2px 8px rgba(0,0,0,0.18)", opacity: isSel ? 1 : 0.96 }} />
+                        <span className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 text-white transition" style={{ background: isSel ? BRAND : "rgba(0,0,0,0.25)", borderColor: isSel ? "#fff" : "rgba(255,255,255,0.85)" }}>
+                          {isSel && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7" /></svg>}
                         </span>
                       </div>
                       <p className="mt-1.5 line-clamp-1 w-full text-[10px] font-bold leading-tight text-[#1d2129]">{lang === "ja" ? c.nameJa : c.name}</p>
@@ -585,23 +597,23 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
           )}
         </div>
 
-        {won.length > 0 && picked.size > 0 && (
+        {won.length > 0 && sel.size > 0 && (
           <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
             <div className="mb-2 flex items-center justify-between text-[11px] font-semibold">
-              <span style={{ color: MUTED }}>{picked.size} · {pickedTotal.toLocaleString()} {L.coinsUnit}</span>
-              <button onClick={() => setPicked(new Set())} className="underline" style={{ color: MUTED }}>{L.reset}</button>
+              <span style={{ color: MUTED }}>{sel.size} · {pickedTotal.toLocaleString()} {L.coinsUnit}</span>
+              {!singleCard && <button onClick={() => setPicked(new Set())} className="underline" style={{ color: MUTED }}>{L.reset}</button>}
             </div>
             <div className="grid grid-cols-2 gap-2">
               <button onClick={() => { if (!canShip) { showToast(L.shortfall(SHIP_MIN_COINS - pickedTotal)); return; } doShip(); }} className="rounded-xl border-2 py-2 text-[12.5px] font-bold leading-tight transition" style={{ borderColor: SHIP, color: SHIP, background: "#fff", opacity: canShip ? 1 : 0.6 }}>
-                {L.requestShip} · {picked.size}
+                ← {L.requestShip} · {sel.size}
                 <span className="mt-0.5 block text-[10px] font-semibold opacity-80">{pickedTotal.toLocaleString()} {L.coinsUnit}</span>
               </button>
               <button onClick={doExchange} className="rounded-xl py-2 text-[12.5px] font-bold leading-tight text-white transition" style={{ background: "linear-gradient(180deg,#ff5a5f,#c8061a)" }}>
-                {L.exchange} · {picked.size}
+                {L.exchange} · {sel.size} →
                 <span className="mt-0.5 block text-[10px] font-semibold opacity-90">{pickedTotal.toLocaleString()} {L.coinsUnit}</span>
               </button>
             </div>
-            <p className="mt-1.5 text-center text-[10.5px] leading-tight" style={{ color: MUTED }}>{L.selectHint}</p>
+            <p className="mt-1.5 text-center text-[10.5px] leading-tight" style={{ color: MUTED }}>{singleCard ? L.selectHintSingle : L.selectHint}</p>
           </div>
         )}
         {toast && <div className="pointer-events-none absolute bottom-24 left-1/2 z-[85] -translate-x-1/2 rounded-full px-4 py-2 text-[12px] font-bold text-white shadow-[0_6px_20px_rgba(0,0,0,0.4)]" style={{ background: INK }}>{toast}</div>}
