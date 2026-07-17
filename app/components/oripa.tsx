@@ -2524,7 +2524,8 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
   // (top UR tier) and hides the Won/Waiting/Shipped tabs.
   const screenTitle = lootMode ? STR[lang].mmItems : STR[lang].prizeHistory;
   // "Best cards" = only the top tier (UR).
-  const bestOnly = <T extends { rarity: Rarity }>(arr: T[]) => (lootMode ? arr.filter((p) => p.rarity === "UR") : arr);
+  // My Loot starts empty (nothing won yet); the Prize History screen keeps its seed data.
+  const bestOnly = <T extends { rarity: Rarity }>(arr: T[]) => (lootMode ? [] : arr);
   const t = STR[lang];
 
   const [tab, setTab] = useState<PrizeTab>("won");
