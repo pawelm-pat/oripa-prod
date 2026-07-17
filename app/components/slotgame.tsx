@@ -735,10 +735,7 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
                 </div>
               ))}
             </div>
-            <div className="rev-cta">
-              <button className="cta-loot" onClick={dismissReveal}>{reveal.done ? L.takeStack : L.addThemToLoot}</button>
-              <button className="cta-free" onClick={exchangeForFreeSpin}>{L.exchangeFreeSpin}</button>
-            </div>
+            <button onClick={dismissReveal}>{reveal.done ? L.takeStack : L.addThemToLoot}</button>
           </div>
         </div>
       )}
