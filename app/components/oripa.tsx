@@ -5483,7 +5483,9 @@ export function PhoneApp({ lang, noHistory, onScreenChange, slotVersion = 1 }: {
     // quest tab remains inert.
   };
   const onLanding = screen === "landing" || screen === "signup" || screen === "login";
-  const showNav = !onLanding;
+  // The slot game is a full-screen takeover — hide the bottom nav so it doesn't
+  // overlap the summary CTAs.
+  const showNav = !onLanding && !slotReq;
   return (
     <NotifNavContext.Provider value={onLanding ? () => {} : openNotifications}>
     <CoinHistoryNavContext.Provider value={onLanding ? () => {} : openCoinHistory}>
