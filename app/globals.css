@@ -87,3 +87,23 @@ a {
 .animate-slide-in-left {
   animation: slideInLeft 0.28s ease both;
 }
+
+/* Gentle attention pulse for buyable packs (swimlane + shop) */
+@keyframes packPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+.animate-pack-pulse {
+  animation: packPulse 1.9s ease-in-out infinite;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-pack-pulse {
+    animation: none;
+  }
+}

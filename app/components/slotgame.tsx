@@ -170,7 +170,7 @@ const STR = {
     toPayout: "% to payout",
     stacked: "cards stacked — the bar tracks credits spent, at 100% the stack is yours",
     winsDrop: "Wins drop a card into your stack — BIG WINS drop a pile",
-    spin: (cost: number) => `SPIN · ${cost} cr`,
+    spin: (n: number, total: number) => `SPIN · ${n} of ${total}`,
     exit: "← Exit",
     quickSpin: (on: boolean) => `⚡ Quick spin ${on ? "on" : "off"}`,
     fastForward: "Fast-forward ⏩",
@@ -217,7 +217,7 @@ const STR = {
     toPayout: "% 達成まで",
     stacked: "枚ストック — バーは消費クレジット、100%でストックがあなたのものに",
     winsDrop: "当たりでカードがストックに、大当たりでまとめてゲット",
-    spin: (cost: number) => `スピン · ${cost}cr`,
+    spin: (n: number, total: number) => `スピン · ${n} / ${total}`,
     exit: "← 退出",
     quickSpin: (on: boolean) => `⚡ クイックスピン ${on ? "オン" : "オフ"}`,
     fastForward: "早送り ⏩",
@@ -291,6 +291,8 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const [toast, setToast] = useState<string | null>(null);
   const [freeBanner, setFreeBanner] = useState(false);
+  // Gates the SPIN CTA until the cabinet's intro reel-roll settles.
+  const [ready, setReady] = useState(reduceMotion());
 
   const at = (ms: number, fn: () => void) => { const t = setTimeout(fn, ms); timersRef.current.push(t); return t; };
   useEffect(() => {
@@ -314,6 +316,38 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
     set(".stack b", String(shownWon));
     set(".cnt-n", String(shownWon));
   };
+
+  // When the cabinet first appears (intro → play), bounce it in and roll the
+  // reels once so the board feels alive; the SPIN CTA unlocks only once the
+  // reels settle, so the first tap always lands on a live machine.
+  useEffect(() => {
+    if (phase !== "play") return;
+    if (reduceMotion()) { setReady(true); return; }
+    setReady(false);
+    const token = ++tokenRef.current;
+    const live = () => tokenRef.current === token && rootRef.current;
+    const cab = rootQ(".cab");
+    if (cab) { cab.classList.remove("cab-in"); void cab.offsetWidth; cab.classList.add("cab-in"); }
+    const ts: ReturnType<typeof setTimeout>[] = [];
+    const cols: (HTMLElement | null)[] = [];
+    for (let ci = 0; ci < COLS; ci++) {
+      const col = rootQ(`[data-col="${ci}"]`);
+      cols[ci] = col;
+      if (col) { col.classList.remove("land"); col.classList.add("spin"); }
+    }
+    const stops = [520, 660, 800, 940, 1080];
+    for (let ci = 0; ci < COLS; ci++) {
+      ts.push(setTimeout(() => {
+        if (!live()) return;
+        const col = cols[ci]; if (!col) return;
+        col.classList.remove("spin"); col.classList.add("land");
+      }, stops[ci]));
+    }
+    ts.push(setTimeout(() => cab?.classList.remove("cab-in"), 650));
+    ts.push(setTimeout(() => { if (live()) setReady(true); }, stops[COLS - 1] + 300));
+    return () => ts.forEach(clearTimeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
 
   function makeCard(): WonCard {
     const d = drawDemoCard(cat);
@@ -643,6 +677,8 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
   const spent = credits - creditsLeftRef.current;
   const pct = Math.round((spent / credits) * 100);
   const spinsLeft = Math.ceil(creditsLeftRef.current / spinCost);
+  const totalSpins = Math.max(1, Math.ceil(credits / spinCost));
+  const spinNo = Math.min(totalSpins - spinsLeft + 1, totalSpins);
   const shownWon = wonRef.current.length;
   const revCard = reveal?.cards[0];
 
@@ -691,7 +727,7 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
           </div>
 
           <div className="status">{spinIndexRef.current === 0 ? L.winsDrop : ""}</div>
-          <button className="spin-btn" onClick={() => doSpin()} disabled={spinning || creditsLeftRef.current <= 0}>{L.spin(spinCost)}</button>
+          <button className="spin-btn" onClick={() => doSpin()} disabled={spinning || !ready || creditsLeftRef.current <= 0}>{L.spin(spinNo, totalSpins)}</button>
           <div className="aux">
             <button onClick={() => { if (!spinningRef.current) onClose(); }}>{L.exit}</button>
             <button onClick={() => { if (!spinningRef.current) setQuick((q) => !q); }} style={{ color: quick ? BRAND : undefined }}>{L.quickSpin(quick)}</button>
@@ -813,6 +849,8 @@ function SlotStyle() {
 @keyframes sgcabwin{50%{filter:drop-shadow(0 0 20px rgba(22,163,74,.75)) drop-shadow(0 14px 28px rgba(0,0,0,.22))}}
 .sg-root .cab.goldflash{animation:sgcabgold .55s ease-in-out 3}
 @keyframes sgcabgold{50%{filter:drop-shadow(0 0 24px rgba(255,180,60,.8)) drop-shadow(0 14px 28px rgba(0,0,0,.22))}}
+.sg-root .cab.cab-in{animation:sgcabin .6s cubic-bezier(.2,1.45,.35,1) both}
+@keyframes sgcabin{0%{transform:translateY(24px) scale(.9);opacity:0}55%{transform:translateY(0) scale(1.04);opacity:1}100%{transform:translateY(0) scale(1)}}
 /* Reels fill the transparent window of frame-neon.png (measured insets, tucked ~0.6% under the neon) */
 .sg-root .reelframe{position:absolute;top:6.9%;left:6.7%;right:6.9%;bottom:15.8%;z-index:1;overflow:hidden;border-radius:14px}
 /* Sliced roll strips as reels. Each column shows one strip (top:0, size 100%×50% of a
@@ -982,7 +1020,7 @@ function PackOpenIntro({ image, name, lang, onDone }: { image: string; name: str
 
   const o = m / H, c = 0.3 + 0.7 * o;
   const eyebrow = lang === "ja" ? "ガチャ" : "DRAW";
-  const status = g === "charge" ? (lang === "ja" ? "チャージ中…" : "CHARGING…") : g === "breaking" ? (lang === "ja" ? "開封中…" : "OPENING…") : g === "flash" ? (lang === "ja" ? "オープン!!" : "OPEN!!") : "";
+  const status = g === "charge" ? (lang === "ja" ? "チャージ中…" : "CHARGING…") : g === "breaking" ? (lang === "ja" ? "開封中…" : "OPENING…") : "";
   const packBox: CSSProperties = { width: 212, height: 300 };
   const packImg: CSSProperties = { height: 300, width: "auto", maxWidth: 212, objectFit: "contain" };
   const maskBase: CSSProperties = {

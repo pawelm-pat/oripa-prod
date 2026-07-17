@@ -4335,7 +4335,7 @@ function PackCardList({ t }: { t: Dict }) {
           className="flex w-[150px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-xl border-2 border-[#e5e8ec] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.09)] active:scale-[0.98]"
         >
           <div className="h-[150px] w-full px-1.5 pt-1.5">
-            <img src={pack.image} alt="" className="h-full w-full object-contain" />
+            <img src={pack.image} alt="" className="animate-pack-pulse h-full w-full object-contain" style={{ animationDelay: `${idx * 0.22}s` }} />
           </div>
           <div className="flex flex-1 flex-col gap-0.5 px-2 pb-2 pt-0.5">
             <p className="line-clamp-1 text-[11px] font-bold leading-snug text-[#1d2129]">{t.storePackNames[idx] ?? pack.name}</p>
