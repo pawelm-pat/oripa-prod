@@ -87,3 +87,13 @@ a {
 .animate-slide-in-left {
   animation: slideInLeft 0.28s ease both;
 }
+
+/* Home hero speech bubble (shown on character tap) */
+@keyframes heroBubbleIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

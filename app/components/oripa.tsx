@@ -328,6 +328,75 @@ function PromoCarousel() {
     </div>
   );
 }
+
+// ── Home hero (client-provided design) ───────────────────────────────────────
+// Shop backdrop + fox-girl character with promo icon rails on each side and a
+// speech bubble that appears when the character is tapped. Sits between the
+// header and the category top-nav, replacing the old promo carousel. Links are
+// inert for now (screens not ready). Assets live in /hero.
+function useHeroCountdown(startSeconds: number) {
+  const [left, setLeft] = useState(startSeconds);
+  useEffect(() => {
+    const id = setInterval(() => setLeft((s) => (s <= 1 ? startSeconds : s - 1)), 1000);
+    return () => clearInterval(id);
+  }, [startSeconds]);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(Math.floor(left / 3600))}:${p(Math.floor((left % 3600) / 60))}:${p(left % 60)}`;
+}
+
+// Promo icon. `onClick` is intentionally optional — links are deactivated until
+// their destination screens exist; the button still gives press feedback.
+function HeroIcon({ img, label, timer, onClick }: { img: string; label: string; timer?: string; onClick?: () => void }) {
+  return (
+    <button onClick={onClick} className="flex w-[78px] flex-col items-center transition-transform duration-150 active:scale-90">
+      <img src={img} alt="" className="h-[52px] w-[52px] object-contain drop-shadow-[0_3px_5px_rgba(0,0,0,0.5)]" />
+      <span className="mt-0.5 rounded-md bg-black/45 px-1.5 py-px text-[9px] font-extrabold uppercase leading-tight tracking-wide text-white">{label}</span>
+      {timer && <span className="mt-0.5 rounded-full bg-[#D10005] px-1.5 py-px text-[9px] font-bold tabular-nums text-white shadow">{timer}</span>}
+    </button>
+  );
+}
+
+function HomeHero({ lang }: { lang: Lang }) {
+  const ja = lang === "ja";
+  const questTimer = useHeroCountdown(150);
+  const inviteTimer = useHeroCountdown(420);
+  const [bubble, setBubble] = useState(false);
+  return (
+    <div className="relative aspect-[9/8] w-full select-none overflow-hidden bg-[#2a1c11]">
+      <img src="/hero/bg-day.png" alt="" className="absolute inset-0 h-full w-full object-cover" />
+      <img
+        src="/hero/hero.png"
+        alt=""
+        onClick={() => setBubble((b) => !b)}
+        className="pointer-events-auto absolute left-1/2 top-[5%] h-[112%] max-w-none -translate-x-1/2 cursor-pointer object-contain object-top drop-shadow-[0_8px_16px_rgba(0,0,0,0.35)]"
+      />
+
+      <div className="absolute left-1 top-[30%] z-20 flex flex-col gap-3">
+        <HeroIcon img="/hero/icon-chain.png" label={ja ? "チェーン" : "Chain offer"} />
+        <HeroIcon img="/hero/icon-bonus.png" label={ja ? "初回ボーナス" : "First bonus"} />
+      </div>
+
+      <div className="absolute right-1 top-[14%] z-20 flex flex-col gap-3">
+        <HeroIcon img="/hero/icon-loyalty.png" label={ja ? "ロイヤリティ" : "Loyalty"} />
+        <HeroIcon img="/hero/icon-quest.png" label={ja ? "クエスト" : "Quest"} timer={questTimer} />
+        <HeroIcon img="/hero/icon-invite.png" label={ja ? "友達招待" : "Invite"} timer={inviteTimer} />
+      </div>
+
+      {bubble && (
+        <div
+          onClick={() => setBubble(false)}
+          className="absolute bottom-2 left-1/2 z-20 w-[70%] max-w-[290px] -translate-x-1/2 cursor-pointer rounded-2xl border border-black/5 bg-white/95 px-3.5 py-2.5 text-center shadow-[0_6px_16px_rgba(0,0,0,0.28)]"
+          style={{ animation: "heroBubbleIn .2s ease-out both" }}
+        >
+          <span className="block text-[12.5px] font-bold leading-snug text-[#1d2129]">{ja ? "今日はどんなオリパに出会える？" : "What kind of oripa will you find today?"}</span>
+          <span className="mt-0.5 block text-[12.5px] font-extrabold leading-snug text-[#D10005]">{ja ? "タップして運試し！" : "Tap to try your luck!"}</span>
+          <span className="absolute -top-2 right-10 h-4 w-4 rotate-45 border-l border-t border-black/5 bg-white/95" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function catIcon(key: string, color: string) {
   switch (key) {
     case "all":
@@ -793,9 +862,7 @@ function OripaHome({ lang, coins, onHome, onOpenStore }: { lang: Lang; coins: nu
       <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
 
       <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
-        <div className="px-3 pb-4 pt-3">
-          <PromoCarousel />
-        </div>
+        <HomeHero lang={lang} />
 
         <LobbyNavFeed t={t} lang={lang} filters={filters} query={query} onOpenFilters={() => setFilterOpen(true)} />
 
