@@ -169,7 +169,7 @@ const EN_LEGAL: LegalDoc = {
     "## Licenses and Certifications",
     "Antique Dealer Business License\nNo. 306692618707\nTokyo Metropolitan Public Safety Commission\nGodogaisha KS",
     "## Operation Company Name and Contact",
-    "KS LLC\nRepresentative Member: 木崎優典\n〒110-0005 Hirokoji Bldg. 8, 1-7-6 Ueno, Taito-ku, Tokyo\nPhone: \nEmail: info@ks-limited.com",
+    "KS LLC\nRepresentative Member: 木崎優典\n〒110-0005 Hirokoji Bldg. 8, 1-7-6 Ueno, Taito-ku, Tokyo\nPhone: 050-1724-7952\nEmail: info@ks-limited.com",
   ],
 };
 
@@ -332,7 +332,7 @@ const JA_LEGAL: LegalDoc = {
     "## 許認可と資格",
     "古物商営業許可\n第306692618707号\n東京都公安委員会\n合同会社ＫＳ",
     "## 運営者の名称および連絡先",
-    "合同会社KS\n代表社員　木崎優典\n〒110-0005 東京都台東区上野1-7-6広小路ビル8\n電話番号：\nメールアドレス：info@ks-limited.com",
+    "合同会社KS\n代表社員　木崎優典\n〒110-0005 東京都台東区上野1-7-6広小路ビル8\n電話番号：050-1724-7952\nメールアドレス：info@ks-limited.com",
   ],
 };
 
