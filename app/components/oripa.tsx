@@ -538,6 +538,8 @@ const LOBBY_NAV_STR = {
     apply: "Apply",
     reset: "Reset",
     filter: "Filter",
+    clearAll: "Clear all",
+    filtersApplied: "Filters applied",
     pokemonHeading: "Pokemon",
     filterTags: [["popular", "Popular"], ["pokemon", "Pokemon"], ["psa10", "PSA 10 Guaranteed"], ["limit1", "Limited to 1 per day"], ["gvalue", "Guaranteed Value"], ["min60", "Minimum Guarantee of 60% or more"], ["campaign", "Campaign"], ["endsoon", "End soon"], ["ranklimited", "Rank Limited"], ["lastone", "Last One Prize"]] as [string, string][],
     pokemonTags: [["pikachu", "Pikachu"], ["lillie", "Lillie"], ["umbreon", "Umbreon"], ["gengar", "Gengar"], ["charizard", "Charizard"]] as [string, string][],
@@ -554,6 +556,8 @@ const LOBBY_NAV_STR = {
     apply: "適用",
     reset: "リセット",
     filter: "絞り込む",
+    clearAll: "すべてクリア",
+    filtersApplied: "適用中のフィルター",
     pokemonHeading: "ポケモン",
     filterTags: [["popular", "人気"], ["pokemon", "ポケモン"], ["psa10", "PSA10確定"], ["limit1", "1日1点限定"], ["gvalue", "価値保証"], ["min60", "最低保証60%以上"], ["campaign", "キャンペーン"], ["endsoon", "まもなく終了"], ["ranklimited", "ランク限定"], ["lastone", "ラストワン賞"]] as [string, string][],
     pokemonTags: [["pikachu", "ピカチュウ"], ["lillie", "リーリエ"], ["umbreon", "ブラッキー"], ["gengar", "ゲンガー"], ["charizard", "リザードン"]] as [string, string][],
@@ -604,7 +608,7 @@ function LobbyMiniCard({ item, t, lang, fullWidth, onView }: { item: OripaItem; 
 
 // V2 lobby feed. `onView` (tap on any card) is inert in the logged-in lobby
 // and routes to Sign-up on the logged-out landing.
-function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onReset, onView }: { t: Dict; lang: Lang; filters: Record<string, boolean>; query: string; onToggle: (k: string) => void; onQueryChange: (v: string) => void; onReset: () => void; onView?: () => void }) {
+function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onReset, onClearFilters, onView }: { t: Dict; lang: Lang; filters: Record<string, boolean>; query: string; onToggle: (k: string) => void; onQueryChange: (v: string) => void; onReset: () => void; onClearFilters: () => void; onView?: () => void }) {
   const L = LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"];
   const [cat, setCat] = useState("all");
   const [searchActive, setSearchActive] = useState(false);
@@ -612,10 +616,18 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
   const searchBoxRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastScrollY = useRef(0);
-  const hasQueryRef = useRef(false);
+  // While a query, applied filters, or the open filter dropdown are present we
+  // keep the search bar visible (never auto-hide on scroll) so the user can act.
+  const keepVisibleRef = useRef(false);
   const filterCount = Object.keys(filters).length;
   const qq = query.trim().toLowerCase();
   const hasQuery = qq.length > 0;
+  // Map filter keys → human labels so applied filters can be shown as chips.
+  const filterLabel = (k: string) => {
+    const hit = [...L.filterTags, ...L.pokemonTags].find(([key]) => key === k);
+    return hit ? hit[1] : k;
+  };
+  const activeFilterKeys = Object.keys(filters);
 
   // When switching categories: if the user has already scrolled past the promo
   // banner (so the feed has scrolled up under the top nav), bring the top nav
@@ -669,9 +681,10 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
       const y = readY();
       const last = lastScrollY.current;
       if (y <= 4) setSearchHidden(false);
-      // Keep the search bar visible while a query is active so it can be edited
-      // or cleared; only auto-hide when the field is empty.
-      else if (y > last + 6 && !hasQueryRef.current) { setSearchHidden(true); setSearchActive(false); inputRef.current?.blur(); }
+      // Keep the search bar visible (and the filter dropdown open) while a query,
+      // applied filters, or the open dropdown are present; only auto-hide when
+      // there is nothing to act on.
+      else if (y > last + 6 && !keepVisibleRef.current) { setSearchHidden(true); setSearchActive(false); inputRef.current?.blur(); }
       else if (y < last - 6) setSearchHidden(false);
       lastScrollY.current = y;
     };
@@ -679,12 +692,12 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
     return () => window.removeEventListener("scroll", onScroll, true);
   }, []);
 
-  // Track the current query for the scroll handler and always reveal the search
-  // bar whenever a query is present.
+  // Track whether the search bar must stay visible for the scroll handler, and
+  // reveal it immediately whenever a query / applied filters / open dropdown appear.
   useEffect(() => {
-    hasQueryRef.current = hasQuery;
-    if (hasQuery) setSearchHidden(false);
-  }, [hasQuery]);
+    keepVisibleRef.current = hasQuery || filterCount > 0 || searchActive;
+    if (keepVisibleRef.current) setSearchHidden(false);
+  }, [hasQuery, filterCount, searchActive]);
 
   // Close the filter dropdown when clicking/tapping outside of it.
   useEffect(() => {
@@ -880,6 +893,26 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
         </div>
       </div>
 
+      {/* Applied-filters bar — shows which filters are active as removable chips
+          plus a Clear all action. Hidden while the filter dropdown is open. */}
+      {!searchActive && filterCount > 0 && (
+        <div className="flex items-center gap-2 border-b border-black/10 bg-white px-3 py-2">
+          <div className="no-scrollbar flex flex-1 items-center gap-1.5 overflow-x-auto">
+            {activeFilterKeys.map((k) => (
+              <button
+                key={k}
+                onClick={() => onToggle(k)}
+                className="flex shrink-0 items-center gap-1 rounded-full border border-[#D10005] bg-[#D10005]/[0.08] px-2.5 py-1 text-[12px] font-semibold text-[#D10005] active:scale-95"
+              >
+                {filterLabel(k)}
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+              </button>
+            ))}
+          </div>
+          <button onClick={onClearFilters} className="shrink-0 whitespace-nowrap text-[12px] font-extrabold text-[#D10005] underline underline-offset-2 active:opacity-70">{L.clearAll}</button>
+        </div>
+      )}
+
       {/* Filter dropdown — overlays the feed just below the nav; focusing the
           search opens it, an outside click or a scroll closes it. */}
       {searchActive && (
@@ -909,6 +942,7 @@ function OripaHome({ lang, coins, onHome, onOpenStore }: { lang: Lang; coins: nu
   const [query, setQuery] = useState("");
   const toggleFilter = (k: string) => setFilters((f) => { const n = { ...f }; if (n[k]) delete n[k]; else n[k] = true; return n; });
   const clearFilters = () => { setFilters({}); setQuery(""); };
+  const clearAllFilters = () => setFilters({});
   return (
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
       <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
@@ -916,7 +950,7 @@ function OripaHome({ lang, coins, onHome, onOpenStore }: { lang: Lang; coins: nu
       <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
         <HomeHero lang={lang} />
 
-        <LobbyNavFeed t={t} lang={lang} filters={filters} query={query} onToggle={toggleFilter} onQueryChange={setQuery} onReset={clearFilters} />
+        <LobbyNavFeed t={t} lang={lang} filters={filters} query={query} onToggle={toggleFilter} onQueryChange={setQuery} onReset={clearFilters} onClearFilters={clearAllFilters} />
 
         <SiteFooter t={t} />
       </div>
@@ -1642,6 +1676,7 @@ function LandingPage({ lang, onSignUp, onLogin }: { lang: Lang; onSignUp: () => 
   const [query, setQuery] = useState("");
   const toggleFilter = (k: string) => setFilters((f) => { const n = { ...f }; if (n[k]) delete n[k]; else n[k] = true; return n; });
   const clearFilters = () => { setFilters({}); setQuery(""); };
+  const clearAllFilters = () => setFilters({});
   return (
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
       <AuthHeader lang={lang} onSignUp={onSignUp} onLogin={onLogin} />
@@ -1649,7 +1684,7 @@ function LandingPage({ lang, onSignUp, onLogin }: { lang: Lang; onSignUp: () => 
       <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
         <div className="px-3 pb-4 pt-3"><PromoCarousel /></div>
 
-        <LobbyNavFeed t={t} lang={lang} filters={filters} query={query} onToggle={toggleFilter} onQueryChange={setQuery} onReset={clearFilters} onView={onSignUp} />
+        <LobbyNavFeed t={t} lang={lang} filters={filters} query={query} onToggle={toggleFilter} onQueryChange={setQuery} onReset={clearFilters} onClearFilters={clearAllFilters} onView={onSignUp} />
 
         <SiteFooter t={t} />
       </div>
@@ -2859,30 +2894,6 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
         {tab === "shipped" && <ShippedTab prizes={shipped} onCopy={(c) => pushToast(t.toastCopied(c))} t={t} lang={lang} />}
       </div>
 
-      {/* Free-shipping eligibility badge — slides in on the right edge once the
-          selected prizes reach the free-shipping threshold (1,500). Purely
-          informational, so it never blocks taps. */}
-      {tab === "won" && listTotal >= SHIP_MIN_COINS && (
-        <div
-          className="pointer-events-none absolute right-0 top-[36%] z-[55]"
-          style={{ animation: "freeShipIn .32s cubic-bezier(.2,.9,.3,1) both" }}
-        >
-          <style>{`@keyframes freeShipIn{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:none}}@keyframes freeShipPulse{0%,100%{box-shadow:0 8px 22px rgba(18,129,60,0.40)}50%{box-shadow:0 8px 30px rgba(18,129,60,0.70)}}`}</style>
-          <div
-            className="flex items-center gap-2 rounded-l-2xl bg-gradient-to-br from-[#1eae52] to-[#12813c] py-2 pl-3 pr-3.5 text-white ring-1 ring-white/25"
-            style={{ animation: "freeShipPulse 2.4s ease-in-out infinite" }}
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 6h11v9H3z" /><path d="M14 9h4l3 3v3h-7z" /><circle cx="7" cy="18" r="1.6" /><circle cx="17.5" cy="18" r="1.6" />
-            </svg>
-            <div className="leading-tight">
-              <div className="text-[12px] font-extrabold tracking-wide">{t.freeShipping}</div>
-              <div className="text-[9.5px] font-semibold opacity-90">{t.freeShippingElig}</div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {tab === "won" && won.length > 0 && listSelected.size > 0 && (
         <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
           {listSelected.size > 0 && (
@@ -2892,14 +2903,30 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                 <button onClick={listReset} className="text-[#8a9099] underline">{t.itemsReset}</button>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => { if (!listCanShip) { pushToast(t.toastShort(listShortfall)); return; } setListShipOpen(true); }}
-                  className="rounded-xl border-2 py-2 text-[12.5px] font-bold leading-tight transition"
-                  style={{ borderColor: "#f5670a", color: "#f5670a", background: "#fff", opacity: listCanShip ? 1 : 0.6 }}
-                >
-                  ← {t.requestShipping} · {listSelected.size}
-                  <span className="mt-0.5 block text-[10px] font-semibold opacity-80">{listTotal.toLocaleString()} coins</span>
-                </button>
+                <div className="relative">
+                  {/* Free-shipping eligibility badge — sits on the top-right of the
+                      Request Shipping CTA once the selection reaches the threshold. */}
+                  {listCanShip && (
+                    <div
+                      className="pointer-events-none absolute -top-2.5 right-0 z-10 flex items-center gap-1 rounded-full bg-gradient-to-br from-[#1eae52] to-[#12813c] px-2 py-[3px] text-white ring-1 ring-white/30"
+                      style={{ animation: "freeShipIn .3s cubic-bezier(.2,.9,.3,1) both, freeShipPulse 2.4s ease-in-out infinite" }}
+                    >
+                      <style>{`@keyframes freeShipIn{from{opacity:0;transform:translateY(-6px) scale(.9)}to{opacity:1;transform:none}}@keyframes freeShipPulse{0%,100%{box-shadow:0 3px 8px rgba(18,129,60,0.45)}50%{box-shadow:0 3px 14px rgba(18,129,60,0.75)}}`}</style>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 6h11v9H3z" /><path d="M14 9h4l3 3v3h-7z" /><circle cx="7" cy="18" r="1.6" /><circle cx="17.5" cy="18" r="1.6" />
+                      </svg>
+                      <span className="text-[9.5px] font-extrabold tracking-wide">{t.freeShipping}</span>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => { if (!listCanShip) { pushToast(t.toastShort(listShortfall)); return; } setListShipOpen(true); }}
+                    className="w-full rounded-xl border-2 py-2 text-[12.5px] font-bold leading-tight transition"
+                    style={{ borderColor: "#f5670a", color: "#f5670a", background: "#fff", opacity: listCanShip ? 1 : 0.6 }}
+                  >
+                    ← {t.requestShipping} · {listSelected.size}
+                    <span className="mt-0.5 block text-[10px] font-semibold opacity-80">{listTotal.toLocaleString()} coins</span>
+                  </button>
+                </div>
                 <button
                   onClick={listExchange}
                   className="rounded-xl py-2 text-[12.5px] font-bold leading-tight text-white transition"
