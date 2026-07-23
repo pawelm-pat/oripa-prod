@@ -371,7 +371,7 @@ function HomeHero({ lang }: { lang: Lang }) {
         className="pointer-events-auto absolute left-1/2 top-[5%] h-[112%] max-w-none -translate-x-1/2 cursor-pointer object-contain object-top drop-shadow-[0_8px_16px_rgba(0,0,0,0.35)]"
       />
 
-      <div className="absolute left-1 top-[30%] z-20 flex flex-col gap-3">
+      <div className="absolute left-1 top-[14%] z-20 flex flex-col gap-3">
         <HeroIcon img="/hero/icon-chain.png" label={ja ? "チェーン" : "Chain offer"} />
         <HeroIcon img="/hero/icon-bonus.png" label={ja ? "初回ボーナス" : "First bonus"} />
       </div>
