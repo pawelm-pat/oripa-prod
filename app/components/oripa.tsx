@@ -532,10 +532,15 @@ const LOBBY_NAV_STR = {
     seeAll: "See all",
     empty: "No packs match your search.",
     narrowDown: "Narrow down",
-    searchPlaceholder: "Search packs & cards",
+    searchPlaceholder: "Search for original packs (e.g., Pikachu, Charizard)",
     quickFilters: "Quick filters",
     clear: "Clear",
     apply: "Apply",
+    reset: "Reset",
+    filter: "Filter",
+    pokemonHeading: "Pokemon",
+    filterTags: [["popular", "Popular"], ["pokemon", "Pokemon"], ["psa10", "PSA 10 Guaranteed"], ["limit1", "Limited to 1 per day"], ["gvalue", "Guaranteed Value"], ["min60", "Minimum Guarantee of 60% or more"], ["campaign", "Campaign"], ["endsoon", "End soon"], ["ranklimited", "Rank Limited"], ["lastone", "Last One Prize"]] as [string, string][],
+    pokemonTags: [["pikachu", "Pikachu"], ["lillie", "Lillie"], ["umbreon", "Umbreon"], ["gengar", "Gengar"], ["charizard", "Charizard"]] as [string, string][],
     sorts: [["rec", "Recommended order"], ["popular", "Most popular"], ["new", "Newest"], ["priceAsc", "Price: Low to High"], ["priceDesc", "Price: High to Low"]] as [string, string][],
     quickOpts: [["popular", "Most popular"], ["newarrivals", "New Arrivals"], ["fewleft", "Only a few left"], ["psa10", "PSA10 confirmed"], ["guarantee60", "High return"], ["pokemon", "Pokémon"], ["onepiece", "One Piece"], ["box", "BOX"]] as [string, string][],
   },
@@ -543,10 +548,15 @@ const LOBBY_NAV_STR = {
     seeAll: "すべて見る",
     empty: "一致するオリパがありません。",
     narrowDown: "絞り込み",
-    searchPlaceholder: "オリパ・カードを検索",
+    searchPlaceholder: "オリパを検索（例：ピカチュウ、リザードン）",
     quickFilters: "クイックフィルター",
     clear: "クリア",
     apply: "適用",
+    reset: "リセット",
+    filter: "絞り込む",
+    pokemonHeading: "ポケモン",
+    filterTags: [["popular", "人気"], ["pokemon", "ポケモン"], ["psa10", "PSA10確定"], ["limit1", "1日1点限定"], ["gvalue", "価値保証"], ["min60", "最低保証60%以上"], ["campaign", "キャンペーン"], ["endsoon", "まもなく終了"], ["ranklimited", "ランク限定"], ["lastone", "ラストワン賞"]] as [string, string][],
+    pokemonTags: [["pikachu", "ピカチュウ"], ["lillie", "リーリエ"], ["umbreon", "ブラッキー"], ["gengar", "ゲンガー"], ["charizard", "リザードン"]] as [string, string][],
     sorts: [["rec", "おすすめ順"], ["popular", "人気順"], ["new", "新着順"], ["priceAsc", "価格の安い順"], ["priceDesc", "価格の高い順"]] as [string, string][],
     quickOpts: [["popular", "人気"], ["newarrivals", "新着"], ["fewleft", "残りわずか"], ["psa10", "PSA10確定"], ["guarantee60", "高還元"], ["pokemon", "ポケモン"], ["onepiece", "ワンピース"], ["box", "BOX"]] as [string, string][],
   },
@@ -592,66 +602,17 @@ function LobbyMiniCard({ item, t, lang, fullWidth, onView }: { item: OripaItem; 
   );
 }
 
-// "Narrow down" bottom sheet: search on top, quick filters below, Clear / Apply.
-function LobbyFilterSheet({ lang, filters, query, onToggle, onQueryChange, onClear, onClose }: { lang: Lang; filters: Record<string, boolean>; query: string; onToggle: (k: string) => void; onQueryChange: (v: string) => void; onClear: () => void; onClose: () => void }) {
-  const L = LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"];
-  return (
-    <div className="absolute inset-0 z-[60] flex items-end justify-center bg-black/50" onClick={onClose}>
-      <div className="flex max-h-[90%] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-[0_-10px_30px_rgba(0,0,0,0.2)]" onClick={(e) => e.stopPropagation()} style={{ animation: "lobbySheetUp .28s cubic-bezier(.2,.8,.2,1) both" }}>
-        <style>{`@keyframes lobbySheetUp{from{transform:translateY(100%)}to{transform:none}}`}</style>
-        <div className="relative flex shrink-0 items-center justify-center border-b border-black/5 px-4 py-3.5">
-          <h3 className="text-[16px] font-extrabold text-[#1d2129]">{L.narrowDown}</h3>
-          <button onClick={onClose} aria-label="Close" className="absolute right-3 flex h-8 w-8 items-center justify-center rounded-full text-[#1d2129] active:bg-black/5">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
-          </button>
-        </div>
-
-        <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-4">
-          <div className="relative">
-            <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9aa0a8]">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.2-3.2" /></svg>
-            </span>
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => onQueryChange(e.target.value)}
-              placeholder={L.searchPlaceholder}
-              className="w-full rounded-xl bg-[#f4f5f7] py-3 pl-11 pr-3 text-[14px] font-semibold text-[#1d2129] outline-none placeholder:text-[#9aa0a8] focus:bg-white focus:ring-2 focus:ring-[#D10005]/30"
-            />
-          </div>
-
-          <div className="mt-5">
-            <h4 className="mb-3 text-[15px] font-extrabold text-[#1d2129]">{L.quickFilters}</h4>
-            <div className="flex flex-wrap gap-2.5">
-              {L.quickOpts.map(([key, label]) => {
-                const on = !!filters[key];
-                return (
-                  <button key={key} onClick={() => onToggle(key)} className={`rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold transition ${on ? "border-[#D10005] bg-[#D10005] text-white" : "border-black/15 bg-white text-[#5c626b] active:bg-black/[0.03]"}`}>{label}</button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex shrink-0 gap-3 border-t border-black/10 px-4 py-3">
-          <button onClick={onClear} className="flex-1 rounded-xl bg-[#f2f3f5] py-3 text-[15px] font-extrabold text-[#1d2129] active:scale-[0.99]">{L.clear}</button>
-          <button onClick={onClose} className="flex-1 rounded-xl bg-[#D10005] py-3 text-[15px] font-extrabold text-white active:scale-[0.99]">{L.apply}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // V2 lobby feed. `onView` (tap on any card) is inert in the logged-in lobby
 // and routes to Sign-up on the logged-out landing.
-function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: Dict; lang: Lang; filters: Record<string, boolean>; query: string; onOpenFilters: () => void; onView?: () => void }) {
+function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onReset, onView }: { t: Dict; lang: Lang; filters: Record<string, boolean>; query: string; onToggle: (k: string) => void; onQueryChange: (v: string) => void; onReset: () => void; onView?: () => void }) {
   const L = LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"];
   const [cat, setCat] = useState("all");
-  const [sortKey, setSortKey] = useState("rec");
-  const [sortOpen, setSortOpen] = useState(false);
+  const [searchActive, setSearchActive] = useState(false);
+  const [panelH, setPanelH] = useState(420);
+  const navRef = useRef<HTMLDivElement>(null);
   const filterCount = Object.keys(filters).length;
   const qq = query.trim().toLowerCase();
-  const searching = qq.length > 0;
+  const hasQuery = qq.length > 0;
 
   // When switching categories: if the user has already scrolled past the promo
   // banner (so the feed has scrolled up under the top nav), bring the top nav
@@ -681,6 +642,26 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
     }
   }, [cat]);
 
+  // When the search bar is focused, bring the sticky nav to the top of the
+  // viewport (scrolling the hero away) and size the filter panel to fill the
+  // remaining space so its Reset / Filter bar sits at the bottom of the frame.
+  useEffect(() => {
+    if (!searchActive) return;
+    const el = rootRef.current;
+    if (!el) return;
+    let p = el.parentElement;
+    while (p) {
+      const oy = getComputedStyle(p).overflowY;
+      if ((oy === "auto" || oy === "scroll") && p.scrollHeight > p.clientHeight) {
+        const delta = el.getBoundingClientRect().top - p.getBoundingClientRect().top;
+        p.scrollTop += delta;
+        setPanelH(p.clientHeight - (navRef.current?.offsetHeight || 0));
+        return;
+      }
+      p = p.parentElement;
+    }
+  }, [searchActive]);
+
   const catList: { key: string; label: string }[] = [
     { key: "all", label: t.catAll },
     { key: "new", label: t.catNew },
@@ -696,22 +677,45 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
   function transform(list: OripaItem[]): OripaItem[] {
     let arr = applyQuery(list.slice());
     if (filterCount) arr = arr.filter((_, i) => i % (filterCount + 1) !== 0);
-    if (sortKey === "new") arr.reverse();
-    else if (sortKey === "popular" || sortKey === "priceAsc") arr.sort((a, b) => a.remaining - b.remaining);
-    else if (sortKey === "priceDesc") arr.sort((a, b) => b.remaining - a.remaining);
     return arr;
   }
 
-  const sortLabel = (L.sorts.find(([k]) => k === sortKey) || L.sorts[0])[1];
   const mini = (it: OripaItem, fw?: boolean) => (
     <LobbyMiniCard key={it.id} item={it} t={t} lang={lang} fullWidth={fw} onView={onView} />
   );
   const full = (it: OripaItem) => (
     <OripaCard key={it.id} item={it} t={t} onView={onView} onDraw={onView ? () => onView() : undefined} />
   );
+  const tagPill = ([key, label]: [string, string]) => {
+    const on = !!filters[key];
+    return (
+      <button
+        key={key}
+        onClick={() => onToggle(key)}
+        className={`rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition active:scale-95 ${on ? "border-[#D10005] bg-[#D10005] text-white" : "border-[#a3a8b0] bg-white text-[#4b5058]"}`}
+      >
+        {label}
+      </button>
+    );
+  };
 
+  const showResults = !searchActive && (hasQuery || filterCount > 0);
   let body: React.ReactNode;
-  if (searching) {
+  if (searchActive) {
+    body = (
+      <div className="flex flex-col bg-white" style={{ minHeight: panelH }}>
+        <div className="flex-1 px-4 py-4">
+          <div className="flex flex-wrap gap-2.5">{L.filterTags.map(tagPill)}</div>
+          <h4 className="mb-2.5 mt-5 text-[15px] font-extrabold text-[#1d2129]">{L.pokemonHeading}</h4>
+          <div className="flex flex-wrap gap-2.5">{L.pokemonTags.map(tagPill)}</div>
+        </div>
+        <div className="sticky bottom-0 flex gap-3 border-t border-black/10 bg-white px-4 py-3">
+          <button onClick={onReset} className="flex-1 rounded-[10px] border-[1.6px] border-[#1d2129] bg-white py-3 text-[15px] font-extrabold text-[#1d2129] active:scale-[0.99]">{L.reset}</button>
+          <button onClick={() => setSearchActive(false)} className="flex-1 rounded-[10px] bg-[#D10005] py-3 text-[15px] font-extrabold text-white active:scale-[0.99]">{L.filter}</button>
+        </div>
+      </div>
+    );
+  } else if (showResults) {
     const items = transform(ALL_ORIPA);
     body = items.length === 0
       ? <div className="px-6 py-16 text-center text-[13px] font-semibold text-[#8a9099]">{L.empty}</div>
@@ -774,9 +778,9 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
 
   return (
     <div ref={rootRef} className="bg-[#eef0f3]">
-      {/* Sticky lobby nav: category chips + narrow-down/sort toolbar stay
-          pinned under the header while the feed scrolls. */}
-      <div className="sticky top-0 z-20">
+      {/* Sticky lobby nav: category chips + search bar stay pinned under the
+          header while the feed scrolls. */}
+      <div ref={navRef} className="sticky top-0 z-20">
       {/* Category bar — icon over label; ALL is a black D-tab pinned to the
           left edge, the active category is red with an underline. */}
       <div className="no-scrollbar flex items-stretch overflow-x-auto border-b border-black/10 bg-white">
@@ -812,29 +816,20 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
         })}
       </div>
 
-      {/* Toolbar — "Narrow down" (filters) on the left, sort on the right */}
-      <div className="relative flex items-stretch border-b border-black/10 bg-white">
-        <button onClick={() => { onOpenFilters(); setSortOpen(false); }} className="flex flex-1 items-center justify-center gap-2 py-3 text-[14px] font-extrabold text-[#1d2129] active:bg-black/[0.03]">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><circle cx="7" cy="8" r="2" /><circle cx="16" cy="16" r="2" /><path d="M9 8h11M4 8h1M15 16h5M4 16h9" /></svg>
-          {L.narrowDown}
-          {filterCount > 0 && <span className="flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-[#D10005] px-1 text-[10px] font-extrabold leading-none text-white">{filterCount}</span>}
-        </button>
-        <span className="my-2 w-px bg-black/10" />
-        <div className="relative flex-1">
-          <button onClick={() => setSortOpen((o) => !o)} className="flex w-full items-center justify-center gap-1.5 py-3 text-[14px] font-extrabold text-[#1d2129] active:bg-black/[0.03]">
-            {sortLabel}
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4" /></svg>
-          </button>
-          {sortOpen && (
-            <>
-              <div className="fixed inset-0 z-30" onClick={() => setSortOpen(false)} />
-              <div className="absolute right-2 top-[calc(100%-2px)] z-40 min-w-[210px] overflow-hidden rounded-xl border border-black/10 bg-white shadow-[0_14px_34px_rgba(0,0,0,0.18)]">
-                {L.sorts.map(([key, label]) => (
-                  <button key={key} onClick={() => { setSortKey(key); setSortOpen(false); }} className={`block w-full px-3.5 py-2.5 text-left text-[13px] ${key === sortKey ? "font-extrabold text-[#D10005]" : "text-[#41464e]"}`}>{label}</button>
-                ))}
-              </div>
-            </>
-          )}
+      {/* Search bar — always visible; focusing it opens the filter panel */}
+      <div className="border-b border-black/10 bg-white px-3 py-2.5">
+        <div className="relative">
+          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#1d2129]">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M20.5 20.5l-4-4" /></svg>
+          </span>
+          <input
+            type="text"
+            value={query}
+            onFocus={() => setSearchActive(true)}
+            onChange={(e) => { onQueryChange(e.target.value); setSearchActive(true); }}
+            placeholder={L.searchPlaceholder}
+            className="w-full rounded-[10px] border-[1.5px] border-[#D10005] bg-white py-3 pl-12 pr-3 text-[15px] font-medium text-[#1d2129] outline-none placeholder:text-[#9aa0a8]"
+          />
         </div>
       </div>
       </div>
@@ -847,7 +842,6 @@ function LobbyNavFeed({ t, lang, filters, query, onOpenFilters, onView }: { t: D
 function OripaHome({ lang, coins, onHome, onOpenStore }: { lang: Lang; coins: number; onHome: () => void; onOpenStore?: () => void }) {
   const t = STR[lang];
   const [filters, setFilters] = useState<Record<string, boolean>>({});
-  const [filterOpen, setFilterOpen] = useState(false);
   const [query, setQuery] = useState("");
   const toggleFilter = (k: string) => setFilters((f) => { const n = { ...f }; if (n[k]) delete n[k]; else n[k] = true; return n; });
   const clearFilters = () => { setFilters({}); setQuery(""); };
@@ -858,14 +852,10 @@ function OripaHome({ lang, coins, onHome, onOpenStore }: { lang: Lang; coins: nu
       <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
         <HomeHero lang={lang} />
 
-        <LobbyNavFeed t={t} lang={lang} filters={filters} query={query} onOpenFilters={() => setFilterOpen(true)} />
+        <LobbyNavFeed t={t} lang={lang} filters={filters} query={query} onToggle={toggleFilter} onQueryChange={setQuery} onReset={clearFilters} />
 
         <SiteFooter t={t} />
       </div>
-
-      {filterOpen && (
-        <LobbyFilterSheet lang={lang} filters={filters} query={query} onToggle={toggleFilter} onQueryChange={setQuery} onClear={clearFilters} onClose={() => setFilterOpen(false)} />
-      )}
     </div>
   );
 }
@@ -1585,7 +1575,6 @@ function DobPickerModal({ lang, onConfirm, onClose }: {
 function LandingPage({ lang, onSignUp, onLogin }: { lang: Lang; onSignUp: () => void; onLogin: () => void }) {
   const t = STR[lang];
   const [filters, setFilters] = useState<Record<string, boolean>>({});
-  const [filterOpen, setFilterOpen] = useState(false);
   const [query, setQuery] = useState("");
   const toggleFilter = (k: string) => setFilters((f) => { const n = { ...f }; if (n[k]) delete n[k]; else n[k] = true; return n; });
   const clearFilters = () => { setFilters({}); setQuery(""); };
@@ -1596,14 +1585,10 @@ function LandingPage({ lang, onSignUp, onLogin }: { lang: Lang; onSignUp: () => 
       <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
         <div className="px-3 pb-4 pt-3"><PromoCarousel /></div>
 
-        <LobbyNavFeed t={t} lang={lang} filters={filters} query={query} onOpenFilters={() => setFilterOpen(true)} onView={onSignUp} />
+        <LobbyNavFeed t={t} lang={lang} filters={filters} query={query} onToggle={toggleFilter} onQueryChange={setQuery} onReset={clearFilters} onView={onSignUp} />
 
         <SiteFooter t={t} />
       </div>
-
-      {filterOpen && (
-        <LobbyFilterSheet lang={lang} filters={filters} query={query} onToggle={toggleFilter} onQueryChange={setQuery} onClear={clearFilters} onClose={() => setFilterOpen(false)} />
-      )}
     </div>
   );
 }
