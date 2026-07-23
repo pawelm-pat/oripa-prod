@@ -2747,7 +2747,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
   }
 
   return (
-    <div className="flex h-full flex-col bg-[#eef0f3]">
+    <div className="relative flex h-full flex-col bg-[#eef0f3]">
       <header className="shrink-0 bg-white">
         <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
           <BrandLogo onClick={onHome} />
@@ -2858,6 +2858,30 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
         {tab === "waiting" && <WaitingTab prizes={waiting} t={t} lang={lang} />}
         {tab === "shipped" && <ShippedTab prizes={shipped} onCopy={(c) => pushToast(t.toastCopied(c))} t={t} lang={lang} />}
       </div>
+
+      {/* Free-shipping eligibility badge — slides in on the right edge once the
+          selected prizes reach the free-shipping threshold (1,500). Purely
+          informational, so it never blocks taps. */}
+      {tab === "won" && listTotal >= SHIP_MIN_COINS && (
+        <div
+          className="pointer-events-none absolute right-0 top-[36%] z-[55]"
+          style={{ animation: "freeShipIn .32s cubic-bezier(.2,.9,.3,1) both" }}
+        >
+          <style>{`@keyframes freeShipIn{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:none}}@keyframes freeShipPulse{0%,100%{box-shadow:0 8px 22px rgba(18,129,60,0.40)}50%{box-shadow:0 8px 30px rgba(18,129,60,0.70)}}`}</style>
+          <div
+            className="flex items-center gap-2 rounded-l-2xl bg-gradient-to-br from-[#1eae52] to-[#12813c] py-2 pl-3 pr-3.5 text-white ring-1 ring-white/25"
+            style={{ animation: "freeShipPulse 2.4s ease-in-out infinite" }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 6h11v9H3z" /><path d="M14 9h4l3 3v3h-7z" /><circle cx="7" cy="18" r="1.6" /><circle cx="17.5" cy="18" r="1.6" />
+            </svg>
+            <div className="leading-tight">
+              <div className="text-[12px] font-extrabold tracking-wide">{t.freeShipping}</div>
+              <div className="text-[9.5px] font-semibold opacity-90">{t.freeShippingElig}</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {tab === "won" && won.length > 0 && listSelected.size > 0 && (
         <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
