@@ -924,7 +924,7 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
             <div className="flex flex-wrap gap-2.5">{L.pokemonTags.map(tagPill)}</div>
           </div>
           <div className="flex gap-3 border-t border-black/10 bg-white px-4 py-3">
-            <button onClick={onReset} className="flex-1 rounded-[10px] border-[1.6px] border-[#1d2129] bg-white py-3 text-[15px] font-extrabold text-[#1d2129] active:scale-[0.99]">{L.reset}</button>
+            <button onClick={() => { onReset(); setSearchActive(false); inputRef.current?.blur(); }} className="flex-1 rounded-[10px] border-[1.6px] border-[#1d2129] bg-white py-3 text-[15px] font-extrabold text-[#1d2129] active:scale-[0.99]">{L.reset}</button>
             <button onClick={() => setSearchActive(false)} className="flex-1 rounded-[10px] bg-[#D10005] py-3 text-[15px] font-extrabold text-white active:scale-[0.99]">{L.filter}</button>
           </div>
         </div>
