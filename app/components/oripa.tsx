@@ -843,10 +843,15 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
       {/* Search bar — collapses to zero height when hidden so nothing peeks
           above the category bar; expands again on scroll-up. */}
       <div
-        className="overflow-hidden bg-white transition-all duration-300 will-change-[max-height,opacity]"
-        style={{ maxHeight: searchHidden ? 0 : 80, opacity: searchHidden ? 0 : 1 }}
+        className="overflow-hidden bg-white transition-[max-height] duration-300 ease-out will-change-[max-height]"
+        style={{ maxHeight: searchHidden ? 0 : 80 }}
       >
-        <div className="border-b border-black/10 px-3 py-2.5">
+        {/* Inner bar slides as a rigid unit (synced with the wrapper clip) so it
+            never appears squished/half-rendered while revealing. */}
+        <div
+          className="border-b border-black/10 bg-white px-3 py-2.5 transition-transform duration-300 ease-out will-change-transform"
+          style={{ transform: searchHidden ? "translateY(-100%)" : "translateY(0)" }}
+        >
           <div className="relative">
             <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#1d2129]">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M20.5 20.5l-4-4" /></svg>
@@ -865,7 +870,7 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
               <button
                 type="button"
                 aria-label="Clear search"
-                onClick={() => { onQueryChange(""); setSearchActive(true); inputRef.current?.focus(); }}
+                onClick={() => { onQueryChange(""); setSearchActive(false); inputRef.current?.blur(); }}
                 className="absolute right-2.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full bg-[#e5e7eb] text-[#4b5058] active:scale-90"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
