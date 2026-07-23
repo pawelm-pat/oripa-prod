@@ -3811,7 +3811,6 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
     { key: "contact", label: t.mmContact },
     { key: "notices", label: t.mmNotices, onClick: onOpenAnnouncements },
     { key: "shippingAddress", label: t.mmShippingAddress, onClick: onOpenShippingAddress },
-    { key: "subscriptions", label: t.mmSubscriptions },
   ];
 
   const linkRow = (label: string, onClick?: () => void) => (
