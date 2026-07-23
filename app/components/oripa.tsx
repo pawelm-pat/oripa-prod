@@ -612,6 +612,7 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
   const searchBoxRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastScrollY = useRef(0);
+  const hasQueryRef = useRef(false);
   const filterCount = Object.keys(filters).length;
   const qq = query.trim().toLowerCase();
   const hasQuery = qq.length > 0;
@@ -668,13 +669,22 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
       const y = readY();
       const last = lastScrollY.current;
       if (y <= 4) setSearchHidden(false);
-      else if (y > last + 6) { setSearchHidden(true); setSearchActive(false); inputRef.current?.blur(); }
+      // Keep the search bar visible while a query is active so it can be edited
+      // or cleared; only auto-hide when the field is empty.
+      else if (y > last + 6 && !hasQueryRef.current) { setSearchHidden(true); setSearchActive(false); inputRef.current?.blur(); }
       else if (y < last - 6) setSearchHidden(false);
       lastScrollY.current = y;
     };
     window.addEventListener("scroll", onScroll, true);
     return () => window.removeEventListener("scroll", onScroll, true);
   }, []);
+
+  // Track the current query for the scroll handler and always reveal the search
+  // bar whenever a query is present.
+  useEffect(() => {
+    hasQueryRef.current = hasQuery;
+    if (hasQuery) setSearchHidden(false);
+  }, [hasQuery]);
 
   // Close the filter dropdown when clicking/tapping outside of it.
   useEffect(() => {
@@ -849,8 +859,18 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
               onClick={() => { if (!hasQuery) setSearchActive(true); }}
               onChange={(e) => { const v = e.target.value; onQueryChange(v); setSearchActive(v.trim().length === 0); }}
               placeholder={L.searchPlaceholder}
-              className="w-full rounded-[10px] border-[1.5px] border-[#D10005] bg-white py-3 pl-12 pr-3 text-[15px] font-medium text-[#1d2129] outline-none placeholder:text-[#9aa0a8]"
+              className={`w-full rounded-[10px] border-[1.5px] border-[#D10005] bg-white py-3 pl-12 text-[15px] font-medium text-[#1d2129] outline-none placeholder:text-[#9aa0a8] ${hasQuery ? "pr-11" : "pr-3"}`}
             />
+            {hasQuery && (
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={() => { onQueryChange(""); setSearchActive(true); inputRef.current?.focus(); }}
+                className="absolute right-2.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full bg-[#e5e7eb] text-[#4b5058] active:scale-90"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+              </button>
+            )}
           </div>
         </div>
       </div>
