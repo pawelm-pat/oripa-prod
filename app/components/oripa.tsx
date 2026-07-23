@@ -610,6 +610,7 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
   const [searchActive, setSearchActive] = useState(false);
   const [searchHidden, setSearchHidden] = useState(false);
   const searchBoxRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const lastScrollY = useRef(0);
   const filterCount = Object.keys(filters).length;
   const qq = query.trim().toLowerCase();
@@ -667,7 +668,7 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
       const y = readY();
       const last = lastScrollY.current;
       if (y <= 4) setSearchHidden(false);
-      else if (y > last + 6) { setSearchHidden(true); setSearchActive(false); }
+      else if (y > last + 6) { setSearchHidden(true); setSearchActive(false); inputRef.current?.blur(); }
       else if (y < last - 6) setSearchHidden(false);
       lastScrollY.current = y;
     };
@@ -841,10 +842,12 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M20.5 20.5l-4-4" /></svg>
             </span>
             <input
+              ref={inputRef}
               type="text"
               value={query}
-              onFocus={() => setSearchActive(true)}
-              onChange={(e) => { onQueryChange(e.target.value); setSearchActive(true); }}
+              onFocus={() => { if (!hasQuery) setSearchActive(true); }}
+              onClick={() => { if (!hasQuery) setSearchActive(true); }}
+              onChange={(e) => { const v = e.target.value; onQueryChange(v); setSearchActive(v.trim().length === 0); }}
               placeholder={L.searchPlaceholder}
               className="w-full rounded-[10px] border-[1.5px] border-[#D10005] bg-white py-3 pl-12 pr-3 text-[15px] font-medium text-[#1d2129] outline-none placeholder:text-[#9aa0a8]"
             />
