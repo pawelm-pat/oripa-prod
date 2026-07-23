@@ -609,8 +609,6 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
   const [cat, setCat] = useState("all");
   const [searchActive, setSearchActive] = useState(false);
   const [searchHidden, setSearchHidden] = useState(false);
-  const [catH, setCatH] = useState(58);
-  const catRef = useRef<HTMLDivElement>(null);
   const searchBoxRef = useRef<HTMLDivElement>(null);
   const lastScrollY = useRef(0);
   const filterCount = Object.keys(filters).length;
@@ -644,14 +642,6 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
       p = p.parentElement;
     }
   }, [cat]);
-
-  // Measure the category bar height so the search bar can stick just beneath it.
-  useEffect(() => {
-    const measure = () => setCatH(catRef.current?.offsetHeight || 58);
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, []);
 
   // Auto-hide the search bar while scrolling down; reveal it again on scroll up
   // (the category bar stays pinned). A downward scroll also closes the filter
@@ -801,9 +791,12 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
 
   return (
     <div ref={rootRef} className="bg-[#eef0f3]">
+      {/* Sticky lobby nav: the category bar stays pinned; the search bar
+          collapses on scroll-down and expands again on scroll-up. */}
+      <div ref={searchBoxRef} className="sticky top-0 z-30 bg-white">
       {/* Category bar — icon over label; ALL is a black D-tab pinned to the
-          left edge, the active category is red with an underline. Stays pinned. */}
-      <div ref={catRef} className="no-scrollbar sticky top-0 z-30 flex items-stretch overflow-x-auto border-b border-black/10 bg-white">
+          left edge, the active category is red with an underline. */}
+      <div className="no-scrollbar flex items-stretch overflow-x-auto border-b border-black/10 bg-white">
         {catList.map((c) => {
           const on = cat === c.key;
           if (c.key === "all") {
@@ -836,42 +829,45 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
         })}
       </div>
 
-      {/* Search bar — sticks just below the category bar and auto-hides on
-          scroll-down, reappearing on scroll-up. Focusing it opens a filter
-          dropdown that overlays the feed and closes on an outside click. */}
+      {/* Search bar — collapses to zero height when hidden so nothing peeks
+          above the category bar; expands again on scroll-up. */}
       <div
-        ref={searchBoxRef}
-        className="sticky z-20 border-b border-black/10 bg-white px-3 py-2.5 transition-transform duration-300 will-change-transform"
-        style={{ top: catH, transform: searchHidden ? "translateY(-140%)" : "none" }}
+        className="overflow-hidden bg-white transition-all duration-300 will-change-[max-height,opacity]"
+        style={{ maxHeight: searchHidden ? 0 : 80, opacity: searchHidden ? 0 : 1 }}
       >
-        <div className="relative">
-          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#1d2129]">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M20.5 20.5l-4-4" /></svg>
-          </span>
-          <input
-            type="text"
-            value={query}
-            onFocus={() => setSearchActive(true)}
-            onChange={(e) => { onQueryChange(e.target.value); setSearchActive(true); }}
-            placeholder={L.searchPlaceholder}
-            className="w-full rounded-[10px] border-[1.5px] border-[#D10005] bg-white py-3 pl-12 pr-3 text-[15px] font-medium text-[#1d2129] outline-none placeholder:text-[#9aa0a8]"
-          />
-        </div>
-
-        {searchActive && (
-          <div className="absolute left-0 right-0 top-full z-40 border-b border-black/10 bg-white shadow-[0_16px_30px_rgba(0,0,0,0.18)]" style={{ animation: "lobbyDropIn .18s ease-out both" }}>
-            <style>{`@keyframes lobbyDropIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}`}</style>
-            <div className="no-scrollbar max-h-[56vh] overflow-y-auto px-4 py-4">
-              <div className="flex flex-wrap gap-2.5">{L.filterTags.map(tagPill)}</div>
-              <h4 className="mb-2.5 mt-5 text-[15px] font-extrabold text-[#1d2129]">{L.pokemonHeading}</h4>
-              <div className="flex flex-wrap gap-2.5">{L.pokemonTags.map(tagPill)}</div>
-            </div>
-            <div className="flex gap-3 border-t border-black/10 bg-white px-4 py-3">
-              <button onClick={onReset} className="flex-1 rounded-[10px] border-[1.6px] border-[#1d2129] bg-white py-3 text-[15px] font-extrabold text-[#1d2129] active:scale-[0.99]">{L.reset}</button>
-              <button onClick={() => setSearchActive(false)} className="flex-1 rounded-[10px] bg-[#D10005] py-3 text-[15px] font-extrabold text-white active:scale-[0.99]">{L.filter}</button>
-            </div>
+        <div className="border-b border-black/10 px-3 py-2.5">
+          <div className="relative">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#1d2129]">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M20.5 20.5l-4-4" /></svg>
+            </span>
+            <input
+              type="text"
+              value={query}
+              onFocus={() => setSearchActive(true)}
+              onChange={(e) => { onQueryChange(e.target.value); setSearchActive(true); }}
+              placeholder={L.searchPlaceholder}
+              className="w-full rounded-[10px] border-[1.5px] border-[#D10005] bg-white py-3 pl-12 pr-3 text-[15px] font-medium text-[#1d2129] outline-none placeholder:text-[#9aa0a8]"
+            />
           </div>
-        )}
+        </div>
+      </div>
+
+      {/* Filter dropdown — overlays the feed just below the nav; focusing the
+          search opens it, an outside click or a scroll closes it. */}
+      {searchActive && (
+        <div className="absolute left-0 right-0 top-full z-40 border-b border-black/10 bg-white shadow-[0_16px_30px_rgba(0,0,0,0.18)]" style={{ animation: "lobbyDropIn .18s ease-out both" }}>
+          <style>{`@keyframes lobbyDropIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}`}</style>
+          <div className="no-scrollbar max-h-[56vh] overflow-y-auto px-4 py-4">
+            <div className="flex flex-wrap gap-2.5">{L.filterTags.map(tagPill)}</div>
+            <h4 className="mb-2.5 mt-5 text-[15px] font-extrabold text-[#1d2129]">{L.pokemonHeading}</h4>
+            <div className="flex flex-wrap gap-2.5">{L.pokemonTags.map(tagPill)}</div>
+          </div>
+          <div className="flex gap-3 border-t border-black/10 bg-white px-4 py-3">
+            <button onClick={onReset} className="flex-1 rounded-[10px] border-[1.6px] border-[#1d2129] bg-white py-3 text-[15px] font-extrabold text-[#1d2129] active:scale-[0.99]">{L.reset}</button>
+            <button onClick={() => setSearchActive(false)} className="flex-1 rounded-[10px] bg-[#D10005] py-3 text-[15px] font-extrabold text-white active:scale-[0.99]">{L.filter}</button>
+          </div>
+        </div>
+      )}
       </div>
 
       {body}
