@@ -3773,6 +3773,8 @@ function myMenuIcon(key: string) {
     return <img src={MENU_ICON_IMG[key]} alt="" className="h-[26px] w-[26px] shrink-0 object-contain" />;
   }
   switch (key) {
+    case "coinHistory":
+      return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 1.8" /></svg>;
     case "shippingAddress":
       return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" /><circle cx="12" cy="9" r="2.5" /></svg>;
     case "subscriptions":
@@ -3785,6 +3787,7 @@ function myMenuIcon(key: string) {
 function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onOpenMyLoot, onOpenPurchaseHistory, onOpenAnnouncements, onOpenShippingAddress, onHome, onLogout, onOpenStore }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenMyLoot: () => void; onOpenPurchaseHistory: () => void; onOpenAnnouncements: () => void; onOpenShippingAddress: () => void; onHome: () => void; onLogout: () => void; onOpenStore?: () => void }) {
   const t = STR[lang];
   const openLegal = useContext(LegalNavContext);
+  const openCoinHistory = useContext(CoinHistoryNavContext);
   const scrollRef = useRef<HTMLDivElement>(null);
   // Restore the last scroll offset when re-entering My Page (e.g. after going
   // back from a sub-screen) instead of jumping to the top.
@@ -3802,6 +3805,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
     { key: "items", label: t.mmItems, onClick: onOpenMyLoot },
     { key: "history", label: t.mmPrizeHistory, onClick: onOpenPrizeHistory },
     { key: "purchases", label: t.mmPurchases, onClick: onOpenPurchaseHistory },
+    { key: "coinHistory", label: t.coinHistoryTitle, onClick: openCoinHistory },
     { key: "invite", label: t.mmInvite },
     { key: "faq", label: t.mmFaq },
     { key: "contact", label: t.mmContact },
@@ -3851,7 +3855,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
             </div>
             <div className="mt-3 flex items-center justify-between gap-3">
               <p className="text-[12px] font-bold text-[#D10005]">{t.mpCoinExpiry}</p>
-              <button className="shrink-0 rounded-lg border border-black/25 px-4 py-1.5 text-[13px] font-bold text-[#1d2129] active:bg-black/[0.03]">{t.mpViewDetails}</button>
+              <button onClick={openCoinHistory} className="shrink-0 rounded-lg border border-black/25 px-4 py-1.5 text-[13px] font-bold text-[#1d2129] active:bg-black/[0.03]">{t.mpViewDetails}</button>
             </div>
           </div>
 
