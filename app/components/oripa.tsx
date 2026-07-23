@@ -3840,7 +3840,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
                 <p className="text-[13px] font-normal text-[#5b616b]">{t.mpOripaCoin}</p>
                 <p className="mt-1 flex items-center gap-1.5 text-[22px] font-extrabold text-[#1d2129]">
                   <CoinIcon size={22} />{coins.toLocaleString()}
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#D10005] text-[15px] leading-none text-white">+</span>
+                  <img src="/icons/coin-plus.png" alt="" className="h-5 w-5 object-contain" draggable={false} />
                 </p>
               </div>
               <div className="w-px bg-black/10" />
