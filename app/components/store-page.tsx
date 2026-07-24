@@ -71,8 +71,9 @@ export type StorePageChrome = {
 };
 
 /**
- * Purchase Coins store — Special Offers (session-first) + Coin Purchase
- * (2 heroes + 7 plain packs). No loyalty, bundles, subs, welcome bar, or tabs.
+ * Purchase Coins store (POC Store UI V1 / internal v3 catalog).
+ * Special Offers (session-first) + Coin Purchase (2 heroes + 7 plain packs).
+ * Checkout is Cashier V1 via `chrome.checkout` (see ./cashier).
  */
 export function StorePage({
   lang,
