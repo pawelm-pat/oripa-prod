@@ -576,7 +576,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
           { text: "My Cards", sub: ["List with select + delete confirm + toast; sticky Pay Now."] },
           { text: "3-D Secure", sub: ["Mock SMBC Visa modal; auth code must be ≥ 4 digits; resend is non-functional."] },
           { text: "Success", sub: ["Purchase breakdown + payment method; Play Now carousel can open a draw; Close credits coins and returns to Store."] },
-          { text: "KYC gate", sub: ["On package select and again on pay (wallet / card / add-card). If incomplete (and scenario ≠ none), KYC opens and payment is blocked. Return from purchase KYC lands back on Store."] },
+          { text: "KYC gate", sub: ["On pay (wallet / card / add-card / My Cards Pay Now), matching the POC. If incomplete (and scenario ≠ none), KYC opens and payment is blocked. Return from purchase KYC lands back on Store."] },
         ],
         validation: [
           "Card number: 14–16 digits (spaces allowed while typing).",

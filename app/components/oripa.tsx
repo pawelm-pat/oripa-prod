@@ -3517,7 +3517,6 @@ function StorePage({
         coins={coins}
         setCoins={setCoins}
         onBack={onBack}
-        onRequireKyc={onRequireKyc}
         chrome={{
           header: <AppHeader coins={coins} t={t} onHome={onHome ?? onBack} onOpenStore={onOpenStore} />,
           footer: <SiteFooter t={t} />,
