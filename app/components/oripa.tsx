@@ -20,6 +20,7 @@ import type {
   WonPrize,
 } from "../lib/types";
 import { STR, type Dict, locTitle } from "../lib/i18n";
+import { ForgotPasswordPage, ChangePasswordPage, forgotPasswordLabel } from "./password-reset";
 import { HOME_SECTIONS, ALL_ORIPA } from "../data/lobby";
 import { NOTIF_YOU, NOTIF_NOTICE, NOTIF_UNREAD_TOTAL } from "../data/notifications";
 import { LEGAL, type LegalDocKey } from "../data/legal";
@@ -41,6 +42,8 @@ import {
   US_STATES,
   formatShippingAddr,
 } from "../data/prizes";
+
+import { StorePage as StorePageView, type PointPackage } from "./store-page";
 
 const NotifNavContext = createContext<() => void>(() => {});
 // Tapping the currency balances in the header opens the Coin History screen.
@@ -1381,7 +1384,49 @@ function AuthHeader({ lang, onSignUp, onLogin }: { lang: Lang; onSignUp: () => v
   );
 }
 
+function AuthSocialPair({ t, onGoogle, onLine, preferredLine = false }: {
+  t: Dict; onGoogle?: () => void; onLine?: () => void; preferredLine?: boolean;
+}) {
+  const lineIcon = (
+    <svg width="28" height="28" viewBox="0 0 40 40"><rect width="40" height="40" rx="8" fill="#06C755" /><text x="20" y="28" textAnchor="middle" fontSize="22" fill="white" fontWeight="bold">L</text></svg>
+  );
+  const googleIcon = (
+    <svg width="28" height="28" viewBox="0 0 24 24">
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+    </svg>
+  );
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <button
+        type="button"
+        onClick={onLine}
+        className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-[#e5e8ec] bg-white px-3 py-4 active:bg-[#f8f9fa]"
+      >
+        {lineIcon}
+        <span className="text-[13px] font-bold text-[#1d2129]">{t.authSocialLine}</span>
+        {preferredLine && (
+          <span className="mt-0.5 rounded-full bg-[#06C755] px-2.5 py-0.5 text-[10px] font-bold text-white">
+            {t.authPreferred}
+          </span>
+        )}
+      </button>
+      <button
+        type="button"
+        onClick={onGoogle}
+        className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-[#e5e8ec] bg-white px-3 py-4 active:bg-[#f8f9fa]"
+      >
+        {googleIcon}
+        <span className="text-[13px] font-bold text-[#1d2129]">{t.authSocialGoogle}</span>
+      </button>
+    </div>
+  );
+}
+
 function AuthSocialButtons({ signUp, t, onApple, onGoogle, onLine }: { signUp: boolean; t: Dict; onApple?: () => void; onGoogle?: () => void; onLine?: () => void }) {
+  // Legacy stacked buttons kept for any remaining callers; primary auth UIs use AuthSocialPair.
   const appleLabel = signUp ? t.authSignUpApple : t.authLoginApple;
   const googleLabel = signUp ? t.authSignUpGoogle : t.authLoginGoogle;
   const lineLabel = signUp ? t.authSignUpLine : t.authLoginLine;
@@ -1791,15 +1836,15 @@ function GoogleAuthSheet({ lang, signUp, onClose, onSuccess }: {
   );
 }
 
-function AuthField({ label, value, onChange, type = "text", icon, valid, error, onBlur }: {
+function AuthField({ label, value, onChange, type = "text", icon, valid, error, onBlur, placeholder = "Placeholder", required = true, trailing }: {
   label: string; value: string; onChange: (v: string) => void; type?: string; icon?: React.ReactNode;
-  valid?: boolean; error?: string; onBlur?: () => void;
+  valid?: boolean; error?: string; onBlur?: () => void; placeholder?: string; required?: boolean; trailing?: React.ReactNode;
 }) {
-  const showTick = valid === true;
+  const showTick = valid === true && !trailing;
   return (
     <div>
       <label className="mb-1 block text-[12px] font-semibold text-[#1d2129]">
-        {label}<span className="ml-0.5 text-[#D10005]">*</span>
+        {label}{required && <span className="ml-0.5 text-[#D10005]">*</span>}
       </label>
       <div className="relative flex items-center">
         {icon && <span className="absolute left-3 text-[#8a9099]">{icon}</span>}
@@ -1808,10 +1853,11 @@ function AuthField({ label, value, onChange, type = "text", icon, valid, error, 
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onBlur={onBlur}
-          placeholder="Placeholder"
+          placeholder={placeholder}
           className={`w-full rounded-xl bg-white py-3 text-[14px] text-[#1d2129] placeholder:text-[#bbbec4] outline-none border ${error ? "border-[#D10005]" : "border-[#e5e8ec]"}`}
-          style={{ paddingLeft: icon ? "36px" : "14px", paddingRight: showTick ? "40px" : "14px" }}
+          style={{ paddingLeft: icon ? "36px" : "14px", paddingRight: (showTick || trailing) ? "40px" : "14px" }}
         />
+        {trailing && <span className="absolute right-3 flex items-center">{trailing}</span>}
         {showTick && (
           <span className="absolute right-3">
             <svg width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill="#22c55e" /><path d="M6 10l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
@@ -2132,28 +2178,16 @@ function PhoneOtpPage({ lang, phone, onBack, onSuccess }: {
 }
 
 /* ── SignupPage ───────────────────────────────────────────────────────── */
-function SignupPage({ lang, onLogin, onSuccess, initialEmailVerify = false, initialAppleAuth = false }: { lang: Lang; onLogin: () => void; onSuccess: () => void; initialEmailVerify?: boolean; initialAppleAuth?: boolean }) {
+function SignupPage({ lang, onClose, onLogin, onSuccess, initialEmailVerify = false }: {
+  lang: Lang; onClose: () => void; onLogin: () => void; onSuccess: () => void; initialEmailVerify?: boolean;
+}) {
   const t = STR[lang];
-
-  const [view, setView] = useState<"form" | "otp">("form");
-  const [otpPhone, setOtpPhone] = useState("");
-  const [activeSection, setActiveSection] = useState<"phone" | "email" | null>("email");
-  const [showAppleAuth, setShowAppleAuth] = useState(initialAppleAuth);
   const [showGoogleAuth, setShowGoogleAuth] = useState(false);
-
-  // Phone section state
-  const [countryCode, setCountryCode] = useState<"JP" | "US">("JP");
-  const [phone, setPhone] = useState("");
-  const [phoneTouched, setPhoneTouched] = useState(false);
-  const [phoneDob, setPhoneDob] = useState("");
-  const [phoneInvite, setPhoneInvite] = useState("");
-  const [phoneAgreed, setPhoneAgreed] = useState(false);
-  const [showPhoneDobPicker, setShowPhoneDobPicker] = useState(false);
-
-  // Email section state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [emailDob, setEmailDob] = useState("");
+  const [country, setCountry] = useState<"japan" | "usa">("japan");
   const [emailInvite, setEmailInvite] = useState("");
   const [emailAgreed, setEmailAgreed] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
@@ -2161,299 +2195,212 @@ function SignupPage({ lang, onLogin, onSuccess, initialEmailVerify = false, init
   const [showEmailDobPicker, setShowEmailDobPicker] = useState(false);
   const [showEmailVerify, setShowEmailVerify] = useState(initialEmailVerify);
 
-  const phonePrefix = countryCode === "JP" ? "🇯🇵 +81" : "🇺🇸 +1";
-  const phoneValid = phone.length === 10;
-  const phoneError = phoneTouched && phone.length > 0 && !phoneValid ? t.authPhoneError as string : "";
-  const canPhoneSubmit = phoneValid && phoneDob.length > 0 && phoneAgreed;
-
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const passwordValid = password.length >= 8;
-  const canEmailSubmit = emailValid && passwordValid && emailDob.length > 0 && emailAgreed;
+  const canEmailSubmit = emailValid && passwordValid && emailDob.length > 0 && !!country && emailAgreed;
   const emailFieldError = email.length > 0 && !emailValid ? t.authEmailError : "";
   const passwordError = password.length > 0 && !passwordValid ? t.authPasswordError : "";
 
   const formatDob = (iso: string) => {
     if (!iso) return "";
     const [y, m, d] = iso.split("-");
-    if (lang === "ja") return `${y}年${Number(m)}月${Number(d)}日`;
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return `${months[Number(m) - 1]} ${Number(d)}, ${y}`;
+    return `${String(Number(d)).padStart(2, "0")}-${months[Number(m) - 1]}-${y}`;
   };
 
+  const personIcon = (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" strokeLinecap="round" /><circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+  const lockIcon = (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 018 0v3" strokeLinecap="round" />
+    </svg>
+  );
   const calIcon = (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
     </svg>
   );
-  const checkIcon = (
-    <svg width="20" height="20" viewBox="0 0 20 20">
-      <circle cx="10" cy="10" r="9" fill="#22c55e" />
-      <path d="M6 10l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+  const hashIcon = (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M5 9h14M5 15h14M10 3L8 21M16 3l-2 18" strokeLinecap="round" />
+    </svg>
+  );
+  const eyeIcon = (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8a9099" strokeWidth="2">
+      {showPassword
+        ? <><path d="M17.94 17.94A10.94 10.94 0 0112 20c-5 0-9.27-3.11-11-8 1.02-2.86 2.98-5.1 5.35-6.39M9.9 4.24A10.94 10.94 0 0112 4c5 0 9.27 3.11 11 8a11.7 11.7 0 01-2.16 3.19M1 1l22 22" strokeLinecap="round" /><path d="M14.12 14.12A3 3 0 019.88 9.88" strokeLinecap="round" /></>
+        : <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" /><circle cx="12" cy="12" r="3" /></>}
     </svg>
   );
 
-  const renderDobButton = (dob: string, onOpen: () => void) => (
-    <div>
-      <label className="mb-1 block text-[12px] font-semibold text-[#1d2129]">
-        {t.authDobLabel}<span className="ml-0.5 text-[#D10005]">*</span>
-      </label>
-      <button
-        type="button"
-        onClick={onOpen}
-        className="relative w-full rounded-xl border border-[#e5e8ec] bg-white py-3 text-left text-[14px] outline-none"
-        style={{ paddingLeft: "36px", paddingRight: dob ? "40px" : "14px" }}
-      >
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8a9099]">{calIcon}</span>
-        <span className={dob ? "text-[#1d2129]" : "text-[#bbbec4]"}>{dob ? formatDob(dob) : "Placeholder"}</span>
-        {dob && <span className="absolute right-3 top-1/2 -translate-y-1/2">{checkIcon}</span>}
-      </button>
-    </div>
-  );
-
-  const renderInviteField = (value: string, onChange: (v: string) => void) => (
-    <div>
-      <label className="mb-1 block text-[12px] font-semibold text-[#1d2129]">{t.authInviteLabel}</label>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Placeholder"
-        className="w-full rounded-xl border border-[#e5e8ec] bg-white py-3 pl-3.5 text-[14px] text-[#1d2129] placeholder:text-[#bbbec4] outline-none"
-      />
-    </div>
-  );
-
-  const renderTermsCheckbox = (checked: boolean, onChange: (v: boolean) => void) => (
-    <label className="flex items-start gap-2.5">
-      <div className="relative mt-0.5 shrink-0">
-        <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="sr-only" />
-        <div
-          className="flex h-5 w-5 items-center justify-center rounded"
-          style={{ background: checked ? "#D10005" : "white", border: checked ? "none" : "2px solid #d1d5db" }}
-        >
-          {checked && <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>}
-        </div>
-      </div>
-      <span className="text-[12px] leading-relaxed text-[#5c626b]">
-        {t.authAgreePrefix}
-        <span className="text-[#D10005] underline">{t.authTermsOfService}</span>
-        {t.authAnd}
-        <span className="text-[#D10005] underline">{t.authPrivacyPolicy}</span>
-        {t.authAgreeEnd}
-      </span>
-    </label>
-  );
-
-  if (view === "otp") {
-    return <PhoneOtpPage lang={lang} phone={otpPhone} onBack={() => setView("form")} onSuccess={() => {
-      try { sessionStorage.setItem("authData", JSON.stringify({ phone, phoneVerified: true })); } catch {}
-      onSuccess();
-    }} />;
-  }
-
   return (
-    <div className="relative flex h-full flex-col bg-[#f5f6f8]">
+    <div className="relative flex h-full flex-col bg-[#eef0f3]">
       <AuthHeader lang={lang} onSignUp={() => {}} onLogin={onLogin} />
 
-      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
-        <div className="h-[120px] w-full" style={{ background: "repeating-conic-gradient(#d1d5db 0% 25%, white 0% 50%) 0 0 / 20px 20px" }} />
+      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-4">
+        <div className="relative rounded-2xl border border-[#e5e8ec] bg-white px-4 pb-5 pt-4 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center text-[#8a9099]"
+            aria-label={t.cancel}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+          </button>
 
-        <div className="px-4 py-5 space-y-3">
-
-          {/* ── Social sign-up methods ── */}
-          <AuthSocialButtons signUp t={t} onApple={() => setShowAppleAuth(true)} onGoogle={() => setShowGoogleAuth(true)} onLine={() => { try { sessionStorage.setItem("authData", JSON.stringify({ lineId: "line_user" })); } catch {} onSuccess(); }} />
-
-          {/* ── Email Section ── */}
-          <div className="overflow-hidden rounded-2xl border border-[#e5e8ec] bg-white">
-            <button
-              onClick={() => setActiveSection(prev => prev === "email" ? null : "email")}
-              className="flex w-full items-center justify-between px-4 py-4"
-            >
-              <span className="text-[15px] font-bold text-[#1d2129]">{t.authEmailSection as string}</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-                   className={`transition-transform duration-200 ${activeSection === "email" ? "rotate-180" : ""}`}>
-                <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-
-            {activeSection === "email" && (
-              <div className="border-t border-[#e5e8ec] px-4 pt-4 pb-4 space-y-4">
-                <AuthField
-                  label={t.authEmailLabel} value={email} onChange={setEmail} type="email"
-                  valid={emailValid && email.length > 0}
-                  error={emailTouched ? emailFieldError : ""}
-                  onBlur={() => setEmailTouched(true)}
-                />
-                <AuthField
-                  label={t.authPasswordLabel} value={password} onChange={setPassword} type="password"
-                  valid={passwordValid && password.length > 0}
-                  error={passwordTouched ? passwordError : ""}
-                  onBlur={() => setPasswordTouched(true)}
-                />
-                {renderDobButton(emailDob, () => setShowEmailDobPicker(true))}
-                {renderInviteField(emailInvite, setEmailInvite)}
-                {renderTermsCheckbox(emailAgreed, setEmailAgreed)}
-
-                <button
-                  onClick={() => { if (canEmailSubmit) setShowEmailVerify(true); }}
-                  disabled={!canEmailSubmit}
-                  className="w-full rounded-xl py-3.5 text-[15px] font-bold text-white"
-                  style={{ background: "#D10005", opacity: canEmailSubmit ? 1 : 0.45 }}
-                >
-                  {t.authSignUpFree}
-                </button>
-              </div>
-            )}
+          <h2 className="text-center text-[16px] font-bold text-[#1d2129]">{t.authSignUpWith}</h2>
+          <div className="mt-4">
+            <AuthSocialPair
+              t={t}
+              preferredLine
+              onLine={() => { try { sessionStorage.setItem("authData", JSON.stringify({ lineId: "line_user" })); } catch {} onSuccess(); }}
+              onGoogle={() => setShowGoogleAuth(true)}
+            />
           </div>
 
-          {/* ── Phone Number Section — hidden, preserved for future re-enablement ── */}
-          {false && (
-          <div className="overflow-hidden rounded-2xl border border-[#e5e8ec] bg-white">
-            <button
-              onClick={() => setActiveSection(prev => prev === "phone" ? null : "phone")}
-              className="flex w-full items-center justify-between px-4 py-4"
-            >
-              <span className="text-[15px] font-bold text-[#1d2129]">{t.authPhoneSection as string}</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-                   className={`transition-transform duration-200 ${activeSection === "phone" ? "rotate-180" : ""}`}>
-                <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
+          <div className="my-5 flex items-center gap-3">
+            <div className="h-px flex-1 bg-[#e5e8ec]" />
+            <span className="text-[12px] font-medium text-[#8a9099]">{t.authOrUseEmail}</span>
+            <div className="h-px flex-1 bg-[#e5e8ec]" />
+          </div>
 
-            {activeSection === "phone" && (
-              <div className="border-t border-[#e5e8ec] px-4 pt-4 pb-4 space-y-4">
-                {/* Country code + Phone number */}
-                <div>
-                  <label className="mb-1 block text-[12px] font-semibold text-[#1d2129]">
-                    {t.authPhoneLabel as string}<span className="ml-0.5 text-[#D10005]">*</span>
-                  </label>
-                  <div className="flex gap-2">
-                    <select
-                      value={countryCode}
-                      onChange={(e) => { setCountryCode(e.target.value as "JP" | "US"); setPhone(""); setPhoneTouched(false); }}
-                      className="rounded-xl border border-[#e5e8ec] bg-white px-3 py-3 text-[13px] text-[#1d2129] outline-none"
-                    >
-                      <option value="JP">🇯🇵 +81</option>
-                      <option value="US">🇺🇸 +1</option>
-                    </select>
-                    <div className="relative flex-1">
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                        onBlur={() => setPhoneTouched(true)}
-                        placeholder="Placeholder"
-                        className={`w-full rounded-xl border bg-white py-3 pl-3.5 text-[14px] text-[#1d2129] placeholder:text-[#bbbec4] outline-none ${phoneError ? "border-[#D10005]" : "border-[#e5e8ec]"}`}
-                        style={{ paddingRight: phoneValid && phone.length > 0 ? "40px" : "14px" }}
-                      />
-                      {phoneValid && phone.length > 0 && (
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2">{checkIcon}</span>
-                      )}
-                    </div>
-                  </div>
-                  {phoneError && <p className="mt-1 text-[11px] text-[#D10005]">{phoneError}</p>}
+          <div className="space-y-3.5">
+            <AuthField
+              label={t.authEmailLabel}
+              value={email}
+              onChange={setEmail}
+              type="email"
+              icon={personIcon}
+              placeholder={t.authEmailLabel}
+              valid={emailValid && email.length > 0}
+              error={emailTouched ? emailFieldError : ""}
+              onBlur={() => setEmailTouched(true)}
+            />
+            <AuthField
+              label={t.authPasswordShort}
+              value={password}
+              onChange={setPassword}
+              type={showPassword ? "text" : "password"}
+              icon={lockIcon}
+              placeholder={t.authPasswordShort}
+              valid={passwordValid && password.length > 0}
+              error={passwordTouched ? passwordError : ""}
+              onBlur={() => setPasswordTouched(true)}
+              trailing={
+                <button type="button" onClick={() => setShowPassword((v) => !v)} className="p-0.5" aria-label={showPassword ? "Hide password" : "Show password"}>
+                  {eyeIcon}
+                </button>
+              }
+            />
+
+            <div>
+              <label className="mb-1 block text-[12px] font-semibold text-[#1d2129]">
+                {t.authDobLabel}<span className="ml-0.5 text-[#D10005]">*</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowEmailDobPicker(true)}
+                className="relative w-full rounded-xl border border-[#e5e8ec] bg-white py-3 text-left text-[14px] outline-none"
+                style={{ paddingLeft: "36px", paddingRight: "14px" }}
+              >
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8a9099]">{calIcon}</span>
+                <span className={emailDob ? "text-[#1d2129]" : "text-[#bbbec4]"}>
+                  {emailDob ? formatDob(emailDob) : t.authDobPlaceholder}
+                </span>
+              </button>
+              <p className="mt-1 text-[11px] text-[#8a9099]">{t.authDobPlaceholder}</p>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-[12px] font-semibold text-[#1d2129]">
+                {t.authCountryLabel}<span className="ml-0.5 text-[#D10005]">*</span>
+              </label>
+              <div className="relative">
+                <select
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value as "japan" | "usa")}
+                  className="w-full appearance-none rounded-xl border border-[#e5e8ec] bg-white py-3 pl-3.5 pr-10 text-[14px] text-[#1d2129] outline-none"
+                >
+                  <option value="japan">🇯🇵 {t.shippingJapan}</option>
+                  <option value="usa">🇺🇸 {t.shippingUSA}</option>
+                </select>
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#8a9099]">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                </span>
+              </div>
+            </div>
+
+            <AuthField
+              label={t.authInviteLabel}
+              value={emailInvite}
+              onChange={setEmailInvite}
+              icon={hashIcon}
+              placeholder={t.authInvitePlaceholder}
+              required={false}
+            />
+
+            <label className="flex items-start gap-2.5 rounded-xl border border-[#e5e8ec] bg-[#f7f8fa] px-3 py-3">
+              <div className="relative mt-0.5 shrink-0">
+                <input type="checkbox" checked={emailAgreed} onChange={(e) => setEmailAgreed(e.target.checked)} className="sr-only" />
+                <div
+                  className="flex h-5 w-5 items-center justify-center rounded border-2 bg-white"
+                  style={{ borderColor: emailAgreed ? "#D10005" : "#d1d5db", background: emailAgreed ? "#D10005" : "white" }}
+                >
+                  {emailAgreed && <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>}
                 </div>
-
-                {renderDobButton(phoneDob, () => setShowPhoneDobPicker(true))}
-                {renderInviteField(phoneInvite, setPhoneInvite)}
-                {renderTermsCheckbox(phoneAgreed, setPhoneAgreed)}
-
-                <button
-                  onClick={() => { if (canPhoneSubmit) { setOtpPhone(`${phonePrefix} ${phone}`); setView("otp"); } }}
-                  disabled={!canPhoneSubmit}
-                  className="w-full rounded-xl py-3.5 text-[15px] font-bold text-white"
-                  style={{ background: "#D10005", opacity: canPhoneSubmit ? 1 : 0.45 }}
-                >
-                  {t.authSignUpFree}
-                </button>
               </div>
-            )}
-          </div>
-          )}
+              <span className="text-[12px] leading-relaxed text-[#5c626b]">
+                {t.authAgreePrefix}
+                <span className="font-bold text-[#1d2129] underline">{t.authTermsOfService}</span>
+                {t.authAnd}
+                <span className="font-bold text-[#1d2129] underline">{t.authPrivacyPolicy}</span>
+                {t.authAgreeEnd}
+              </span>
+            </label>
 
-          <p className="text-center text-[13px] text-[#5c626b]">
-            {t.authHaveAccount}{" "}
-            <button onClick={onLogin} className="font-bold text-[#D10005] underline">{t.authLogInLink}</button>
-          </p>
+            <button
+              type="button"
+              onClick={() => { if (canEmailSubmit) setShowEmailVerify(true); }}
+              disabled={!canEmailSubmit}
+              className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[15px] font-bold text-white"
+              style={{ background: canEmailSubmit ? "#D10005" : "#c9ced6" }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <path d="M21 12a9 9 0 11-2.6-6.2" strokeLinecap="round" />
+                <path d="M21 3v6h-6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {t.authGetStarted}
+            </button>
+          </div>
         </div>
       </div>
-
-      {/* Phone DOB picker — hidden along with the phone section */}
-      {false && showPhoneDobPicker && (
-        <DobPickerModal lang={lang} onClose={() => setShowPhoneDobPicker(false)}
-                        onConfirm={(iso) => { setPhoneDob(iso); setShowPhoneDobPicker(false); }} />
-      )}
 
       {showEmailDobPicker && (
         <DobPickerModal lang={lang} onClose={() => setShowEmailDobPicker(false)}
                         onConfirm={(iso) => { setEmailDob(iso); setShowEmailDobPicker(false); }} />
       )}
 
-      {/* Email Verification Modal */}
       {showEmailVerify && (
         <div className="absolute inset-0 z-50 flex items-center justify-center px-5" style={{ background: "rgba(0,0,0,0.5)" }}>
           <div className="w-full max-w-xs rounded-2xl bg-white px-6 py-6 shadow-2xl">
-            <div className="flex justify-center mb-4">
-              <div className="flex h-24 w-24 items-center justify-center rounded-full" style={{ background: "linear-gradient(135deg,#fde68a,#fbbf24)" }}>
-                <svg width="56" height="56" viewBox="0 0 60 60">
-                  <ellipse cx="30" cy="38" rx="18" ry="14" fill="#f97316" />
-                  <circle cx="30" cy="26" r="14" fill="#fb923c" />
-                  <polygon points="18,18 10,6 22,14" fill="#f97316" />
-                  <polygon points="42,18 50,6 38,14" fill="#f97316" />
-                  <circle cx="30" cy="26" r="9" fill="#fed7aa" />
-                  <circle cx="25" cy="24" r="2.5" fill="#1d2129" />
-                  <circle cx="35" cy="24" r="2.5" fill="#1d2129" />
-                  <circle cx="26" cy="23" r="1" fill="white" />
-                  <circle cx="36" cy="23" r="1" fill="white" />
-                  <ellipse cx="30" cy="28" rx="3" ry="2" fill="#f87171" />
-                  <path d="M26 32 Q30 35 34 32" stroke="#1d2129" strokeWidth="1.2" fill="none" strokeLinecap="round" />
-                  <rect x="16" y="36" width="28" height="20" rx="3" fill="white" stroke="#e5e8ec" strokeWidth="1.5" />
-                  <path d="M16 39l14 10 14-10" stroke="#D10005" strokeWidth="1.5" fill="none" />
-                  <circle cx="36" cy="34" r="5" fill="#D10005" />
-                  <text x="36" y="38" textAnchor="middle" fontSize="8" fill="white" fontWeight="bold">♥</text>
-                </svg>
-              </div>
-            </div>
             <h2 className="text-center text-[18px] font-extrabold text-[#1d2129]">{t.authVerifyTitle}</h2>
             <p className="mt-2 text-center text-[12px] leading-relaxed text-[#5c626b]">
               {t.authVerifyBody(email || "HELLO@EMAIL.COM")}
             </p>
             <button onClick={() => {
-              try { sessionStorage.setItem("authData", JSON.stringify({ email, dob: emailDob })); } catch {}
+              try { sessionStorage.setItem("authData", JSON.stringify({ email, dob: emailDob, country, ...(emailInvite ? { invite: emailInvite } : {}) })); } catch {}
               onSuccess();
             }} className="mt-4 w-full rounded-xl py-3 text-[14px] font-bold text-white" style={{ background: "#D10005" }}>
               {t.authOpenEmailApp}
             </button>
-            <div className="mt-3 space-y-1">
-              <p className="text-[11px] font-semibold text-[#5c626b]">{t.authVerifyNote}</p>
-              {(t.authVerifyBullets as string[]).map((b, i) => (
-                <p key={i} className="flex items-start gap-1.5 text-[11px] text-[#5c626b]">
-                  <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#5c626b]" />{b}
-                </p>
-              ))}
-            </div>
             <button className="mt-4 w-full text-center text-[11px] font-bold tracking-wide text-[#5c626b] underline">
               {t.authResendEmail}
             </button>
           </div>
         </div>
-      )}
-
-      {showAppleAuth && (
-        <AppleAuthSheet
-          lang={lang}
-          signUp
-          onClose={() => setShowAppleAuth(false)}
-          onSuccess={() => {
-            try {
-              sessionStorage.setItem("authData", JSON.stringify({
-                appleId: t.authAppleAccountEmail,
-                displayName: t.authAppleAccountName,
-              }));
-            } catch {}
-            setShowAppleAuth(false);
-            onSuccess();
-          }}
-        />
       )}
 
       {showGoogleAuth && (
@@ -2479,20 +2426,18 @@ function SignupPage({ lang, onLogin, onSuccess, initialEmailVerify = false, init
 
 /* ── LoginPage ────────────────────────────────────────────────────────── */
 function LoginPage({ lang, onSignUp, onSuccess, initialAppleAuth = false }: { lang: Lang; onSignUp: () => void; onSuccess: () => void; initialAppleAuth?: boolean }) {
+  // PASSWORD_RESET_FLOW
   const t = STR[lang];
 
-  const [view, setView] = useState<"form" | "otp">("form");
+  const [view, setView] = useState<"form" | "otp" | "forgot" | "changePassword">("form");
   const [otpPhone, setOtpPhone] = useState("");
   const [activeSection, setActiveSection] = useState<"phone" | "email" | null>("email");
-  const [showAppleAuth, setShowAppleAuth] = useState(initialAppleAuth);
   const [showGoogleAuth, setShowGoogleAuth] = useState(false);
 
-  // Phone section state
   const [countryCode, setCountryCode] = useState<"JP" | "US">("JP");
   const [phone, setPhone] = useState("");
   const [phoneTouched, setPhoneTouched] = useState(false);
 
-  // Email section state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
@@ -2508,18 +2453,32 @@ function LoginPage({ lang, onSignUp, onSuccess, initialAppleAuth = false }: { la
   const emailFieldError = email.length > 0 && !emailValid ? t.authEmailError : "";
   const passwordError = password.length > 0 && !passwordValid ? t.authPasswordError : "";
 
-  const checkIcon = (
-    <svg width="20" height="20" viewBox="0 0 20 20">
-      <circle cx="10" cy="10" r="9" fill="#22c55e" />
-      <path d="M6 10l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-    </svg>
-  );
-
   if (view === "otp") {
     return <PhoneOtpPage lang={lang} phone={otpPhone} onBack={() => setView("form")} onSuccess={() => {
       try { sessionStorage.setItem("authData", JSON.stringify({ phone, phoneVerified: true })); } catch {}
       onSuccess();
     }} />;
+  }
+
+  if (view === "forgot") {
+    return (
+      <ForgotPasswordPage
+        lang={lang}
+        initialEmail={email}
+        onBack={() => setView("form")}
+        onContinueToChangePassword={() => setView("changePassword")}
+      />
+    );
+  }
+
+  if (view === "changePassword") {
+    return (
+      <ChangePasswordPage
+        lang={lang}
+        onBack={() => setView("form")}
+        onDone={() => setView("form")}
+      />
+    );
   }
 
   return (
@@ -2529,13 +2488,15 @@ function LoginPage({ lang, onSignUp, onSuccess, initialAppleAuth = false }: { la
       <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
         <div className="h-[120px] w-full" style={{ background: "repeating-conic-gradient(#d1d5db 0% 25%, white 0% 50%) 0 0 / 20px 20px" }} />
 
-        <div className="px-4 py-5 space-y-3">
+        <div className="px-4 py-5 space-y-4">
+          <h2 className="text-center text-[16px] font-bold text-[#1d2129]">{t.authLoginSocial}</h2>
+          <AuthSocialPair
+            t={t}
+            onLine={() => { try { sessionStorage.setItem("authData", JSON.stringify({ lineId: "line_user" })); } catch {} onSuccess(); }}
+            onGoogle={() => setShowGoogleAuth(true)}
+          />
 
-          {/* ── Social login ── (PROD: LINE logs in instantly for easy access) */}
-          <AuthSocialButtons signUp={false} t={t} onApple={() => setShowAppleAuth(true)} onGoogle={() => setShowGoogleAuth(true)} onLine={() => { try { sessionStorage.setItem("authData", JSON.stringify({ lineId: "line_user" })); } catch {} onSuccess(); }} />
-
-          {/* ── Email Section ── */}
-          <div className="overflow-hidden rounded-2xl border border-[#e5e8ec] bg-white">
+          <div className="overflow-hidden rounded-2xl border border-[#e5e8ec] bg-white shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
             <button
               onClick={() => setActiveSection(prev => prev === "email" ? null : "email")}
               className="flex w-full items-center justify-between px-4 py-4"
@@ -2556,83 +2517,33 @@ function LoginPage({ lang, onSignUp, onSuccess, initialAppleAuth = false }: { la
                   onBlur={() => setEmailTouched(true)}
                 />
                 <AuthField
-                  label={t.authPasswordLabel} value={password} onChange={setPassword} type="password"
+                  label={t.authPasswordShort} value={password} onChange={setPassword} type="password"
                   valid={passwordValid && password.length > 0}
                   error={passwordTouched ? passwordError : ""}
                   onBlur={() => setPasswordTouched(true)}
                 />
 
+                <div className="flex justify-end -mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setView("forgot")}
+                    className="text-[13px] font-bold text-[#D10005] underline"
+                  >
+                    {forgotPasswordLabel(lang)}
+                  </button>
+                </div>
+
                 <button
                   onClick={() => { if (canEmailSubmit) { try { sessionStorage.setItem("authData", JSON.stringify({ email })); } catch {} onSuccess(); } }}
                   disabled={!canEmailSubmit}
                   className="w-full rounded-xl py-3.5 text-[15px] font-bold text-white"
-                  style={{ background: "#D10005", opacity: canEmailSubmit ? 1 : 0.45 }}
+                  style={{ background: "#E07A7A", opacity: canEmailSubmit ? 1 : 0.45 }}
                 >
                   {t.authLoginTitle}
                 </button>
               </div>
             )}
           </div>
-
-          {/* ── Phone Number Section — hidden, preserved for future re-enablement ── */}
-          {false && (
-          <div className="overflow-hidden rounded-2xl border border-[#e5e8ec] bg-white">
-            <button
-              onClick={() => setActiveSection(prev => prev === "phone" ? null : "phone")}
-              className="flex w-full items-center justify-between px-4 py-4"
-            >
-              <span className="text-[15px] font-bold text-[#1d2129]">{t.authLoginPhoneSection as string}</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-                   className={`transition-transform duration-200 ${activeSection === "phone" ? "rotate-180" : ""}`}>
-                <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-
-            {activeSection === "phone" && (
-              <div className="border-t border-[#e5e8ec] px-4 pt-4 pb-4 space-y-4">
-                <div>
-                  <label className="mb-1 block text-[12px] font-semibold text-[#1d2129]">
-                    {t.authPhoneLabel as string}<span className="ml-0.5 text-[#D10005]">*</span>
-                  </label>
-                  <div className="flex gap-2">
-                    <select
-                      value={countryCode}
-                      onChange={(e) => { setCountryCode(e.target.value as "JP" | "US"); setPhone(""); setPhoneTouched(false); }}
-                      className="rounded-xl border border-[#e5e8ec] bg-white px-3 py-3 text-[13px] text-[#1d2129] outline-none"
-                    >
-                      <option value="JP">🇯🇵 +81</option>
-                      <option value="US">🇺🇸 +1</option>
-                    </select>
-                    <div className="relative flex-1">
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                        onBlur={() => setPhoneTouched(true)}
-                        placeholder="Placeholder"
-                        className={`w-full rounded-xl border bg-white py-3 pl-3.5 text-[14px] text-[#1d2129] placeholder:text-[#bbbec4] outline-none ${phoneError ? "border-[#D10005]" : "border-[#e5e8ec]"}`}
-                        style={{ paddingRight: phoneValid && phone.length > 0 ? "40px" : "14px" }}
-                      />
-                      {phoneValid && phone.length > 0 && (
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2">{checkIcon}</span>
-                      )}
-                    </div>
-                  </div>
-                  {phoneError && <p className="mt-1 text-[11px] text-[#D10005]">{phoneError}</p>}
-                </div>
-
-                <button
-                  onClick={() => { if (phoneValid) { setOtpPhone(`${phonePrefix} ${phone}`); setView("otp"); } }}
-                  disabled={!phoneValid}
-                  className="w-full rounded-xl py-3.5 text-[15px] font-bold text-white"
-                  style={{ background: "#D10005", opacity: phoneValid ? 1 : 0.45 }}
-                >
-                  {t.authLoginTitle}
-                </button>
-              </div>
-            )}
-          </div>
-          )}
 
           <p className="text-center text-[13px] text-[#5c626b]">
             {t.authNoAccount}{" "}
@@ -2640,24 +2551,6 @@ function LoginPage({ lang, onSignUp, onSuccess, initialAppleAuth = false }: { la
           </p>
         </div>
       </div>
-
-      {showAppleAuth && (
-        <AppleAuthSheet
-          lang={lang}
-          signUp={false}
-          onClose={() => setShowAppleAuth(false)}
-          onSuccess={() => {
-            try {
-              sessionStorage.setItem("authData", JSON.stringify({
-                appleId: t.authAppleAccountEmail,
-                displayName: t.authAppleAccountName,
-              }));
-            } catch {}
-            setShowAppleAuth(false);
-            onSuccess();
-          }}
-        />
-      )}
 
       {showGoogleAuth && (
         <GoogleAuthSheet
@@ -4738,27 +4631,7 @@ function CoinHistoryPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
   );
 }
 
-/* ── Store (coin purchase) ────────────────────────────────────────────── */
-type PointPackage = { id: string; coins: number; freePoints: number; jpy: number; inrApprox: number; originalJpy?: number; firstTimeOffer?: boolean; popularOffer?: boolean; discount?: number; subscriptionName?: string };
-const POINT_PACKAGES: PointPackage[] = [
-  { id: "pp25000", coins: 25000, freePoints: 25000, jpy: 25000, inrApprox: 15332.20, originalJpy: 30000, firstTimeOffer: true, discount: 90 },
-  { id: "pp20000", coins: 20000, freePoints: 20000, jpy: 20000, inrApprox: 12265.76, originalJpy: 30000, popularOffer: true, discount: 66 },
-  { id: "pp500",   coins: 500,   freePoints: 500,   jpy: 500,   inrApprox: 306.64 },
-  { id: "pp1000",  coins: 1000,  freePoints: 1000,  jpy: 1000,  inrApprox: 613.29 },
-  { id: "pp5000",  coins: 5000,  freePoints: 5000,  jpy: 5000,  inrApprox: 3066.44 },
-  { id: "pp10000", coins: 10000, freePoints: 10000, jpy: 10000, inrApprox: 6132.88 },
-];
-
-const FIRST_TIME_OFFER: PointPackage = { id: "fto1", coins: 500, freePoints: 50, jpy: 500, inrApprox: 306.64, originalJpy: 1000, firstTimeOffer: true, discount: 90 };
-
-type LimitedBundle = { id: string; name: string; coins: number; freePoints: number; jpy: number; originalJpy: number; remaining: number; total: number; discount: number; hot?: boolean };
-const LIMITED_BUNDLES: LimitedBundle[] = [
-  { id: "lb1", name: "Starter Pack",  coins: 3000,  freePoints: 800,   jpy: 1200,  originalJpy: 2400,  remaining: 23, total: 50, discount: 50, hot: true },
-  { id: "lb2", name: "Power Pack",    coins: 8000,  freePoints: 2000,  jpy: 4000,  originalJpy: 8000,  remaining: 8,  total: 30, discount: 50 },
-  { id: "lb3", name: "Whale Pack",    coins: 20000, freePoints: 6000,  jpy: 6000,  originalJpy: 12000, remaining: 5,  total: 20, discount: 50 },
-  { id: "lb4", name: "Elite Pack",    coins: 15000, freePoints: 4000,  jpy: 9000,  originalJpy: 18000, remaining: 12, total: 25, discount: 50 },
-  { id: "lb5", name: "Mega Pack",     coins: 50000, freePoints: 15000, jpy: 24000, originalJpy: 48000, remaining: 3,  total: 10, discount: 50 },
-];
+/* ── Store catalog lives in ./store-page (PointPackage imported above) ── */
 
 function CardBrandIcon({ brand, compact }: { brand: string; compact?: boolean }) {
   const b = brand.toLowerCase();
@@ -5730,438 +5603,45 @@ function StoreCoinIcon({ size = 32 }: { size?: number }) {
   return <img src="/coin.png" alt="" width={size} height={size} className="shrink-0 object-contain" />;
 }
 
-function CountdownTimer({ initialSeconds, className, style }: { initialSeconds: number; className?: string; style?: React.CSSProperties }) {
-  const [secs, setSecs] = useState(initialSeconds);
-  useEffect(() => {
-    const id = setInterval(() => setSecs(s => Math.max(0, s - 1)), 1000);
-    return () => clearInterval(id);
-  }, []);
-  const h = Math.floor(secs / 3600);
-  const m = Math.floor((secs % 3600) / 60);
-  const s = secs % 60;
-  return (
-    <span className={className} style={style}>
-      {String(h).padStart(2, "0")}:{String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}
-    </span>
-  );
-}
-
 function StorePage({
   lang,
   coins,
   setCoins,
   onBack,
   onHome,
-  educational = false,
-  subscriptionPurchased = false,
-  purchasedIds = [] as string[],
-  onSubscriptionPurchased,
-  onManageSubscription,
+  onOpenStore,
 }: {
   lang: Lang;
   coins: number;
   setCoins: Dispatch<SetStateAction<number>>;
   onBack: () => void;
   onHome?: () => void;
-  educational?: boolean;
-  subscriptionPurchased?: boolean;
-  purchasedIds?: string[];
-  onSubscriptionPurchased?: () => void;
-  onManageSubscription?: () => void;
+  onOpenStore?: () => void;
 }) {
   const t = STR[lang];
-  const [selectedPkg, setSelectedPkg] = useState<PointPackage | null>(null);
-  const [eduOpen, setEduOpen] = useState(true);
-  const [loyaltyOpen, setLoyaltyOpen] = useState(false);
-  const [subActive, setSubActive] = useState(subscriptionPurchased);
   const [savedCards, setSavedCards] = useState<{ last4: string; expiry: string; brand: string; name: string; billingAddress?: BillingAddress }[]>([]);
-  const manageSubscription = onManageSubscription ?? onBack;
-
-  function handleComplete(coinsEarned: number) {
-    if (selectedPkg?.subscriptionName) {
-      setSubActive(true);
-      onSubscriptionPurchased?.();
-    } else {
-      setCoins((c) => c + coinsEarned);
-    }
-    setSelectedPkg(null);
-  }
-
-  function handleSubscriptionPurchase() {
-    const pkg: PointPackage = { id: "sub_collectors_pass", coins: 0, freePoints: 0, jpy: 980, inrApprox: 980 * 0.613, subscriptionName: "Collector's Pass" };
-    setSelectedPkg(pkg);
-  }
-
-  function handleBundlePurchase(bundle: LimitedBundle) {
-    const pkg: PointPackage = { id: bundle.id, coins: bundle.coins, freePoints: bundle.freePoints, jpy: bundle.jpy, inrApprox: bundle.jpy * 0.613, originalJpy: bundle.originalJpy };
-    setSelectedPkg(pkg);
-  }
-
   return (
-    <div className="relative flex h-full flex-col bg-[#eef0f3]">
-      {/* Standard app header */}
-      <AppHeader coins={coins} t={t} onHome={onHome ?? onBack} />
-
-      {/* Page title row */}
-      <div className="shrink-0 bg-white px-4 py-3 border-b border-black/10">
-        <div className="flex items-center gap-2">
-          <button onClick={onBack} aria-label={t.backAria} className="flex h-8 w-8 items-center justify-center text-[#D10005] hover:bg-black/5">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 12H4M10 6l-6 6 6 6" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          </button>
-          <h1 className="text-[20px] font-bold text-[#1d2129]">{t.storeTitle}</h1>
-        </div>
-      </div>
-
-      <style>{`
-        @keyframes storeEduPulse { 0%,100%{ box-shadow:0 0 0 0 rgba(230,0,18,.45), 0 2px 8px rgba(0,0,0,.1) } 50%{ box-shadow:0 0 0 7px rgba(230,0,18,0), 0 2px 8px rgba(0,0,0,.1) } }
-        @keyframes storeEduPop { 0%{ opacity:0; transform:translateY(8px) scale(.9) } 100%{ opacity:1; transform:translateY(0) scale(1) } }
-        @keyframes storeEduBounce { 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(5px) } }
-        @keyframes storeEduBannerIn { 0%{ opacity:0; transform:translateY(-10px) } 100%{ opacity:1; transform:translateY(0) } }
-      `}</style>
-
-      {/* ── COINS ── */}
-      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-
-        {/* Loyalty / VIP Status bar */}
-        <div className="mx-4 mt-4 overflow-hidden rounded-2xl">
-          {/* Top — purple gradient, compact single row */}
-          <div className="flex items-center justify-between px-4 py-2.5" style={{ background: "linear-gradient(135deg,#2d1f5e,#3a2470)" }}>
-            <div className="flex items-center gap-2">
-              <svg width="22" height="26" viewBox="0 0 22 26" fill="none">
-                <path d="M8 0h6l-1.2 5.5h-3.6L8 0z" fill="#a0aab4"/>
-                <path d="M8 0L5.5 5.5H9.2L10.4 0H8z" fill="#8a9299"/>
-                <path d="M14 0l2.5 5.5h-3.7L11.6 0H14z" fill="#8a9299"/>
-                <circle cx="11" cy="18" r="7.5" fill="#c8d0d8" stroke="#9aa4ae" strokeWidth="1.2"/>
-                <circle cx="11" cy="18" r="5.5" fill="#dde2e8"/>
-                <path d="M11 13.5l1.1 3.3h3.5l-2.8 2 1.1 3.3L11 20.4l-2.9 1.7 1.1-3.3-2.8-2h3.5z" fill="#9aa4ae"/>
-              </svg>
-              <div className="flex flex-col leading-none gap-0.5">
-                <span className="text-[9px] font-bold tracking-widest uppercase" style={{ color: "rgba(255,255,255,0.55)" }}>{t.loyaltyVipStatus}</span>
-                <span className="text-[15px] font-black text-white">{t.loyaltySilver}</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex flex-col items-end leading-none gap-0.5">
-                <span className="text-[9px] font-bold tracking-widest uppercase" style={{ color: "rgba(255,255,255,0.55)" }}>{t.loyaltyNextTier}</span>
-                <span className="text-[15px] font-black" style={{ color: "#f5c842" }}>{t.loyaltyGold}</span>
-              </div>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="#f5c842">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-              </svg>
-            </div>
-          </div>
-          {/* Bottom — white, progress bar + toggle */}
-          <div className="bg-white px-4 pt-2.5 pb-1">
-            <div className="h-1.5 rounded-full overflow-hidden mb-1.5" style={{ background: "rgba(0,0,0,0.1)" }}>
-              <div className="h-full rounded-full" style={{ width: "57%", background: "#f5a623" }} />
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[10px] text-black/45">28,500 {t.loyaltyCoinsSpent}</span>
-              <span className="text-[10px] font-semibold" style={{ color: "#f5a623" }}>{t.loyaltyToNext(21500, t.loyaltyGold)}</span>
-            </div>
-          </div>
-          <div className="bg-white">
-            <button
-              onClick={() => setLoyaltyOpen((o) => !o)}
-              className="flex w-full items-center justify-center gap-1 pb-3 pt-1 text-[10px] font-semibold text-black/35"
-            >
-              <span>{loyaltyOpen ? t.loyaltyHidePerks : t.loyaltyShowPerks}</span>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ transform: loyaltyOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
-                <path d="M6 9l6 6 6-6" />
-              </svg>
-            </button>
-            {loyaltyOpen && (
-              <div className="grid grid-cols-2 gap-2 px-4 pb-4">
-                <div className="rounded-xl px-3 py-2.5" style={{ background: "rgba(0,0,0,0.05)" }}>
-                  <p className="text-[8px] font-bold tracking-widest uppercase mb-1.5 text-black/40">{t.loyaltyYourPerks}</p>
-                  <p className="text-[11px] font-bold text-black/80 leading-snug">{t.loyaltyPerk}</p>
-                </div>
-                <div className="rounded-xl px-3 py-2.5" style={{ background: "rgba(0,0,0,0.05)" }}>
-                  <p className="text-[8px] font-bold tracking-widest uppercase mb-1.5 text-black/40">{t.loyaltyUnlockNext}</p>
-                  <p className="text-[11px] font-bold leading-snug" style={{ color: "#f5a623" }}>{t.loyaltyUnlock}</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* First Time / Welcome Offer — compact bar */}
-        {purchasedIds.length === 0 && (
-          <div className="mx-4 mt-3 overflow-hidden rounded-2xl" style={{ background: "linear-gradient(135deg,#c50008,#8b0000)" }}>
-            <div className="flex items-center gap-3 px-3 py-1">
-              <div className="shrink-0 flex flex-col items-center justify-center rounded-xl bg-white/20 px-2.5 py-1.5 min-w-[44px]">
-                <span className="text-[15px] font-black leading-none text-white">90%</span>
-                <span className="text-[9px] font-bold text-white/80">OFF</span>
-              </div>
-              <div className="min-w-0 flex-1 overflow-hidden">
-                <span className="text-[13px] font-black text-white">{t.storeWelcomeOfferTitle}</span>
-                <p className="text-[9px] leading-none text-white/60 mt-0.5">· First purchase only</p>
-                <div className="flex items-center gap-1 mt-1 whitespace-nowrap">
-                  <StoreCoinIcon size={13} />
-                  <span className="text-[12px] font-black text-white">500</span>
-                  <span className="text-[10px] text-white/50 line-through">¥1,000</span>
-                  <GemIcon size={10} />
-                  <span className="text-[10px] text-white/75">{t.storeWelcomeOfferBonus}</span>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedPkg(FIRST_TIME_OFFER)}
-                className="shrink-0 rounded-xl bg-white px-4 py-2 text-[15px] font-black"
-                style={{ color: "#B40206" }}
-              >
-                ¥500
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Limited Bundles */}
-        <div className="px-4 pt-4 pb-3">
-          <div className="mb-2.5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <p className="text-[14px] font-extrabold text-[#1d2129]">{t.storeLimitedBundles}</p>
-              <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ background: "#e60012" }}>{t.storeLimitedTag}</span>
-            </div>
-            <div className="flex items-center gap-1 text-[11px] text-[#6b7280]">
-              <span>{t.storeEndsSoon}</span>
-              <CountdownTimer initialSeconds={6407} className="font-bold tabular-nums text-[#e60012]" />
-            </div>
-          </div>
-          <div className="no-scrollbar flex gap-3 overflow-x-auto pb-2">
-            {LIMITED_BUNDLES.map((bundle, idx) => (
-              <div
-                key={bundle.id}
-                onClick={() => handleBundlePurchase(bundle)}
-                role="button"
-                className="relative flex w-[150px] shrink-0 cursor-pointer flex-col rounded-xl border-2 border-[#e5e8ec] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.09)] active:scale-[0.98] overflow-hidden"
-              >
-                {/* Image area with overlaid badges */}
-                <div className="relative h-[88px] w-full overflow-hidden bg-gradient-to-br from-[#1a1a2e] to-[#16213e]">
-                  <img src={`/carousel-${(idx % 3) + 1}.png`} alt="" className="absolute inset-0 h-full w-full object-cover" />
-                  <div className="absolute inset-0 flex items-end justify-between p-1.5">
-                    {bundle.hot && (
-                      <span className="rounded px-1.5 py-0.5 text-[8px] font-black text-white" style={{ background: "#ff6b00" }}>{t.storeHot}</span>
-                    )}
-                    {!bundle.hot && <span />}
-                    <span className="rounded px-1.5 py-0.5 text-[8px] font-black text-white" style={{ background: "#e60012" }}>{bundle.discount}% OFF</span>
-                  </div>
-                </div>
-                {/* Info */}
-                <div className="flex flex-col px-2 py-2 gap-0.5">
-                  <p className="text-[11px] font-bold text-[#1d2129]">{t.storeBundleNames[LIMITED_BUNDLES.indexOf(bundle)] ?? bundle.name}</p>
-                  <div className="flex items-center gap-1">
-                    <StoreCoinIcon size={13} />
-                    <span className="text-[13px] font-extrabold text-[#1d2129]">{bundle.coins.toLocaleString()}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <GemIcon size={11} />
-                    <span className="text-[10px] font-semibold text-[#92400e]">+{bundle.freePoints.toLocaleString()}</span>
-                  </div>
-                  {/* Remaining progress */}
-                  <div className="mt-1">
-                    <div className="flex justify-between text-[9px] text-[#6b7280] mb-0.5">
-                      <span>{t.storeRemaining(bundle.remaining)}</span>
-                      <span>{bundle.total}</span>
-                    </div>
-                    <div className="h-1 rounded-full bg-[#e5e8ec] overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${((bundle.total - bundle.remaining) / bundle.total) * 100}%`, background: "#e60012" }} />
-                    </div>
-                  </div>
-                  {/* Prices */}
-                  <div className="mt-1.5 flex items-center justify-between">
-                    <span className="text-[9px] text-[#8a9099] line-through">¥{bundle.originalJpy.toLocaleString()}</span>
-                    <button
-                      onClick={() => handleBundlePurchase(bundle)}
-                      className="rounded-lg px-2.5 py-1 text-[11px] font-bold text-white"
-                      style={{ background: "#e60012" }}
-                    >
-                      ¥{bundle.jpy.toLocaleString()}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Buy Coins */}
-        <div className="px-4 pb-4">
-          <div className="mb-3">
-            <p className="text-[14px] font-extrabold text-[#1d2129]">Buy Coins</p>
-          </div>
-          <div className="space-y-2.5">
-            {POINT_PACKAGES.filter(p => !(p.firstTimeOffer || p.popularOffer) || !purchasedIds.includes(p.id)).map((pkg) => {
-              const isBlue = !!pkg.firstTimeOffer;
-              const isRed = !!pkg.popularOffer;
-              const isColored = isBlue || isRed;
-              const cardBg = isBlue ? "linear-gradient(135deg,#1d4ed8,#1e3a8a)" : isRed ? "linear-gradient(135deg,#c50008,#8b0000)" : undefined;
-              const tagLabel = isBlue ? "MEGA BUNDLE" : isRed ? "BEST VALUE" : (pkg.popularOffer ? t.storePopularOffer : t.storeFirstTimeOffer);
-              const tagBg = isBlue ? "rgba(255,255,255,0.25)" : "#B40206";
-              const discountBg = isBlue ? "rgba(255,255,255,0.2)" : "#B40206";
-              return (
-                <div
-                  key={pkg.id}
-                  onClick={() => setSelectedPkg(pkg)}
-                  role="button"
-                  className="relative cursor-pointer rounded-xl border shadow-[0_1px_3px_rgba(0,0,0,0.07)] active:scale-[0.99]"
-                  style={{ borderColor: isColored ? "transparent" : (pkg.firstTimeOffer || pkg.popularOffer) ? "#B40206" : "#e5e8ec", background: cardBg ?? "#ffffff" }}
-                >
-                  {(isColored || pkg.firstTimeOffer || pkg.popularOffer) && (
-                    <div className="flex items-center gap-1.5 rounded-t-xl px-3 pt-1.5 pb-1" style={{ background: isColored ? "rgba(0,0,0,0.15)" : "rgba(230,0,18,0.07)" }}>
-                      <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ background: tagBg }}>{tagLabel}</span>
-                      {pkg.discount && <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ background: discountBg }}>{t.storeOff(pkg.discount)}</span>}
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2.5 px-3 py-2.5">
-                    <StoreCoinIcon />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[15px] font-extrabold" style={{ color: isColored ? "#ffffff" : "#1d2129" }}>{t.storeCoins(pkg.coins)}</p>
-                      <div className="mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5" style={{ background: isColored ? "rgba(255,255,255,0.2)" : "#fef3c7" }}>
-                        <span className="text-[11px] font-semibold" style={{ color: isColored ? "#ffffff" : "#92400e" }}>+</span>
-                        <GemIcon size={12} />
-                        <span className="text-[11px] font-semibold" style={{ color: isColored ? "#ffffff" : "#92400e" }}>{t.storeFreePoints(pkg.freePoints)}</span>
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 flex-col items-end gap-0.5">
-                      {pkg.originalJpy && (
-                        <span className="text-[11px] line-through" style={{ color: isColored ? "rgba(255,255,255,0.55)" : "#8a9099" }}>¥{pkg.originalJpy.toLocaleString()}</span>
-                      )}
-                      <button
-                        onClick={() => setSelectedPkg(pkg)}
-                        className="rounded-lg px-4 py-2 text-[13px] font-bold text-white"
-                        style={{ background: isBlue ? "rgba(255,255,255,0.25)" : isRed ? "#f97316" : "#B40206" }}
-                      >
-                        ¥{pkg.jpy.toLocaleString()}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Subscriptions */}
-        <div className="px-4 pb-6">
-          <p className="mb-3 text-[14px] font-extrabold text-[#1d2129]">{t.storeSubscriptions}</p>
-          {subActive ? (
-            /* Active subscription card */
-            <div className="overflow-hidden rounded-2xl border-2 border-[#92400e]" style={{ background: "linear-gradient(135deg,#78350f,#451a03)" }}>
-              <div className="flex items-center justify-between px-3 pt-2 pb-0.5">
-                <div>
-                  <p className="text-[14px] font-black text-white">{t.storeCollectorsPass}</p>
-                  <p className="text-[10px] text-white/60">{t.storeCollectorsPassTagline}</p>
-                </div>
-                <span className="rounded-full px-2 py-0.5 text-[9px] font-black text-white" style={{ background: "#16a34a" }}>{t.storeSubscribedActive}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-x-2 gap-y-1 px-3 py-1.5">
-                {t.storeCollectorsPassPerks.map((perk, i) => (
-                  <div key={i} className="flex items-center gap-1.5">
-                    <span className="text-[11px]">{t.storeCollectorsPassPerkIcons[i]}</span>
-                    <span className="text-[10px] font-semibold leading-tight text-white/85">{perk}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="px-3 pb-2 pt-0.5">
-                <button
-                  onClick={manageSubscription}
-                  className="w-full rounded-xl border border-white/30 py-2 text-[12px] font-bold text-white"
-                >
-                  {t.storeManageSubscription}
-                </button>
-              </div>
-            </div>
-          ) : (
-            /* Subscribe card */
-            <div className="overflow-hidden rounded-2xl border border-[#e7b98a]" style={{ background: "linear-gradient(135deg,#78350f,#451a03)" }}>
-              <div className="flex items-start justify-between px-3 pt-2 pb-0.5">
-                <div>
-                  <p className="text-[14px] font-black text-white">{t.storeCollectorsPass}</p>
-                  <p className="text-[10px] text-white/60">{t.storeCollectorsPassTagline}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[16px] font-black leading-none" style={{ color: "#f59e0b" }}>¥980</p>
-                  <p className="text-[9px] text-white/60">/month</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-x-2 gap-y-1 px-3 py-1.5">
-                {t.storeCollectorsPassPerks.map((perk, i) => (
-                  <div key={i} className="flex items-center gap-1.5">
-                    <span className="text-[11px]">{t.storeCollectorsPassPerkIcons[i]}</span>
-                    <span className="text-[10px] font-semibold leading-tight text-white/85">{perk}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="px-3 pb-2 pt-0.5">
-                <button
-                  onClick={handleSubscriptionPurchase}
-                  className="w-full rounded-xl py-2 text-[12px] font-black text-white"
-                  style={{ background: "#92400e" }}
-                >
-                  {t.storeSubscribeCta}
-                </button>
-                <p className="mt-1 text-center text-[9px] text-white/45">{t.storeSubscribeLegal}</p>
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="-mx-4 mt-3"><SiteFooter t={t} /></div>
-      </div>
-
-      {/* Educational spotlight coachmark (welcome flow) */}
-      {educational && eduOpen && (
-        <div className="absolute inset-0 z-[55] flex flex-col items-center overflow-y-auto px-6 pb-8 pt-9" style={{ background: "rgba(8,6,18,0.82)", animation: "storeEduBannerIn .35s ease both" }}>
-          <button onClick={() => setEduOpen(false)} aria-label="Close" className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-white active:bg-white/25">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
-          </button>
-          <img src="/welcome-mascot.png" alt="" className="h-24 w-24 object-contain" style={{ animation: "storeEduBounce 1.6s ease-in-out infinite", filter: "drop-shadow(0 0 18px rgba(255,180,80,.65))" }} />
-          <h2 className="mt-2 text-center text-[22px] font-black italic tracking-wide text-white" style={{ animation: "storeEduPop .5s ease both", textShadow: "0 2px 12px rgba(255,120,60,.6)" }}>{t.storeEduTitle}</h2>
-          <p className="mt-1.5 max-w-[280px] text-center text-[13px] font-semibold leading-relaxed text-white/85" style={{ animation: "storeEduPop .6s ease both" }}>{t.storeEduSub}</p>
-          <div className="mt-6 flex flex-col items-center" style={{ animation: "storeEduBounce 1.6s ease-in-out infinite" }}>
-            <span className="rounded-full bg-[#B40206] px-3 py-1 text-[11px] font-extrabold text-white shadow-[0_3px_10px_rgba(230,0,18,0.6)]">{t.storeEduPick}</span>
-            <svg width="20" height="14" viewBox="0 0 20 14" className="mt-0.5"><path d="M10 13L1 3h18z" fill="#B40206" /></svg>
-          </div>
-          <button
-            onClick={() => { setSelectedPkg(FIRST_TIME_OFFER); setEduOpen(false); }}
-            className="relative mt-2 w-[230px] overflow-hidden rounded-2xl border-2 border-[#B40206] bg-white text-left"
-            style={{ animation: "storeEduPulse 1.5s ease-in-out infinite" }}
-          >
-            <div className="flex items-center gap-1.5 px-3 pt-2" style={{ background: "rgba(230,0,18,0.07)" }}>
-              <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ background: "#B40206" }}>{t.storeFirstTimeOffer}</span>
-              <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ background: "#B40206" }}>90% OFF</span>
-            </div>
-            <div className="flex items-center gap-2.5 px-3 py-3">
-              <StoreCoinIcon />
-              <div className="min-w-0 flex-1">
-                <p className="text-[16px] font-extrabold leading-tight text-[#1d2129]">500 Coins</p>
-                <div className="mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5" style={{ background: "#fef3c7" }}>
-                  <span className="text-[11px] font-semibold text-[#92400e]">+</span>
-                  <GemIcon size={12} />
-                  <span className="text-[11px] font-semibold text-[#92400e]">Points 50</span>
-                </div>
-              </div>
-            </div>
-            <div className="px-3 pb-3">
-              <span className="block w-full rounded-lg py-2.5 text-center text-[14px] font-bold text-white" style={{ background: "#e60012" }}>¥500</span>
-            </div>
-          </button>
-          <button onClick={() => setEduOpen(false)} className="mt-5 text-[13px] font-semibold text-white/70 underline underline-offset-2 active:text-white">{t.storeEduSkip}</button>
-        </div>
-      )}
-
-      {/* Purchase flow overlay */}
-      {selectedPkg && (
-        <PurchaseFlow
-          pkg={selectedPkg}
-          lang={lang}
-          onComplete={handleComplete}
-          onClose={() => setSelectedPkg(null)}
-          savedCards={savedCards}
-          onSaveCard={(card) => setSavedCards(prev => [card, ...prev])}
-          onDeleteCard={(idx) => setSavedCards(prev => prev.filter((_, i) => i !== idx))}
-        />
-      )}
-    </div>
+    <StorePageView
+      lang={lang}
+      coins={coins}
+      setCoins={setCoins}
+      onBack={onBack}
+      chrome={{
+        header: <AppHeader coins={coins} t={t} onHome={onHome ?? onBack} onOpenStore={onOpenStore} />,
+        footer: <SiteFooter t={t} />,
+        checkout: ({ pkg, onComplete, onClose }) => (
+          <PurchaseFlow
+            pkg={pkg}
+            lang={lang}
+            onComplete={onComplete}
+            onClose={onClose}
+            savedCards={savedCards}
+            onSaveCard={(card) => setSavedCards((prev) => [card, ...prev])}
+            onDeleteCard={(idx) => setSavedCards((prev) => prev.filter((_, i) => i !== idx))}
+          />
+        ),
+      }}
+    />
   );
 }
 
@@ -6242,7 +5722,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
         <div key={screen} className="h-full">
         {/* Logged-out lobby — V1 homepage layout */}
         {screen === "landing" && <LandingPage lang={lang} onSignUp={() => setScreen("signup")} onLogin={() => setScreen("login")} />}
-        {screen === "signup" && <SignupPage lang={lang} onLogin={() => setScreen("login")} onSuccess={enterHome} />}
+        {screen === "signup" && <SignupPage lang={lang} onClose={() => setScreen("landing")} onLogin={() => setScreen("login")} onSuccess={enterHome} />}
         {screen === "login" && <LoginPage lang={lang} onSignUp={() => setScreen("signup")} onSuccess={enterHome} />}
         {/* Logged-in lobby — V2 format */}
         {screen === "oripa" && <OripaHome lang={lang} coins={coins} onHome={goHome} onOpenStore={openStore} onOpenDraw={openDraw} />}
@@ -6326,6 +5806,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
             setCoins={setCoins}
             onBack={() => setScreen(storeReturn)}
             onHome={goHome}
+            onOpenStore={openStore}
           />
         )}
         {screen === "coinHistory" && (
