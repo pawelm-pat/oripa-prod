@@ -2417,8 +2417,17 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                     value={query}
                     onChange={(e) => { setQuery(e.target.value); setListSelected(new Set()); }}
                     placeholder={LF.searchPlaceholder}
-                    className="w-full rounded-xl bg-[#f4f5f7] py-3 pl-11 pr-3 text-[14px] font-semibold text-[#1d2129] outline-none placeholder:text-[#9aa0a8] focus:bg-white focus:ring-2 focus:ring-[#D10005]/30"
+                    className="w-full rounded-xl bg-[#f4f5f7] py-3 pl-11 pr-10 text-[14px] font-semibold text-[#1d2129] outline-none placeholder:text-[#9aa0a8] focus:bg-white focus:ring-2 focus:ring-[#D10005]/30"
                   />
+                  {query.length > 0 && (
+                    <button
+                      onClick={() => { setQuery(""); setListSelected(new Set()); }}
+                      aria-label="Clear search"
+                      className="absolute right-2.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full bg-black/10 text-[#5c626b] active:bg-black/20"
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                    </button>
+                  )}
                 </div>
                 {lootMode && (
                 <div className="mt-5">
