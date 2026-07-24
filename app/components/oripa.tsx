@@ -1112,7 +1112,6 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: 
   const [customQty, setCustomQty] = useState(1);
   // Draw results (list mode) — shown full-screen after a draw is confirmed.
   const [results, setResults] = useState<WonPrize[] | null>(null);
-  const [resultsCount, setResultsCount] = useState(1);
   const [resultsRun, setResultsRun] = useState(0);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -1134,7 +1133,6 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: 
   function runDraw(count: number) {
     setConfirmCount(null);
     setCustomOpen(false);
-    setResultsCount(count);
     setResults(generateDraw(count));
     setResultsRun((r) => r + 1);
   }
@@ -1155,12 +1153,6 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: 
   function confirmCustomDraw() {
     if (coins < DRAW_PRICE * customQty) { pushToast(t.drawInsufficient); return; }
     runDraw(customQty);
-  }
-
-  // "Draw again" from the results screen re-rolls the same count.
-  function drawAgain() {
-    setResults(generateDraw(resultsCount));
-    setResultsRun((r) => r + 1);
   }
 
   return (
@@ -1449,7 +1441,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: 
           lang={lang}
           coins={coins}
           cards={results}
-          onDrawAgain={drawAgain}
+          onDrawAgain={() => setResults(null)}
           onClose={() => setResults(null)}
           onHome={onHome}
           onOpenStore={onOpenStore}
