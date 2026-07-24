@@ -1022,6 +1022,7 @@ function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw }: { lang: Lan
    banner, remaining/period, and the prize line-up by tier (1st = UR / holo,
    2nd = SR / gold, 3rd = N / silver), with a sticky draw CTA. */
 const DRAW_PRICE = 1000; // coins per single draw (mirrors the lobby card price)
+const MAX_CUSTOM_DRAW = 100; // cap for the custom-draw quantity stepper
 
 // Beveled tier plate ("1等 / 2등 / 3등") — gold for 1st/2nd, silver for 3rd,
 // matching the design's metallic name-plates on the dark prize board.
@@ -1105,6 +1106,9 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: 
   const [cautionOpen, setCautionOpen] = useState(false);
   // Draw-confirmation popup: holds the requested draw count while open.
   const [confirmCount, setConfirmCount] = useState<number | null>(null);
+  // Custom-draw popup: quantity stepper (min 1, up to MAX_CUSTOM_DRAW).
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customQty, setCustomQty] = useState(1);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function pushToast(msg: string) {
@@ -1127,6 +1131,19 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: 
     if (count == null) return;
     // Draw outcome / animation flow is TBC — for now confirm the action.
     pushToast(t.drawToast(count));
+  }
+
+  function openCustom() {
+    if (soldOut) return;
+    setCustomQty(1);
+    setCustomOpen(true);
+  }
+  const setQty = (n: number) => setCustomQty(() => Math.min(MAX_CUSTOM_DRAW, Math.max(1, n)));
+
+  function confirmCustomDraw() {
+    if (coins < DRAW_PRICE * customQty) { pushToast(t.drawInsufficient); return; }
+    setCustomOpen(false);
+    pushToast(t.drawToast(customQty));
   }
 
   return (
@@ -1236,7 +1253,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: 
             <button onClick={() => draw(10)} className="flex-1 rounded-[10px] bg-[#D10005] py-3 text-[13px] font-extrabold text-white active:scale-[0.98]">
               {t.drawDrawTen}
             </button>
-            <button onClick={() => pushToast(t.drawCustomTBC)} className="flex-1 whitespace-nowrap rounded-[10px] bg-[#D10005] py-3 text-[13px] font-extrabold text-white active:scale-[0.98]">
+            <button onClick={openCustom} className="flex-1 whitespace-nowrap rounded-[10px] bg-[#D10005] py-3 text-[13px] font-extrabold text-white active:scale-[0.98]">
               {t.drawDrawCustom}
             </button>
           </div>
@@ -1299,6 +1316,100 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: 
               {/* Cancel */}
               <button
                 onClick={() => setConfirmCount(null)}
+                className="mt-3 w-full rounded-[10px] border border-black/15 bg-white py-3 text-[14px] font-bold text-[#3a3f47] active:scale-[0.98]"
+              >
+                {t.cancel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom-draw popup — quantity stepper + quick-add + dynamic cost/CTA */}
+      {customOpen && (
+        <div
+          className="absolute inset-0 z-[60] flex items-center justify-center p-4"
+          style={{ background: "rgba(20,8,4,0.62)" }}
+          onClick={() => setCustomOpen(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="no-scrollbar flex max-h-full w-full max-w-[380px] flex-col overflow-y-auto rounded-2xl bg-white shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+            style={{ animation: "drawConfirmIn 260ms cubic-bezier(0.22,0.61,0.36,1) both" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <DrawPromoBanner t={t} item={item} className="rounded-t-2xl" showCountdown={false} />
+
+            <div className="px-4 pb-4 pt-3.5">
+              <h3 className="text-center text-[18px] font-bold text-[#1d2129]">{locTitle(item, lang)}</h3>
+              <p className="mt-1.5 text-center text-[12px] leading-relaxed text-[#8a9099]">{t.drawConfirmDesc}</p>
+
+              {/* Quantity stepper */}
+              <div className="mt-3.5 flex items-center justify-center gap-3">
+                <button
+                  onClick={() => setQty(customQty - 1)}
+                  disabled={customQty <= 1}
+                  aria-label="decrease"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#c9ced6] text-white active:scale-95 disabled:opacity-40"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M5 12h14" /></svg>
+                </button>
+                <div className="flex min-w-[150px] items-center justify-center rounded-2xl border border-black/10 bg-white px-6 py-1.5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+                  <span className="text-[38px] font-black leading-none text-[#1d2129]">{customQty}</span>
+                </div>
+                <button
+                  onClick={() => setQty(customQty + 1)}
+                  disabled={customQty >= MAX_CUSTOM_DRAW}
+                  aria-label="increase"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#D10005] text-white active:scale-95 disabled:opacity-40"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+                </button>
+              </div>
+
+              {/* Quick-add */}
+              <div className="mt-3 flex items-center justify-center gap-2">
+                <button onClick={() => setQty(customQty + 5)} className="rounded-[8px] border border-black/25 px-4 py-2 text-[13px] font-bold text-[#1d2129] active:scale-95">{t.drawCustomAdd(5)}</button>
+                <button onClick={() => setQty(customQty + 10)} className="rounded-[8px] border border-black/25 px-4 py-2 text-[13px] font-bold text-[#1d2129] active:scale-95">{t.drawCustomAdd(10)}</button>
+                <button onClick={() => setQty(MAX_CUSTOM_DRAW)} className="rounded-[8px] border border-black/25 px-4 py-2 text-[13px] font-bold text-[#1d2129] active:scale-95">{t.drawCustomMax}</button>
+              </div>
+
+              {/* Cost row */}
+              <div className="mt-3.5 flex items-center justify-center gap-3 rounded-xl border border-black/10 bg-white py-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+                <span className="flex items-center gap-1.5">
+                  <CoinIcon size={26} />
+                  <span className="text-[20px] font-extrabold text-[#1d2129]">{(DRAW_PRICE * customQty).toLocaleString()}</span>
+                </span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M9 6l6 6-6 6" stroke="#9aa1ab" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                <span className="flex items-center gap-1.5">
+                  <GemIcon size={26} />
+                  <span className="text-[20px] font-extrabold text-[#D10005]">0</span>
+                </span>
+              </div>
+
+              {/* Confirm CTA */}
+              <button
+                onClick={confirmCustomDraw}
+                className="mt-3 w-full rounded-[10px] bg-[#D10005] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]"
+              >
+                {t.drawCustomCta(customQty)}
+              </button>
+
+              {/* Dashed divider */}
+              <div className="my-3.5 border-t border-dashed border-black/20" />
+
+              {/* Terms */}
+              <p className="text-center text-[12px] font-semibold text-[#1d2129]">
+                {t.drawConfirmTerms}{" "}
+                <button onClick={() => pushToast(t.drawCustomTBC)} className="font-bold text-[#D10005] underline decoration-[#D10005] underline-offset-2">
+                  {t.drawConfirmTermsLink}
+                </button>
+              </p>
+
+              {/* Cancel */}
+              <button
+                onClick={() => setCustomOpen(false)}
                 className="mt-3 w-full rounded-[10px] border border-black/15 bg-white py-3 text-[14px] font-bold text-[#3a3f47] active:scale-[0.98]"
               >
                 {t.cancel}
