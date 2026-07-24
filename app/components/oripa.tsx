@@ -41,6 +41,7 @@ import {
   SORT_KEYS,
   US_STATES,
   formatShippingAddr,
+  generateDraw,
 } from "../data/prizes";
 
 import { StorePage as StorePageView, type PointPackage } from "./store-page";
@@ -1109,6 +1110,10 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: 
   // Custom-draw popup: quantity stepper (min 1, up to MAX_CUSTOM_DRAW).
   const [customOpen, setCustomOpen] = useState(false);
   const [customQty, setCustomQty] = useState(1);
+  // Draw results (list mode) — shown full-screen after a draw is confirmed.
+  const [results, setResults] = useState<WonPrize[] | null>(null);
+  const [resultsCount, setResultsCount] = useState(1);
+  const [resultsRun, setResultsRun] = useState(0);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function pushToast(msg: string) {
@@ -1125,12 +1130,19 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: 
     setConfirmCount(count);
   }
 
+  // Roll `count` cards and show the results (list mode) screen.
+  function runDraw(count: number) {
+    setConfirmCount(null);
+    setCustomOpen(false);
+    setResultsCount(count);
+    setResults(generateDraw(count));
+    setResultsRun((r) => r + 1);
+  }
+
   function confirmDraw() {
     const count = confirmCount;
-    setConfirmCount(null);
     if (count == null) return;
-    // Draw outcome / animation flow is TBC — for now confirm the action.
-    pushToast(t.drawToast(count));
+    runDraw(count);
   }
 
   function openCustom() {
@@ -1142,8 +1154,13 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: 
 
   function confirmCustomDraw() {
     if (coins < DRAW_PRICE * customQty) { pushToast(t.drawInsufficient); return; }
-    setCustomOpen(false);
-    pushToast(t.drawToast(customQty));
+    runDraw(customQty);
+  }
+
+  // "Draw again" from the results screen re-rolls the same count.
+  function drawAgain() {
+    setResults(generateDraw(resultsCount));
+    setResultsRun((r) => r + 1);
   }
 
   return (
@@ -1421,6 +1438,240 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: 
 
       {toast && (
         <div className="pointer-events-none absolute inset-x-0 bottom-24 z-[70] flex justify-center px-4">
+          <div className="rounded-full bg-black/85 px-4 py-2 text-[12px] font-semibold text-white shadow-lg">{toast}</div>
+        </div>
+      )}
+
+      {/* Draw results (list mode) — full-screen overlay above the draw screen */}
+      {results && (
+        <DrawResults
+          key={resultsRun}
+          lang={lang}
+          coins={coins}
+          cards={results}
+          onDrawAgain={drawAgain}
+          onClose={() => setResults(null)}
+          onHome={onHome}
+          onOpenStore={onOpenStore}
+        />
+      )}
+    </div>
+  );
+}
+
+// Gacha results — "list mode". Shown after any draw (×1 / ×10 / custom). Lets
+// the player review the cards they pulled, filter by tier, sort, select, and
+// exchange to coins or request shipping. Self-contained (local selection).
+function DrawResults({ lang, coins, cards, onDrawAgain, onClose, onHome, onOpenStore }: { lang: Lang; coins: number; cards: WonPrize[]; onDrawAgain: () => void; onClose: () => void; onHome: () => void; onOpenStore?: () => void }) {
+  const t = STR[lang];
+  const [list, setList] = useState<WonPrize[]>(cards);
+  const [tier, setTier] = useState<"all" | Rarity>("all");
+  const [sortKey, setSortKey] = useState<SortKey>("coinDesc");
+  const [sortOpen, setSortOpen] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function pushToast(msg: string) {
+    setToast(msg);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 2600);
+  }
+  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
+
+  const sorted = useMemo(() => {
+    const arr = [...list];
+    arr.sort((a, b) => {
+      switch (sortKey) {
+        case "coinDesc": return b.coinValue - a.coinValue;
+        case "coinAsc": return a.coinValue - b.coinValue;
+        case "wonNew": return b.wonAt - a.wonAt;
+        case "wonOld": return a.wonAt - b.wonAt;
+        case "expSoon": return expiresAt(a.wonAt) - expiresAt(b.wonAt);
+      }
+    });
+    return arr;
+  }, [list, sortKey]);
+
+  const displayed = tier === "all" ? sorted : sorted.filter((p) => p.rarity === tier);
+  const tierTabs: { key: "all" | Rarity; label: string }[] = [
+    { key: "all", label: t.deckAll },
+    { key: "UR", label: t.drawTier1 },
+    { key: "SR", label: t.drawTier2 },
+    { key: "N", label: t.drawTier3 },
+  ];
+  const tierCount = (key: "all" | Rarity) => (key === "all" ? list.length : list.filter((p) => p.rarity === key).length);
+
+  const selectedPrizes = list.filter((p) => selected.has(p.id));
+  const total = selectedPrizes.reduce((s, p) => s + p.coinValue, 0);
+  const canShip = total >= SHIP_MIN_COINS;
+  const shortfall = Math.max(0, SHIP_MIN_COINS - total);
+
+  function toggle(id: string) {
+    setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  }
+  function selectAll() { setSelected(new Set(displayed.map((p) => p.id))); }
+  function reset() { setSelected(new Set()); }
+  function exchange() {
+    if (selected.size === 0) return;
+    const ids = new Set(selected);
+    const n = ids.size;
+    setList((l) => l.filter((p) => !ids.has(p.id)));
+    setSelected(new Set());
+    pushToast(t.toastConverted(n, total));
+  }
+  function ship() {
+    if (selected.size === 0) return;
+    if (!canShip) { pushToast(t.toastShort(shortfall)); return; }
+    const ids = new Set(selected);
+    setList((l) => l.filter((p) => !ids.has(p.id)));
+    setSelected(new Set());
+    pushToast(t.toastShipReq);
+  }
+
+  return (
+    <div className="absolute inset-0 z-50 flex h-full flex-col bg-[#eef0f3]">
+      <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
+
+      {/* Top actions: Draw again + Swipe to reveal */}
+      <div className="shrink-0 flex gap-3 bg-white px-3 py-3">
+        <button onClick={onDrawAgain} className="flex-1 rounded-xl bg-[#D10005] py-3 text-[14px] font-extrabold text-white active:scale-[0.99]">
+          {t.drawAgain}
+        </button>
+        <button onClick={() => pushToast(t.drawSwipeTBC)} className="flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-black/15 bg-white py-3 text-[14px] font-extrabold text-[#1d2129] active:scale-[0.99]">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8l4-4 4 4M8 4v10M20 16l-4 4-4-4M16 20V10" /></svg>
+          {t.drawSwipeReveal}
+        </button>
+      </div>
+
+      {/* Tier tabs with counts */}
+      <div className="no-scrollbar shrink-0 flex items-center gap-2 overflow-x-auto border-b border-black/10 bg-white px-3 py-2">
+        {tierTabs.map((tb) => {
+          const on = tier === tb.key;
+          return (
+            <button
+              key={tb.key}
+              onClick={() => { setTier(tb.key); setSelected(new Set()); }}
+              className={`flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] font-bold transition ${on ? "bg-[#D10005] text-white" : "text-[#5c626b]"}`}
+            >
+              {tb.label}
+              <span className={`text-[12px] font-extrabold ${on ? "text-white" : "text-[#9aa0a8]"}`}>{tierCount(tb.key)}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Sort row */}
+      <div className="relative shrink-0 flex justify-end border-b border-black/10 bg-white px-3 py-2.5">
+        <button onClick={() => setSortOpen((v) => !v)} className="flex items-center gap-1.5 text-[14px] font-extrabold text-[#1d2129] active:opacity-70">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4" /></svg>
+          {t.sortLabels[sortKey]}
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={sortOpen ? "rotate-180" : ""}><path d="M6 9l6 6 6-6" /></svg>
+        </button>
+        {sortOpen && (
+          <div className="absolute right-3 top-full z-20 mt-1 w-[220px] overflow-hidden rounded-xl border border-black/10 bg-white shadow-[0_16px_30px_rgba(0,0,0,0.18)]">
+            {SORT_KEYS.map((key) => (
+              <button
+                key={key}
+                onClick={() => { setSortKey(key); setSortOpen(false); }}
+                className={`flex w-full items-center justify-between px-3.5 py-2.5 text-left text-[13px] font-semibold ${key === sortKey ? "bg-[#D10005]/[0.06] text-[#D10005]" : "text-[#1d2129]"}`}
+              >
+                {t.sortLabels[key]}
+                {key === sortKey && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5 9-11" /></svg>}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Results list */}
+      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-3" onClick={() => sortOpen && setSortOpen(false)}>
+        {displayed.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="mb-2 text-[32px]">🔍</div>
+            <p className="text-[13px] font-semibold text-[#8a9099]">{t.searchNoResults}</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {displayed.map((p) => {
+              const isSel = selected.has(p.id);
+              return (
+                <div
+                  key={p.id}
+                  onClick={() => toggle(p.id)}
+                  className="flex gap-3 rounded-2xl bg-white p-2.5 shadow-[0_1px_4px_rgba(0,0,0,0.08)] transition"
+                  style={{ border: isSel ? "2.5px solid #FF7A1A" : "1.5px solid rgba(0,0,0,0.08)", cursor: "pointer" }}
+                >
+                  <div className="shrink-0"><PrizeArt rarity={p.rarity} size={104} /></div>
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <div className="flex items-start justify-between gap-2">
+                      <img src={`/prize-tag-${rarityTier(p.rarity)}.png`} alt={t.prizeTier(rarityTier(p.rarity))} className="h-[24px] w-auto shrink-0 object-contain" draggable={false} />
+                      <span className="flex shrink-0 items-center gap-1 text-[11px] font-bold" style={{ color: isSel ? "#FF7A1A" : "#8a9099" }}>
+                        {isSel ? t.itemsSelected : t.itemsNotSelected}
+                        <svg width="15" height="15" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill={isSel ? "#FF7A1A" : "#c9ced6"} /><path d="M6 10l3 3 5-5" stroke="white" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
+                      </span>
+                    </div>
+                    <p className="mt-1.5 text-[14px] font-bold leading-tight text-[#1d2129]">{locName(p, lang)}</p>
+                    <p className="mt-1 line-clamp-2 text-[10px] font-normal leading-relaxed text-[#8a9099]">{locDesc(p, lang)}</p>
+                    <p className="mt-1 text-[11px] font-semibold text-[#8a9099]">{t.itemsExchangePeriod}{fmtDate(expiresAt(p.wonAt))}</p>
+                    <div className="mt-auto flex items-center justify-center gap-1.5 rounded-xl border border-black/10 bg-white pt-2 pb-2" style={{ marginTop: 8 }}>
+                      <CoinIcon size={18} />
+                      <span className="text-[18px] font-bold text-[#1d2129]">{p.coinValue.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Bottom action bar */}
+      <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2.5 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="flex items-center gap-1.5">
+            <CoinIcon size={20} />
+            <span className="text-[18px] font-extrabold text-[#1d2129]">{total.toLocaleString()}</span>
+          </span>
+          <div className="flex items-center gap-4 text-[13px] font-bold">
+            <button onClick={selectAll} className="text-[#1d2129] active:opacity-70">{t.selectAll}</button>
+            <button onClick={reset} className="text-[#8a9099] active:opacity-70">{t.itemsReset}</button>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={exchange}
+            disabled={selected.size === 0}
+            className="rounded-xl border-2 border-[#D10005] bg-white py-3 text-[14px] font-extrabold text-[#D10005] active:scale-[0.98] disabled:opacity-40"
+          >
+            {t.exchange}
+          </button>
+          <div className="relative">
+            {canShip && (
+              <div
+                className="pointer-events-none absolute -top-2.5 right-0 z-10 flex items-center gap-1 rounded-full bg-gradient-to-br from-[#1eae52] to-[#12813c] px-2 py-[3px] text-white ring-1 ring-white/30"
+                style={{ animation: "freeShipIn .3s cubic-bezier(.2,.9,.3,1) both, freeShipPulse 2.4s ease-in-out infinite" }}
+              >
+                <style>{`@keyframes freeShipIn{from{opacity:0;transform:translateY(-6px) scale(.9)}to{opacity:1;transform:none}}@keyframes freeShipPulse{0%,100%{box-shadow:0 3px 8px rgba(18,129,60,0.45)}50%{box-shadow:0 3px 14px rgba(18,129,60,0.75)}}`}</style>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h11v9H3z" /><path d="M14 9h4l3 3v3h-7z" /><circle cx="7" cy="18" r="1.6" /><circle cx="17.5" cy="18" r="1.6" /></svg>
+                <span className="text-[9.5px] font-extrabold tracking-wide">{t.freeShipping}</span>
+              </div>
+            )}
+            <button
+              onClick={ship}
+              disabled={selected.size === 0}
+              className="w-full rounded-xl py-3 text-[14px] font-extrabold text-white active:scale-[0.98] disabled:opacity-40"
+              style={{ background: "#f5670a" }}
+            >
+              {t.requestShipping}
+            </button>
+          </div>
+        </div>
+        <p className="mt-1.5 text-center text-[10.5px] leading-tight text-[#8a9099]">{t.shipSelectHint}</p>
+      </div>
+
+      {toast && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-28 z-[70] flex justify-center px-4">
           <div className="rounded-full bg-black/85 px-4 py-2 text-[12px] font-semibold text-white shadow-lg">{toast}</div>
         </div>
       )}
