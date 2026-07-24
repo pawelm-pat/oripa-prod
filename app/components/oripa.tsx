@@ -2182,6 +2182,23 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
 
   const counts = { won: won.length, waiting: waiting.length, shipped: shipped.length };
 
+  // Shared "nothing won yet" view (ported from the POC prize-history screen):
+  // mascot, message and a go-to-gacha CTA. Used both when the whole screen is
+  // empty and when the won list becomes empty at runtime.
+  const emptyContent = (
+    <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 py-16">
+      <img src="/refer-mascot.png" alt="" className="mb-5 h-44 w-44 object-contain" />
+      <p className="text-center text-[14px] leading-relaxed text-[#9aa0a8]">{t.winEmptyTitle}</p>
+      <p className="mt-1 max-w-[300px] text-center text-[14px] leading-relaxed text-[#9aa0a8]">{t.winEmptySub}</p>
+      <button
+        onClick={onGoGacha ?? onHome}
+        className="mt-7 w-full max-w-[360px] rounded-xl bg-[#D10005] py-3.5 text-[15px] font-extrabold tracking-wide text-white shadow-[0_6px_18px_rgba(230,0,18,0.35)] active:scale-[0.99]"
+      >
+        {t.winEmptyCta}
+      </button>
+    </div>
+  );
+
   if (empty) {
     return (
       <div className="flex h-full flex-col bg-[#eef0f3]">
@@ -2197,18 +2214,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
             <h2 className="text-[20px] font-bold text-[#1d2129]">{screenTitle}</h2>
           </div>
         </header>
-
-        <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6">
-          <img src="/refer-mascot.png" alt="" className="mb-5 h-44 w-44 object-contain" />
-          <p className="text-center text-[14px] leading-relaxed text-[#9aa0a8]">{t.winEmptyTitle}</p>
-          <p className="mt-1 max-w-[300px] text-center text-[14px] leading-relaxed text-[#9aa0a8]">{t.winEmptySub}</p>
-          <button
-            onClick={onGoGacha ?? onHome}
-            className="mt-7 w-full rounded-xl bg-[#D10005] py-3.5 text-[15px] font-extrabold tracking-wide text-white shadow-[0_6px_18px_rgba(230,0,18,0.35)] active:scale-[0.99]"
-          >
-            {t.winEmptyCta}
-          </button>
-        </div>
+        {emptyContent}
       </div>
     );
   }
@@ -2228,9 +2234,9 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
           <h2 className="text-[20px] font-bold text-[#1d2129]">{screenTitle}</h2>
         </div>
 
-        {/* Top navigation (Won/Waiting/Shipped) stays sticky together with the
-            top section (logo, balance, back arrow and title) while the list
-            scrolls beneath it. */}
+        {/* Won/Waiting/Shipped tabs. Winning History is a pure audit of what the
+            customer has won, so the tabs are hidden there; My Loot keeps them. */}
+        {lootMode && (
         <div className="flex border-b border-black/10 bg-white px-2">
           {([
             { key: "won", label: t.tabWon },
@@ -2257,13 +2263,14 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
             );
           })}
         </div>
+        )}
       </header>
 
       <div ref={tabScrollRef} className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
 
         {tab === "won" && (
           won.length === 0 ? (
-            <EmptyState icon="🎁" title={t.wonEmptyTitle} subtitle={t.wonEmptySub} />
+            emptyContent
           ) : (
             <>
               <div className="sticky top-0 z-10 flex items-stretch border-b border-black/10 bg-white">
@@ -2307,7 +2314,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                           </div>
                           <p className="mt-1.5 text-[14px] font-bold leading-tight text-[#1d2129]">{locName(p, lang)}</p>
                           <p className="mt-1 line-clamp-2 text-[10px] font-normal leading-relaxed text-[#8a9099]">{locDesc(p, lang)}</p>
-                          <p className="mt-1 text-[11px] font-semibold text-[#8a9099]">{t.itemsExchangePeriod}{fmtDate(expiresAt(p.wonAt))}</p>
+                          <p className="mt-1 text-[11px] font-semibold text-[#8a9099]">{t.itemsDateWon}{fmtDate(p.wonAt)}</p>
                           <div className="mt-auto flex items-center justify-center gap-1.5 rounded-xl border border-black/10 bg-white pt-2 pb-2" style={{ marginTop: 8 }}>
                             <CoinIcon size={18} />
                             <span className="text-[18px] font-bold text-[#1d2129]">{p.coinValue.toLocaleString()}</span>
