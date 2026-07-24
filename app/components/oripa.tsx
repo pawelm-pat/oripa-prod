@@ -1027,12 +1027,50 @@ function DrawTierCard({ rarity, lang, large = false }: { rarity: Rarity; lang: L
   );
 }
 
+// Gold 3D "アド確定 / Advantage guaranteed" headline treatment.
+const drawGoldText: React.CSSProperties = {
+  color: "#ffe27a",
+  WebkitTextStroke: "1.4px #5f2c00",
+  textShadow: "0 2px 0 #7a3b00, 0 3px 6px rgba(0,0,0,0.55)",
+};
+
+// Reusable promotional banner (fiery burst, gold headline, mascot, countdown).
+// Shared by the draw detail screen and the draw-confirmation popup.
+function DrawPromoBanner({ t, item, className = "", showCountdown = true }: { t: (typeof STR)[Lang]; item: OripaItem; className?: string; showCountdown?: boolean }) {
+  return (
+    <div
+      className={`relative h-[190px] overflow-hidden ${className}`}
+      style={{ background: "radial-gradient(circle at 40% 34%, #ffe07a 0%, #ff9e2b 26%, #ec5a10 52%, #a5210a 78%, #5c0f04 100%)" }}
+    >
+      <div className="pointer-events-none absolute inset-0 opacity-40" style={{ background: "repeating-conic-gradient(from 0deg at 42% 40%, rgba(255,255,255,0.55) 0deg 2deg, transparent 2deg 11deg)" }} />
+      <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(90deg, rgba(90,15,4,0.35) 0%, transparent 40%, transparent 62%, rgba(90,15,4,0.25) 100%)" }} />
+      <img src="/hero/hero.png" alt="" draggable={false} className="pointer-events-none absolute -bottom-2 right-[-6%] h-[104%] w-auto object-contain drop-shadow-[0_4px_10px_rgba(0,0,0,0.4)]" style={{ WebkitUserDrag: "none" } as React.CSSProperties} />
+      <div className="relative z-10 flex h-full flex-col justify-center px-3.5 py-3">
+        <span className="mb-1 inline-flex w-fit items-center rounded-[4px] bg-[#e0102a] px-2 py-0.5 text-[10px] font-black tracking-wide text-white shadow-[0_1px_3px_rgba(0,0,0,0.4)] ring-1 ring-white/40">
+          {t.drawNewOnly}
+        </span>
+        <h1 className="text-[30px] font-black leading-[0.95]" style={drawGoldText}>{t.drawGuaranteed}</h1>
+        <p className="mt-1 text-[15px] font-black leading-tight" style={drawGoldText}>{t.drawPackSubtitle}</p>
+        <p className="mt-1.5 w-fit rounded bg-black/35 px-1.5 py-0.5 text-[10.5px] font-bold text-white ring-1 ring-white/15">{t.drawBannerTagline}</p>
+      </div>
+      {showCountdown && (
+        <span className="absolute right-2 top-2 z-10 inline-flex items-center gap-1 rounded-full bg-[#d10005] px-2.5 py-1 text-[11px] font-extrabold text-white shadow-[0_2px_6px_rgba(0,0,0,0.45)] ring-1 ring-white/30">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" strokeLinecap="round" /></svg>
+          {t.minUnit(item.endsIn)}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void }) {
   const t = STR[lang];
   const pct = Math.round((item.remaining / item.total) * 100);
   const soldOut = item.remaining <= 0;
   const [toast, setToast] = useState<string | null>(null);
   const [cautionOpen, setCautionOpen] = useState(false);
+  // Draw-confirmation popup: holds the requested draw count while open.
+  const [confirmCount, setConfirmCount] = useState<number | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function pushToast(msg: string) {
@@ -1045,16 +1083,17 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: 
   function draw(count: number) {
     if (soldOut) return;
     if (coins < DRAW_PRICE * count) { pushToast(t.drawInsufficient); return; }
+    // Open the confirmation popup; the actual draw is triggered from there.
+    setConfirmCount(count);
+  }
+
+  function confirmDraw() {
+    const count = confirmCount;
+    setConfirmCount(null);
+    if (count == null) return;
     // Draw outcome / animation flow is TBC — for now confirm the action.
     pushToast(t.drawToast(count));
   }
-
-  // Gold 3D "アド確定 / Advantage guaranteed" headline treatment.
-  const goldText: React.CSSProperties = {
-    color: "#ffe27a",
-    WebkitTextStroke: "1.4px #5f2c00",
-    textShadow: "0 2px 0 #7a3b00, 0 3px 6px rgba(0,0,0,0.55)",
-  };
 
   return (
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
@@ -1073,34 +1112,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: 
             Fiery radial burst + ray sweep, gold 3D headline, "new-only"
             ribbon, tagline, mascot and a countdown chip. */}
         <div className="px-3 pt-3">
-          <div
-            className="relative h-[190px] overflow-hidden rounded-2xl ring-1 ring-[#ffcf5a]/40"
-            style={{ background: "radial-gradient(circle at 40% 34%, #ffe07a 0%, #ff9e2b 26%, #ec5a10 52%, #a5210a 78%, #5c0f04 100%)" }}
-          >
-            {/* radiating light rays */}
-            <div className="pointer-events-none absolute inset-0 opacity-40" style={{ background: "repeating-conic-gradient(from 0deg at 42% 40%, rgba(255,255,255,0.55) 0deg 2deg, transparent 2deg 11deg)" }} />
-            {/* warm vignette for text legibility */}
-            <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(90deg, rgba(90,15,4,0.35) 0%, transparent 40%, transparent 62%, rgba(90,15,4,0.25) 100%)" }} />
-
-            {/* mascot */}
-            <img src="/hero/hero.png" alt="" draggable={false} className="pointer-events-none absolute -bottom-2 right-[-6%] h-[104%] w-auto object-contain drop-shadow-[0_4px_10px_rgba(0,0,0,0.4)]" style={{ WebkitUserDrag: "none" } as React.CSSProperties} />
-
-            {/* content */}
-            <div className="relative z-10 flex h-full flex-col justify-center px-3.5 py-3">
-              <span className="mb-1 inline-flex w-fit items-center rounded-[4px] bg-[#e0102a] px-2 py-0.5 text-[10px] font-black tracking-wide text-white shadow-[0_1px_3px_rgba(0,0,0,0.4)] ring-1 ring-white/40">
-                {t.drawNewOnly}
-              </span>
-              <h1 className="text-[30px] font-black leading-[0.95]" style={goldText}>{t.drawGuaranteed}</h1>
-              <p className="mt-1 text-[15px] font-black leading-tight" style={goldText}>{t.drawPackSubtitle}</p>
-              <p className="mt-1.5 w-fit rounded bg-black/35 px-1.5 py-0.5 text-[10.5px] font-bold text-white ring-1 ring-white/15">{t.drawBannerTagline}</p>
-            </div>
-
-            {/* countdown chip */}
-            <span className="absolute right-2 top-2 z-10 inline-flex items-center gap-1 rounded-full bg-[#d10005] px-2.5 py-1 text-[11px] font-extrabold text-white shadow-[0_2px_6px_rgba(0,0,0,0.45)] ring-1 ring-white/30">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" strokeLinecap="round" /></svg>
-              {t.minUnit(item.endsIn)}
-            </span>
-          </div>
+          <DrawPromoBanner t={t} item={item} className="rounded-2xl ring-1 ring-[#ffcf5a]/40" />
           {/* sales period */}
           <p className="mt-2 text-center text-[11.5px] font-semibold text-[#8a9099]">{t.periodLabel("2026/01/01")}</p>
         </div>
@@ -1197,8 +1209,73 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: 
         )}
       </div>
 
+      {/* Draw-confirmation popup */}
+      {confirmCount != null && (
+        <div
+          className="absolute inset-0 z-[60] flex items-center justify-center p-4"
+          style={{ background: "rgba(20,8,4,0.62)" }}
+          onClick={() => setConfirmCount(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <style>{`@keyframes drawConfirmIn{0%{opacity:0;transform:translateY(12px) scale(.94)}100%{opacity:1;transform:none}}`}</style>
+          <div
+            className="no-scrollbar flex max-h-full w-full max-w-[380px] flex-col overflow-y-auto rounded-2xl bg-white shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+            style={{ animation: "drawConfirmIn 260ms cubic-bezier(0.22,0.61,0.36,1) both" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <DrawPromoBanner t={t} item={item} className="rounded-t-2xl" showCountdown={false} />
+
+            <div className="px-4 pb-4 pt-3.5">
+              <h3 className="text-center text-[18px] font-bold text-[#1d2129]">{locTitle(item, lang)}</h3>
+              <p className="mt-1.5 text-center text-[12px] leading-relaxed text-[#8a9099]">{t.drawConfirmDesc}</p>
+
+              {/* Cost row */}
+              <div className="mt-3.5 flex items-center justify-center gap-3 rounded-xl border border-black/10 bg-white py-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+                <span className="flex items-center gap-1.5">
+                  <CoinIcon size={26} />
+                  <span className="text-[20px] font-extrabold text-[#1d2129]">{(DRAW_PRICE * confirmCount).toLocaleString()}</span>
+                </span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M9 6l6 6-6 6" stroke="#9aa1ab" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                <span className="flex items-center gap-1.5">
+                  <GemIcon size={26} />
+                  <span className="text-[20px] font-extrabold text-[#D10005]">0</span>
+                </span>
+              </div>
+
+              {/* Confirm CTA */}
+              <button
+                onClick={confirmDraw}
+                className="mt-3 w-full rounded-[10px] bg-[#D10005] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]"
+              >
+                {confirmCount === 1 ? t.drawDraw1 : t.drawDrawTen}
+              </button>
+
+              {/* Dashed divider */}
+              <div className="my-3.5 border-t border-dashed border-black/20" />
+
+              {/* Terms */}
+              <p className="text-center text-[12px] font-semibold text-[#1d2129]">
+                {t.drawConfirmTerms}{" "}
+                <button onClick={() => pushToast(t.drawCustomTBC)} className="font-bold text-[#D10005] underline decoration-[#D10005] underline-offset-2">
+                  {t.drawConfirmTermsLink}
+                </button>
+              </p>
+
+              {/* Cancel */}
+              <button
+                onClick={() => setConfirmCount(null)}
+                className="mt-3 w-full rounded-[10px] border border-black/15 bg-white py-3 text-[14px] font-bold text-[#3a3f47] active:scale-[0.98]"
+              >
+                {t.cancel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {toast && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-24 z-50 flex justify-center px-4">
+        <div className="pointer-events-none absolute inset-x-0 bottom-24 z-[70] flex justify-center px-4">
           <div className="rounded-full bg-black/85 px-4 py-2 text-[12px] font-semibold text-white shadow-lg">{toast}</div>
         </div>
       )}
