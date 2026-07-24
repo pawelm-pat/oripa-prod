@@ -9,7 +9,7 @@ type SortKey = "coinDesc" | "coinAsc" | "wonNew" | "wonOld" | "expSoon";
 
 const EN = {
   langLabel: "EN",
-  prizeHistory: "Prize History",
+  prizeHistory: "Winning History",
   tabWon: "Prizes Won",
   tabWaiting: "Waiting to Ship",
   tabShipped: "Shipped",
@@ -979,7 +979,7 @@ export type Dict = typeof EN;
 
 const JA: Dict = {
   langLabel: "日本語",
-  prizeHistory: "景品履歴",
+  prizeHistory: "当選履歴",
   tabWon: "獲得景品",
   tabWaiting: "発送待ち",
   tabShipped: "発送済み",
