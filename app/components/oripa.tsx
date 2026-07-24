@@ -3441,7 +3441,6 @@ function CoinHistoryPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
               </div>
             </div>
           </div>
-          <p className="mt-2.5 text-[12px] font-bold text-[#D10005]">{t.chExpireMsg(50, "11/12 at 18:51")}</p>
         </div>
 
         {/* Note */}
