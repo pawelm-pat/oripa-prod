@@ -34,6 +34,7 @@ import {
   PREFECTURES_EN,
   PREFECTURES_JA,
   RARITY_IMG,
+  RARITY_META,
   SHIP_MIN_COINS,
   SHIP_WINDOW_DAYS,
   SORT_KEYS,
@@ -608,7 +609,7 @@ function LobbyMiniCard({ item, t, lang, fullWidth, onView }: { item: OripaItem; 
 
 // V2 lobby feed. `onView` (tap on any card) is inert in the logged-in lobby
 // and routes to Sign-up on the logged-out landing.
-function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onReset, onClearFilters, onView }: { t: Dict; lang: Lang; filters: Record<string, boolean>; query: string; onToggle: (k: string) => void; onQueryChange: (v: string) => void; onReset: () => void; onClearFilters: () => void; onView?: () => void }) {
+function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onReset, onClearFilters, onView, onOpenDraw }: { t: Dict; lang: Lang; filters: Record<string, boolean>; query: string; onToggle: (k: string) => void; onQueryChange: (v: string) => void; onReset: () => void; onClearFilters: () => void; onView?: () => void; onOpenDraw?: (item: OripaItem) => void }) {
   const L = LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"];
   const [cat, setCat] = useState("all");
   const [searchActive, setSearchActive] = useState(false);
@@ -616,6 +617,12 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
   const searchBoxRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastScrollY = useRef(0);
+  // Mirror of `searchHidden` readable inside the (once-bound) scroll handler, plus
+  // a lock that suppresses scroll-driven toggles while a collapse/expand animation
+  // (and the content-height shift it causes) settles — this is what stops the
+  // hide→shift→show→shift→hide feedback loop that made the bar "shake".
+  const searchHiddenRef = useRef(false);
+  const scrollLockRef = useRef(false);
   // While a query, applied filters, or the open filter dropdown are present we
   // keep the search bar visible (never auto-hide on scroll) so the user can act.
   const keepVisibleRef = useRef(false);
@@ -674,19 +681,33 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
       inner && inner.scrollHeight > inner.clientHeight + 4
         ? inner.scrollTop
         : window.scrollY || document.documentElement.scrollTop || 0;
+    // Toggle once, then lock out further scroll-driven toggles until the 300ms
+    // slide animation and the resulting content reflow have settled. Re-anchoring
+    // lastScrollY at unlock means the height shift can't be read as a new scroll.
+    const setHidden = (hidden: boolean) => {
+      if (searchHiddenRef.current === hidden) return;
+      searchHiddenRef.current = hidden;
+      setSearchHidden(hidden);
+      if (hidden) { setSearchActive(false); inputRef.current?.blur(); }
+      scrollLockRef.current = true;
+      window.setTimeout(() => {
+        scrollLockRef.current = false;
+        lastScrollY.current = readY();
+      }, 380);
+    };
     const onScroll = (e: Event) => {
       // Ignore scrolling that happens inside the filter dropdown itself.
       const tgt = e.target as Node;
       if (tgt !== inner && searchBoxRef.current && searchBoxRef.current.contains(tgt)) return;
+      // Swallow the self-induced scroll events fired while a toggle is animating.
+      if (scrollLockRef.current) return;
       const y = readY();
-      const last = lastScrollY.current;
-      if (y <= 4) setSearchHidden(false);
-      // Keep the search bar visible (and the filter dropdown open) while a query,
-      // applied filters, or the open dropdown are present; only auto-hide when
-      // there is nothing to act on.
-      else if (y > last + 6 && !keepVisibleRef.current) { setSearchHidden(true); setSearchActive(false); inputRef.current?.blur(); }
-      else if (y < last - 6) setSearchHidden(false);
-      lastScrollY.current = y;
+      if (y <= 6) { setHidden(false); lastScrollY.current = y; return; }
+      const dy = y - lastScrollY.current;
+      // Small deltas neither toggle nor re-anchor, so slow drags accumulate until
+      // they cross the threshold instead of being lost frame-by-frame.
+      if (dy > 10 && !keepVisibleRef.current) { setHidden(true); lastScrollY.current = y; }
+      else if (dy < -10) { setHidden(false); lastScrollY.current = y; }
     };
     window.addEventListener("scroll", onScroll, true);
     return () => window.removeEventListener("scroll", onScroll, true);
@@ -696,7 +717,7 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
   // reveal it immediately whenever a query / applied filters / open dropdown appear.
   useEffect(() => {
     keepVisibleRef.current = hasQuery || filterCount > 0 || searchActive;
-    if (keepVisibleRef.current) setSearchHidden(false);
+    if (keepVisibleRef.current) { searchHiddenRef.current = false; setSearchHidden(false); }
   }, [hasQuery, filterCount, searchActive]);
 
   // Close the filter dropdown when clicking/tapping outside of it.
@@ -731,11 +752,15 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
     return arr;
   }
 
+  // In the logged-in lobby `onOpenDraw` opens the draw screen for the tapped
+  // pack; the logged-out lobby falls back to `onView` (sign-up bridge).
+  const canOpen = !!(onOpenDraw || onView);
+  const openCard = (it: OripaItem) => (onOpenDraw ? onOpenDraw(it) : onView?.());
   const mini = (it: OripaItem, fw?: boolean) => (
-    <LobbyMiniCard key={it.id} item={it} t={t} lang={lang} fullWidth={fw} onView={onView} />
+    <LobbyMiniCard key={it.id} item={it} t={t} lang={lang} fullWidth={fw} onView={canOpen ? () => openCard(it) : undefined} />
   );
   const full = (it: OripaItem) => (
-    <OripaCard key={it.id} item={it} t={t} onView={onView} onDraw={onView ? () => onView() : undefined} />
+    <OripaCard key={it.id} item={it} t={t} onView={canOpen ? () => openCard(it) : undefined} onDraw={canOpen ? () => openCard(it) : undefined} />
   );
   const tagPill = ([key, label]: [string, string]) => {
     const on = !!filters[key];
@@ -936,7 +961,7 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
   );
 }
 
-function OripaHome({ lang, coins, onHome, onOpenStore }: { lang: Lang; coins: number; onHome: () => void; onOpenStore?: () => void }) {
+function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw }: { lang: Lang; coins: number; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem) => void }) {
   const t = STR[lang];
   const [filters, setFilters] = useState<Record<string, boolean>>({});
   const [query, setQuery] = useState("");
@@ -950,10 +975,164 @@ function OripaHome({ lang, coins, onHome, onOpenStore }: { lang: Lang; coins: nu
       <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
         <HomeHero lang={lang} />
 
-        <LobbyNavFeed t={t} lang={lang} filters={filters} query={query} onToggle={toggleFilter} onQueryChange={setQuery} onReset={clearFilters} onClearFilters={clearAllFilters} />
+        <LobbyNavFeed t={t} lang={lang} filters={filters} query={query} onToggle={toggleFilter} onQueryChange={setQuery} onReset={clearFilters} onClearFilters={clearAllFilters} onOpenDraw={onOpenDraw} />
 
         <SiteFooter t={t} />
       </div>
+    </div>
+  );
+}
+
+/* ── Draw screen (gacha pack detail) ─────────────────────────────────────
+   Opened from the lobby when a pack's Draw / View is tapped. Shows the pack
+   banner, remaining/period, and the prize line-up by tier (1st = UR / holo,
+   2nd = SR / gold, 3rd = N / silver), with a sticky draw CTA. */
+const DRAW_PRICE = 1000; // coins per single draw (mirrors the lobby card price)
+
+function DrawTierLabel({ label, variant }: { label: string; variant: "gold" | "silver" }) {
+  const bg = variant === "gold"
+    ? "linear-gradient(180deg,#ffd977,#e0a52a)"
+    : "linear-gradient(180deg,#e9edf2,#b9c1cc)";
+  const color = variant === "gold" ? "#6b4a00" : "#3c434d";
+  return (
+    <div className="my-3 flex justify-center">
+      <span className="rounded-full px-6 py-1.5 text-[15px] font-extrabold tracking-wide shadow-[0_2px_5px_rgba(0,0,0,0.18)] ring-1 ring-white/50" style={{ background: bg, color }}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function DrawTierCard({ rarity, lang, large = false }: { rarity: Rarity; lang: Lang; large?: boolean }) {
+  const meta = RARITY_META[rarity];
+  const t = STR[lang];
+  return (
+    <div className="flex flex-col items-center gap-1.5 rounded-xl bg-white p-2 shadow-[0_1px_4px_rgba(0,0,0,0.1)]">
+      <PrizeArt rarity={rarity} size={large ? 132 : 84} />
+      {large && <p className="line-clamp-1 text-center text-[12px] font-bold text-[#1d2129]">{locName(meta, lang)}</p>}
+      <div className="flex items-center gap-1 rounded-lg bg-[#FFF6E3] px-2 py-0.5">
+        <CoinIcon size={large ? 16 : 13} />
+        <span className={`font-extrabold text-[#B5740A] ${large ? "text-[14px]" : "text-[12px]"}`}>{meta.coin.toLocaleString()}</span>
+      </div>
+      {large && <p className="text-[10px] font-semibold text-[#8a9099]">{t.drawExchange}</p>}
+    </div>
+  );
+}
+
+function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void }) {
+  const t = STR[lang];
+  const pct = Math.round((item.remaining / item.total) * 100);
+  const soldOut = item.remaining <= 0;
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function pushToast(msg: string) {
+    setToast(msg);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 2600);
+  }
+  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
+
+  function draw(count: number) {
+    if (soldOut) return;
+    if (coins < DRAW_PRICE * count) { pushToast(t.drawInsufficient); return; }
+    // Draw outcome / animation flow is TBC — for now confirm the action.
+    pushToast(t.drawToast(count));
+  }
+
+  return (
+    <div className="relative flex h-full flex-col bg-[#eef0f3]">
+      <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
+
+      {/* Title row */}
+      <div className="shrink-0 flex items-center gap-2 border-b border-black/10 bg-white px-3 py-2.5">
+        <button onClick={onBack} aria-label={t.backAria} className="flex h-8 w-8 items-center justify-center text-[#D10005] hover:bg-black/5">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 12H4M10 6l-6 6 6 6" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </button>
+        <h2 className="truncate text-[17px] font-bold text-[#1d2129]">{locTitle(item, lang)}</h2>
+      </div>
+
+      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
+        {/* Pack banner */}
+        <div className="relative overflow-hidden" style={{ background: "linear-gradient(135deg,#c8061a 0%,#7a0410 60%,#3a0208 100%)" }}>
+          <div className="px-4 pt-4 pb-5 text-white">
+            <div className="mb-2 flex flex-wrap items-center gap-1.5">
+              <span className="rounded-md bg-white px-2 py-0.5 text-[10px] font-extrabold text-[#D10005]">{t.drawNewOnly}</span>
+              <span className="rounded-md bg-[#ffd977] px-2 py-0.5 text-[10px] font-extrabold text-[#6b4a00]">{t.drawGuaranteed}</span>
+            </div>
+            <h1 className="text-[22px] font-extrabold leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)]">{locTitle(item, lang)}</h1>
+            <p className="mt-0.5 text-[13px] font-bold text-white/85">{t.drawPackSubtitle}</p>
+            <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-black/25 px-3 py-1.5 ring-1 ring-white/25">
+              <CoinIcon size={18} />
+              <span className="text-[18px] font-extrabold">{DRAW_PRICE.toLocaleString()}</span>
+              <span className="text-[12px] font-bold text-white/80">{t.perDraw}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Remaining + period */}
+        <div className="bg-white px-4 py-3">
+          <div className="flex items-baseline justify-between">
+            <span className="text-[13px] font-bold text-[#1d2129]">{t.remainingLabel}</span>
+            <span className="leading-none"><span className="text-[20px] font-extrabold text-[#1d2129]">{item.remaining}</span><span className="text-[12px] font-bold text-[#8a9099]">/{item.total}</span></span>
+          </div>
+          <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-black/[0.08]"><span className="block h-full rounded-full bg-[#D10005]" style={{ width: `${pct}%` }} /></div>
+          <p className="mt-2 flex items-center justify-between text-[#D10005]">
+            <span className="text-[12px] font-bold">{t.remainingTimeLabel}</span>
+            <span className="text-[14px] font-extrabold">{t.minUnit(item.endsIn)}</span>
+          </p>
+        </div>
+
+        {/* Caution */}
+        <div className="mx-3 mt-3 rounded-xl border border-[#f0d68a] bg-[#fffae8] px-3 py-2.5">
+          <p className="text-[11px] leading-relaxed text-[#8a6d16]">{t.drawCaution}</p>
+        </div>
+
+        {/* Prize line-up */}
+        <div className="px-3 pb-4">
+          <DrawTierLabel label={t.drawTier1} variant="gold" />
+          <div className="grid grid-cols-2 gap-3">
+            <DrawTierCard rarity="UR" lang={lang} large />
+            <DrawTierCard rarity="UR" lang={lang} large />
+          </div>
+
+          <DrawTierLabel label={t.drawTier2} variant="gold" />
+          <div className="grid grid-cols-3 gap-2.5">
+            {Array.from({ length: 6 }).map((_, i) => <DrawTierCard key={`sr${i}`} rarity="SR" lang={lang} />)}
+          </div>
+
+          <DrawTierLabel label={t.drawTier3} variant="silver" />
+          <div className="grid grid-cols-3 gap-2.5">
+            {Array.from({ length: 6 }).map((_, i) => <DrawTierCard key={`n${i}`} rarity="N" lang={lang} />)}
+          </div>
+        </div>
+
+        <SiteFooter t={t} />
+      </div>
+
+      {/* Sticky draw CTA */}
+      <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2.5 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
+        {soldOut ? (
+          <div className="rounded-xl bg-black/10 py-3 text-center text-[15px] font-extrabold text-[#8a9099]">{t.drawSoldOut}</div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2.5">
+            <button onClick={() => draw(1)} className="rounded-xl border-2 border-[#D10005] bg-white py-2.5 text-[14px] font-extrabold text-[#D10005] active:scale-[0.99]">
+              {t.btn1Draw}
+              <span className="mt-0.5 block text-[11px] font-bold opacity-80">{DRAW_PRICE.toLocaleString()} coins</span>
+            </button>
+            <button onClick={() => draw(10)} className="rounded-xl py-2.5 text-[14px] font-extrabold text-white active:scale-[0.99]" style={{ background: "linear-gradient(180deg,#ff5a5f,#c8061a)" }}>
+              {t.drawDrawTen}
+              <span className="mt-0.5 block text-[11px] font-bold opacity-90">{(DRAW_PRICE * 10).toLocaleString()} coins</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {toast && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-24 z-50 flex justify-center px-4">
+          <div className="rounded-full bg-black/85 px-4 py-2 text-[12px] font-semibold text-white shadow-lg">{toast}</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -5542,6 +5721,10 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
   // back returns to wherever it was opened from.
   const [coinHistoryReturn, setCoinHistoryReturn] = useState<Screen>("oripa");
   const openCoinHistory = () => { setCoinHistoryReturn((p) => (screen === "coinHistory" ? p : screen)); setScreen("coinHistory"); };
+  // Draw screen (gacha pack detail) opens when a lobby pack's Draw / View is
+  // tapped; back returns to the lobby.
+  const [drawItem, setDrawItem] = useState<OripaItem | null>(null);
+  const openDraw = (item: OripaItem) => { setDrawItem(item); setScreen("drawDetail"); };
   // Legal document reader (Terms / Privacy / SCTA), rendered at the app root so
   // it overlays correctly no matter where it's triggered (footer, My Account).
   const [legalDoc, setLegalDoc] = useState<LegalDocKey | null>(null);
@@ -5569,7 +5752,17 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
         {screen === "signup" && <SignupPage lang={lang} onLogin={() => setScreen("login")} onSuccess={enterHome} />}
         {screen === "login" && <LoginPage lang={lang} onSignUp={() => setScreen("signup")} onSuccess={enterHome} />}
         {/* Logged-in lobby — V2 format */}
-        {screen === "oripa" && <OripaHome lang={lang} coins={coins} onHome={goHome} onOpenStore={openStore} />}
+        {screen === "oripa" && <OripaHome lang={lang} coins={coins} onHome={goHome} onOpenStore={openStore} onOpenDraw={openDraw} />}
+        {screen === "drawDetail" && drawItem && (
+          <DrawDetail
+            lang={lang}
+            item={drawItem}
+            coins={coins}
+            onBack={goHome}
+            onHome={goHome}
+            onOpenStore={openStore}
+          />
+        )}
         {screen === "notifications" && <NotificationsScreen lang={lang} coins={coins} empty={noHistory} only={notifOnly} onBack={() => setScreen(prevScreen)} onHome={goHome} />}
         {screen === "mypage" && (
           <MyPage

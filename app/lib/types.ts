@@ -117,6 +117,7 @@ export type Screen =
   | "signup"
   | "login"
   | "oripa"
+  | "drawDetail"
   | "notifications"
   | "prizeHistory"
   | "myLoot"

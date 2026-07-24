@@ -292,9 +292,9 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
         items: [
           RECOMMENDED_ITEM,
           "Cards show tags, artwork, price, remaining stock and remaining time.",
+          { text: "Draw / Free draw / View", sub: ["Open the Draw screen (pack detail) for the tapped pack."] },
         ],
         tbc: [
-          "Draw / Free draw / View do nothing when logged in (gacha flow not built).",
           "Card artwork uses a shared placeholder; price/tags are static placeholders.",
         ],
       },
@@ -307,6 +307,58 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
           { text: "Store", sub: ["Opens the Store."] },
           { text: "My Page", sub: ["Opens the My Account hub."] },
         ],
+      },
+      FOOTER_GROUP,
+      LEGAL_OVERLAY_GROUP,
+    ],
+  },
+
+  drawDetail: {
+    label: "Draw (pack detail)",
+    summary: "Gacha pack detail opened from the lobby: banner, remaining/period, prize line-up by tier, and a sticky draw CTA.",
+    groups: [
+      APP_HEADER_GROUP,
+      {
+        title: "Title row",
+        items: [
+          "Back arrow returns to the lobby.",
+          "Shows the selected pack's title.",
+        ],
+      },
+      {
+        title: "Pack banner",
+        items: [
+          "Branded banner with 'New members only' and 'Advantage guaranteed' badges, the pack title, the 'Start Dash Pack' subtitle, and the price per draw (coins).",
+        ],
+        tbc: ["Banner artwork/badges are placeholders until final creative is signed off."],
+      },
+      {
+        title: "Remaining & period",
+        items: [
+          "Remaining/total stock with a progress bar and the remaining time.",
+        ],
+      },
+      {
+        title: "Caution note",
+        items: ["Yellow note prompting the user to review terms and prize details before drawing."],
+      },
+      {
+        title: "Prize line-up",
+        items: [
+          "1st Prize (1等): two top-tier (holo) cards with name, coin value and 'Exchangeable for coins'.",
+          "2nd Prize (2等): grid of gold-tier cards with coin values.",
+          "3rd Prize (3等): grid of silver-tier cards with coin values.",
+        ],
+        tbc: ["Card artwork and coin values use shared sample data; real line-up/odds are TBC."],
+      },
+      {
+        title: "Draw CTA (sticky)",
+        items: [
+          { text: "Draw ×1 / Draw ×10", sub: ["Checks the coin balance and confirms the action via a toast."] },
+          "When stock is 0 the CTA shows a 'Sold out' state.",
+        ],
+        validation: ["Blocks the draw and prompts to top up if the balance is below the draw cost."],
+        tbc: ["Draw outcome, reveal animation, coin deduction and adding won cards to Winning History are TBC."],
       },
       FOOTER_GROUP,
       LEGAL_OVERLAY_GROUP,
