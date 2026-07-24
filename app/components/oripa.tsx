@@ -989,14 +989,25 @@ function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw }: { lang: Lan
    2nd = SR / gold, 3rd = N / silver), with a sticky draw CTA. */
 const DRAW_PRICE = 1000; // coins per single draw (mirrors the lobby card price)
 
+// Beveled tier plate ("1等 / 2등 / 3등") — gold for 1st/2nd, silver for 3rd,
+// matching the design's metallic name-plates on the dark prize board.
 function DrawTierLabel({ label, variant }: { label: string; variant: "gold" | "silver" }) {
   const bg = variant === "gold"
-    ? "linear-gradient(180deg,#ffd977,#e0a52a)"
-    : "linear-gradient(180deg,#e9edf2,#b9c1cc)";
-  const color = variant === "gold" ? "#6b4a00" : "#3c434d";
+    ? "linear-gradient(180deg,#fff2b0 0%,#ffd45a 42%,#e0952a 72%,#a9640c 100%)"
+    : "linear-gradient(180deg,#ffffff 0%,#e3e9f1 42%,#c1cad7 72%,#8f9aa8 100%)";
+  const color = variant === "gold" ? "#5a3a00" : "#333c48";
   return (
-    <div className="my-3 flex justify-center">
-      <span className="rounded-full px-6 py-1.5 text-[15px] font-extrabold tracking-wide shadow-[0_2px_5px_rgba(0,0,0,0.18)] ring-1 ring-white/50" style={{ background: bg, color }}>
+    <div className="my-4 flex justify-center">
+      <span
+        className="inline-flex min-w-[92px] items-center justify-center rounded-md px-7 py-1.5 text-[16px] font-black tracking-[0.12em]"
+        style={{
+          background: bg,
+          color,
+          border: "1.5px solid rgba(255,255,255,0.7)",
+          boxShadow: "0 3px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -2px 4px rgba(0,0,0,0.18)",
+          textShadow: "0 1px 0 rgba(255,255,255,0.5)",
+        }}
+      >
         {label}
       </span>
     </div>
@@ -1005,16 +1016,14 @@ function DrawTierLabel({ label, variant }: { label: string; variant: "gold" | "s
 
 function DrawTierCard({ rarity, lang, large = false }: { rarity: Rarity; lang: Lang; large?: boolean }) {
   const meta = RARITY_META[rarity];
-  const t = STR[lang];
   return (
-    <div className="flex flex-col items-center gap-1.5 rounded-xl bg-white p-2 shadow-[0_1px_4px_rgba(0,0,0,0.1)]">
-      <PrizeArt rarity={rarity} size={large ? 132 : 84} />
-      {large && <p className="line-clamp-1 text-center text-[12px] font-bold text-[#1d2129]">{locName(meta, lang)}</p>}
-      <div className="flex items-center gap-1 rounded-lg bg-[#FFF6E3] px-2 py-0.5">
-        <CoinIcon size={large ? 16 : 13} />
-        <span className={`font-extrabold text-[#B5740A] ${large ? "text-[14px]" : "text-[12px]"}`}>{meta.coin.toLocaleString()}</span>
+    <div className="flex flex-col items-center gap-1.5">
+      <PrizeArt rarity={rarity} size={large ? 138 : 92} />
+      {/* Value chip sits on the dark board — glassy dark pill with a gold coin. */}
+      <div className="flex items-center gap-1 rounded-full bg-black/45 px-2.5 py-0.5 ring-1 ring-white/15 backdrop-blur-sm">
+        <CoinIcon size={large ? 15 : 12} />
+        <span className={`font-extrabold text-[#ffd77a] ${large ? "text-[13px]" : "text-[11px]"}`}>{meta.coin.toLocaleString()}</span>
       </div>
-      {large && <p className="text-[10px] font-semibold text-[#8a9099]">{t.drawExchange}</p>}
     </div>
   );
 }
@@ -1040,56 +1049,104 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: 
     pushToast(t.drawToast(count));
   }
 
+  // Gold 3D "アド確定 / Advantage guaranteed" headline treatment.
+  const goldText: React.CSSProperties = {
+    color: "#ffe27a",
+    WebkitTextStroke: "1.4px #5f2c00",
+    textShadow: "0 2px 0 #7a3b00, 0 3px 6px rgba(0,0,0,0.55)",
+  };
+
   return (
-    <div className="relative flex h-full flex-col bg-[#eef0f3]">
+    <div className="relative flex h-full flex-col bg-[#0a0a0c]">
       <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
 
-      {/* Title row */}
-      <div className="shrink-0 flex items-center gap-2 border-b border-black/10 bg-white px-3 py-2.5">
-        <button onClick={onBack} aria-label={t.backAria} className="flex h-8 w-8 items-center justify-center text-[#D10005] hover:bg-black/5">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 12H4M10 6l-6 6 6 6" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      {/* Title row (dark) */}
+      <div className="shrink-0 flex items-center gap-2 border-b border-white/10 bg-[#0a0a0c] px-3 py-2.5">
+        <button onClick={onBack} aria-label={t.backAria} className="flex h-8 w-8 items-center justify-center text-white hover:bg-white/10">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 12H4M10 6l-6 6 6 6" stroke="#ffffff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </button>
-        <h2 className="truncate text-[17px] font-bold text-[#1d2129]">{locTitle(item, lang)}</h2>
+        <h2 className="truncate text-[17px] font-bold text-white">{locTitle(item, lang)}</h2>
       </div>
 
-      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
-        {/* Pack banner */}
-        <div className="relative overflow-hidden" style={{ background: "linear-gradient(135deg,#c8061a 0%,#7a0410 60%,#3a0208 100%)" }}>
-          <div className="px-4 pt-4 pb-5 text-white">
-            <div className="mb-2 flex flex-wrap items-center gap-1.5">
-              <span className="rounded-md bg-white px-2 py-0.5 text-[10px] font-extrabold text-[#D10005]">{t.drawNewOnly}</span>
-              <span className="rounded-md bg-[#ffd977] px-2 py-0.5 text-[10px] font-extrabold text-[#6b4a00]">{t.drawGuaranteed}</span>
+      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto bg-[#0a0a0c]">
+        {/* ── Promotional banner ─────────────────────────────────────────
+            Fiery radial burst + ray sweep, gold 3D headline, "new-only"
+            ribbon, tagline, mascot and a countdown chip. */}
+        <div className="px-3 pt-3">
+          <div
+            className="relative h-[190px] overflow-hidden rounded-2xl ring-1 ring-[#ffcf5a]/40"
+            style={{ background: "radial-gradient(circle at 40% 34%, #ffe07a 0%, #ff9e2b 26%, #ec5a10 52%, #a5210a 78%, #5c0f04 100%)" }}
+          >
+            {/* radiating light rays */}
+            <div className="pointer-events-none absolute inset-0 opacity-40" style={{ background: "repeating-conic-gradient(from 0deg at 42% 40%, rgba(255,255,255,0.55) 0deg 2deg, transparent 2deg 11deg)" }} />
+            {/* warm vignette for text legibility */}
+            <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(90deg, rgba(90,15,4,0.35) 0%, transparent 40%, transparent 62%, rgba(90,15,4,0.25) 100%)" }} />
+
+            {/* mascot */}
+            <img src="/hero/hero.png" alt="" draggable={false} className="pointer-events-none absolute -bottom-2 right-[-6%] h-[104%] w-auto object-contain drop-shadow-[0_4px_10px_rgba(0,0,0,0.4)]" style={{ WebkitUserDrag: "none" } as React.CSSProperties} />
+
+            {/* content */}
+            <div className="relative z-10 flex h-full flex-col justify-center px-3.5 py-3">
+              <span className="mb-1 inline-flex w-fit items-center rounded-[4px] bg-[#e0102a] px-2 py-0.5 text-[10px] font-black tracking-wide text-white shadow-[0_1px_3px_rgba(0,0,0,0.4)] ring-1 ring-white/40">
+                {t.drawNewOnly}
+              </span>
+              <h1 className="text-[30px] font-black leading-[0.95]" style={goldText}>{t.drawGuaranteed}</h1>
+              <p className="mt-1 text-[15px] font-black leading-tight" style={goldText}>{t.drawPackSubtitle}</p>
+              <p className="mt-1.5 w-fit rounded bg-black/35 px-1.5 py-0.5 text-[10.5px] font-bold text-white ring-1 ring-white/15">{t.drawBannerTagline}</p>
             </div>
-            <h1 className="text-[22px] font-extrabold leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)]">{locTitle(item, lang)}</h1>
-            <p className="mt-0.5 text-[13px] font-bold text-white/85">{t.drawPackSubtitle}</p>
-            <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-black/25 px-3 py-1.5 ring-1 ring-white/25">
-              <CoinIcon size={18} />
-              <span className="text-[18px] font-extrabold">{DRAW_PRICE.toLocaleString()}</span>
-              <span className="text-[12px] font-bold text-white/80">{t.perDraw}</span>
-            </div>
+
+            {/* countdown chip */}
+            <span className="absolute right-2 top-2 z-10 inline-flex items-center gap-1 rounded-full bg-[#d10005] px-2.5 py-1 text-[11px] font-extrabold text-white shadow-[0_2px_6px_rgba(0,0,0,0.45)] ring-1 ring-white/30">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" strokeLinecap="round" /></svg>
+              {t.minUnit(item.endsIn)}
+            </span>
           </div>
+          {/* sales period */}
+          <p className="mt-2 text-center text-[11.5px] font-semibold text-white/60">{t.periodLabel("2026/01/01")}</p>
         </div>
 
-        {/* Remaining + period */}
-        <div className="bg-white px-4 py-3">
-          <div className="flex items-baseline justify-between">
-            <span className="text-[13px] font-bold text-[#1d2129]">{t.remainingLabel}</span>
-            <span className="leading-none"><span className="text-[20px] font-extrabold text-[#1d2129]">{item.remaining}</span><span className="text-[12px] font-bold text-[#8a9099]">/{item.total}</span></span>
+        {/* Tags */}
+        <div className="flex flex-wrap items-center gap-1.5 px-3.5 pb-1 pt-1">
+          <TagPill variant="redOutline">{t.tagPopular}</TagPill>
+          <TagPill variant="redFill">{t.tagPokemon}</TagPill>
+          <TagPill variant="darkOutline">{t.tagLv5}</TagPill>
+          <TagPill variant="darkOutline">{t.tagSsr}</TagPill>
+        </div>
+
+        {/* Cost + remaining */}
+        <div className="mx-3 mt-2 rounded-2xl bg-white/[0.06] px-4 py-3 ring-1 ring-white/10">
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1.5">
+              <CoinIcon size={20} />
+              <span className="text-[16px] font-extrabold text-white">{DRAW_PRICE.toLocaleString()}</span>
+              <span className="text-[11px] font-bold text-white/55">{t.perDraw}</span>
+            </span>
+            {item.gem && (
+              <span className="flex items-center gap-1.5">
+                <GemIcon size={20} />
+                <span className="text-[16px] font-extrabold text-white">{DRAW_PRICE.toLocaleString()}</span>
+                <span className="text-[11px] font-bold text-white/55">{t.perDraw}</span>
+              </span>
+            )}
           </div>
-          <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-black/[0.08]"><span className="block h-full rounded-full bg-[#D10005]" style={{ width: `${pct}%` }} /></div>
-          <p className="mt-2 flex items-center justify-between text-[#D10005]">
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="text-[13px] font-bold text-white/80">{t.remainingLabel}</span>
+            <span className="leading-none"><span className="text-[20px] font-extrabold text-white">{item.remaining}</span><span className="text-[12px] font-bold text-white/45">/{item.total}</span></span>
+          </div>
+          <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-white/10"><span className="block h-full rounded-full bg-[#D10005]" style={{ width: `${pct}%` }} /></div>
+          <p className="mt-2 flex items-center justify-between text-[#ff6b6f]">
             <span className="text-[12px] font-bold">{t.remainingTimeLabel}</span>
             <span className="text-[14px] font-extrabold">{t.minUnit(item.endsIn)}</span>
           </p>
         </div>
 
         {/* Caution */}
-        <div className="mx-3 mt-3 rounded-xl border border-[#f0d68a] bg-[#fffae8] px-3 py-2.5">
-          <p className="text-[11px] leading-relaxed text-[#8a6d16]">{t.drawCaution}</p>
+        <div className="mx-3 mt-3 rounded-xl border border-[#f0d68a]/40 bg-[#f0d68a]/[0.08] px-3 py-2.5">
+          <p className="text-[11px] leading-relaxed text-[#f2d88f]">{t.drawCaution}</p>
         </div>
 
         {/* Prize line-up */}
-        <div className="px-3 pb-4">
+        <div className="px-3 pb-5">
           <DrawTierLabel label={t.drawTier1} variant="gold" />
           <div className="grid grid-cols-2 gap-3">
             <DrawTierCard rarity="UR" lang={lang} large />
@@ -1111,14 +1168,14 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: 
       </div>
 
       {/* Sticky draw CTA */}
-      <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2.5 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
+      <div className="shrink-0 border-t border-white/10 bg-[#111114] px-3 pb-3 pt-2.5 shadow-[0_-8px_24px_rgba(0,0,0,0.4)]">
         {soldOut ? (
-          <div className="rounded-xl bg-black/10 py-3 text-center text-[15px] font-extrabold text-[#8a9099]">{t.drawSoldOut}</div>
+          <div className="rounded-xl bg-white/10 py-3 text-center text-[15px] font-extrabold text-white/50">{t.drawSoldOut}</div>
         ) : (
           <div className="grid grid-cols-2 gap-2.5">
-            <button onClick={() => draw(1)} className="rounded-xl border-2 border-[#D10005] bg-white py-2.5 text-[14px] font-extrabold text-[#D10005] active:scale-[0.99]">
+            <button onClick={() => draw(1)} className="rounded-xl border-2 border-[#D10005] bg-transparent py-2.5 text-[14px] font-extrabold text-white active:scale-[0.99]">
               {t.btn1Draw}
-              <span className="mt-0.5 block text-[11px] font-bold opacity-80">{DRAW_PRICE.toLocaleString()} coins</span>
+              <span className="mt-0.5 block text-[11px] font-bold opacity-70">{DRAW_PRICE.toLocaleString()} coins</span>
             </button>
             <button onClick={() => draw(10)} className="rounded-xl py-2.5 text-[14px] font-extrabold text-white active:scale-[0.99]" style={{ background: "linear-gradient(180deg,#ff5a5f,#c8061a)" }}>
               {t.drawDrawTen}
