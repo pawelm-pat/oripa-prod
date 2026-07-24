@@ -804,9 +804,12 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
   } else if (cat === "all") {
     body = (
       <div>
-        {HOME_SECTIONS.map((s) => {
+        {HOME_SECTIONS.map((s, i) => {
           const title = (t as unknown as Record<string, string>)[s.titleKey];
           const seeAllCat = s.cats[0];
+          // No divider directly after the red recommended block (the promo
+          // banners already separate it from the following section).
+          const afterRed = i > 0 && HOME_SECTIONS[i - 1].variant === "red";
           if (s.variant === "red") {
             return (
               <div key={s.id}>
@@ -826,7 +829,7 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
             );
           }
           return (
-            <div key={s.id} className="border-t border-black/10 px-3.5 py-3.5 first:border-t-0">
+            <div key={s.id} className={`px-3.5 py-3.5 first:border-t-0 ${afterRed ? "" : "border-t border-black/10"}`}>
               <div className="mb-2.5 flex items-center justify-between">
                 <h3 className="flex items-center gap-1.5 text-[15px] font-extrabold text-[#1d2129]">{sectionIcon(s.icon, false)}{title}</h3>
                 {seeAllCat && <button onClick={() => setCat(seeAllCat)} className="text-[12px] font-bold text-[#D10005]">{L.seeAll} →</button>}
