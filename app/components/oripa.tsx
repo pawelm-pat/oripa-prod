@@ -3040,8 +3040,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
                 <p className="mt-1 flex items-center gap-1.5 text-[22px] font-extrabold text-[#1d2129]"><GemIcon size={22} />10,000</p>
               </div>
             </div>
-            <div className="mt-3 flex items-center justify-between gap-3">
-              <p className="text-[12px] font-bold text-[#D10005]">{t.mpCoinExpiry}</p>
+            <div className="mt-3 flex items-center justify-end gap-3">
               <button onClick={openCoinHistory} className="shrink-0 rounded-lg border border-black/25 px-4 py-1.5 text-[13px] font-bold text-[#1d2129] active:bg-black/[0.03]">{t.mpViewDetails}</button>
             </div>
           </div>
