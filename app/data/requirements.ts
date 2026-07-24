@@ -181,7 +181,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
 
   signup: {
     label: "Sign up",
-    summary: "Create an account with email or a social provider.",
+    summary: "Create an account with LINE, Google, or email — including verification, SEON step-up, and exit confirmation.",
     groups: [
       {
         title: "Header",
@@ -193,40 +193,59 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
       {
         title: "Social sign-up",
         items: [
-          { text: "LINE / Google / Apple (order LINE → Google → Apple)", sub: ["Google/Apple open a simulated provider flow; LINE completes immediately. All land the user in the lobby."] },
+          { text: "LINE (Preferred) / Google method tiles", sub: [
+            "LINE opens the LINE permissions sheet (official-account friend toggle + grant permissions) → processing → Complete signup (email, DOB, country, invite, consent) → email verification.",
+            "Google opens account picker → permissions → processing → Complete signup (DOB, country, invite, consent).",
+          ] },
         ],
-        tbc: ["Real OAuth is mocked with hardcoded accounts."],
+        tbc: ["Real OAuth is mocked with hardcoded accounts.", "Apple sheet exists in older code but is not on the primary CTA row."],
       },
       {
         title: "Email sign-up form",
         items: [
-          "Fields: Email Address, Password, Date of Birth, Invitation Code (optional) and a Terms agreement checkbox.",
-          { text: "Date of Birth", sub: ["Chosen via a year → month → day picker (selectable years 1931–2010)."] },
-          { text: "Sign Up for Free", sub: ["On valid submit, shows the Email Verification modal."] },
+          "Fields: Email, Password (show/hide), Date of Birth (inline year/month/day), Country (JP/US), Invitation Code (optional), Terms/Privacy consent.",
+          { text: "Get Started", sub: [
+            "If email is existing.user@gmail.com → Existing Account modal (login / reset password / use different email).",
+            "Otherwise → Email Verification modal.",
+          ] },
+          { text: "Close (×)", sub: ["Opens Registration Exit modal (continue / quit to landing / login)."] },
         ],
         validation: [
-          "Email: required; must match a standard email format. Invalid on blur → 'Please enter a valid email address.' (JA: 有効なメールアドレスを入力してください。)",
-          "Password: required; minimum 8 characters. Too short on blur → 'Password must be at least 8 characters.' (JA: パスワードは8文字以上で入力してください。)",
-          "Date of Birth: required (a date must be selected).",
-          "Invitation Code: optional; no validation.",
-          "Terms checkbox: required (must be checked).",
-          "'Sign Up for Free' is disabled until email valid AND password valid AND date of birth set AND terms checked.",
+          "Email: required; standard email format. Invalid on blur → email error string.",
+          "Password: required; minimum 8 characters.",
+          "Date of Birth: required; must be at least 18 (years selectable 1931–2010).",
+          "Country: required (JP/US).",
+          "Invitation Code: optional.",
+          "Consent: required; Get Started disabled until email, password, age, and consent are valid.",
         ],
         tbc: [
-          "Password alphanumeric rule is only length-checked (label mentions alphanumeric).",
-          "Minimum age (e.g. 18+) is not enforced.",
-          "'Terms of Service' / 'Privacy Policy' links inside the checkbox are not clickable.",
+          "'Terms of Service' / 'Privacy Policy' links inside the checkbox are display-only.",
           "Real account creation and email delivery are mocked.",
-          "Phone-number sign-up + OTP exists in code but is hidden.",
+          "Phone-number signup page exists in auth.tsx but is not mounted by PhoneApp.",
         ],
       },
       {
         title: "Email verification modal",
         items: [
-          "States a verification email was sent to the entered address.",
-          { text: "Open Email App", sub: ["Completes registration and lands the user in the lobby."] },
+          "Shows verify mascot, expiry countdown (60s), and resend wait (10s after resend).",
+          { text: "Open Email App", sub: [
+            "Simulates checking (900ms) then completes signup — unless email is seon.stepup@gmail.com, which opens SEON phone step-up.",
+            "Expired state offers resend.",
+          ] },
         ],
-        tbc: ["'Resend email' does nothing.", "No real email is sent; the modal completes signup directly."],
+        tbc: ["No real email is sent."],
+      },
+      {
+        title: "SEON phone step-up (demo email seon.stepup@gmail.com)",
+        items: [
+          "Phone capture with dial country, SMS consent, then 6-digit OTP (must be 123456; 30s expiry; max 5 attempts).",
+          "Success saves auth with seonStepUp + phoneVerified and lands in the lobby.",
+        ],
+        validation: [
+          "Phone: exactly 10 digits; demo number 9012345678 is rejected as already used.",
+          "SMS consent required to continue.",
+          "OTP: only 123456 accepted.",
+        ],
       },
       { title: "Footer", items: [{ text: "Log In link", sub: ["'Already have an account? Log In' opens the Log In screen."] }] },
     ],
@@ -234,7 +253,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
 
   login: {
     label: "Log in",
-    summary: "Sign in with email or a social provider.",
+    summary: "Sign in with LINE, Google, or email — including social-linked and password-setup demo paths.",
     groups: [
       {
         title: "Header",
@@ -245,21 +264,30 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
       },
       {
         title: "Social login",
-        items: [{ text: "LINE / Google / Apple", sub: ["Simulated provider flow; all land the user in the lobby."] }],
+        items: [
+          { text: "LINE", sub: ["Connecting → Returning redirect flow (~1.7s), then lobby + 'Login successful!' toast (10s)."] },
+          { text: "Google", sub: ["Account picker → permissions → processing → lobby."] },
+        ],
         tbc: ["Real OAuth is mocked."],
       },
       {
         title: "Email login form",
         items: [
-          "Fields: Email Address and Password.",
-          { text: "Login", sub: ["Signs in and lands the user in the lobby (no email verification)."] },
+          "Accordion section with Email and Password.",
+          { text: "Login", sub: [
+            "john.doe@gmail.com / other DEMO_GOOGLE emails → Social Linked Account modal (use Google or set password).",
+            "line.user@gmail.com → Password Setup email modal → Change Password → Password Updated.",
+            "Otherwise → lobby.",
+          ] },
+          { text: "Forgot Password", sub: ["Opens reset modal then Change Password (8–20 chars, digit, upper, lower, confirm match)."] },
         ],
         validation: [
-          "Email: required; must match a standard email format.",
+          "Email: required; standard email format.",
           "Password: required; minimum 8 characters.",
-          "'Login' is enabled when email and password are valid.",
+          "'Login' enabled when email and password are valid.",
+          "Change password: 8–20 characters, ≥1 digit, ≥1 uppercase, ≥1 lowercase, confirmation must match.",
         ],
-        tbc: ["Credentials are not verified against real accounts.", "Phone-number login + OTP exists in code but is hidden."],
+        tbc: ["Credentials are not verified against real accounts.", "Phone-number login accordion exists in markup but is hidden (className hidden)."],
       },
       { title: "Footer", items: [{ text: "Sign up link", sub: ["'Don't have an account? Sign up now' opens the Sign Up screen."] }] },
     ],
@@ -415,7 +443,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
         items: [
           "Won cards show artwork, a rarity tag (Ultra / Gold / Silver), a selection toggle, title, description, an exchange-period date and a coin value.",
           { text: "Tapping a card", sub: ["Toggles selection (selected cards show an orange border)."] },
-          { text: "Sticky action bar (appears only when ≥1 prize selected)", sub: ["Reset clears the selection.", "Exchange to Coins converts the selected prizes to coins, removes them from Won and shows a toast.", "Request Shipping opens the shipping flow (choose/add address → confirm); on confirm the prizes move to Waiting to Ship."] },
+          { text: "Sticky action bar (appears only when ≥1 prize selected)", sub: ["Reset clears the selection.", "Exchange to Coins converts the selected prizes to coins, removes them from Won and shows a toast.", "Request Shipping first calls requestKyc('prizeHistory'); if verification is incomplete the KYC overlay opens, otherwise the shipping flow (choose/add address → confirm) runs and prizes move to Waiting to Ship."] },
         ],
         validation: [
           "Shipping requires a minimum selected coin value. INCONSISTENCY: the hint says 'items totaling 500 coins or more' but the enforced minimum is currently 1,500 — to be confirmed and aligned.",
@@ -549,6 +577,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
           { text: "Card path", sub: ["Card + billing form; goes through a 3-D Secure style step; other methods proceed directly to success."] },
           "Saved cards can be reused; a card manager allows viewing/deleting saved cards.",
           { text: "Success screen", sub: ["Shows a purchase breakdown; Close adds the purchased coins to the balance."] },
+          { text: "KYC gate", sub: ["Selecting a package first calls requestKyc('purchase'). If verification is incomplete (and scenario ≠ none), the KYC overlay opens instead of checkout. Desktop KYC scenario control can force happy / review / attention / none outcomes."] },
         ],
         validation: [
           "Card number: must be 14–16 digits, else 'Card number must be 14–16 digits'.",
@@ -700,7 +729,11 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
       {
         title: "Account Verifications",
         items: [
-          { text: "Verification Status", sub: ["ID then proof-of-address CTAs launch the KYC overlay based on current status."] },
+          { text: "Verification Status", sub: [
+            "ID then proof-of-address CTAs launch the KYC overlay based on current status (required → details → before start → Veriff ID capture/selfie → identity result → PoA → complete).",
+            "Scenarios (desktop control / ?scenario=): happy, identityReview, identityAttention, poaReview, poaAttention, none (skip gating).",
+            "PoA step CTA only when identity is approved; attention screens support retry (ID) or locked resubmit (PoA).",
+          ] },
           { text: "Payment Method Verification", sub: ["Select Card + card number, then Jumio-style upload flow; marks the card verified."] },
           { text: "Document Upload", sub: ["Full-page upload with type select, file pick, pending/success overlays and history."] },
         ],

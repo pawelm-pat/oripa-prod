@@ -80,17 +80,24 @@ export function StorePage({
   setCoins,
   onBack,
   chrome,
+  onRequireKyc,
 }: {
   lang: Lang;
   coins: number;
   setCoins: Dispatch<SetStateAction<number>>;
   onBack: () => void;
   chrome: StorePageChrome;
+  onRequireKyc?: () => boolean;
 }) {
   const t = STR[lang];
   const [selectedPkg, setSelectedPkg] = useState<PointPackage | null>(null);
   const [purchasedIds, setPurchasedIds] = useState<string[]>([]);
   const showSpecialOffers = purchasedIds.length === 0;
+
+  function selectPackage(pkg: PointPackage) {
+    if (onRequireKyc && !onRequireKyc()) return;
+    setSelectedPkg(pkg);
+  }
 
   function handleComplete(coinsEarned: number) {
     if (selectedPkg) {
@@ -133,8 +140,8 @@ export function StorePage({
                   key={pkg.id}
                   role="button"
                   tabIndex={0}
-                  onClick={() => setSelectedPkg(pkg)}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setSelectedPkg(pkg); }}
+                  onClick={() => selectPackage(pkg)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") selectPackage(pkg); }}
                   className="flex cursor-pointer flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] active:scale-[0.98]"
                   style={{ border: pkg.highlighted ? "2px solid #B40206" : "1px solid #e5e8ec" }}
                 >
@@ -159,7 +166,7 @@ export function StorePage({
                     </div>
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); setSelectedPkg(pkg); }}
+                      onClick={(e) => { e.stopPropagation(); selectPackage(pkg); }}
                       className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#B40206] py-2 text-[13px] font-bold text-white active:scale-[0.98]"
                     >
                       {pkg.originalJpy != null && (
@@ -182,8 +189,8 @@ export function StorePage({
                 key={pkg.id}
                 role="button"
                 tabIndex={0}
-                onClick={() => setSelectedPkg(pkg)}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setSelectedPkg(pkg); }}
+                onClick={() => selectPackage(pkg)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") selectPackage(pkg); }}
                 className="cursor-pointer overflow-hidden rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.07)] active:scale-[0.99]"
                 style={{ background: heroGradient(pkg) }}
               >
@@ -209,7 +216,7 @@ export function StorePage({
                     )}
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); setSelectedPkg(pkg); }}
+                      onClick={(e) => { e.stopPropagation(); selectPackage(pkg); }}
                       className="rounded-lg bg-[#f97316] px-3.5 py-2 text-[13px] font-bold text-white active:scale-[0.98]"
                     >
                       ¥{pkg.jpy.toLocaleString()}
@@ -224,8 +231,8 @@ export function StorePage({
                 key={pkg.id}
                 role="button"
                 tabIndex={0}
-                onClick={() => setSelectedPkg(pkg)}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setSelectedPkg(pkg); }}
+                onClick={() => selectPackage(pkg)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") selectPackage(pkg); }}
                 className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-[#e5e8ec] bg-white px-3 py-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.07)] active:scale-[0.99]"
               >
                 <StoreArtImg art="coin" size={32} />
@@ -239,7 +246,7 @@ export function StorePage({
                 </div>
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); setSelectedPkg(pkg); }}
+                  onClick={(e) => { e.stopPropagation(); selectPackage(pkg); }}
                   className="shrink-0 rounded-lg bg-[#B40206] px-4 py-2 text-[13px] font-bold text-white active:scale-[0.98]"
                 >
                   ¥{pkg.jpy.toLocaleString()}

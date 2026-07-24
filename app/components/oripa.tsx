@@ -20,7 +20,7 @@ import type {
   WonPrize,
 } from "../lib/types";
 import { STR, type Dict, locTitle } from "../lib/i18n";
-import { ResetPasswordEmailModal, ChangePasswordPage, PasswordChangedSuccessModal, forgotPasswordLabel } from "./password-reset";
+import { AuthHeader, SignupPage, LoginPage, LineAuthIcon } from "./auth";
 import { HOME_SECTIONS, ALL_ORIPA } from "../data/lobby";
 import { NOTIF_YOU, NOTIF_NOTICE, NOTIF_UNREAD_TOTAL } from "../data/notifications";
 import { LEGAL, type LegalDocKey } from "../data/legal";
@@ -50,6 +50,7 @@ import {
   KYC_SESSION_KEY,
   createDefaultKycState,
   type KycEntryContext,
+  type KycScenario,
   type KycState,
 } from "./kyc";
 
@@ -1398,675 +1399,6 @@ function BottomNav({ screen, t, onNavigate }: { screen: Screen; t: Dict; onNavig
   );
 }
 
-/* ── Auth shared components ───────────────────────────────────────────── */
-function AuthHeader({ lang, onSignUp, onLogin }: { lang: Lang; onSignUp: () => void; onLogin: () => void }) {
-  const t = STR[lang];
-  return (
-    <header className="flex shrink-0 items-center justify-between bg-white px-4 py-2.5 shadow-[0_1px_4px_rgba(0,0,0,0.10)]">
-      { }
-      <img src="/oripa-logo-full.png" alt="オリパロット" className="h-8 w-auto shrink-0" />
-      <div className="flex items-center gap-2">
-        <button onClick={onSignUp} className="rounded-lg px-4 py-1.5 text-[13px] font-bold text-white" style={{ background: "#D10005" }}>{t.authSignUp}</button>
-        <button onClick={onLogin} className="rounded-lg px-4 py-1.5 text-[13px] font-bold text-white" style={{ background: "#f59e0b" }}>{t.authLogin}</button>
-      </div>
-    </header>
-  );
-}
-
-function AuthSocialPair({ t, onGoogle, onLine, preferredLine = false }: {
-  t: Dict; onGoogle?: () => void; onLine?: () => void; preferredLine?: boolean;
-}) {
-  const lineIcon = (
-    <svg width="28" height="28" viewBox="0 0 40 40"><rect width="40" height="40" rx="8" fill="#06C755" /><text x="20" y="28" textAnchor="middle" fontSize="22" fill="white" fontWeight="bold">L</text></svg>
-  );
-  const googleIcon = (
-    <svg width="28" height="28" viewBox="0 0 24 24">
-      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-    </svg>
-  );
-  return (
-    <div className="grid grid-cols-2 gap-3">
-      <button
-        type="button"
-        onClick={onLine}
-        className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-[#e5e8ec] bg-white px-3 py-4 active:bg-[#f8f9fa]"
-      >
-        {lineIcon}
-        <span className="text-[13px] font-bold text-[#1d2129]">{t.authSocialLine}</span>
-        {preferredLine && (
-          <span className="mt-0.5 rounded-full bg-[#06C755] px-2.5 py-0.5 text-[10px] font-bold text-white">
-            {t.authPreferred}
-          </span>
-        )}
-      </button>
-      <button
-        type="button"
-        onClick={onGoogle}
-        className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-[#e5e8ec] bg-white px-3 py-4 active:bg-[#f8f9fa]"
-      >
-        {googleIcon}
-        <span className="text-[13px] font-bold text-[#1d2129]">{t.authSocialGoogle}</span>
-      </button>
-    </div>
-  );
-}
-
-function AuthSocialButtons({ signUp, t, onApple, onGoogle, onLine }: { signUp: boolean; t: Dict; onApple?: () => void; onGoogle?: () => void; onLine?: () => void }) {
-  // Legacy stacked buttons kept for any remaining callers; primary auth UIs use AuthSocialPair.
-  const appleLabel = signUp ? t.authSignUpApple : t.authLoginApple;
-  const googleLabel = signUp ? t.authSignUpGoogle : t.authLoginGoogle;
-  const lineLabel = signUp ? t.authSignUpLine : t.authLoginLine;
-  return (
-    <div className="space-y-2.5">
-      <button onClick={onLine} className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-[#e5e8ec] bg-white py-3 text-[14px] font-bold text-[#1d2129]">
-        <svg width="18" height="18" viewBox="0 0 40 40"><rect width="40" height="40" rx="8" fill="#06C755" /><text x="20" y="28" textAnchor="middle" fontSize="22" fill="white" fontWeight="bold">L</text></svg>
-        {lineLabel}
-      </button>
-      <button onClick={onGoogle} className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-[#e5e8ec] bg-white py-3 text-[14px] font-bold text-[#1d2129]">
-        <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-        {googleLabel}
-      </button>
-      <button onClick={onApple} className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-[#e5e8ec] bg-white py-3 text-[14px] font-bold text-[#1d2129]">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="#1d2129"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" /></svg>
-        {appleLabel}
-      </button>
-    </div>
-  );
-}
-
-type AppleAuthStep = "sheet" | "faceId" | "success";
-
-function AppleAuthSheet({ lang, signUp, onClose, onSuccess }: {
-  lang: Lang; signUp: boolean; onClose: () => void; onSuccess: () => void;
-}) {
-  const t = STR[lang];
-  const [step, setStep] = useState<AppleAuthStep>("sheet");
-
-  useEffect(() => {
-    if (step !== "faceId") return;
-    const timer = setTimeout(() => setStep("success"), 1900);
-    return () => clearTimeout(timer);
-  }, [step]);
-
-  useEffect(() => {
-    if (step !== "success") return;
-    const timer = setTimeout(() => onSuccess(), 1500);
-    return () => clearTimeout(timer);
-  }, [step, onSuccess]);
-
-  function startFaceId() {
-    if (step !== "sheet") return;
-    setStep("faceId");
-  }
-
-  const subtitle = signUp ? t.authAppleSheetSignUp : t.authAppleSheetLogin;
-  const successSub = signUp ? t.authAppleSuccessSubSignUp : t.authAppleSuccessSubLogin;
-
-  return (
-    <div className="absolute inset-0 z-50 flex flex-col">
-      <style>{`
-        @keyframes appleSheetSlideUp { from{transform:translateY(100%);opacity:0} to{transform:translateY(0);opacity:1} }
-        @keyframes appleSuccessPop { 0%{transform:scale(0);opacity:0} 55%{transform:scale(1.15)} 80%{transform:scale(0.96)} 100%{transform:scale(1);opacity:1} }
-        @keyframes appleSuccessFade { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes appleFaceIdFadeIn { from{opacity:0;transform:scale(0.88)} to{opacity:1;transform:scale(1)} }
-        @keyframes appleScanLine { 0%{top:0%;opacity:0} 8%{opacity:1} 88%{opacity:1} 100%{top:100%;opacity:0} }
-        @keyframes appleFacePulse { 0%,100%{opacity:0.5;transform:scale(0.97)} 50%{opacity:1;transform:scale(1)} }
-        @keyframes appleCornerGlow { 0%,100%{stroke:#1d2129} 50%{stroke:#22c55e} }
-      `}</style>
-
-      {/* Backdrop — tapping triggers Face ID only on the "sheet" step */}
-      <button
-        type="button"
-        aria-label={t.authAppleFaceIdHint as string}
-        onClick={startFaceId}
-        disabled={step !== "sheet"}
-        className="min-h-0 flex-1 border-0 p-0 outline-none transition-colors duration-500"
-        style={{ backgroundColor: step === "sheet" ? "rgba(0,0,0,0.52)" : "rgba(0,0,0,0.72)", cursor: step === "sheet" ? "pointer" : "default" }}
-      >
-        {step === "sheet" && (
-          <span className="flex h-full items-end justify-center pb-10">
-            <span className="rounded-full bg-white/10 px-4 py-1.5 text-[12px] font-medium text-white/70 backdrop-blur-sm">
-              {t.authAppleFaceIdHint as string}
-            </span>
-          </span>
-        )}
-      </button>
-
-      {/* Bottom sheet */}
-      <div
-        className="relative z-20 shrink-0 rounded-t-[24px] bg-[#f2f2f7] px-5 pb-10 pt-3 shadow-[0_-12px_48px_rgba(0,0,0,0.22)]"
-        style={{ animation: "appleSheetSlideUp 0.38s cubic-bezier(0.32,0.72,0,1) both" }}
-      >
-        <div className="mx-auto mb-4 h-[5px] w-10 rounded-full bg-black/15" />
-
-        {/* ── SUCCESS ── */}
-        {step === "success" && (
-          <div className="flex flex-col items-center py-8">
-            <div style={{ animation: "appleSuccessPop 0.55s cubic-bezier(.2,.9,.2,1.1) both" }}>
-              <svg width="76" height="76" viewBox="0 0 76 76">
-                <circle cx="38" cy="38" r="36" fill="#22c55e" />
-                <path d="M24 38l10 10 18-18" stroke="white" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-              </svg>
-            </div>
-            <h3
-              className="mt-5 text-center text-[20px] font-bold text-[#1d2129]"
-              style={{ animation: "appleSuccessFade 0.4s ease-out 0.25s both" }}
-            >
-              {t.authAppleSuccess as string}
-            </h3>
-            <p
-              className="mt-1.5 text-center text-[14px] text-[#5c626b]"
-              style={{ animation: "appleSuccessFade 0.4s ease-out 0.4s both" }}
-            >
-              {successSub as string}
-            </p>
-          </div>
-        )}
-
-        {/* ── FACE ID SCANNING ── */}
-        {step === "faceId" && (
-          <div
-            className="flex flex-col items-center py-8"
-            style={{ animation: "appleFaceIdFadeIn 0.28s ease-out both" }}
-          >
-            {/* iOS-style Face ID frame */}
-            <div className="relative" style={{ width: 110, height: 130 }}>
-              {/* Corner brackets */}
-              {[
-                "top-0 left-0 border-l-[3px] border-t-[3px] rounded-tl-[8px]",
-                "top-0 right-0 border-r-[3px] border-t-[3px] rounded-tr-[8px]",
-                "bottom-0 left-0 border-l-[3px] border-b-[3px] rounded-bl-[8px]",
-                "bottom-0 right-0 border-r-[3px] border-b-[3px] rounded-br-[8px]",
-              ].map((cls, i) => (
-                <div
-                  key={i}
-                  className={`absolute w-7 h-7 border-[#1d2129] ${cls}`}
-                  style={{ animation: `appleCornerGlow 1.8s ease-in-out ${i * 0.15}s infinite` }}
-                />
-              ))}
-
-              {/* Face silhouette */}
-              <div
-                className="absolute inset-0 flex items-center justify-center"
-                style={{ animation: "appleFacePulse 1.4s ease-in-out infinite" }}
-              >
-                <svg width="64" height="80" viewBox="0 0 64 80" fill="none">
-                  {/* Head */}
-                  <path d="M32 6C19 6 11 14.5 11 25c0 7.5 4 14 10 17.5C13 46 8 54.5 8 65h48c0-10.5-5-19-13-22.5 6-3.5 10-10 10-17.5C53 14.5 45 6 32 6z"
-                    stroke="#1d2129" strokeWidth="2.2" strokeLinecap="round" fill="none" opacity="0.55" />
-                  {/* Eyes */}
-                  <circle cx="23" cy="24" r="2.8" fill="#1d2129" opacity="0.75" />
-                  <circle cx="41" cy="24" r="2.8" fill="#1d2129" opacity="0.75" />
-                  {/* Nose bridge */}
-                  <path d="M32 28v5" stroke="#1d2129" strokeWidth="1.8" strokeLinecap="round" opacity="0.5" />
-                  {/* Smile */}
-                  <path d="M23 38c2.5 3.5 15.5 3.5 18 0" stroke="#1d2129" strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.75" />
-                </svg>
-              </div>
-
-              {/* Green scan line */}
-              <div
-                className="pointer-events-none absolute left-3 right-3 h-[2.5px] rounded-full"
-                style={{
-                  background: "linear-gradient(90deg, transparent 0%, #22c55e 30%, #4ade80 50%, #22c55e 70%, transparent 100%)",
-                  animation: "appleScanLine 1.7s ease-in-out infinite",
-                }}
-              />
-            </div>
-
-            <p className="mt-6 text-[16px] font-semibold text-[#1d2129]">
-              {t.authAppleFaceIdScanning as string}
-            </p>
-            <p className="mt-1 text-[12px] text-[#8a9099]">
-              {lang === "ja" ? "スキャン中..." : "Scanning..."}
-            </p>
-          </div>
-        )}
-
-        {/* ── INITIAL SHEET ── */}
-        {step === "sheet" && (
-          <>
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="#1d2129">
-                  <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
-                </svg>
-                <span className="text-[16px] font-bold text-[#1d2129]">{t.authAppleSheetTitle as string}</span>
-              </div>
-              <button
-                onClick={onClose}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-black/8 text-[18px] text-[#8a9099]"
-              >
-                ✕
-              </button>
-            </div>
-
-            <p className="mt-3 text-[13px] leading-relaxed text-[#5c626b]">{subtitle as string}</p>
-
-            {/* Account row */}
-            <div className="mt-4 overflow-hidden rounded-2xl bg-white shadow-sm">
-              <div className="flex items-center gap-3.5 px-4 py-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] text-[17px] font-bold text-white shadow-md">
-                  {(t.authAppleAccountName as string).charAt(0)}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[15px] font-semibold text-[#1d2129]">{t.authAppleAccountName as string}</p>
-                  <p className="truncate text-[12px] text-[#8a9099]">{t.authAppleAccountEmail as string}</p>
-                </div>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c9ced6" strokeWidth="2.2">
-                  <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Continue / Face ID button */}
-            <button
-              type="button"
-              onClick={startFaceId}
-              className="mt-5 flex w-full items-center justify-center gap-2.5 rounded-2xl bg-[#1d2129] py-4 text-[15px] font-bold text-white active:scale-[0.98]"
-              style={{ transition: "transform 0.1s" }}
-            >
-              {/* iOS Face ID icon */}
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                <rect x="2" y="2" width="5" height="2.5" rx="1.25" fill="white" opacity="0.8" />
-                <rect x="17" y="2" width="5" height="2.5" rx="1.25" fill="white" opacity="0.8" />
-                <rect x="2" y="19.5" width="5" height="2.5" rx="1.25" fill="white" opacity="0.8" />
-                <rect x="17" y="19.5" width="5" height="2.5" rx="1.25" fill="white" opacity="0.8" />
-                <circle cx="9" cy="10.5" r="1.6" fill="white" />
-                <circle cx="15" cy="10.5" r="1.6" fill="white" />
-                <path d="M12 8.5V7.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" />
-                <path d="M9 15c1 1.8 5 1.8 6 0" stroke="white" strokeWidth="1.6" strokeLinecap="round" />
-              </svg>
-              {t.authAppleFaceIdHint as string}
-            </button>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-type GoogleAuthStep = "picker" | "permissions" | "processing" | "success";
-
-const GOOGLE_LOGO = (
-  <svg width="22" height="22" viewBox="0 0 24 24">
-    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-  </svg>
-);
-
-function GoogleAuthSheet({ lang, signUp, onClose, onSuccess }: {
-  lang: Lang; signUp: boolean; onClose: () => void; onSuccess: () => void;
-}) {
-  const t = STR[lang];
-  const [step, setStep] = useState<GoogleAuthStep>("picker");
-  const [selectedAccount, setSelectedAccount] = useState<0 | 1 | null>(null);
-
-  const accounts = [
-    { name: t.authGoogleAccount1Name as string, email: t.authGoogleAccount1Email as string, initials: (t.authGoogleAccount1Name as string).charAt(0), color: "#4285F4" },
-    { name: t.authGoogleAccount2Name as string, email: t.authGoogleAccount2Email as string, initials: (t.authGoogleAccount2Name as string).charAt(0), color: "#0f9d58" },
-  ];
-
-  useEffect(() => {
-    if (step !== "processing") return;
-    const timer = setTimeout(() => setStep("success"), 1600);
-    return () => clearTimeout(timer);
-  }, [step]);
-
-  useEffect(() => {
-    if (step !== "success") return;
-    const timer = setTimeout(() => onSuccess(), 1500);
-    return () => clearTimeout(timer);
-  }, [step, onSuccess]);
-
-  const successSub = signUp ? t.authGoogleSuccessSubSignUp : t.authGoogleSuccessSubLogin;
-
-  return (
-    <div className="absolute inset-0 z-50 flex flex-col bg-white" style={{ animation: "googleScreenSlideUp 0.32s cubic-bezier(0.32,0.72,0,1) both" }}>
-      <style>{`
-        @keyframes googleScreenSlideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
-        @keyframes googleSuccessPop { 0%{transform:scale(0);opacity:0} 55%{transform:scale(1.15)} 80%{transform:scale(0.96)} 100%{transform:scale(1);opacity:1} }
-        @keyframes googleSuccessFade { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes googleSpinnerRotate { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-      `}</style>
-
-        {/* ── SUCCESS ── */}
-        {step === "success" && (
-          <div className="flex flex-1 flex-col items-center justify-center px-5">
-            <div style={{ animation: "googleSuccessPop 0.55s cubic-bezier(.2,.9,.2,1.1) both" }}>
-              <svg width="76" height="76" viewBox="0 0 76 76">
-                <circle cx="38" cy="38" r="36" fill="#22c55e" />
-                <path d="M24 38l10 10 18-18" stroke="white" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-              </svg>
-            </div>
-            <h3 className="mt-5 text-center text-[20px] font-bold text-[#1d2129]" style={{ animation: "googleSuccessFade 0.4s ease-out 0.25s both" }}>
-              {t.authGoogleSuccess as string}
-            </h3>
-            <p className="mt-1.5 text-center text-[14px] text-[#5c626b]" style={{ animation: "googleSuccessFade 0.4s ease-out 0.4s both" }}>
-              {successSub as string}
-            </p>
-          </div>
-        )}
-
-        {/* ── PROCESSING ── */}
-        {step === "processing" && (
-          <div className="flex flex-1 flex-col items-center justify-center px-5">
-            <div style={{ animation: "googleSpinnerRotate 0.9s linear infinite", width: 52, height: 52 }}>
-              <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
-                <circle cx="26" cy="26" r="22" stroke="#e5e8ec" strokeWidth="4" />
-                <path d="M26 4a22 22 0 0 1 22 22" stroke="#4285F4" strokeWidth="4" strokeLinecap="round" />
-              </svg>
-            </div>
-            <p className="mt-5 text-[15px] font-semibold text-[#1d2129]">
-              {lang === "ja" ? "サインイン中..." : "Signing in…"}
-            </p>
-          </div>
-        )}
-
-        {/* ── PERMISSIONS ── */}
-        {step === "permissions" && selectedAccount !== null && (
-          <div className="flex flex-1 flex-col px-5 pt-12 pb-8">
-            {/* Header */}
-            <div className="flex items-center gap-3 mb-6">
-              {GOOGLE_LOGO}
-              <span className="text-[18px] font-bold text-[#1d2129]">{t.authGooglePermissionsTitle as string}</span>
-              <button onClick={onClose} className="ml-auto flex h-8 w-8 items-center justify-center rounded-full bg-black/8 text-[18px] text-[#8a9099]">✕</button>
-            </div>
-
-            {/* Selected account badge */}
-            <div className="flex items-center gap-3 rounded-2xl border border-[#e5e8ec] bg-[#f8f9fa] px-4 py-3 mb-6">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[14px] font-bold text-white" style={{ background: accounts[selectedAccount].color }}>
-                {accounts[selectedAccount].initials}
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-[13px] font-semibold text-[#1d2129]">{accounts[selectedAccount].name}</p>
-                <p className="truncate text-[12px] text-[#8a9099]">{accounts[selectedAccount].email}</p>
-              </div>
-            </div>
-
-            {/* Permissions body */}
-            <p className="text-[13px] text-[#5c626b] mb-5">{t.authGooglePermissionsBody as string}</p>
-
-            <div className="space-y-3 mb-auto">
-              {([t.authGooglePermissionItem1, t.authGooglePermissionItem2] as string[]).map((item, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#e8f5e9]">
-                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                      <path d="M2.5 6.5l3 3 5-5" stroke="#0f9d58" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                  <span className="text-[14px] leading-snug text-[#1d2129]">{item}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* CTA row — pinned to bottom */}
-            <div className="flex gap-3 pt-8">
-              <button
-                onClick={onClose}
-                className="flex-1 rounded-xl border border-[#e5e8ec] py-3.5 text-[14px] font-bold text-[#1d2129]"
-              >
-                {t.authGoogleCancel as string}
-              </button>
-              <button
-                onClick={() => setStep("processing")}
-                className="flex-1 rounded-xl py-3.5 text-[14px] font-bold text-white"
-                style={{ background: "#4285F4" }}
-              >
-                {t.authGoogleContinue as string}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── ACCOUNT PICKER ── */}
-        {step === "picker" && (
-          <div className="flex flex-1 flex-col px-5 pt-12 pb-8">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                {GOOGLE_LOGO}
-                <span className="text-[18px] font-bold text-[#1d2129]">{t.authGooglePickerTitle as string}</span>
-              </div>
-              <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full bg-black/8 text-[18px] text-[#8a9099]">✕</button>
-            </div>
-            <p className="mb-6 text-[13px] text-[#5c626b]">{t.authGooglePickerSubtitle as string}</p>
-
-            {/* Account list */}
-            <div className="space-y-3">
-              {accounts.map((acc, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => { setSelectedAccount(idx as 0 | 1); setStep("permissions"); }}
-                  className="flex w-full items-center gap-3.5 rounded-2xl border border-[#e5e8ec] bg-white px-4 py-3.5 text-left active:bg-[#f5f6f8]"
-                >
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[16px] font-bold text-white" style={{ background: acc.color }}>
-                    {acc.initials}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[14px] font-semibold text-[#1d2129]">{acc.name}</p>
-                    <p className="truncate text-[12px] text-[#8a9099]">{acc.email}</p>
-                  </div>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c9ced6" strokeWidth="2.2">
-                    <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-    </div>
-  );
-}
-
-function AuthField({ label, value, onChange, type = "text", icon, valid, error, onBlur, placeholder = "Placeholder", required = true, trailing }: {
-  label: string; value: string; onChange: (v: string) => void; type?: string; icon?: React.ReactNode;
-  valid?: boolean; error?: string; onBlur?: () => void; placeholder?: string; required?: boolean; trailing?: React.ReactNode;
-}) {
-  const showTick = valid === true && !trailing;
-  return (
-    <div>
-      <label className="mb-1 block text-[12px] font-semibold text-[#1d2129]">
-        {label}{required && <span className="ml-0.5 text-[#D10005]">*</span>}
-      </label>
-      <div className="relative flex items-center">
-        {icon && <span className="absolute left-3 text-[#8a9099]">{icon}</span>}
-        <input
-          type={type}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
-          placeholder={placeholder}
-          className={`w-full rounded-xl bg-white py-3 text-[14px] text-[#1d2129] placeholder:text-[#bbbec4] outline-none border ${error ? "border-[#D10005]" : "border-[#e5e8ec]"}`}
-          style={{ paddingLeft: icon ? "36px" : "14px", paddingRight: (showTick || trailing) ? "40px" : "14px" }}
-        />
-        {trailing && <span className="absolute right-3 flex items-center">{trailing}</span>}
-        {showTick && (
-          <span className="absolute right-3">
-            <svg width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill="#22c55e" /><path d="M6 10l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
-          </span>
-        )}
-      </div>
-      {error && <p className="mt-1 text-[11px] text-[#D10005]">{error}</p>}
-    </div>
-  );
-}
-
-/* ── DobPickerModal ────────────────────────────────────────────────────── */
-function DobPickerModal({ lang, onConfirm, onClose }: {
-  lang: Lang; onConfirm: (isoDate: string) => void; onClose: () => void;
-}) {
-  const t = STR[lang];
-  const YEARS_PER_PAGE = 12;
-  const MAX_YEAR = 2010;
-  const MIN_YEAR = 1931;
-
-  const [step, setStep] = useState<"year" | "month" | "day">("year");
-  const [selYear, setSelYear] = useState<number | null>(null);
-  const [selMonth, setSelMonth] = useState<number | null>(null);
-  const [selDay, setSelDay] = useState<number | null>(null);
-  const [yearPageStart, setYearPageStart] = useState(1980);
-
-  const MONTH_SHORT = lang === "ja"
-    ? ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"]
-    : ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const MONTH_FULL = lang === "ja"
-    ? MONTH_SHORT
-    : ["January","February","March","April","May","June","July","August","September","October","November","December"];
-
-  const displayText = () => {
-    if (!selYear) return "";
-    if (!selMonth) return String(selYear);
-    if (!selDay) return lang === "ja" ? `${selYear}年${selMonth}月` : `${selYear}, ${MONTH_FULL[selMonth - 1]}`;
-    return lang === "ja"
-      ? `${selYear}年${selMonth}月${selDay}日`
-      : `${MONTH_SHORT[selMonth - 1]} ${selDay}, ${selYear}`;
-  };
-
-  const daysInMonth = selYear && selMonth ? new Date(selYear, selMonth, 0).getDate() : 31;
-
-  const headerLabel = step === "year"
-    ? `${yearPageStart}–${Math.min(yearPageStart + YEARS_PER_PAGE - 1, MAX_YEAR)}`
-    : step === "month"
-    ? String(selYear)
-    : `${MONTH_SHORT[(selMonth ?? 1) - 1]} ${selYear}`;
-
-  const onBack = () => {
-    if (step === "year") {
-      setYearPageStart(p => Math.max(MIN_YEAR, p - YEARS_PER_PAGE));
-    } else if (step === "month") {
-      setStep("year");
-      setSelMonth(null);
-      setSelDay(null);
-    } else {
-      setStep("month");
-      setSelDay(null);
-    }
-  };
-
-  const onForward = () => {
-    if (step === "year") {
-      if (yearPageStart + YEARS_PER_PAGE <= MAX_YEAR) setYearPageStart(p => p + YEARS_PER_PAGE);
-    } else if (step === "month" && selYear) {
-      if (selYear < MAX_YEAR) { setSelYear(selYear + 1); setSelMonth(null); setSelDay(null); }
-    } else if (step === "day" && selYear && selMonth) {
-      const nextMonth = selMonth === 12 ? 1 : selMonth + 1;
-      const nextYear = selMonth === 12 ? selYear + 1 : selYear;
-      if (nextYear <= MAX_YEAR) { setSelMonth(nextMonth); setSelYear(nextYear); setSelDay(null); }
-    }
-  };
-
-  const years = Array.from({ length: YEARS_PER_PAGE }, (_, i) => yearPageStart + i)
-    .filter(y => y <= MAX_YEAR);
-
-  const navBtn = "flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-[#f0f2f5] active:bg-[#e5e8ec]";
-  const gridBtn = "rounded-xl py-2.5 text-[14px] font-medium transition-colors";
-  const gridSel = "bg-[#1d2129] text-white";
-  const gridDef = "text-[#1d2129] hover:bg-[#f0f2f5]";
-
-  return (
-    <div className="absolute inset-0 z-50 flex items-end"
-         style={{ background: "rgba(0,0,0,0.45)" }}
-         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="w-full rounded-t-2xl bg-white shadow-2xl">
-        {/* Header bar */}
-        <div className="flex items-center justify-between border-b border-black/8 px-4 py-3">
-          <button onClick={onClose} className="text-[14px] text-[#5c626b]">{t.authDobPickerCancel}</button>
-          <span className="text-[15px] font-bold text-[#1d2129]">{t.authDobLabel}</span>
-          <div className="w-14" />
-        </div>
-
-        <div className="px-4 pt-4 pb-5">
-          {/* Progressive selection display */}
-          <div className="mb-3 flex items-center justify-between rounded-xl border border-[#e5e8ec] px-3 py-2.5">
-            <span className={`text-[14px] ${displayText() ? "text-[#1d2129]" : "text-[#bbbec4]"}`}>
-              {displayText() || (lang === "ja" ? "生年月日を選択" : "Select your date of birth")}
-            </span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a9099" strokeWidth="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
-            </svg>
-          </div>
-
-          {/* Calendar card */}
-          <div className="rounded-xl border border-[#e5e8ec] overflow-hidden">
-            {/* Navigation row */}
-            <div className="flex items-center justify-between border-b border-[#f0f2f5] px-3 py-2.5">
-              <button onClick={onBack} className={navBtn}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5c626b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M15 18l-6-6 6-6" />
-                </svg>
-              </button>
-              <span className="text-[15px] font-bold text-[#1d2129]">{headerLabel}</span>
-              <button onClick={onForward} className={navBtn}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5c626b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Grid area */}
-            <div className="px-3 py-3">
-              {step === "year" && (
-                <div className="grid grid-cols-3 gap-2">
-                  {years.map(y => (
-                    <button key={y}
-                            onClick={() => { setSelYear(y); setSelMonth(null); setSelDay(null); setStep("month"); }}
-                            className={`${gridBtn} ${selYear === y ? gridSel : gridDef}`}>
-                      {y}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {step === "month" && (
-                <div className="grid grid-cols-3 gap-2">
-                  {MONTH_SHORT.map((m, i) => (
-                    <button key={m}
-                            onClick={() => { setSelMonth(i + 1); setSelDay(null); setStep("day"); }}
-                            className={`${gridBtn} ${selMonth === i + 1 ? gridSel : gridDef}`}>
-                      {m}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {step === "day" && (
-                <>
-                  <div className="grid grid-cols-7 gap-1">
-                    {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(d => (
-                      <button key={d}
-                              onClick={() => setSelDay(d)}
-                              className={`flex aspect-square items-center justify-center rounded-full text-[13px] font-medium transition-colors
-                                ${selDay === d ? "bg-[#1d2129] text-white" : "text-[#1d2129] hover:bg-[#f0f2f5]"}`}>
-                        {d}
-                      </button>
-                    ))}
-                  </div>
-                  {selDay !== null && (
-                    <div className="mt-3 flex justify-end">
-                      <button
-                        onClick={() => onConfirm(`${selYear}-${String(selMonth).padStart(2, "0")}-${String(selDay).padStart(2, "0")}`)}
-                        className="rounded-xl bg-[#D10005] px-5 py-2 text-[14px] font-bold text-white">
-                        {t.authDobPickerDone}
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ── LandingPage ──────────────────────────────────────────────────────── */
 // Logged-out lobby (V1 homepage): auth header + search + banner placeholder +
 // category-filtered card sections. Card taps prompt sign-up.
@@ -2088,514 +1420,6 @@ function LandingPage({ lang, onSignUp, onLogin }: { lang: Lang; onSignUp: () => 
 
         <SiteFooter t={t} />
       </div>
-    </div>
-  );
-}
-
-/* ── PhoneOtpPage ──────────────────────────────────────────────────────── */
-function PhoneOtpPage({ lang, phone, onBack, onSuccess }: {
-  lang: Lang; phone: string; onBack: () => void; onSuccess: () => void;
-}) {
-  const t = STR[lang];
-  const [digits, setDigits] = useState<string[]>(["", "", "", "", "", ""]);
-  const [timer, setTimer] = useState(30);
-  const [toast, setToast] = useState("");
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-
-  const allFilled = digits.every(d => d.length === 1);
-  const canResend = timer === 0;
-
-  useEffect(() => {
-    if (timer <= 0) return;
-    const id = setInterval(() => setTimer(prev => prev - 1), 1000);
-    return () => clearInterval(id);
-  }, [timer]);
-
-  function handleDigitChange(index: number, value: string) {
-    const digit = value.replace(/\D/g, "").slice(-1);
-    const newDigits = [...digits];
-    newDigits[index] = digit;
-    setDigits(newDigits);
-    if (digit && index < 5) inputRefs.current[index + 1]?.focus();
-  }
-
-  function handleKeyDown(index: number, e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Backspace" && !digits[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  }
-
-  function handleResend() {
-    if (!canResend) return;
-    setDigits(["", "", "", "", "", ""]);
-    setTimer(30);
-    inputRefs.current[0]?.focus();
-    setToast(t.authOtpToast as string);
-    setTimeout(() => setToast(""), 2500);
-  }
-
-  const mm = Math.floor(timer / 60).toString().padStart(2, "0");
-  const ss = (timer % 60).toString().padStart(2, "0");
-
-  return (
-    <div className="relative flex h-full flex-col bg-[#f5f6f8]">
-      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-        <div className="px-5 pt-12 pb-6">
-          <h2 className="text-center text-[22px] font-extrabold text-[#1d2129]">{t.authOtpTitle as string}</h2>
-          <p className="mt-3 text-center text-[13px] leading-relaxed text-[#5c626b]">
-            {t.authOtpBodyPre as string}
-            {(t.authOtpBodyPre as string) && <br />}
-            <span className="font-semibold text-[#1d2129]">{phone}</span>
-            {t.authOtpBodyPost as string}
-          </p>
-
-          <p className="mt-5 text-center text-[13px] font-semibold text-[#1d2129]">
-            {t.authOtpExpiry as string} {mm}:{ss}
-          </p>
-
-          <div className="mt-4 flex justify-center gap-2">
-            {digits.map((d, i) => (
-              <input
-                key={i}
-                ref={el => { inputRefs.current[i] = el; }}
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={1}
-                value={d}
-                onChange={e => handleDigitChange(i, e.target.value)}
-                onKeyDown={e => handleKeyDown(i, e)}
-                className="h-12 w-10 rounded-xl border border-[#e5e8ec] bg-white text-center text-[20px] font-bold text-[#1d2129] outline-none focus:border-[#D10005]"
-              />
-            ))}
-          </div>
-
-          <button
-            onClick={() => { if (allFilled) onSuccess(); }}
-            disabled={!allFilled}
-            className="mt-6 w-full rounded-xl py-3.5 text-[15px] font-bold text-white"
-            style={{ background: "#D10005", opacity: allFilled ? 1 : 0.45 }}
-          >
-            {t.authOtpAuthenticate as string}
-          </button>
-
-          <button
-            onClick={handleResend}
-            disabled={!canResend}
-            className="mt-3 w-full rounded-xl border border-[#e5e8ec] bg-white py-3.5 text-[14px] font-semibold text-[#5c626b]"
-            style={{ opacity: canResend ? 1 : 0.45 }}
-          >
-            {t.authOtpResend as string}
-          </button>
-
-          <button
-            onClick={onBack}
-            className="mt-3 w-full text-center text-[13px] font-bold text-[#D10005] underline"
-          >
-            {t.authOtpChangePhone as string}
-          </button>
-        </div>
-      </div>
-
-      {toast && (
-        <div className="absolute inset-x-4 top-4 z-50 rounded-xl bg-[#1d2129] px-4 py-3 text-center text-[13px] font-semibold text-white shadow-lg">
-          {toast}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── SignupPage ───────────────────────────────────────────────────────── */
-function SignupPage({ lang, onClose, onLogin, onSuccess, initialEmailVerify = false }: {
-  lang: Lang; onClose: () => void; onLogin: () => void; onSuccess: () => void; initialEmailVerify?: boolean;
-}) {
-  const t = STR[lang];
-  const [showGoogleAuth, setShowGoogleAuth] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [emailDob, setEmailDob] = useState("");
-  const [country, setCountry] = useState<"japan" | "usa">("japan");
-  const [emailInvite, setEmailInvite] = useState("");
-  const [emailAgreed, setEmailAgreed] = useState(false);
-  const [emailTouched, setEmailTouched] = useState(false);
-  const [passwordTouched, setPasswordTouched] = useState(false);
-  const [showEmailDobPicker, setShowEmailDobPicker] = useState(false);
-  const [showEmailVerify, setShowEmailVerify] = useState(initialEmailVerify);
-
-  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const passwordValid = password.length >= 8;
-  const canEmailSubmit = emailValid && passwordValid && emailDob.length > 0 && !!country && emailAgreed;
-  const emailFieldError = email.length > 0 && !emailValid ? t.authEmailError : "";
-  const passwordError = password.length > 0 && !passwordValid ? t.authPasswordError : "";
-
-  const formatDob = (iso: string) => {
-    if (!iso) return "";
-    const [y, m, d] = iso.split("-");
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return `${String(Number(d)).padStart(2, "0")}-${months[Number(m) - 1]}-${y}`;
-  };
-
-  const personIcon = (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" strokeLinecap="round" /><circle cx="12" cy="7" r="4" />
-    </svg>
-  );
-  const lockIcon = (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 018 0v3" strokeLinecap="round" />
-    </svg>
-  );
-  const calIcon = (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
-    </svg>
-  );
-  const hashIcon = (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M5 9h14M5 15h14M10 3L8 21M16 3l-2 18" strokeLinecap="round" />
-    </svg>
-  );
-  const eyeIcon = (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8a9099" strokeWidth="2">
-      {showPassword
-        ? <><path d="M17.94 17.94A10.94 10.94 0 0112 20c-5 0-9.27-3.11-11-8 1.02-2.86 2.98-5.1 5.35-6.39M9.9 4.24A10.94 10.94 0 0112 4c5 0 9.27 3.11 11 8a11.7 11.7 0 01-2.16 3.19M1 1l22 22" strokeLinecap="round" /><path d="M14.12 14.12A3 3 0 019.88 9.88" strokeLinecap="round" /></>
-        : <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" /><circle cx="12" cy="12" r="3" /></>}
-    </svg>
-  );
-
-  return (
-    <div className="relative flex h-full flex-col bg-[#eef0f3]">
-      <AuthHeader lang={lang} onSignUp={() => {}} onLogin={onLogin} />
-
-      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-4">
-        <div className="relative rounded-2xl border border-[#e5e8ec] bg-white px-4 pb-5 pt-4 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center text-[#8a9099]"
-            aria-label={t.cancel}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
-          </button>
-
-          <h2 className="text-center text-[16px] font-bold text-[#1d2129]">{t.authSignUpWith}</h2>
-          <div className="mt-4">
-            <AuthSocialPair
-              t={t}
-              preferredLine
-              onLine={() => { try { sessionStorage.setItem("authData", JSON.stringify({ lineId: "line_user" })); } catch {} onSuccess(); }}
-              onGoogle={() => setShowGoogleAuth(true)}
-            />
-          </div>
-
-          <div className="my-5 flex items-center gap-3">
-            <div className="h-px flex-1 bg-[#e5e8ec]" />
-            <span className="text-[12px] font-medium text-[#8a9099]">{t.authOrUseEmail}</span>
-            <div className="h-px flex-1 bg-[#e5e8ec]" />
-          </div>
-
-          <div className="space-y-3.5">
-            <AuthField
-              label={t.authEmailLabel}
-              value={email}
-              onChange={setEmail}
-              type="email"
-              icon={personIcon}
-              placeholder={t.authEmailLabel}
-              valid={emailValid && email.length > 0}
-              error={emailTouched ? emailFieldError : ""}
-              onBlur={() => setEmailTouched(true)}
-            />
-            <AuthField
-              label={t.authPasswordShort}
-              value={password}
-              onChange={setPassword}
-              type={showPassword ? "text" : "password"}
-              icon={lockIcon}
-              placeholder={t.authPasswordShort}
-              valid={passwordValid && password.length > 0}
-              error={passwordTouched ? passwordError : ""}
-              onBlur={() => setPasswordTouched(true)}
-              trailing={
-                <button type="button" onClick={() => setShowPassword((v) => !v)} className="p-0.5" aria-label={showPassword ? "Hide password" : "Show password"}>
-                  {eyeIcon}
-                </button>
-              }
-            />
-
-            <div>
-              <label className="mb-1 block text-[12px] font-semibold text-[#1d2129]">
-                {t.authDobLabel}<span className="ml-0.5 text-[#D10005]">*</span>
-              </label>
-              <button
-                type="button"
-                onClick={() => setShowEmailDobPicker(true)}
-                className="relative w-full rounded-xl border border-[#e5e8ec] bg-white py-3 text-left text-[14px] outline-none"
-                style={{ paddingLeft: "36px", paddingRight: "14px" }}
-              >
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8a9099]">{calIcon}</span>
-                <span className={emailDob ? "text-[#1d2129]" : "text-[#bbbec4]"}>
-                  {emailDob ? formatDob(emailDob) : t.authDobPlaceholder}
-                </span>
-              </button>
-              <p className="mt-1 text-[11px] text-[#8a9099]">{t.authDobPlaceholder}</p>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-[12px] font-semibold text-[#1d2129]">
-                {t.authCountryLabel}<span className="ml-0.5 text-[#D10005]">*</span>
-              </label>
-              <div className="relative">
-                <select
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value as "japan" | "usa")}
-                  className="w-full appearance-none rounded-xl border border-[#e5e8ec] bg-white py-3 pl-3.5 pr-10 text-[14px] text-[#1d2129] outline-none"
-                >
-                  <option value="japan">🇯🇵 {t.shippingJapan}</option>
-                  <option value="usa">🇺🇸 {t.shippingUSA}</option>
-                </select>
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#8a9099]">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                </span>
-              </div>
-            </div>
-
-            <AuthField
-              label={t.authInviteLabel}
-              value={emailInvite}
-              onChange={setEmailInvite}
-              icon={hashIcon}
-              placeholder={t.authInvitePlaceholder}
-              required={false}
-            />
-
-            <label className="flex items-start gap-2.5 rounded-xl border border-[#e5e8ec] bg-[#f7f8fa] px-3 py-3">
-              <div className="relative mt-0.5 shrink-0">
-                <input type="checkbox" checked={emailAgreed} onChange={(e) => setEmailAgreed(e.target.checked)} className="sr-only" />
-                <div
-                  className="flex h-5 w-5 items-center justify-center rounded border-2 bg-white"
-                  style={{ borderColor: emailAgreed ? "#D10005" : "#d1d5db", background: emailAgreed ? "#D10005" : "white" }}
-                >
-                  {emailAgreed && <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>}
-                </div>
-              </div>
-              <span className="text-[12px] leading-relaxed text-[#5c626b]">
-                {t.authAgreePrefix}
-                <span className="font-bold text-[#1d2129] underline">{t.authTermsOfService}</span>
-                {t.authAnd}
-                <span className="font-bold text-[#1d2129] underline">{t.authPrivacyPolicy}</span>
-                {t.authAgreeEnd}
-              </span>
-            </label>
-
-            <button
-              type="button"
-              onClick={() => { if (canEmailSubmit) setShowEmailVerify(true); }}
-              disabled={!canEmailSubmit}
-              className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[15px] font-bold text-white"
-              style={{ background: canEmailSubmit ? "#D10005" : "#c9ced6" }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                <path d="M21 12a9 9 0 11-2.6-6.2" strokeLinecap="round" />
-                <path d="M21 3v6h-6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              {t.authGetStarted}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {showEmailDobPicker && (
-        <DobPickerModal lang={lang} onClose={() => setShowEmailDobPicker(false)}
-                        onConfirm={(iso) => { setEmailDob(iso); setShowEmailDobPicker(false); }} />
-      )}
-
-      {showEmailVerify && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center px-5" style={{ background: "rgba(0,0,0,0.5)" }}>
-          <div className="w-full max-w-xs rounded-2xl bg-white px-6 py-6 shadow-2xl">
-            <h2 className="text-center text-[18px] font-extrabold text-[#1d2129]">{t.authVerifyTitle}</h2>
-            <p className="mt-2 text-center text-[12px] leading-relaxed text-[#5c626b]">
-              {t.authVerifyBody(email || "HELLO@EMAIL.COM")}
-            </p>
-            <button onClick={() => {
-              try { sessionStorage.setItem("authData", JSON.stringify({ email, dob: emailDob, country, ...(emailInvite ? { invite: emailInvite } : {}) })); } catch {}
-              onSuccess();
-            }} className="mt-4 w-full rounded-xl py-3 text-[14px] font-bold text-white" style={{ background: "#D10005" }}>
-              {t.authOpenEmailApp}
-            </button>
-            <button className="mt-4 w-full text-center text-[11px] font-bold tracking-wide text-[#5c626b] underline">
-              {t.authResendEmail}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {showGoogleAuth && (
-        <GoogleAuthSheet
-          lang={lang}
-          signUp
-          onClose={() => setShowGoogleAuth(false)}
-          onSuccess={() => {
-            try {
-              sessionStorage.setItem("authData", JSON.stringify({
-                googleId: t.authGoogleAccount1Email,
-                displayName: t.authGoogleAccount1Name,
-              }));
-            } catch {}
-            setShowGoogleAuth(false);
-            onSuccess();
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-/* ── LoginPage ────────────────────────────────────────────────────────── */
-function LoginPage({ lang, onSignUp, onSuccess }: { lang: Lang; onSignUp: () => void; onSuccess: () => void; initialAppleAuth?: boolean }) {
-  // PASSWORD_RESET_FLOW
-  const t = STR[lang];
-
-  const [view, setView] = useState<"form" | "changePassword">("form");
-  const [activeSection, setActiveSection] = useState<"email" | null>("email");
-  const [showGoogleAuth, setShowGoogleAuth] = useState(false);
-  const [showResetEmailModal, setShowResetEmailModal] = useState(false);
-  const [showPasswordChangedSuccess, setShowPasswordChangedSuccess] = useState(false);
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [emailTouched, setEmailTouched] = useState(false);
-  const [passwordTouched, setPasswordTouched] = useState(false);
-
-  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const passwordValid = password.length >= 8;
-  const canEmailSubmit = emailValid && passwordValid;
-  const emailFieldError = email.length > 0 && !emailValid ? t.authEmailError : "";
-  const passwordError = password.length > 0 && !passwordValid ? t.authPasswordError : "";
-
-  if (view === "changePassword") {
-    return (
-      <ChangePasswordPage
-        lang={lang}
-        onBack={() => setView("form")}
-        onDone={() => {
-          setView("form");
-          setShowPasswordChangedSuccess(true);
-        }}
-      />
-    );
-  }
-
-  return (
-    <div className="relative flex h-full flex-col bg-[#f5f6f8]">
-      <AuthHeader lang={lang} onSignUp={onSignUp} onLogin={() => {}} />
-
-      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
-        <div className="h-[120px] w-full" style={{ background: "repeating-conic-gradient(#d1d5db 0% 25%, white 0% 50%) 0 0 / 20px 20px" }} />
-
-        <div className="px-4 py-5 space-y-4">
-          <h2 className="text-center text-[16px] font-bold text-[#1d2129]">{t.authLoginSocial}</h2>
-          <AuthSocialPair
-            t={t}
-            onLine={() => { try { sessionStorage.setItem("authData", JSON.stringify({ lineId: "line_user" })); } catch {} onSuccess(); }}
-            onGoogle={() => setShowGoogleAuth(true)}
-          />
-
-          <div className="overflow-hidden rounded-2xl border border-[#e5e8ec] bg-white shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-            <button
-              onClick={() => setActiveSection(prev => prev === "email" ? null : "email")}
-              className="flex w-full items-center justify-between px-4 py-4"
-            >
-              <span className="text-[15px] font-bold text-[#1d2129]">{t.authLoginEmailSection as string}</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-                   className={`transition-transform duration-200 ${activeSection === "email" ? "rotate-180" : ""}`}>
-                <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-
-            {activeSection === "email" && (
-              <div className="border-t border-[#e5e8ec] px-4 pt-4 pb-4 space-y-4">
-                <AuthField
-                  label={t.authEmailLabel} value={email} onChange={setEmail} type="email"
-                  valid={emailValid && email.length > 0}
-                  error={emailTouched ? emailFieldError : ""}
-                  onBlur={() => setEmailTouched(true)}
-                />
-                <AuthField
-                  label={t.authPasswordShort} value={password} onChange={setPassword} type="password"
-                  valid={passwordValid && password.length > 0}
-                  error={passwordTouched ? passwordError : ""}
-                  onBlur={() => setPasswordTouched(true)}
-                />
-
-                <div className="flex justify-end -mt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowResetEmailModal(true)}
-                    className="text-[13px] font-bold text-[#D10005] underline"
-                  >
-                    {forgotPasswordLabel(lang)}
-                  </button>
-                </div>
-
-                <button
-                  onClick={() => { if (canEmailSubmit) { try { sessionStorage.setItem("authData", JSON.stringify({ email })); } catch {} onSuccess(); } }}
-                  disabled={!canEmailSubmit}
-                  className="w-full rounded-xl py-3.5 text-[15px] font-bold text-white"
-                  style={{ background: "#E07A7A", opacity: canEmailSubmit ? 1 : 0.45 }}
-                >
-                  {t.authLoginTitle}
-                </button>
-              </div>
-            )}
-          </div>
-
-          <p className="text-center text-[13px] text-[#5c626b]">
-            {t.authNoAccount}{" "}
-            <button onClick={onSignUp} className="font-bold text-[#D10005] underline">{t.authSignUpNow}</button>
-          </p>
-        </div>
-      </div>
-
-      {showResetEmailModal && (
-        <ResetPasswordEmailModal
-          lang={lang}
-          initialEmail={email}
-          onClose={() => setShowResetEmailModal(false)}
-          onContinue={(resetEmail) => {
-            setEmail(resetEmail);
-            setShowResetEmailModal(false);
-            setView("changePassword");
-          }}
-        />
-      )}
-
-      {showPasswordChangedSuccess && (
-        <PasswordChangedSuccessModal
-          lang={lang}
-          onLogin={() => setShowPasswordChangedSuccess(false)}
-        />
-      )}
-
-      {showGoogleAuth && (
-        <GoogleAuthSheet
-          lang={lang}
-          signUp={false}
-          onClose={() => setShowGoogleAuth(false)}
-          onSuccess={() => {
-            try {
-              sessionStorage.setItem("authData", JSON.stringify({
-                googleId: t.authGoogleAccount1Email,
-                displayName: t.authGoogleAccount1Name,
-              }));
-            } catch {}
-            setShowGoogleAuth(false);
-            onSuccess();
-          }}
-        />
-      )}
     </div>
   );
 }
@@ -2870,7 +1694,7 @@ function USStateSelect({ value, onChange, label }: { value: string; onChange: (v
 /* ── Prize History ───────────────────────────────────────────────────── */
 type Toast = { id: number; text: string };
 
-function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddressesChange, onBack, onHome, empty = false, onGoGacha, lootMode = false }: { lang: Lang; coins: number; setCoins: Dispatch<SetStateAction<number>>; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; onBack: () => void; onHome: () => void; empty?: boolean; onGoGacha?: () => void; lootMode?: boolean }) {
+function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddressesChange, onBack, onHome, empty = false, onGoGacha, lootMode = false, onRequestKyc }: { lang: Lang; coins: number; setCoins: Dispatch<SetStateAction<number>>; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; onBack: () => void; onHome: () => void; empty?: boolean; onGoGacha?: () => void; lootMode?: boolean; onRequestKyc?: () => boolean }) {
   // "My Loot" reuses this screen but shows only the most valuable cards
   // (top UR tier) and hides the Won/Waiting/Shipped tabs.
   const screenTitle = lootMode ? STR[lang].mmItems : STR[lang].prizeHistory;
@@ -3164,7 +1988,11 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                     </div>
                   )}
                   <button
-                    onClick={() => { if (!listCanShip) { pushToast(t.toastShort(listShortfall)); return; } setListShipOpen(true); }}
+                    onClick={() => {
+                      if (!listCanShip) { pushToast(t.toastShort(listShortfall)); return; }
+                      if (onRequestKyc && !onRequestKyc()) return;
+                      setListShipOpen(true);
+                    }}
                     className="w-full rounded-xl border-2 py-2 text-[12.5px] font-bold leading-tight transition"
                     style={{ borderColor: "#f5670a", color: "#f5670a", background: "#fff", opacity: listCanShip ? 1 : 0.6 }}
                   >
@@ -5636,6 +4464,7 @@ function StorePage({
   onBack,
   onHome,
   onOpenStore,
+  onRequireKyc,
 }: {
   lang: Lang;
   coins: number;
@@ -5643,6 +4472,7 @@ function StorePage({
   onBack: () => void;
   onHome?: () => void;
   onOpenStore?: () => void;
+  onRequireKyc?: () => boolean;
 }) {
   const t = STR[lang];
   const [savedCards, setSavedCards] = useState<{ last4: string; expiry: string; brand: string; name: string; billingAddress?: BillingAddress }[]>([]);
@@ -5652,6 +4482,7 @@ function StorePage({
       coins={coins}
       setCoins={setCoins}
       onBack={onBack}
+      onRequireKyc={onRequireKyc}
       chrome={{
         header: <AppHeader coins={coins} t={t} onHome={onHome ?? onBack} onOpenStore={onOpenStore} />,
         footer: <SiteFooter t={t} />,
@@ -5671,12 +4502,20 @@ function StorePage({
   );
 }
 
-export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void }) {
+export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "happy" }: {
+  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario;
+}) {
   const t = STR[lang];
   const [screen, setScreen] = useState<Screen>("landing");
   const [prevScreen, setPrevScreen] = useState<Screen>("oripa");
+  const [lineLoginToast, setLineLoginToast] = useState(false);
   // Surface the active screen so the review comments panel can scope itself.
   useEffect(() => { onScreenChange?.(screen); }, [screen, onScreenChange]);
+  useEffect(() => {
+    if (!lineLoginToast) return;
+    const timer = setTimeout(() => setLineLoginToast(false), 10000);
+    return () => clearTimeout(timer);
+  }, [lineLoginToast]);
   // Deep link: a `?screen=` param (used by Slack comment links) opens the app
   // directly on that screen so reviewers land where the comment was left.
   useEffect(() => {
@@ -5710,10 +4549,10 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
   const [shippingAddresses, setShippingAddresses] = useState<ShippingAddr[]>([]);
   // KYC / identity verification launched from My Profile → Verification Status.
   const [kyc, setKyc] = useState<KycState>(() => {
-    const base = createDefaultKycState("happy");
+    const base = createDefaultKycState(initialKycScenario);
     try {
       const saved = sessionStorage.getItem(KYC_SESSION_KEY);
-      if (saved) return { ...base, ...JSON.parse(saved), scenario: "happy" };
+      if (saved) return { ...base, ...JSON.parse(saved), scenario: initialKycScenario };
       const profile = JSON.parse(sessionStorage.getItem("profileForm") || "{}");
       const auth = JSON.parse(sessionStorage.getItem("authData") || "{}");
       return {
@@ -5772,7 +4611,17 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
   const [notifOnly, setNotifOnly] = useState<"you" | "notice" | undefined>(undefined);
   const goHome = () => setScreen("oripa");
   // PROD: login/sign-up land straight on the lobby (no onboarding flow).
-  const enterHome = () => setScreen("oripa");
+  const enterHome = (method?: "line") => {
+    setScreen("oripa");
+    if (method === "line") setLineLoginToast(true);
+  };
+  const logout = () => {
+    try {
+      sessionStorage.removeItem("authData");
+    } catch {}
+    setDisplayName("");
+    setScreen("landing");
+  };
   const openNotifications = () => { setNotifOnly(undefined); setPrevScreen((p) => (screen === "notifications" ? p : screen)); setScreen("notifications"); };
   // My Account → Announcements opens the notifications screen in single-tab
   // "notice" mode and returns to My Account on back.
@@ -5818,8 +4667,21 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
         <div key={screen} className="h-full">
         {/* Logged-out lobby — V1 homepage layout */}
         {screen === "landing" && <LandingPage lang={lang} onSignUp={() => setScreen("signup")} onLogin={() => setScreen("login")} />}
-        {screen === "signup" && <SignupPage lang={lang} onClose={() => setScreen("landing")} onLogin={() => setScreen("login")} onSuccess={enterHome} />}
-        {screen === "login" && <LoginPage lang={lang} onSignUp={() => setScreen("signup")} onSuccess={enterHome} />}
+        {screen === "signup" && (
+          <SignupPage
+            lang={lang}
+            onQuit={() => setScreen("landing")}
+            onLogin={() => setScreen("login")}
+            onSuccess={() => enterHome()}
+          />
+        )}
+        {screen === "login" && (
+          <LoginPage
+            lang={lang}
+            onSignUp={() => setScreen("signup")}
+            onSuccess={(method) => enterHome(method)}
+          />
+        )}
         {/* Logged-in lobby — V2 format */}
         {screen === "oripa" && <OripaHome lang={lang} coins={coins} onHome={goHome} onOpenStore={openStore} onOpenDraw={openDraw} />}
         {screen === "drawDetail" && drawItem && (
@@ -5845,7 +4707,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
             onOpenShippingAddress={() => setScreen("shippingAddress")}
             onOpenProfile={() => setScreen("profile")}
             onHome={goHome}
-            onLogout={() => setScreen("landing")}
+            onLogout={logout}
             onOpenStore={openStore}
           />
         )}
@@ -5881,6 +4743,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
             onHome={goHome}
             empty={false}
             onGoGacha={goHome}
+            onRequestKyc={() => requestKyc("prizeHistory")}
           />
         )}
         {screen === "myLoot" && (
@@ -5926,6 +4789,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
             onBack={() => setScreen(storeReturn)}
             onHome={goHome}
             onOpenStore={openStore}
+            onRequireKyc={() => requestKyc("purchase")}
           />
         )}
         {screen === "coinHistory" && (
@@ -5939,6 +4803,12 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
         )}
         </div>
         {legalDoc && <LegalOverlay lang={lang} doc={legalDoc} onClose={() => setLegalDoc(null)} />}
+        {lineLoginToast && (
+          <div className="absolute bottom-4 left-1/2 z-[70] flex -translate-x-1/2 items-center gap-2 rounded-full bg-[#1d2129] px-4 py-2.5 text-[13px] font-semibold text-white shadow-lg">
+            <LineAuthIcon size={20} />
+            {t.authLineLoginSuccess as string}
+          </div>
+        )}
         <KycOverlay lang={lang} state={kyc} setState={setKyc} onExit={exitKycToLobby} onContextReturn={returnFromKyc} />
       </div>
       {showNav && <BottomNav screen={screen} t={t} onNavigate={navigate} />}
