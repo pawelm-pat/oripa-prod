@@ -2464,8 +2464,8 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                 </div>
               </div>
               <div className="flex shrink-0 gap-3 border-t border-black/10 px-4 py-3">
-                <button onClick={clearFilters} className="flex-1 rounded-xl bg-[#f2f3f5] py-3 text-[15px] font-extrabold text-[#1d2129] active:scale-[0.99]">{LF.clear}</button>
-                <button onClick={() => setFilterOpen(false)} className="flex-1 rounded-xl bg-[#D10005] py-3 text-[15px] font-extrabold text-white active:scale-[0.99]">{LF.apply}</button>
+                <button onClick={() => { clearFilters(); setFilterOpen(false); }} className="flex-1 rounded-[10px] border-[1.6px] border-[#1d2129] bg-white py-3 text-[15px] font-extrabold text-[#1d2129] active:scale-[0.99]">{LF.reset}</button>
+                <button onClick={() => setFilterOpen(false)} className="flex-1 rounded-[10px] bg-[#D10005] py-3 text-[15px] font-extrabold text-white active:scale-[0.99]">{LF.filter}</button>
               </div>
             </div>
           </div>
