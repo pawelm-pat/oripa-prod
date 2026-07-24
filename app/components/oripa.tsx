@@ -44,6 +44,14 @@ import {
 } from "../data/prizes";
 
 import { StorePage as StorePageView, type PointPackage } from "./store-page";
+import { ProfilePage } from "./profile-page";
+import {
+  KycOverlay,
+  KYC_SESSION_KEY,
+  createDefaultKycState,
+  type KycEntryContext,
+  type KycState,
+} from "./kyc";
 
 const NotifNavContext = createContext<() => void>(() => {});
 // Tapping the currency balances in the header opens the Coin History screen.
@@ -1363,7 +1371,7 @@ function BottomNav({ screen, t, onNavigate }: { screen: Screen; t: Dict; onNavig
   const activeKey: Screen =
     screen === "myLoot"
       ? "prizeHistory"
-      : screen === "prizeHistory" || screen === "purchaseHistory" || screen === "shippingAddress"
+      : screen === "prizeHistory" || screen === "purchaseHistory" || screen === "shippingAddress" || screen === "profile"
       ? "mypage"
       : screen;
   return (
@@ -4102,12 +4110,11 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
   );
 }
 
-/* ── My Account (trimmed MyPage) ─────────────────────────────────────────
+/* ── My Account ──────────────────────────────────────────────────────────
    Visual layout mirrors the POC's MyPage (profile / balance / rank cards +
-   menu grid + account/other sections). Only "Prize history" and "Shipping
-   address" are wired; every other menu row renders but is inert. The heavy
-   POC dependencies (subscriptions, purchase history, refer, quests, FAQ,
-   profile editor, ranking overlay) are intentionally NOT ported. */
+   menu grid + account/other sections). Edit profile and Account Settings
+   both open My Profile. Prize history, My Loot, Purchase history, Address,
+   Announcements and Coin History are also wired. */
 const MENU_ICON_IMG: Record<string, string> = {
   quest: "/menu-quest.png",
   items: "/menu-items.png",
@@ -4136,7 +4143,7 @@ function myMenuIcon(key: string) {
   }
 }
 
-function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onOpenMyLoot, onOpenPurchaseHistory, onOpenAnnouncements, onOpenShippingAddress, onHome, onLogout, onOpenStore }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenMyLoot: () => void; onOpenPurchaseHistory: () => void; onOpenAnnouncements: () => void; onOpenShippingAddress: () => void; onHome: () => void; onLogout: () => void; onOpenStore?: () => void }) {
+function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onOpenMyLoot, onOpenPurchaseHistory, onOpenAnnouncements, onOpenShippingAddress, onOpenProfile, onHome, onLogout, onOpenStore }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenMyLoot: () => void; onOpenPurchaseHistory: () => void; onOpenAnnouncements: () => void; onOpenShippingAddress: () => void; onOpenProfile: () => void; onHome: () => void; onLogout: () => void; onOpenStore?: () => void }) {
   const t = STR[lang];
   const openLegal = useContext(LegalNavContext);
   const openCoinHistory = useContext(CoinHistoryNavContext);
@@ -4184,7 +4191,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
             <div className="min-w-0 flex-1">
               <p className="truncate text-[19px] font-extrabold text-[#1d2129]">{displayName.trim() || t.accountName}</p>
               <p className="mt-0.5 text-[12px] font-normal text-[#8a9099]">{t.mpId} : XXXXXX</p>
-              <button className="mt-2 w-full rounded-lg border-2 border-[#D10005] py-1.5 text-[13px] font-bold text-[#D10005]">{t.mpEditProfile}</button>
+              <button onClick={onOpenProfile} className="mt-2 w-full rounded-lg border-2 border-[#D10005] py-1.5 text-[13px] font-bold text-[#D10005]">{t.mpEditProfile}</button>
             </div>
           </div>
 
@@ -4257,7 +4264,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
           {/* Account section */}
           <h3 className="mb-2 mt-5 text-[15px] font-extrabold text-[#1d2129]">{t.mpAccountSection}</h3>
           <div className="space-y-2">
-            <button className="w-full rounded-xl bg-white px-4 py-3.5 text-left text-[16px] font-bold text-[#1d2129] shadow-[0_1px_3px_rgba(0,0,0,0.06)]">{t.mpEditAccount}</button>
+            <button onClick={onOpenProfile} className="w-full rounded-xl bg-white px-4 py-3.5 text-left text-[16px] font-bold text-[#1d2129] shadow-[0_1px_3px_rgba(0,0,0,0.06)] active:bg-black/[0.02]">{t.mpEditAccount}</button>
             <button onClick={onLogout} className="w-full rounded-xl bg-white px-4 py-3.5 text-left text-[16px] font-bold text-[#1d2129] shadow-[0_1px_3px_rgba(0,0,0,0.06)] active:bg-black/[0.02]">{t.menuLogout}</button>
           </div>
 
@@ -5678,7 +5685,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
       // Yield once so this isn't a synchronous setState within the effect.
       await Promise.resolve();
       if (!alive) return;
-      const valid: Screen[] = ["landing", "signup", "login", "oripa", "notifications", "prizeHistory", "myLoot", "purchaseHistory", "shippingAddress", "quest", "store", "coinHistory", "mypage"];
+      const valid: Screen[] = ["landing", "signup", "login", "oripa", "notifications", "prizeHistory", "myLoot", "purchaseHistory", "shippingAddress", "quest", "store", "coinHistory", "mypage", "profile"];
       const target = new URLSearchParams(window.location.search).get("screen");
       if (target && valid.includes(target as Screen)) setScreen(target as Screen);
     };
@@ -5689,9 +5696,79 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
   }, []);
   // Prize History adjusts `coins` when exchanging prizes / paying shipping fees.
   const [coins, setCoins] = useState(10000);
+  // Shared display name between My Account and My Profile.
+  const [displayName, setDisplayName] = useState(() => {
+    try {
+      const auth = JSON.parse(sessionStorage.getItem("authData") || "{}");
+      return (auth.displayName as string) || "";
+    } catch {
+      return "";
+    }
+  });
   // Shipping addresses are shared between the Shipping Address page and the
   // in-flow "request shipping" address picker.
   const [shippingAddresses, setShippingAddresses] = useState<ShippingAddr[]>([]);
+  // KYC / identity verification launched from My Profile → Verification Status.
+  const [kyc, setKyc] = useState<KycState>(() => {
+    const base = createDefaultKycState("happy");
+    try {
+      const saved = sessionStorage.getItem(KYC_SESSION_KEY);
+      if (saved) return { ...base, ...JSON.parse(saved), scenario: "happy" };
+      const profile = JSON.parse(sessionStorage.getItem("profileForm") || "{}");
+      const auth = JSON.parse(sessionStorage.getItem("authData") || "{}");
+      return {
+        ...base,
+        details: {
+          ...base.details,
+          lastName: profile.lastName || base.details.lastName,
+          firstName: profile.firstName || base.details.firstName,
+          lastNameKana: profile.lastNameKana || base.details.lastNameKana,
+          firstNameKana: profile.firstNameKana || base.details.firstNameKana,
+          email: profile.email || auth.email || base.details.email,
+          dob: profile.dob || auth.dob || base.details.dob,
+          postalCode: profile.postalCode || base.details.postalCode,
+          prefecture: profile.prefecture || profile.state || base.details.prefecture,
+          city: profile.city || base.details.city,
+          street: profile.cityStreetNumber || base.details.street,
+          streetNumber: profile.streetNumber || base.details.streetNumber,
+          apartment: profile.apartment || base.details.apartment,
+          country: profile.country === "usa" ? "United States" : base.details.country,
+        },
+      };
+    } catch {
+      return base;
+    }
+  });
+  useEffect(() => {
+    try { sessionStorage.setItem(KYC_SESSION_KEY, JSON.stringify(kyc)); } catch {}
+  }, [kyc]);
+  const kycComplete = kyc.poiStatus === "approved" && kyc.poaStatus === "approved";
+  const requestKyc = (context: KycEntryContext) => {
+    if (kyc.scenario === "none") return true;
+    if (kycComplete) return true;
+    setKyc((current) => ({
+      ...current,
+      entryContext: context,
+      activeScreen:
+        current.poiStatus === "needsAttention" ? "identityAttention"
+        : current.poiStatus === "inProgress" ? "identityProgress"
+        : current.poiStatus === "approved" && current.poaStatus === "needsAttention" ? "poaAttention"
+        : current.poiStatus === "approved" && current.poaStatus === "inProgress" ? "poaProgress"
+        : current.poiStatus === "approved" ? "beforeStart"
+        : "required",
+    }));
+    return false;
+  };
+  const exitKycToLobby = () => {
+    setKyc((current) => ({ ...current, activeScreen: null }));
+    setScreen("oripa");
+  };
+  const returnFromKyc = (context: KycEntryContext, completed: boolean) => {
+    setKyc((current) => ({ ...current, activeScreen: null }));
+    if (context === "purchase") setScreen("store");
+    else if (context === "prizeHistory") setScreen("prizeHistory");
+    else setScreen(completed ? "oripa" : "profile");
+  };
   const [notifOnly, setNotifOnly] = useState<"you" | "notice" | undefined>(undefined);
   const goHome = () => setScreen("oripa");
   // PROD: login/sign-up land straight on the lobby (no onboarding flow).
@@ -5729,7 +5806,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
     // quest tab remains inert.
   };
   const onLanding = screen === "landing" || screen === "signup" || screen === "login";
-  const showNav = !onLanding;
+  const showNav = !onLanding && !kyc.activeScreen;
   return (
     <NotifNavContext.Provider value={onLanding ? () => {} : openNotifications}>
     <CoinHistoryNavContext.Provider value={onLanding ? () => {} : openCoinHistory}>
@@ -5760,14 +5837,37 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
           <MyPage
             lang={lang}
             coins={coins}
+            displayName={displayName}
             onOpenPrizeHistory={() => setScreen("prizeHistory")}
             onOpenMyLoot={openMyLoot}
             onOpenPurchaseHistory={() => setScreen("purchaseHistory")}
             onOpenAnnouncements={openAnnouncements}
             onOpenShippingAddress={() => setScreen("shippingAddress")}
+            onOpenProfile={() => setScreen("profile")}
             onHome={goHome}
             onLogout={() => setScreen("landing")}
             onOpenStore={openStore}
+          />
+        )}
+        {screen === "profile" && (
+          <ProfilePage
+            lang={lang}
+            coins={coins}
+            displayName={displayName}
+            onDisplayNameChange={(name) => {
+              setDisplayName(name);
+              try {
+                const auth = JSON.parse(sessionStorage.getItem("authData") || "{}");
+                sessionStorage.setItem("authData", JSON.stringify({ ...auth, displayName: name }));
+              } catch {}
+            }}
+            onBack={() => setScreen("mypage")}
+            onOpenStore={openStore}
+            kyc={kyc}
+            onStartKyc={() => { requestKyc("profile"); }}
+            chrome={{
+              header: <AppHeader coins={coins} t={t} onHome={goHome} onOpenStore={openStore} />,
+            }}
           />
         )}
         {screen === "prizeHistory" && (
@@ -5839,6 +5939,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange }: { lang: Lang; noHi
         )}
         </div>
         {legalDoc && <LegalOverlay lang={lang} doc={legalDoc} onClose={() => setLegalDoc(null)} />}
+        <KycOverlay lang={lang} state={kyc} setState={setKyc} onExit={exitKycToLobby} onContextReturn={returnFromKyc} />
       </div>
       {showNav && <BottomNav screen={screen} t={t} onNavigate={navigate} />}
     </div>

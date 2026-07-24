@@ -609,8 +609,10 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
       APP_HEADER_GROUP,
       {
         title: "Profile card",
-        items: ["Avatar, display name and ID."],
-        tbc: ["Edit profile does nothing.", "Profile name/ID are placeholders."],
+        items: [
+          "Avatar, display name and ID.",
+          { text: "Edit profile", sub: ["Opens My Profile (same screen as Account Settings)."] },
+        ],
       },
       {
         title: "Balance card",
@@ -635,8 +637,10 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
       },
       {
         title: "Account section",
-        items: [{ text: "Log out", sub: ["Returns to the logged-out landing page."] }],
-        tbc: ["Account Settings does nothing."],
+        items: [
+          { text: "Account Settings", sub: ["Opens My Profile (same screen as Edit profile)."] },
+          { text: "Log out", sub: ["Returns to the logged-out landing page."] },
+        ],
       },
       {
         title: "Other / legal",
@@ -660,6 +664,63 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
         title: "Status",
         items: [],
         tbc: ["Not built — the bottom-nav 'Quests' label and the My Account 'Quests' item do nothing; no Quests screen exists."],
+      },
+    ],
+  },
+
+  profile: {
+    label: "My Profile",
+    summary: "Account settings hub opened from Edit profile or Account Settings. Accordion sections for identity, personal info, social links, verifications, password and communication preferences.",
+    groups: [
+      APP_HEADER_GROUP,
+      {
+        title: "Account ID",
+        items: ["Static account ID, emblem, editable display name with Save."],
+      },
+      {
+        title: "Personal Information",
+        items: [
+          "Email, date of birth (picker), phone with Verify OTP, country (Japan / USA).",
+          "Japan: postal code lookup (mocked), prefecture, city/street, street number, optional apartment.",
+          "USA: apartment (optional), city/street/number, state, 5-digit zip.",
+        ],
+        validation: [
+          "Email must match a basic email pattern.",
+          "Phone must be exactly 10 digits (digits only).",
+          "Japan postal code must be NNN-NNNN; street number digits only.",
+          "USA zip must be exactly 5 digits.",
+          "Save requires valid email, DOB, phone and a complete address for the selected country.",
+        ],
+      },
+      {
+        title: "Social Connect",
+        items: ["LINE, Google, Facebook, Apple rows; connected state from session auth (LINE/Google)."],
+        tbc: ["Connect / disconnect actions are display-only."],
+      },
+      {
+        title: "Account Verifications",
+        items: [
+          { text: "Verification Status", sub: ["ID then proof-of-address CTAs launch the KYC overlay based on current status."] },
+          { text: "Payment Method Verification", sub: ["Select Card + card number, then Jumio-style upload flow; marks the card verified."] },
+          { text: "Document Upload", sub: ["Full-page upload with type select, file pick, pending/success overlays and history."] },
+        ],
+      },
+      {
+        title: "Change Password",
+        items: ["Old / new / repeat fields."],
+        validation: ["Succeeds when new password is non-empty and matches the repeat field (old password is not checked)."],
+      },
+      {
+        title: "Communication Preferences",
+        items: ["Email / Push / SMS toggles with Save."],
+      },
+      {
+        title: "Behaviour",
+        items: [
+          "Back returns to My Account.",
+          "Personal form persists in sessionStorage (profileForm); phone verified flag in authData.",
+          "KYC state persists in sessionStorage.",
+        ],
       },
     ],
   },

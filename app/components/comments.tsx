@@ -30,6 +30,7 @@ const SCREEN_LABELS: Record<string, string> = {
   purchaseHistory: "Purchase history",
   shippingAddress: "Address",
   mypage: "My Account",
+  profile: "My Profile",
   quest: "Quest",
   store: "Store",
   coinHistory: "Coin History",

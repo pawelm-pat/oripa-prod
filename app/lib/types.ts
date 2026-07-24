@@ -126,4 +126,5 @@ export type Screen =
   | "quest"
   | "store"
   | "coinHistory"
-  | "mypage";
+  | "mypage"
+  | "profile";
