@@ -71,6 +71,11 @@ export const INITIAL_WON: WonPrize[] = [
   // Football
   { id: "w9", name: "Football — Messi Icon UR", nameJa: "サッカー — メッシ アイコン UR", desc: "Limited gold", descJa: "限定ゴールド", rarity: "UR", coinValue: 50000, wonAt: NOW - 3 * DAY - 2 * 60 * 60 * 1000, category: "football" },
   { id: "w10", name: "Football — Team Sticker", nameJa: "サッカー — チームステッカー", desc: "Collectible sticker", descJa: "コレクタブルステッカー", rarity: "N", coinValue: 300, wonAt: NOW - 3 * DAY, category: "football" },
+  // Additional top-tier (UR) pulls across franchises — surfaced in My Loot.
+  { id: "w11", name: "Pokémon — Mewtwo UR", nameJa: "ポケモン — ミュウツー UR", desc: "Legendary holographic", descJa: "伝説のホログラフィック", rarity: "UR", coinValue: 60000, wonAt: NOW - 8 * DAY, category: "pokemon" },
+  { id: "w12", name: "One Piece — Shanks UR", nameJa: "ワンピース — シャンクス UR", desc: "Red-Hair parallel", descJa: "赤髪パラレル", rarity: "UR", coinValue: 55000, wonAt: NOW - 9 * DAY, category: "onepiece" },
+  { id: "w13", name: "Baseball — Ohtani MVP UR", nameJa: "野球 — 大谷 MVP UR", desc: "MVP gold relic", descJa: "MVPゴールドレリック", rarity: "UR", coinValue: 70000, wonAt: NOW - 10 * DAY, category: "baseball" },
+  { id: "w14", name: "Football — Ronaldo Icon UR", nameJa: "サッカー — ロナウド アイコン UR", desc: "Icon edition parallel", descJa: "アイコン版パラレル", rarity: "UR", coinValue: 65000, wonAt: NOW - 11 * DAY, category: "football" },
 ];
 
 export const INITIAL_WAITING: WaitingPrize[] = [

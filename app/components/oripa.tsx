@@ -2299,18 +2299,20 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                     return (
                       <div
                         key={p.id}
-                        onClick={() => listToggle(p.id)}
+                        onClick={lootMode ? () => listToggle(p.id) : undefined}
                         className="flex gap-3 rounded-2xl bg-white p-2.5 shadow-[0_1px_4px_rgba(0,0,0,0.08)] transition"
-                        style={{ border: isSel ? "2.5px solid #FF7A1A" : "1.5px solid rgba(0,0,0,0.08)", cursor: "pointer" }}
+                        style={{ border: lootMode && isSel ? "2.5px solid #FF7A1A" : "1.5px solid rgba(0,0,0,0.08)", cursor: lootMode ? "pointer" : "default" }}
                       >
                         <div className="shrink-0"><PrizeArt rarity={p.rarity} size={104} /></div>
                         <div className="flex min-w-0 flex-1 flex-col">
                           <div className="flex items-start justify-between gap-2">
                             <img src={`/prize-tag-${rarityTier(p.rarity)}.png`} alt={t.prizeTier(rarityTier(p.rarity))} className="h-[24px] w-auto shrink-0 object-contain" draggable={false} />
-                            <span className="flex shrink-0 items-center gap-1 text-[11px] font-bold" style={{ color: isSel ? "#FF7A1A" : "#8a9099" }}>
-                              {isSel ? t.itemsSelected : t.itemsNotSelected}
-                              <svg width="15" height="15" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill={isSel ? "#FF7A1A" : "#c9ced6"} /><path d="M6 10l3 3 5-5" stroke="white" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
-                            </span>
+                            {lootMode && (
+                              <span className="flex shrink-0 items-center gap-1 text-[11px] font-bold" style={{ color: isSel ? "#FF7A1A" : "#8a9099" }}>
+                                {isSel ? t.itemsSelected : t.itemsNotSelected}
+                                <svg width="15" height="15" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill={isSel ? "#FF7A1A" : "#c9ced6"} /><path d="M6 10l3 3 5-5" stroke="white" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
+                              </span>
+                            )}
                           </div>
                           <p className="mt-1.5 text-[14px] font-bold leading-tight text-[#1d2129]">{locName(p, lang)}</p>
                           <p className="mt-1 line-clamp-2 text-[10px] font-normal leading-relaxed text-[#8a9099]">{locDesc(p, lang)}</p>
@@ -2333,7 +2335,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
         {tab === "shipped" && <ShippedTab prizes={shipped} onCopy={(c) => pushToast(t.toastCopied(c))} t={t} lang={lang} />}
       </div>
 
-      {tab === "won" && won.length > 0 && listSelected.size > 0 && (
+      {lootMode && tab === "won" && won.length > 0 && listSelected.size > 0 && (
         <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
           {listSelected.size > 0 && (
             <>
@@ -2426,6 +2428,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                     className="w-full rounded-xl bg-[#f4f5f7] py-3 pl-11 pr-3 text-[14px] font-semibold text-[#1d2129] outline-none placeholder:text-[#9aa0a8] focus:bg-white focus:ring-2 focus:ring-[#D10005]/30"
                   />
                 </div>
+                {lootMode && (
                 <div className="mt-5">
                   <h4 className="mb-3 text-[15px] font-extrabold text-[#1d2129]">{lang === "ja" ? "レアリティで選択" : "Select by tier"}</h4>
                   <div className="flex flex-wrap gap-2.5">
@@ -2443,6 +2446,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                     </button>
                   </div>
                 </div>
+                )}
 
                 <div className="mt-5 border-t border-black/5 pt-4">
                   <h4 className="mb-3 text-[15px] font-extrabold text-[#1d2129]">{LF.quickFilters}</h4>
