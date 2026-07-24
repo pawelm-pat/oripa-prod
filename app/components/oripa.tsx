@@ -20,7 +20,7 @@ import type {
   WonPrize,
 } from "../lib/types";
 import { STR, type Dict, locTitle } from "../lib/i18n";
-import { ForgotPasswordPage, ChangePasswordPage, forgotPasswordLabel } from "./password-reset";
+import { ResetPasswordEmailModal, ChangePasswordPage, PasswordChangedSuccessModal, forgotPasswordLabel } from "./password-reset";
 import { HOME_SECTIONS, ALL_ORIPA } from "../data/lobby";
 import { NOTIF_YOU, NOTIF_NOTICE, NOTIF_UNREAD_TOTAL } from "../data/notifications";
 import { LEGAL, type LegalDocKey } from "../data/legal";
@@ -2446,27 +2446,20 @@ function SignupPage({ lang, onClose, onLogin, onSuccess, initialEmailVerify = fa
 }
 
 /* ── LoginPage ────────────────────────────────────────────────────────── */
-function LoginPage({ lang, onSignUp, onSuccess, initialAppleAuth = false }: { lang: Lang; onSignUp: () => void; onSuccess: () => void; initialAppleAuth?: boolean }) {
+function LoginPage({ lang, onSignUp, onSuccess }: { lang: Lang; onSignUp: () => void; onSuccess: () => void; initialAppleAuth?: boolean }) {
   // PASSWORD_RESET_FLOW
   const t = STR[lang];
 
-  const [view, setView] = useState<"form" | "otp" | "forgot" | "changePassword">("form");
-  const [otpPhone, setOtpPhone] = useState("");
-  const [activeSection, setActiveSection] = useState<"phone" | "email" | null>("email");
+  const [view, setView] = useState<"form" | "changePassword">("form");
+  const [activeSection, setActiveSection] = useState<"email" | null>("email");
   const [showGoogleAuth, setShowGoogleAuth] = useState(false);
-
-  const [countryCode, setCountryCode] = useState<"JP" | "US">("JP");
-  const [phone, setPhone] = useState("");
-  const [phoneTouched, setPhoneTouched] = useState(false);
+  const [showResetEmailModal, setShowResetEmailModal] = useState(false);
+  const [showPasswordChangedSuccess, setShowPasswordChangedSuccess] = useState(false);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
   const [passwordTouched, setPasswordTouched] = useState(false);
-
-  const phonePrefix = countryCode === "JP" ? "🇯🇵 +81" : "🇺🇸 +1";
-  const phoneValid = phone.length === 10;
-  const phoneError = phoneTouched && phone.length > 0 && !phoneValid ? t.authPhoneError as string : "";
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const passwordValid = password.length >= 8;
@@ -2474,30 +2467,15 @@ function LoginPage({ lang, onSignUp, onSuccess, initialAppleAuth = false }: { la
   const emailFieldError = email.length > 0 && !emailValid ? t.authEmailError : "";
   const passwordError = password.length > 0 && !passwordValid ? t.authPasswordError : "";
 
-  if (view === "otp") {
-    return <PhoneOtpPage lang={lang} phone={otpPhone} onBack={() => setView("form")} onSuccess={() => {
-      try { sessionStorage.setItem("authData", JSON.stringify({ phone, phoneVerified: true })); } catch {}
-      onSuccess();
-    }} />;
-  }
-
-  if (view === "forgot") {
-    return (
-      <ForgotPasswordPage
-        lang={lang}
-        initialEmail={email}
-        onBack={() => setView("form")}
-        onContinueToChangePassword={() => setView("changePassword")}
-      />
-    );
-  }
-
   if (view === "changePassword") {
     return (
       <ChangePasswordPage
         lang={lang}
         onBack={() => setView("form")}
-        onDone={() => setView("form")}
+        onDone={() => {
+          setView("form");
+          setShowPasswordChangedSuccess(true);
+        }}
       />
     );
   }
@@ -2547,7 +2525,7 @@ function LoginPage({ lang, onSignUp, onSuccess, initialAppleAuth = false }: { la
                 <div className="flex justify-end -mt-2">
                   <button
                     type="button"
-                    onClick={() => setView("forgot")}
+                    onClick={() => setShowResetEmailModal(true)}
                     className="text-[13px] font-bold text-[#D10005] underline"
                   >
                     {forgotPasswordLabel(lang)}
@@ -2572,6 +2550,26 @@ function LoginPage({ lang, onSignUp, onSuccess, initialAppleAuth = false }: { la
           </p>
         </div>
       </div>
+
+      {showResetEmailModal && (
+        <ResetPasswordEmailModal
+          lang={lang}
+          initialEmail={email}
+          onClose={() => setShowResetEmailModal(false)}
+          onContinue={(resetEmail) => {
+            setEmail(resetEmail);
+            setShowResetEmailModal(false);
+            setView("changePassword");
+          }}
+        />
+      )}
+
+      {showPasswordChangedSuccess && (
+        <PasswordChangedSuccessModal
+          lang={lang}
+          onLogin={() => setShowPasswordChangedSuccess(false)}
+        />
+      )}
 
       {showGoogleAuth && (
         <GoogleAuthSheet
