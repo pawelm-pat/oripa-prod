@@ -1019,10 +1019,9 @@ function DrawTierCard({ rarity, lang, large = false }: { rarity: Rarity; lang: L
   return (
     <div className="flex flex-col items-center gap-1.5">
       <PrizeArt rarity={rarity} size={large ? 138 : 92} />
-      {/* Value chip sits on the dark board — glassy dark pill with a gold coin. */}
-      <div className="flex items-center gap-1 rounded-full bg-black/45 px-2.5 py-0.5 ring-1 ring-white/15 backdrop-blur-sm">
+      <div className="flex items-center gap-1 rounded-full bg-[#FFF6E3] px-2.5 py-0.5 ring-1 ring-[#f0d9a8]">
         <CoinIcon size={large ? 15 : 12} />
-        <span className={`font-extrabold text-[#ffd77a] ${large ? "text-[13px]" : "text-[11px]"}`}>{meta.coin.toLocaleString()}</span>
+        <span className={`font-extrabold text-[#B5740A] ${large ? "text-[13px]" : "text-[11px]"}`}>{meta.coin.toLocaleString()}</span>
       </div>
     </div>
   );
@@ -1033,6 +1032,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: 
   const pct = Math.round((item.remaining / item.total) * 100);
   const soldOut = item.remaining <= 0;
   const [toast, setToast] = useState<string | null>(null);
+  const [cautionOpen, setCautionOpen] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function pushToast(msg: string) {
@@ -1057,18 +1057,18 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: 
   };
 
   return (
-    <div className="relative flex h-full flex-col bg-[#0a0a0c]">
+    <div className="relative flex h-full flex-col bg-[#eef0f3]">
       <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
 
-      {/* Title row (dark) */}
-      <div className="shrink-0 flex items-center gap-2 border-b border-white/10 bg-[#0a0a0c] px-3 py-2.5">
-        <button onClick={onBack} aria-label={t.backAria} className="flex h-8 w-8 items-center justify-center text-white hover:bg-white/10">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 12H4M10 6l-6 6 6 6" stroke="#ffffff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      {/* Title row */}
+      <div className="shrink-0 flex items-center gap-2 border-b border-black/10 bg-white px-3 py-2.5">
+        <button onClick={onBack} aria-label={t.backAria} className="flex h-8 w-8 items-center justify-center text-[#D10005] hover:bg-black/5">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 12H4M10 6l-6 6 6 6" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </button>
-        <h2 className="truncate text-[17px] font-bold text-white">{locTitle(item, lang)}</h2>
+        <h2 className="truncate text-[17px] font-bold text-[#1d2129]">{locTitle(item, lang)}</h2>
       </div>
 
-      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto bg-[#0a0a0c]">
+      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto bg-[#eef0f3]">
         {/* ── Promotional banner ─────────────────────────────────────────
             Fiery radial burst + ray sweep, gold 3D headline, "new-only"
             ribbon, tagline, mascot and a countdown chip. */}
@@ -1102,7 +1102,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: 
             </span>
           </div>
           {/* sales period */}
-          <p className="mt-2 text-center text-[11.5px] font-semibold text-white/60">{t.periodLabel("2026/01/01")}</p>
+          <p className="mt-2 text-center text-[11.5px] font-semibold text-[#8a9099]">{t.periodLabel("2026/01/01")}</p>
         </div>
 
         {/* Tags */}
@@ -1114,35 +1114,46 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: 
         </div>
 
         {/* Cost + remaining */}
-        <div className="mx-3 mt-2 rounded-2xl bg-white/[0.06] px-4 py-3 ring-1 ring-white/10">
+        <div className="mx-3 mt-2 rounded-2xl bg-white px-4 py-3 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5">
               <CoinIcon size={20} />
-              <span className="text-[16px] font-extrabold text-white">{DRAW_PRICE.toLocaleString()}</span>
-              <span className="text-[11px] font-bold text-white/55">{t.perDraw}</span>
+              <span className="text-[16px] font-extrabold text-[#1d2129] underline decoration-[#D10005] decoration-2 underline-offset-2">{DRAW_PRICE.toLocaleString()}</span>
+              <span className="text-[11px] font-bold text-[#8a9099]">{t.perDraw}</span>
             </span>
             {item.gem && (
               <span className="flex items-center gap-1.5">
                 <GemIcon size={20} />
-                <span className="text-[16px] font-extrabold text-white">{DRAW_PRICE.toLocaleString()}</span>
-                <span className="text-[11px] font-bold text-white/55">{t.perDraw}</span>
+                <span className="text-[16px] font-extrabold text-[#1d2129] underline decoration-[#D10005] decoration-2 underline-offset-2">{DRAW_PRICE.toLocaleString()}</span>
+                <span className="text-[11px] font-bold text-[#8a9099]">{t.perDraw}</span>
               </span>
             )}
           </div>
           <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-[13px] font-bold text-white/80">{t.remainingLabel}</span>
-            <span className="leading-none"><span className="text-[20px] font-extrabold text-white">{item.remaining}</span><span className="text-[12px] font-bold text-white/45">/{item.total}</span></span>
+            <span className="text-[13px] font-bold text-[#1d2129]">{t.remainingLabel}</span>
+            <span className="leading-none"><span className="text-[20px] font-extrabold text-[#1d2129]">{item.remaining}</span><span className="text-[12px] font-bold text-[#8a9099]">/{item.total}</span></span>
           </div>
-          <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-white/10"><span className="block h-full rounded-full bg-[#D10005]" style={{ width: `${pct}%` }} /></div>
-          <p className="mt-2 flex items-center justify-between text-[#ff6b6f]">
+          <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-black/[0.08]"><span className="block h-full rounded-full bg-[#D10005]" style={{ width: `${pct}%` }} /></div>
+          <p className="mt-2 flex items-center justify-between text-[#D10005]">
             <span className="text-[12px] font-bold">{t.remainingTimeLabel}</span>
             <span className="text-[14px] font-extrabold">{t.minUnit(item.endsIn)}</span>
           </p>
         </div>
 
-        {/* Caution */}
-        <div className="mx-3 mt-3 rounded-xl border border-[#f0d68a]/40 bg-[#f0d68a]/[0.08] px-3 py-2.5">
-          <p className="text-[11px] leading-relaxed text-[#f2d88f]">{t.drawCaution}</p>
+        {/* Caution — collapsible accordion */}
+        <div className="mx-3 mt-3 overflow-hidden rounded-xl border border-[#f0d68a] bg-[#fffae8]">
+          <button
+            onClick={() => setCautionOpen((v) => !v)}
+            aria-expanded={cautionOpen}
+            className="flex w-full items-center gap-2 px-3 py-2.5 text-left"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M12 3l10 18H2z" fill="#e0a52a" /><path d="M12 9v5M12 17.5v.5" stroke="#5a3d00" strokeWidth="2" strokeLinecap="round" /></svg>
+            <span className="flex-1 text-[12.5px] font-bold text-[#8a6d16]">{t.drawCautionTitle}</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className={`shrink-0 text-[#8a6d16] transition-transform ${cautionOpen ? "rotate-180" : ""}`}><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </button>
+          {cautionOpen && (
+            <p className="border-t border-[#f0d68a] px-3 py-2.5 text-[11px] leading-relaxed text-[#8a6d16]">{t.drawCaution}</p>
+          )}
         </div>
 
         {/* Prize line-up */}
@@ -1167,19 +1178,20 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: 
         <SiteFooter t={t} />
       </div>
 
-      {/* Sticky draw CTA */}
-      <div className="shrink-0 border-t border-white/10 bg-[#111114] px-3 pb-3 pt-2.5 shadow-[0_-8px_24px_rgba(0,0,0,0.4)]">
+      {/* Sticky draw CTA — pinned just above the bottom navigation */}
+      <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2.5 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
         {soldOut ? (
-          <div className="rounded-xl bg-white/10 py-3 text-center text-[15px] font-extrabold text-white/50">{t.drawSoldOut}</div>
+          <div className="rounded-xl bg-black/10 py-3 text-center text-[15px] font-extrabold text-[#8a9099]">{t.drawSoldOut}</div>
         ) : (
-          <div className="grid grid-cols-2 gap-2.5">
-            <button onClick={() => draw(1)} className="rounded-xl border-2 border-[#D10005] bg-transparent py-2.5 text-[14px] font-extrabold text-white active:scale-[0.99]">
-              {t.btn1Draw}
-              <span className="mt-0.5 block text-[11px] font-bold opacity-70">{DRAW_PRICE.toLocaleString()} coins</span>
+          <div className="flex gap-2">
+            <button onClick={() => draw(1)} className="flex-1 rounded-[10px] border-2 border-[#D10005] bg-white py-3 text-[13px] font-extrabold text-[#1d2129] active:scale-[0.98]">
+              {t.drawDraw1}
             </button>
-            <button onClick={() => draw(10)} className="rounded-xl py-2.5 text-[14px] font-extrabold text-white active:scale-[0.99]" style={{ background: "linear-gradient(180deg,#ff5a5f,#c8061a)" }}>
+            <button onClick={() => draw(10)} className="flex-1 rounded-[10px] bg-[#D10005] py-3 text-[13px] font-extrabold text-white active:scale-[0.98]">
               {t.drawDrawTen}
-              <span className="mt-0.5 block text-[11px] font-bold opacity-90">{(DRAW_PRICE * 10).toLocaleString()} coins</span>
+            </button>
+            <button onClick={() => pushToast(t.drawCustomTBC)} className="flex-1 whitespace-nowrap rounded-[10px] bg-[#D10005] py-3 text-[13px] font-extrabold text-white active:scale-[0.98]">
+              {t.drawDrawCustom}
             </button>
           </div>
         )}
