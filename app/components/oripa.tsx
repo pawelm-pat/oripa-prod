@@ -778,6 +778,22 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
     );
   };
 
+  // Promo banner slots — rendered between the recommended (red) oripas and the
+  // rest of the feed. Placeholder creative for now (e.g. LINE campaign /
+  // beginner guide); swap the inner content for real art later.
+  const promoBanners = (
+    <div className="flex flex-col gap-3 px-3.5 pt-3">
+      {[t.promo1, t.promo2].map((label, i) => (
+        <div
+          key={`promo-${i}`}
+          className="flex aspect-[124/41] items-center justify-center rounded-2xl bg-[#e7e8ea] px-6 text-center ring-1 ring-black/5"
+        >
+          <span className="text-[14px] font-extrabold uppercase leading-snug tracking-wide text-[#3a3f47]">{label}</span>
+        </div>
+      ))}
+    </div>
+  );
+
   const showResults = hasQuery || filterCount > 0;
   let body: React.ReactNode;
   if (showResults) {
@@ -805,6 +821,7 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
                 </section>
                 {/* Curved divider transitioning red -> white (below the section) */}
                 <img src="/home-divider-bottom.png" alt="" className="-mt-px block w-full" />
+                {promoBanners}
               </div>
             );
           }
@@ -836,6 +853,7 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
             <div className="flex flex-col gap-3">{featured.map(full)}</div>
           </section>
           <img src="/home-divider-bottom.png" alt="" className="-mt-px block w-full" />
+          {promoBanners}
           {rest.length > 0 && <div className="flex flex-col gap-3 px-3.5 py-3">{rest.map(full)}</div>}
         </div>
       );
