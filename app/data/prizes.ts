@@ -76,6 +76,17 @@ export const INITIAL_WON: WonPrize[] = [
   { id: "w12", name: "One Piece — Shanks UR", nameJa: "ワンピース — シャンクス UR", desc: "Red-Hair parallel", descJa: "赤髪パラレル", rarity: "UR", coinValue: 55000, wonAt: NOW - 9 * DAY, category: "onepiece" },
   { id: "w13", name: "Baseball — Ohtani MVP UR", nameJa: "野球 — 大谷 MVP UR", desc: "MVP gold relic", descJa: "MVPゴールドレリック", rarity: "UR", coinValue: 70000, wonAt: NOW - 10 * DAY, category: "baseball" },
   { id: "w14", name: "Football — Ronaldo Icon UR", nameJa: "サッカー — ロナウド アイコン UR", desc: "Icon edition parallel", descJa: "アイコン版パラレル", rarity: "UR", coinValue: 65000, wonAt: NOW - 11 * DAY, category: "football" },
+  // Deeper history so both lists lazily load in batches as the user scrolls.
+  { id: "w15", name: "Pokémon — Rayquaza UR", nameJa: "ポケモン — レックウザ UR", desc: "Sky-high holo", descJa: "スカイホログラフィック", rarity: "UR", coinValue: 62000, wonAt: NOW - 12 * DAY, category: "pokemon" },
+  { id: "w16", name: "One Piece — Law UR", nameJa: "ワンピース — ロー UR", desc: "Surgeon parallel", descJa: "サージョンパラレル", rarity: "UR", coinValue: 52000, wonAt: NOW - 13 * DAY, category: "onepiece" },
+  { id: "w17", name: "Baseball — Trout Auto UR", nameJa: "野球 — トラウト直筆 UR", desc: "Autograph gold", descJa: "直筆ゴールド", rarity: "UR", coinValue: 58000, wonAt: NOW - 14 * DAY, category: "baseball" },
+  { id: "w18", name: "Football — Mbappé UR", nameJa: "サッカー — ムバッペ UR", desc: "Future icon", descJa: "フューチャーアイコン", rarity: "UR", coinValue: 54000, wonAt: NOW - 15 * DAY, category: "football" },
+  { id: "w19", name: "Pokémon — Lugia UR", nameJa: "ポケモン — ルギア UR", desc: "Guardian holo", descJa: "ガーディアンホログラフィック", rarity: "UR", coinValue: 60000, wonAt: NOW - 16 * DAY, category: "pokemon" },
+  { id: "w20", name: "One Piece — Ace UR", nameJa: "ワンピース — エース UR", desc: "Flame-Fist parallel", descJa: "火拳パラレル", rarity: "UR", coinValue: 56000, wonAt: NOW - 17 * DAY, category: "onepiece" },
+  { id: "w21", name: "Baseball — Yamamoto UR", nameJa: "野球 — 山本 UR", desc: "Ace gold relic", descJa: "エースゴールドレリック", rarity: "UR", coinValue: 53000, wonAt: NOW - 18 * DAY, category: "baseball" },
+  { id: "w22", name: "Football — Neymar UR", nameJa: "サッカー — ネイマール UR", desc: "Samba icon", descJa: "サンバアイコン", rarity: "UR", coinValue: 51000, wonAt: NOW - 19 * DAY, category: "football" },
+  { id: "w23", name: "Pokémon — Gengar UR", nameJa: "ポケモン — ゲンガー UR", desc: "Shadow holo", descJa: "シャドウホログラフィック", rarity: "UR", coinValue: 57000, wonAt: NOW - 20 * DAY, category: "pokemon" },
+  { id: "w24", name: "Football — Club Badge", nameJa: "サッカー — クラブバッジ", desc: "Collectible badge", descJa: "コレクタブルバッジ", rarity: "N", coinValue: 300, wonAt: NOW - 21 * DAY, category: "football" },
 ];
 
 export const INITIAL_WAITING: WaitingPrize[] = [

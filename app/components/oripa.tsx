@@ -2079,6 +2079,19 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
     tabScrollRef.current?.scrollTo({ top: 0 });
   }, [tab]);
 
+  // Lazy loading for the won list: reveal a batch at a time as the user
+  // scrolls near the bottom (no "Load more" button). Sized so both screens
+  // load several more sets, giving a real "fetching history" feel.
+  const WON_PAGE = lootMode ? 4 : 6;
+  const [wonVisible, setWonVisible] = useState(WON_PAGE);
+  const [wonLoading, setWonLoading] = useState(false);
+  const wonBusy = useRef(false);
+  useEffect(() => {
+    setWonVisible(WON_PAGE);
+    wonBusy.current = false;
+    setWonLoading(false);
+  }, [category, query, sortKey, tab, WON_PAGE]);
+
   function pushToast(text: string) {
     const id = (toastSeq.current += 1);
     setToasts((prev) => [...prev, { id, text }]);
@@ -2153,6 +2166,24 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
   const displayedWon = sortedWon.filter(inScope);
   const filterActive = category !== "all" || q.length > 0;
   function clearFilters() { setCategory("all"); setQuery(""); setListSelected(new Set()); }
+
+  // Paged slice of the won list + scroll-driven "load more".
+  const pagedWon = displayedWon.slice(0, wonVisible);
+  const wonHasMore = wonVisible < displayedWon.length;
+  function onWonScroll(e: React.UIEvent<HTMLDivElement>) {
+    if (tab !== "won") return;
+    const el = e.currentTarget;
+    if (wonBusy.current || wonVisible >= displayedWon.length) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 160) {
+      wonBusy.current = true;
+      setWonLoading(true);
+      setTimeout(() => {
+        setWonVisible((v) => Math.min(v + WON_PAGE, displayedWon.length));
+        setWonLoading(false);
+        wonBusy.current = false;
+      }, 450);
+    }
+  }
 
   // Tier chips: "All" selects everything, a tier chip selects that rarity;
   // tapping the active chip again deselects. Scoped to the selected category.
@@ -2258,7 +2289,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
         )}
       </header>
 
-      <div ref={tabScrollRef} className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
+      <div ref={tabScrollRef} onScroll={onWonScroll} className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
 
         {tab === "won" && (
           won.length === 0 ? (
@@ -2286,14 +2317,14 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                   </div>
                 )}
                 <div className="space-y-3">
-                  {displayedWon.map((p) => {
+                  {pagedWon.map((p, i) => {
                     const isSel = listSelected.has(p.id);
                     return (
                       <div
                         key={p.id}
                         onClick={lootMode ? () => listToggle(p.id) : undefined}
-                        className="flex gap-3 rounded-2xl bg-white p-2.5 shadow-[0_1px_4px_rgba(0,0,0,0.08)] transition"
-                        style={{ border: lootMode && isSel ? "2.5px solid #FF7A1A" : "1.5px solid rgba(0,0,0,0.08)", cursor: lootMode ? "pointer" : "default" }}
+                        className="animate-fade-slide flex gap-3 rounded-2xl bg-white p-2.5 shadow-[0_1px_4px_rgba(0,0,0,0.08)] transition"
+                        style={{ border: lootMode && isSel ? "2.5px solid #FF7A1A" : "1.5px solid rgba(0,0,0,0.08)", cursor: lootMode ? "pointer" : "default", animationDelay: `${(i % WON_PAGE) * 45}ms` }}
                       >
                         <div className="shrink-0"><PrizeArt rarity={p.rarity} size={104} /></div>
                         <div className="flex min-w-0 flex-1 flex-col">
@@ -2318,7 +2349,14 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                     );
                   })}
                 </div>
-                <div className="-mx-3 mt-3"><SiteFooter t={t} /></div>
+                {wonHasMore ? (
+                  <div className="flex items-center justify-center gap-2 py-6 text-[12px] font-semibold text-[#8a9099]">
+                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#D10005] border-t-transparent" />
+                    {t.loadingMore}
+                  </div>
+                ) : (
+                  <div className="-mx-3 mt-3"><SiteFooter t={t} /></div>
+                )}
               </div>
             </>
           )
