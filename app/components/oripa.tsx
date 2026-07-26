@@ -789,20 +789,11 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
     );
   };
 
-  // Promo banner slots — rendered between the recommended (red) oripas and the
-  // rest of the feed. Placeholder creative for now (e.g. LINE campaign /
-  // beginner guide); swap the inner content for real art later.
+  // Promo banner — rendered between the recommended (red) oripas and the rest
+  // of the feed. Single banner with dots (same carousel as logged-out users);
+  // swap the placeholder creative for real art later.
   const promoBanners = (
-    <div className="flex flex-col gap-3 px-3.5 pt-3">
-      {[t.promo1, t.promo2].map((label, i) => (
-        <div
-          key={`promo-${i}`}
-          className="flex aspect-[124/41] items-center justify-center rounded-2xl bg-[#e7e8ea] px-6 text-center ring-1 ring-black/5"
-        >
-          <span className="text-[14px] font-extrabold uppercase leading-snug tracking-wide text-[#3a3f47]">{label}</span>
-        </div>
-      ))}
-    </div>
+    <div className="px-3.5 pt-3"><PromoCarousel /></div>
   );
 
   const showResults = hasQuery || filterCount > 0;
