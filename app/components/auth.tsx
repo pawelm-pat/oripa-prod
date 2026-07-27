@@ -4,10 +4,6 @@ import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode, type R
 import type { Lang } from "../lib/types";
 import { STR, type Dict } from "../lib/i18n";
 
-function pad(n: number) {
-  return n < 10 ? `0${n}` : `${n}`;
-}
-
 function GreenCheck() {
   return (
     <svg width="18" height="18" viewBox="0 0 20 20" className="shrink-0">
@@ -98,13 +94,10 @@ export function AuthSocialButtons({ signUp, t, onApple, onGoogle, onLine }: { si
   );
 }
 
-type AppleAuthStep = "sheet" | "faceId" | "success";
-
 type GoogleAuthStep = "picker" | "permissions" | "processing" | "details";
 type GoogleSignupDetails = {
   email: string;
   displayName: string;
-  dob: string;
   country: "JP" | "US";
   invite?: string;
   consentAccepted: true;
@@ -113,6 +106,8 @@ type GoogleSignupDetails = {
 export type SocialAuthDetails = Partial<GoogleSignupDetails> & Pick<GoogleSignupDetails, "email" | "displayName"> & {
   lineOfficialAccountFriend?: boolean;
 };
+
+type EmailReviewVariant = "reset" | "setPassword";
 
 const GOOGLE_LOGO = (
   <svg width="22" height="22" viewBox="0 0 24 24">
@@ -129,7 +124,6 @@ export function GoogleAuthSheet({ lang, signUp, onClose, onSuccess }: {
   const t = STR[lang];
   const [step, setStep] = useState<GoogleAuthStep>("picker");
   const [selectedAccount, setSelectedAccount] = useState<0 | 1 | 2 | null>(null);
-  const [dob, setDob] = useState("");
   const [country, setCountry] = useState<AuthCountryCode>("JP");
   const [invite, setInvite] = useState("");
   const [consentAccepted, setConsentAccepted] = useState(false);
@@ -154,9 +148,7 @@ export function GoogleAuthSheet({ lang, signUp, onClose, onSuccess }: {
     return () => clearTimeout(timer);
   }, [step, signUp, onSuccess, selectedLoginEmail, selectedLoginName]);
 
-  const ageValid = isAtLeast18(dob);
-  const detailsValid = ageValid && consentAccepted && selectedAccount !== null;
-  const dobError = dob && !ageValid ? t.authAgeError as string : "";
+  const detailsValid = consentAccepted && selectedAccount !== null;
 
   return (
     <div className="absolute inset-0 z-50 flex flex-col bg-white" style={{ animation: "googleScreenSlideUp 0.32s cubic-bezier(0.32,0.72,0,1) both" }}>
@@ -178,14 +170,14 @@ export function GoogleAuthSheet({ lang, signUp, onClose, onSuccess }: {
               </div>
 
               <div className="mt-4 space-y-4">
-                <InlineDobField lang={lang} value={dob} onChange={setDob} error={dobError} />
+                <SignupReadonlyField label={t.authEmailLabel as string} value={accounts[selectedAccount].email || t.authGoogleOtherAccountName as string} />
                 <SignupCountryField lang={lang} country={country} onChange={setCountry} />
-                <SignupInviteField lang={lang} invite={invite} onChange={setInvite} />
+                <SignupReferralField lang={lang} invite={invite} onChange={setInvite} />
                 <SignupConsentField
                   lang={lang}
                   checked={consentAccepted}
                   onChange={setConsentAccepted}
-                  showError={ageValid && !consentAccepted}
+                  showError={!consentAccepted}
                 />
               </div>
 
@@ -197,7 +189,6 @@ export function GoogleAuthSheet({ lang, signUp, onClose, onSuccess }: {
                   onSuccess({
                     email: accounts[selectedAccount].email,
                     displayName: accounts[selectedAccount].name,
-                    dob,
                     country,
                     invite: invite || undefined,
                     consentAccepted: true,
@@ -368,7 +359,6 @@ export function LineAuthSheet({ lang, signUp, onClose, onSuccess, onLogin, login
   const [addLineFriend, setAddLineFriend] = useState(false);
   const [email, setEmail] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
-  const [dob, setDob] = useState("");
   const [country, setCountry] = useState<AuthCountryCode>("JP");
   const [invite, setInvite] = useState("");
   const [consentAccepted, setConsentAccepted] = useState(false);
@@ -386,10 +376,8 @@ export function LineAuthSheet({ lang, signUp, onClose, onSuccess, onLogin, login
 
   const LINE_GREEN = "#06C755";
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const ageValid = isAtLeast18(dob);
-  const detailsValid = emailValid && ageValid && consentAccepted;
+  const detailsValid = emailValid && consentAccepted;
   const emailError = email.length > 0 && !emailValid ? t.authEmailError as string : "";
-  const dobError = dob && !ageValid ? t.authAgeError as string : "";
 
   const ToggleOn = () => (
     <div className="relative shrink-0" style={{ width: 44, height: 26, opacity: 0.45 }}>
@@ -435,14 +423,13 @@ export function LineAuthSheet({ lang, signUp, onClose, onSuccess, onLogin, login
                   />
                 </div>
               </SignupFormField>
-              <InlineDobField lang={lang} value={dob} onChange={setDob} error={dobError} />
               <SignupCountryField lang={lang} country={country} onChange={setCountry} />
-              <SignupInviteField lang={lang} invite={invite} onChange={setInvite} />
+              <SignupReferralField lang={lang} invite={invite} onChange={setInvite} />
               <SignupConsentField
                 lang={lang}
                 checked={consentAccepted}
                 onChange={setConsentAccepted}
-                showError={ageValid && !consentAccepted}
+                showError={!consentAccepted}
               />
             </div>
 
@@ -515,40 +502,42 @@ export function LineAuthSheet({ lang, signUp, onClose, onSuccess, onLogin, login
             </p>
           </div>
 
-          <div className="px-5 pb-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#e5e8ec] bg-white">
-                <img src="/oripa-logo.png" alt="" className="h-9 w-9 object-contain" />
+          {signUp && (
+            <div className="px-5 pb-5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#e5e8ec] bg-white">
+                  <img src="/oripa-logo.png" alt="" className="h-9 w-9 object-contain" />
+                </div>
+                <p className="text-[14px] font-bold text-[#1d2129]">{t.authLineOfficialAccount as string}</p>
               </div>
-              <p className="text-[14px] font-bold text-[#1d2129]">{t.authLineOfficialAccount as string}</p>
-            </div>
 
-            <div className="mt-3 flex items-center justify-between gap-4">
-              <span className="text-[14px] font-bold text-[#1d2129]">{t.authLineAddFriend as string}</span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={addLineFriend}
-                aria-label={t.authLineAddFriend as string}
-                onClick={() => setAddLineFriend(value => !value)}
-                className="relative h-[26px] w-11 shrink-0 rounded-full transition-colors"
-                style={{ background: addLineFriend ? LINE_GREEN : "#d9dde2" }}
-              >
-                <span className={`absolute top-[3px] h-5 w-5 rounded-full bg-white shadow-sm transition-all ${addLineFriend ? "right-[3px]" : "left-[3px]"}`} />
-              </button>
-            </div>
+              <div className="mt-3 flex items-center justify-between gap-4">
+                <span className="text-[14px] font-bold text-[#1d2129]">{t.authLineAddFriend as string}</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={addLineFriend}
+                  aria-label={t.authLineAddFriend as string}
+                  onClick={() => setAddLineFriend(value => !value)}
+                  className="relative h-[26px] w-11 shrink-0 rounded-full transition-colors"
+                  style={{ background: addLineFriend ? LINE_GREEN : "#d9dde2" }}
+                >
+                  <span className={`absolute top-[3px] h-5 w-5 rounded-full bg-white shadow-sm transition-all ${addLineFriend ? "right-[3px]" : "left-[3px]"}`} />
+                </button>
+              </div>
 
-            <p className="mt-3 max-w-[310px] text-[12px] leading-relaxed text-[#8a9099]">
-              {(addLineFriend ? t.authLineAddFriendOn : t.authLineAddFriendOff) as string}
-            </p>
-          </div>
+              <p className="mt-3 max-w-[310px] text-[12px] leading-relaxed text-[#8a9099]">
+                {(addLineFriend ? t.authLineAddFriendOn : t.authLineAddFriendOff) as string}
+              </p>
+            </div>
+          )}
 
           {/* Permissions section */}
           <div className="px-5 pb-5">
             <p className="mb-3 text-[13px] font-bold text-[#1d2129]">{t.authLineGrantTitle as string}</p>
 
             <div className="space-y-0 divide-y divide-[#f0f0f0]">
-              {([t.authLinePermission1, t.authLinePermission2] as string[]).map((perm, i) => (
+              {([t.authLinePermission1, t.authLinePermission2, t.authLinePermission3] as string[]).map((perm, i) => (
                 <div key={i} className="flex items-center justify-between py-3.5">
                   <span className="text-[14px] text-[#1d2129] pr-4">{perm}</span>
                   <ToggleOn />
@@ -607,7 +596,6 @@ export function LineAuthSheet({ lang, signUp, onClose, onSuccess, onLogin, login
               email: email.trim(),
               displayName: "LINE User",
               lineOfficialAccountFriend: addLineFriend,
-              dob,
               country,
               invite: invite || undefined,
               consentAccepted: true,
@@ -708,29 +696,6 @@ const DEMO_GOOGLE_ACCOUNT_EMAILS = new Set([
 ]);
 export const DEMO_LINE_ACCOUNT_EMAIL = "line.user@gmail.com";
 export const DEMO_SEON_STEP_UP_EMAIL = "seon.stepup@gmail.com";
-
-const AUTH_MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const DOB_MIN_YEAR = 1931;
-const DOB_MAX_YEAR = 2010;
-
-function formatDobDisplay(iso: string): string {
-  if (!iso) return "";
-  const [y, m, d] = iso.split("-").map(Number);
-  if (!y || !m || !d) return "";
-  return `${pad(d)}-${AUTH_MONTH_SHORT[m - 1]}-${y}`;
-}
-
-function isoFromParts(year: number, month: number, day: number): string {
-  return `${year}-${pad(month)}-${pad(day)}`;
-}
-
-function isAtLeast18(iso: string, today = new Date()): boolean {
-  const [year, month, day] = iso.split("-").map(Number);
-  if (!year || !month || !day) return false;
-  const eighteenthBirthday = new Date(year + 18, month - 1, day);
-  const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  return eighteenthBirthday <= currentDate;
-}
 
 function SignupFormField({ label, required, children, hint, error }: {
   label: string; required?: boolean; children: ReactNode; hint?: string; error?: string;
@@ -861,23 +826,57 @@ function SignupCountryField({ lang, country, onChange }: {
   );
 }
 
-function SignupInviteField({ lang, invite, onChange }: {
+function SignupReferralField({ lang, invite, onChange }: {
   lang: Lang; invite: string; onChange: (v: string) => void;
 }) {
   const t = STR[lang];
+  const [expanded, setExpanded] = useState(false);
   return (
-    <SignupFormField label={t.authInviteLabel as string}>
-      <div className="relative">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8a9099]">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 9h16M4 15h16M8 5v14M16 5v14" /></svg>
-        </span>
-        <input
-          value={invite}
-          onChange={e => onChange(e.target.value)}
-          placeholder={t.authInvitePlaceholder as string}
-          className={authFieldCls()}
-          style={{ paddingLeft: "36px", paddingRight: "14px" }}
-        />
+    <div className="rounded-xl border border-[#e5e8ec] bg-white">
+      <button
+        type="button"
+        onClick={() => setExpanded((value) => !value)}
+        className="flex w-full items-center justify-between gap-3 px-3.5 py-3 text-left"
+        aria-expanded={expanded}
+      >
+        <span className="text-[12px] font-semibold text-[#1d2129]">{t.authInviteLabel as string}</span>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#8a9099"
+          strokeWidth="2.4"
+          className={`shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`}
+        >
+          <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {expanded && (
+        <div className="border-t border-[#e5e8ec] px-3.5 pb-3.5 pt-3">
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8a9099]">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 9h16M4 15h16M8 5v14M16 5v14" /></svg>
+            </span>
+            <input
+              value={invite}
+              onChange={e => onChange(e.target.value)}
+              placeholder={t.authInvitePlaceholder as string}
+              className={authFieldCls()}
+              style={{ paddingLeft: "36px", paddingRight: "14px" }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SignupReadonlyField({ label, value }: { label: string; value: string }) {
+  return (
+    <SignupFormField label={label} required>
+      <div className="w-full rounded-xl border border-[#e5e8ec] bg-[#f5f6f8] px-3.5 py-3 text-[14px] text-[#5c626b]">
+        {value}
       </div>
     </SignupFormField>
   );
@@ -905,6 +904,46 @@ function SignupConsentField({ lang, checked, onChange, showError }: {
         </span>
       </label>
       {showError && <p className="mt-1 text-[11px] text-[#D10005]">{t.authConsentRequired as string}</p>}
+    </div>
+  );
+}
+
+function EmailReviewModal({
+  lang,
+  variant,
+  onClose,
+  onUnderstood,
+}: {
+  lang: Lang;
+  variant: EmailReviewVariant;
+  onClose: () => void;
+  onUnderstood: () => void;
+}) {
+  const t = STR[lang];
+  const body = variant === "reset" ? t.authForgotReviewBody : t.authPasswordReviewBody;
+
+  return (
+    <div className="absolute inset-0 z-[90] flex items-center justify-center px-5" style={{ background: "rgba(0,0,0,0.5)" }}>
+      <div className="relative w-full max-w-[340px] rounded-[16px] bg-white px-5 pb-5 pt-6 shadow-[0_10px_36px_rgba(0,0,0,0.2)]">
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center text-[#9ca3af]"
+          aria-label={t.authGoogleCancel as string}
+        >
+          ×
+        </button>
+        <h2 className="pr-8 text-[20px] font-extrabold leading-tight text-[#1d2129]">{t.authForgotReviewTitle as string}</h2>
+        <div className="mt-4 h-px bg-[#ece8e4]" />
+        <p className="mt-5 text-left text-[14px] leading-[1.65] text-[#5c626b]">{body as string}</p>
+        <button
+          type="button"
+          onClick={onUnderstood}
+          className="mt-6 w-full rounded-xl bg-[#D10005] py-3.5 text-[15px] font-bold text-white"
+        >
+          {t.authForgotUnderstood as string}
+        </button>
+      </div>
     </div>
   );
 }
@@ -938,135 +977,6 @@ function AuthOrEmailDivider({ label }: { label: string }) {
       <span className="text-[12px] font-medium text-[#8a9099]">{label}</span>
       <div className="h-px flex-1 bg-[#e5e8ec]" />
     </div>
-  );
-}
-
-function InlineDobField({ lang, value, onChange, error }: {
-  lang: Lang; value: string; onChange: (iso: string) => void; error?: string;
-}) {
-  const t = STR[lang];
-  const [open, setOpen] = useState(false);
-  const wrapRef = useRef<HTMLDivElement>(null);
-
-  const parsed = value ? value.split("-").map(Number) : [];
-  const initYear = parsed[0] || 1995;
-  const initMonth = parsed[1] || 3;
-  const initDay = parsed[2] || 15;
-
-  const [viewYear, setViewYear] = useState(initYear);
-  const [viewMonth, setViewMonth] = useState(initMonth);
-  const [selDay, setSelDay] = useState(parsed[2] || 0);
-
-  useEffect(() => {
-    if (!value) return;
-    const [y, m, d] = value.split("-").map(Number);
-    if (y) setViewYear(y);
-    if (m) setViewMonth(m);
-    if (d) setSelDay(d);
-  }, [value]);
-
-  useEffect(() => {
-    if (!open) return;
-    function onDoc(e: MouseEvent) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [open]);
-
-  const daysInMonth = new Date(viewYear, viewMonth, 0).getDate();
-  const firstDow = new Date(viewYear, viewMonth - 1, 1).getDay();
-  const years = Array.from({ length: DOB_MAX_YEAR - DOB_MIN_YEAR + 1 }, (_, i) => DOB_MAX_YEAR - i);
-
-  function pickDay(day: number) {
-    setSelDay(day);
-    onChange(isoFromParts(viewYear, viewMonth, day));
-    setOpen(false);
-  }
-
-  function shiftMonth(delta: number) {
-    let m = viewMonth + delta;
-    let y = viewYear;
-    while (m < 1) { m += 12; y -= 1; }
-    while (m > 12) { m -= 12; y += 1; }
-    if (y < DOB_MIN_YEAR || y > DOB_MAX_YEAR) return;
-    setViewYear(y);
-    setViewMonth(m);
-    setSelDay(0);
-  }
-
-  const calIcon = (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
-    </svg>
-  );
-
-  return (
-    <SignupFormField label={t.authDobLabel} required hint={t.authDobFormatHint as string} error={error}>
-      <div ref={wrapRef} className="relative">
-        <button
-          type="button"
-          onClick={() => setOpen(v => !v)}
-          className={`relative w-full rounded-xl border bg-white py-3 text-left text-[14px] outline-none ${error ? "border-[#D10005]" : open ? "border-[#14b8a6]" : "border-[#e5e8ec]"}`}
-          style={{ paddingLeft: "36px", paddingRight: "14px" }}
-        >
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8a9099]">{calIcon}</span>
-          <span className={value ? "text-[#1d2129]" : "text-[#bbbec4]"}>
-            {value ? formatDobDisplay(value) : (t.authDobPlaceholder as string)}
-          </span>
-        </button>
-
-        {open && (
-          <div className="absolute left-0 right-0 top-full z-40 mt-1 rounded-xl border border-[#e5e8ec] bg-white p-3 shadow-lg">
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <button type="button" onClick={() => shiftMonth(-1)} className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-[#f0f2f5]">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5c626b" strokeWidth="2.5"><path d="M15 18l-6-6 6-6" /></svg>
-              </button>
-              <div className="flex items-center gap-1.5">
-                <select
-                  value={viewMonth}
-                  onChange={(e) => { setViewMonth(Number(e.target.value)); setSelDay(0); }}
-                  className="rounded-lg border border-[#e5e8ec] bg-white px-2 py-1 text-[13px] font-semibold text-[#1d2129] outline-none"
-                >
-                  {AUTH_MONTH_SHORT.map((m, i) => (
-                    <option key={m} value={i + 1}>{m}</option>
-                  ))}
-                </select>
-                <select
-                  value={viewYear}
-                  onChange={(e) => { setViewYear(Number(e.target.value)); setSelDay(0); }}
-                  className="rounded-lg border border-[#e5e8ec] bg-white px-2 py-1 text-[13px] font-semibold text-[#1d2129] outline-none"
-                >
-                  {years.map(y => <option key={y} value={y}>{y}</option>)}
-                </select>
-              </div>
-              <button type="button" onClick={() => shiftMonth(1)} className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-[#f0f2f5]">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5c626b" strokeWidth="2.5"><path d="M9 18l6-6-6-6" /></svg>
-              </button>
-            </div>
-            <div className="grid grid-cols-7 gap-0.5 text-center text-[11px] font-semibold text-[#8a9099]">
-              {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(d => <span key={d} className="py-1">{d}</span>)}
-            </div>
-            <div className="grid grid-cols-7 gap-0.5">
-              {Array.from({ length: firstDow }).map((_, i) => <span key={`e-${i}`} />)}
-              {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
-                const selected = selDay === day && value === isoFromParts(viewYear, viewMonth, day);
-                return (
-                  <button
-                    key={day}
-                    type="button"
-                    onClick={() => pickDay(day)}
-                    className={`rounded-full py-1.5 text-[13px] font-medium ${selected ? "bg-[#1d2129] text-white" : "text-[#1d2129] hover:bg-[#f0f2f5]"}`}
-                  >
-                    {day}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-    </SignupFormField>
   );
 }
 
@@ -1270,7 +1180,7 @@ export function EmailVerificationModal({ lang, email, onExit, onVerified }: {
 }) {
   const t = STR[lang];
   const [state, setState] = useState<"sent" | "checking" | "expired">("sent");
-  const [expiry, setExpiry] = useState(60);
+  const [, setExpiry] = useState(60);
   const [resendWait, setResendWait] = useState(0);
   const [toast, setToast] = useState("");
 
@@ -1659,7 +1569,6 @@ export function SignupPage({ lang, onLogin, onQuit, onSuccess, initialEmailVerif
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [dob, setDob] = useState("");
   const [invite, setInvite] = useState("");
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
@@ -1675,11 +1584,9 @@ export function SignupPage({ lang, onLogin, onQuit, onSuccess, initialEmailVerif
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const passwordValid = password.length >= 8;
-  const ageValid = isAtLeast18(dob);
-  const dobError = dob && !ageValid ? t.authAgeError as string : "";
   const emailFieldError = email.length > 0 && !emailValid ? t.authEmailError : "";
   const passwordError = password.length > 0 && !passwordValid ? t.authPasswordError : "";
-  const baseFieldsValid = emailValid && passwordValid && ageValid;
+  const baseFieldsValid = emailValid && passwordValid;
   const canSubmit = baseFieldsValid && consentAccepted;
   const requestRegistrationExit = () => setShowRegistrationExit(true);
 
@@ -1687,7 +1594,7 @@ export function SignupPage({ lang, onLogin, onQuit, onSuccess, initialEmailVerif
     try {
       sessionStorage.setItem("authData", JSON.stringify({
         ...(method === "email" ? { email, password } : {}),
-        dob, country, invite: invite || undefined,
+        country, invite: invite || undefined,
         consentAccepted, consentedAt: new Date().toISOString(), ...extra,
       }));
     } catch {}
@@ -1774,9 +1681,8 @@ export function SignupPage({ lang, onLogin, onQuit, onSuccess, initialEmailVerif
               onToggleShow={() => setShowPassword(v => !v)}
             />
 
-            <InlineDobField lang={lang} value={dob} onChange={setDob} error={dobError} />
             <SignupCountryField lang={lang} country={country} onChange={setCountry} />
-            <SignupInviteField lang={lang} invite={invite} onChange={setInvite} />
+            <SignupReferralField lang={lang} invite={invite} onChange={setInvite} />
             <SignupConsentField
               lang={lang}
               checked={consentAccepted}
@@ -1926,7 +1832,6 @@ export function SignupPhonePage({ lang, onLogin, onEmailSignup, onSuccess, initi
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [dob, setDob] = useState("");
   const [invite, setInvite] = useState("");
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [passwordTouched, setPasswordTouched] = useState(false);
@@ -1939,16 +1844,14 @@ export function SignupPhonePage({ lang, onLogin, onEmailSignup, onSuccess, initi
   const phoneValid = phone.length === 10;
   const phoneError = phoneTouched && phone.length > 0 && !phoneValid ? t.authPhoneError as string : "";
   const passwordValid = password.length >= 8;
-  const ageValid = isAtLeast18(dob);
-  const dobError = dob && !ageValid ? t.authAgeError as string : "";
   const passwordError = password.length > 0 && !passwordValid ? t.authPasswordError : "";
-  const baseFieldsValid = phoneValid && passwordValid && ageValid;
+  const baseFieldsValid = phoneValid && passwordValid;
   const canSubmit = baseFieldsValid && consentAccepted;
 
   function saveAuthAndSuccess(method: SignupMethod, extra: Record<string, unknown>) {
     try {
       sessionStorage.setItem("authData", JSON.stringify({
-        phone, dialCountry, password, dob, country, invite: invite || undefined,
+        phone, dialCountry, password, country, invite: invite || undefined,
         phoneVerified: true, consentAccepted, consentedAt: new Date().toISOString(), ...extra,
       }));
     } catch {}
@@ -2007,9 +1910,8 @@ export function SignupPhonePage({ lang, onLogin, onEmailSignup, onSuccess, initi
               onToggleShow={() => setShowPassword(v => !v)}
             />
 
-            <InlineDobField lang={lang} value={dob} onChange={setDob} error={dobError} />
             <SignupCountryField lang={lang} country={country} onChange={setCountry} />
-            <SignupInviteField lang={lang} invite={invite} onChange={setInvite} />
+            <SignupReferralField lang={lang} invite={invite} onChange={setInvite} />
             <SignupConsentField
               lang={lang}
               checked={consentAccepted}
@@ -2227,27 +2129,28 @@ export function ForgotPasswordModal({ lang, initialValue = "", onClose, onBackTo
   const t = STR[lang];
   const [email, setEmail] = useState(initialValue);
   const [touched, setTouched] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [resendWait, setResendWait] = useState(0);
-  const [resent, setResent] = useState(false);
-
+  const [showReview, setShowReview] = useState(false);
+  const [showStandaloneLink, setShowStandaloneLink] = useState(false);
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const canSubmit = emailValid;
   const emailError = touched && email.length > 0 && !emailValid ? t.authEmailError as string : "";
 
-  useEffect(() => {
-    if (!sent || resendWait <= 0) return;
-    const id = setInterval(() => {
-      setResendWait(prev => Math.max(0, prev - 1));
-    }, 1000);
-    return () => clearInterval(id);
-  }, [sent, resendWait]);
-
-  function handleResendEmail() {
-    if (resendWait > 0) return;
-    setResendWait(60);
-    setResent(true);
-    setTimeout(() => setResent(false), 2500);
+  if (showStandaloneLink) {
+    return (
+      <PasswordSetupEmailModal
+        lang={lang}
+        email={email}
+        onClose={() => {
+          setShowStandaloneLink(false);
+          onClose();
+        }}
+        onOpenLink={() => {
+          setShowStandaloneLink(false);
+          onBackToLogin?.();
+          onClose();
+        }}
+      />
+    );
   }
 
   return (
@@ -2255,76 +2158,66 @@ export function ForgotPasswordModal({ lang, initialValue = "", onClose, onBackTo
       <div className="relative w-full max-w-sm rounded-2xl border border-[#e5e8ec] bg-white px-5 py-6">
         <button type="button" onClick={onClose} className="absolute right-4 top-3 text-[22px] text-[#8a9099]" aria-label="Close">×</button>
 
-        {!sent ? (
-          <>
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#fde8e8] text-[#D10005]">
-              <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="5" y="10" width="14" height="11" rx="2" /><path d="M8 10V7a4 4 0 018 0v3M12 14v3" />
-              </svg>
-            </div>
-            <h2 className="mt-4 text-center text-[20px] font-extrabold text-[#1d2129]">{t.authForgotTitle as string}</h2>
-            <p className="mt-2 text-center text-[12px] leading-relaxed text-[#5c626b]">{t.authForgotBody as string}</p>
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#fde8e8] text-[#D10005]">
+          <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="5" y="10" width="14" height="11" rx="2" /><path d="M8 10V7a4 4 0 018 0v3M12 14v3" />
+          </svg>
+        </div>
+        <h2 className="mt-4 text-center text-[20px] font-extrabold text-[#1d2129]">{t.authForgotTitle as string}</h2>
+        <p className="mt-2 text-center text-[12px] leading-relaxed text-[#5c626b]">{t.authForgotBody as string}</p>
 
-            <p className="mt-4 mb-2 text-[12px] text-[#5c626b]">
-              {t.authForgotEmailHelp as string}
-            </p>
+        <p className="mb-2 mt-4 text-[12px] text-[#5c626b]">
+          {t.authForgotEmailHelp as string}
+        </p>
 
-            <SignupFormField label={t.authEmailLabel as string} required error={emailError}>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8a9099]">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16v16H4z" /><path d="M4 6l8 7 8-7" /></svg>
-                </span>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  onBlur={() => setTouched(true)}
-                  placeholder={t.authEmailPlaceholder as string}
-                  className={authFieldCls(!!emailError)}
-                  style={{ paddingLeft: "38px", paddingRight: "14px" }}
-                />
-              </div>
-            </SignupFormField>
-
-            <button
-              type="button"
-              onClick={() => {
-                if (!canSubmit) return;
-                if (onResetRequested) onResetRequested(email);
-                else setSent(true);
-              }}
-              disabled={!canSubmit}
-              className="mt-5 w-full rounded-xl py-3.5 text-[14px] font-bold text-white"
-              style={{ background: "#D10005", opacity: canSubmit ? 1 : 0.45 }}
-            >
-              {t.authResetPassword as string}
-            </button>
-          </>
-        ) : (
-          <div className="flex flex-col items-center py-3">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#e8f7ee] text-[30px] font-bold text-[#168a49]">✓</div>
-            <h2 className="mt-4 text-center text-[19px] font-extrabold text-[#1d2129]">
-              {t.authResetSentEmail as string}
-            </h2>
-            <p className="mt-2 break-all text-center text-[13px] font-semibold text-[#5c626b]">{email}</p>
-            <button type="button" onClick={onBackToLogin ?? onClose} className="mt-6 w-full rounded-xl py-3.5 text-[14px] font-bold text-white" style={{ background: "#D10005" }}>
-              {t.authBackToLogin as string}
-            </button>
-            <p className="mt-4 text-center text-[12px] text-[#8a9099]">
-              <span>{t.authResetResendPrompt as string} </span>
-              <button
-                type="button"
-                onClick={handleResendEmail}
-                disabled={resendWait > 0}
-                className="font-bold text-[#D10005] underline disabled:opacity-50 disabled:no-underline"
-              >
-                {resendWait > 0 ? t.authEmailResendWait(resendWait) : t.authResetResendAction as string}
-              </button>
-            </p>
-            {resent && <p className="mt-2 text-center text-[11px] font-semibold text-[#168a49]">{t.authEmailResent as string}</p>}
+        <SignupFormField label={t.authEmailLabel as string} required error={emailError}>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8a9099]">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16v16H4z" /><path d="M4 6l8 7 8-7" /></svg>
+            </span>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              onBlur={() => setTouched(true)}
+              placeholder={t.authEmailPlaceholder as string}
+              className={authFieldCls(!!emailError)}
+              style={{ paddingLeft: "38px", paddingRight: "14px" }}
+            />
           </div>
+        </SignupFormField>
+
+        <button
+          type="button"
+          onClick={() => {
+            if (!canSubmit) return;
+            if (onResetRequested) onResetRequested(email);
+            else setShowReview(true);
+          }}
+          disabled={!canSubmit}
+          className="mt-5 w-full rounded-xl py-3.5 text-[14px] font-bold text-white"
+          style={{ background: "#D10005", opacity: canSubmit ? 1 : 0.45 }}
+        >
+          {t.authResetPassword as string}
+        </button>
+
+        {onBackToLogin && (
+          <button type="button" onClick={onBackToLogin} className="mt-3 w-full text-center text-[12px] font-bold text-[#5c626b] underline">
+            {t.authBackToLogin as string}
+          </button>
         )}
       </div>
+      {showReview && (
+        <EmailReviewModal
+          lang={lang}
+          variant="reset"
+          onClose={() => setShowReview(false)}
+          onUnderstood={() => {
+            setShowReview(false);
+            setShowStandaloneLink(true);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -2456,10 +2349,12 @@ export function LoginPage({ lang, onSignUp, onSuccess }: { lang: Lang; onSignUp:
   const [showGoogleAuth, setShowGoogleAuth] = useState(false);
   const [showLineAuth, setShowLineAuth] = useState(false);
   const [socialLinkedEmail, setSocialLinkedEmail] = useState<string | null>(null);
-  const [passwordSetupEmail, setPasswordSetupEmail] = useState<string | null>(null);
+  const [emailReviewState, setEmailReviewState] = useState<{ variant: EmailReviewVariant; email: string } | null>(null);
+  const [passwordSetupEmail, setPasswordSetupEmail] = useState<{ variant: EmailReviewVariant; email: string } | null>(null);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showPasswordUpdated, setShowPasswordUpdated] = useState(false);
   const [forgotMethod, setForgotMethod] = useState<"email" | "phone" | null>(null);
+  const [forgotEmailDraft, setForgotEmailDraft] = useState("");
 
   // Phone section state
   const [countryCode, setCountryCode] = useState<"JP" | "US">("JP");
@@ -2555,7 +2450,10 @@ export function LoginPage({ lang, onSignUp, onSuccess }: { lang: Lang; onSignUp:
                 />
                 <button
                   type="button"
-                  onClick={() => setForgotMethod("email")}
+                  onClick={() => {
+                    setForgotEmailDraft(email);
+                    setForgotMethod("email");
+                  }}
                   className="-mt-1 block w-full text-right text-[12px] font-bold text-[#D10005] underline"
                 >
                   {t.authForgotPassword as string}
@@ -2570,7 +2468,7 @@ export function LoginPage({ lang, onSignUp, onSuccess }: { lang: Lang; onSignUp:
                       return;
                     }
                     if (normalizedEmail === DEMO_LINE_ACCOUNT_EMAIL) {
-                      setPasswordSetupEmail(normalizedEmail);
+                      setEmailReviewState({ variant: "setPassword", email: normalizedEmail });
                       return;
                     }
                     try { sessionStorage.setItem("authData", JSON.stringify({ email })); } catch {}
@@ -2670,11 +2568,12 @@ export function LoginPage({ lang, onSignUp, onSuccess }: { lang: Lang; onSignUp:
       {forgotMethod && (
         <ForgotPasswordModal
           lang={lang}
+          initialValue={forgotEmailDraft}
           onClose={() => setForgotMethod(null)}
-          onResetRequested={() => {
-            try { sessionStorage.removeItem("authData"); } catch {}
+          onResetRequested={(resetEmail) => {
+            setForgotEmailDraft(resetEmail);
             setForgotMethod(null);
-            setShowChangePassword(true);
+            setEmailReviewState({ variant: "reset", email: resetEmail });
           }}
         />
       )}
@@ -2690,7 +2589,28 @@ export function LoginPage({ lang, onSignUp, onSuccess }: { lang: Lang; onSignUp:
           onConnectAccount={() => {
             const emailForSetup = socialLinkedEmail;
             setSocialLinkedEmail(null);
-            setPasswordSetupEmail(emailForSetup);
+            if (emailForSetup) setEmailReviewState({ variant: "setPassword", email: emailForSetup });
+          }}
+        />
+      )}
+
+      {emailReviewState && (
+        <EmailReviewModal
+          lang={lang}
+          variant={emailReviewState.variant}
+          onClose={() => {
+            const reviewState = emailReviewState;
+            setEmailReviewState(null);
+            if (reviewState.variant === "reset") {
+              setForgotEmailDraft(reviewState.email);
+              setForgotMethod("email");
+            }
+          }}
+          onUnderstood={() => {
+            const reviewState = emailReviewState;
+            if (!reviewState) return;
+            setEmailReviewState(null);
+            setPasswordSetupEmail(reviewState);
           }}
         />
       )}
@@ -2698,7 +2618,7 @@ export function LoginPage({ lang, onSignUp, onSuccess }: { lang: Lang; onSignUp:
       {passwordSetupEmail && (
         <PasswordSetupEmailModal
           lang={lang}
-          email={passwordSetupEmail}
+          email={passwordSetupEmail.email}
           onClose={() => setPasswordSetupEmail(null)}
           onOpenLink={() => {
             try { sessionStorage.removeItem("authData"); } catch {}
