@@ -2040,7 +2040,7 @@ function USStateSelect({ value, onChange, label }: { value: string; onChange: (v
 /* ── Prize History ───────────────────────────────────────────────────── */
 type Toast = { id: number; text: string };
 
-function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddressesChange, onBack, onHome, empty = false, onGoGacha, lootMode = false, onRequestKyc }: { lang: Lang; coins: number; setCoins: Dispatch<SetStateAction<number>>; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; onBack: () => void; onHome: () => void; empty?: boolean; onGoGacha?: () => void; lootMode?: boolean; onRequestKyc?: () => boolean }) {
+function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddressesChange, onBack, onHome, empty = false, onGoGacha, lootMode = false, onRequestKyc, onShippingKycBlocked, resumeShipping = false, pendingShipIds = null, onResumeShippingConsumed }: { lang: Lang; coins: number; setCoins: Dispatch<SetStateAction<number>>; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; onBack: () => void; onHome: () => void; empty?: boolean; onGoGacha?: () => void; lootMode?: boolean; onRequestKyc?: () => boolean; onShippingKycBlocked?: (ids: string[]) => void; resumeShipping?: boolean; pendingShipIds?: string[] | null; onResumeShippingConsumed?: () => void }) {
   // "My Loot" reuses this screen but shows only the most valuable cards
   // (top UR tier) and hides the Won/Waiting/Shipped tabs.
   const screenTitle = lootMode ? STR[lang].mmItems : STR[lang].prizeHistory;
@@ -2063,6 +2063,19 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
   const [filterOpen, setFilterOpen] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastSeq = useRef(0);
+
+  // After shipping KYC completes, restore any pending selection and reopen address entry.
+  useEffect(() => {
+    if (!resumeShipping) return;
+    if (pendingShipIds && pendingShipIds.length > 0) {
+      setListSelected(new Set(pendingShipIds));
+      setTab("won");
+      setListShipOpen(true);
+    }
+    onResumeShippingConsumed?.();
+    // Only react to the resume flag flipping on after KYC completion.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumeShipping]);
 
   // Scroll the tab content back to the top whenever the active tab changes.
   const tabScrollRef = useRef<HTMLDivElement>(null);
@@ -2383,7 +2396,10 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                   <button
                     onClick={() => {
                       if (!listCanShip) { pushToast(t.toastShort(listShortfall)); return; }
-                      if (onRequestKyc && !onRequestKyc()) return;
+                      if (onRequestKyc && !onRequestKyc()) {
+                        onShippingKycBlocked?.(Array.from(listSelected));
+                        return;
+                      }
                       setListShipOpen(true);
                     }}
                     className="w-full rounded-xl border-2 py-2 text-[12.5px] font-bold leading-tight transition"
@@ -4038,12 +4054,21 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   };
   const exitKycToLobby = () => {
     setKyc((current) => ({ ...current, activeScreen: null }));
+    setResumeShippingAfterKyc(false);
+    setPendingShipIds(null);
     setScreen("oripa");
   };
+  const [resumeShippingAfterKyc, setResumeShippingAfterKyc] = useState(false);
+  const [pendingShipIds, setPendingShipIds] = useState<string[] | null>(null);
   const returnFromKyc = (context: KycEntryContext, completed: boolean) => {
     setKyc((current) => ({ ...current, activeScreen: null }));
     if (context === "purchase") setScreen("store");
-    else if (context === "prizeHistory") setScreen("prizeHistory");
+    else if (context === "prizeHistory") {
+      // Shipping KYC is entered from My Loot; resume there so Request Shipping
+      // can continue after verification without mutating the package early.
+      setScreen("myLoot");
+      if (completed) setResumeShippingAfterKyc(true);
+    }
     else setScreen(completed ? "oripa" : "profile");
   };
   const [notifOnly, setNotifOnly] = useState<"you" | "notice" | undefined>(undefined);
@@ -4196,6 +4221,14 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             empty={false}
             onGoGacha={goHome}
             lootMode
+            onRequestKyc={() => requestKyc("prizeHistory")}
+            onShippingKycBlocked={(ids) => setPendingShipIds(ids)}
+            resumeShipping={resumeShippingAfterKyc}
+            pendingShipIds={pendingShipIds}
+            onResumeShippingConsumed={() => {
+              setResumeShippingAfterKyc(false);
+              setPendingShipIds(null);
+            }}
           />
         )}
         {screen === "purchaseHistory" && (

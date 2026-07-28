@@ -170,7 +170,6 @@ export function GoogleAuthSheet({ lang, signUp, onClose, onSuccess }: {
               </div>
 
               <div className="mt-4 space-y-4">
-                <SignupReadonlyField label={t.authEmailLabel as string} value={accounts[selectedAccount].email || t.authGoogleOtherAccountName as string} />
                 <SignupCountryField lang={lang} country={country} onChange={setCountry} />
                 <SignupReferralField lang={lang} invite={invite} onChange={setInvite} />
                 <SignupConsentField
@@ -872,16 +871,6 @@ function SignupReferralField({ lang, invite, onChange }: {
   );
 }
 
-function SignupReadonlyField({ label, value }: { label: string; value: string }) {
-  return (
-    <SignupFormField label={label} required>
-      <div className="w-full rounded-xl border border-[#e5e8ec] bg-[#f5f6f8] px-3.5 py-3 text-[14px] text-[#5c626b]">
-        {value}
-      </div>
-    </SignupFormField>
-  );
-}
-
 function SignupConsentField({ lang, checked, onChange, showError }: {
   lang: Lang; checked: boolean; onChange: (checked: boolean) => void; showError: boolean;
 }) {
@@ -1281,7 +1270,6 @@ export function SeonPhoneStepUpModal({ lang, dialCountry, phone, onDialCountryCh
 }) {
   const t = STR[lang];
   const [touched, setTouched] = useState(false);
-  const [smsConsent, setSmsConsent] = useState(false);
   const phoneValid = phone.length === 10;
   const phoneAlreadyUsed = phone === DEMO_EXISTING_PHONE;
   const phoneError = phoneAlreadyUsed
@@ -1289,7 +1277,7 @@ export function SeonPhoneStepUpModal({ lang, dialCountry, phone, onDialCountryCh
     : touched && phone.length > 0 && !phoneValid
       ? t.authPhoneError as string
       : "";
-  const canContinue = phoneValid && !phoneAlreadyUsed && smsConsent;
+  const canContinue = phoneValid && !phoneAlreadyUsed;
 
   return (
     <div className="absolute inset-0 z-50 flex flex-col bg-[#f5f6f8]">
@@ -1321,16 +1309,6 @@ export function SeonPhoneStepUpModal({ lang, dialCountry, phone, onDialCountryCh
             />
           </div>
 
-          <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-[#e5e8ec] bg-[#f7f8fa] px-3 py-3">
-            <input
-              type="checkbox"
-              checked={smsConsent}
-              onChange={event => setSmsConsent(event.target.checked)}
-              className="mt-0.5 h-4 w-4 accent-[#D10005]"
-            />
-            <span className="text-[12px] leading-relaxed text-[#1d2129]">{t.authSeonPhoneConsent as string}</span>
-          </label>
-
           <button
             type="button"
             disabled={!canContinue}
@@ -1341,8 +1319,7 @@ export function SeonPhoneStepUpModal({ lang, dialCountry, phone, onDialCountryCh
             {t.authSeonPhoneContinue as string}
           </button>
 
-          <p className="mt-4 text-center text-[10px] leading-relaxed text-[#8a9099]">{t.authSeonPhoneLegal as string}</p>
-          <p className="mt-2 text-center text-[10px] font-semibold text-[#D10005]">{t.authSeonPhoneDemo as string}</p>
+          <p className="mt-4 text-center text-[10px] font-semibold text-[#D10005]">{t.authSeonPhoneDemo as string}</p>
         </div>
       </div>
     </div>
@@ -1472,7 +1449,7 @@ export function SeonPhoneOtpPage({ lang, phone, onBack, onExit, onSuccess }: {
           >
             {t.authOtpSubmitCode as string}
           </button>
-          <p className="mt-4 text-center text-[10px] leading-relaxed text-[#8a9099]">{t.authSeonPhoneLegal as string}</p>
+          <p className="mt-4 text-center text-[10px] font-semibold text-[#D10005]">{t.authSeonPhoneDemo as string}</p>
         </div>
       </div>
     </div>
@@ -1576,6 +1553,8 @@ export function SignupPage({ lang, onLogin, onQuit, onSuccess, initialEmailVerif
   const [showEmailVerify, setShowEmailVerify] = useState(initialEmailVerify);
   const [showExistingAccount, setShowExistingAccount] = useState(false);
   const [showExistingReset, setShowExistingReset] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showPasswordUpdated, setShowPasswordUpdated] = useState(false);
   const [showSeonPhone, setShowSeonPhone] = useState(false);
   const [showRegistrationExit, setShowRegistrationExit] = useState(false);
   const [seonDialCountry, setSeonDialCountry] = useState<AuthCountryCode>("JP");
@@ -1631,6 +1610,27 @@ export function SignupPage({ lang, onLogin, onQuit, onSuccess, initialEmailVerif
             onLogin={onLogin}
           />
         )}
+      </div>
+    );
+  }
+
+  if (showChangePassword) {
+    return (
+      <ChangePasswordPage
+        lang={lang}
+        onSuccess={() => {
+          setShowChangePassword(false);
+          setShowPasswordUpdated(true);
+        }}
+      />
+    );
+  }
+
+  if (showPasswordUpdated) {
+    return (
+      <div className="relative h-full">
+        <AuthHeader lang={lang} onSignUp={() => {}} onLogin={onLogin} />
+        <PasswordUpdatedModal lang={lang} onLogin={onLogin} />
       </div>
     );
   }
@@ -1764,6 +1764,10 @@ export function SignupPage({ lang, onLogin, onQuit, onSuccess, initialEmailVerif
           initialValue={email}
           onClose={() => setShowExistingReset(false)}
           onBackToLogin={onLogin}
+          onLinkOpened={() => {
+            setShowExistingReset(false);
+            setShowChangePassword(true);
+          }}
         />
       )}
 
@@ -2119,39 +2123,21 @@ export function ChangePasswordPage({ lang, onSuccess }: { lang: Lang; onSuccess:
   );
 }
 
-export function ForgotPasswordModal({ lang, initialValue = "", onClose, onBackToLogin, onResetRequested }: {
+export function ForgotPasswordModal({ lang, initialValue = "", onClose, onBackToLogin, onResetRequested, onLinkOpened }: {
   lang: Lang;
   initialValue?: string;
   onClose: () => void;
   onBackToLogin?: () => void;
   onResetRequested?: (email: string) => void;
+  onLinkOpened?: (email: string) => void;
 }) {
   const t = STR[lang];
   const [email, setEmail] = useState(initialValue);
   const [touched, setTouched] = useState(false);
   const [showReview, setShowReview] = useState(false);
-  const [showStandaloneLink, setShowStandaloneLink] = useState(false);
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const canSubmit = emailValid;
   const emailError = touched && email.length > 0 && !emailValid ? t.authEmailError as string : "";
-
-  if (showStandaloneLink) {
-    return (
-      <PasswordSetupEmailModal
-        lang={lang}
-        email={email}
-        onClose={() => {
-          setShowStandaloneLink(false);
-          onClose();
-        }}
-        onOpenLink={() => {
-          setShowStandaloneLink(false);
-          onBackToLogin?.();
-          onClose();
-        }}
-      />
-    );
-  }
 
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center px-5" style={{ background: "rgba(0,0,0,0.5)" }}>
@@ -2213,8 +2199,10 @@ export function ForgotPasswordModal({ lang, initialValue = "", onClose, onBackTo
           variant="reset"
           onClose={() => setShowReview(false)}
           onUnderstood={() => {
+            try { sessionStorage.removeItem("authData"); } catch {}
             setShowReview(false);
-            setShowStandaloneLink(true);
+            if (onLinkOpened) onLinkOpened(email);
+            else onClose();
           }}
         />
       )}
@@ -2264,62 +2252,6 @@ export function SocialLinkedAccountModal({ lang, onClose, onLoginWithGoogle, onC
   );
 }
 
-export function PasswordSetupEmailModal({ lang, email, onClose, onOpenLink }: {
-  lang: Lang;
-  email: string;
-  onClose: () => void;
-  onOpenLink: () => void;
-}) {
-  const t = STR[lang];
-  const [resent, setResent] = useState(false);
-  return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 px-5">
-      <div className="relative w-full max-w-sm rounded-2xl border border-[#e5e8ec] bg-white px-5 py-6 text-center text-[#1d2129] shadow-2xl">
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={t.authGoogleCancel as string}
-          className="absolute right-4 top-3 text-[28px] font-light text-[#8a9099]"
-        >
-          ×
-        </button>
-
-        <button
-          type="button"
-          onClick={onOpenLink}
-          aria-label={t.authPasswordEmailOpen as string}
-          className="relative mx-auto flex h-20 w-24 items-center justify-center"
-        >
-          <div className="absolute h-16 w-16 rotate-12 rounded-2xl bg-[#f7c7d1]" />
-          <div className="absolute h-16 w-16 -rotate-12 rounded-2xl bg-[#D10005]" />
-          <div className="relative flex h-12 w-[70px] items-center justify-center rounded-md bg-white shadow-md">
-            <svg width="44" height="30" viewBox="0 0 44 30" fill="none">
-              <rect x="1" y="1" width="42" height="28" rx="3" fill="white" stroke="#d7dbe0" />
-              <path d="M3 4l19 13L41 4" stroke="#8a9099" strokeWidth="2" />
-            </svg>
-          </div>
-          <span className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#D10005] text-[12px] font-bold text-white">1</span>
-        </button>
-
-        <h2 className="mt-3 pr-6 text-[22px] font-extrabold uppercase">{t.authPasswordEmailTitle as string}</h2>
-        <p className="mt-3 text-[13px] leading-relaxed text-[#5c626b]">{t.authPasswordEmailBody(email)}</p>
-
-        <p className="mt-5 text-[12px] font-bold text-[#5c626b]">{t.authPasswordEmailHelp as string}</p>
-        <div className="mt-1 text-[11px] leading-relaxed text-[#8a9099]">
-          {(t.authPasswordEmailBullets as string[]).map(item => <p key={item}>• {item}</p>)}
-        </div>
-
-        <p className="mt-5 text-[12px] text-[#8a9099]">
-          <span>{t.authPasswordEmailStill as string} </span>
-          <button type="button" onClick={() => setResent(true)} className="font-bold text-[#D10005] underline">
-            {resent ? t.authEmailResent as string : t.authPasswordEmailResend as string}
-          </button>
-        </p>
-      </div>
-    </div>
-  );
-}
-
 export function PasswordUpdatedModal({ lang, onLogin }: { lang: Lang; onLogin: () => void }) {
   const t = STR[lang];
   return (
@@ -2350,7 +2282,6 @@ export function LoginPage({ lang, onSignUp, onSuccess }: { lang: Lang; onSignUp:
   const [showLineAuth, setShowLineAuth] = useState(false);
   const [socialLinkedEmail, setSocialLinkedEmail] = useState<string | null>(null);
   const [emailReviewState, setEmailReviewState] = useState<{ variant: EmailReviewVariant; email: string } | null>(null);
-  const [passwordSetupEmail, setPasswordSetupEmail] = useState<{ variant: EmailReviewVariant; email: string } | null>(null);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showPasswordUpdated, setShowPasswordUpdated] = useState(false);
   const [forgotMethod, setForgotMethod] = useState<"email" | "phone" | null>(null);
@@ -2607,22 +2538,12 @@ export function LoginPage({ lang, onSignUp, onSuccess }: { lang: Lang; onSignUp:
             }
           }}
           onUnderstood={() => {
-            const reviewState = emailReviewState;
-            if (!reviewState) return;
-            setEmailReviewState(null);
-            setPasswordSetupEmail(reviewState);
-          }}
-        />
-      )}
-
-      {passwordSetupEmail && (
-        <PasswordSetupEmailModal
-          lang={lang}
-          email={passwordSetupEmail.email}
-          onClose={() => setPasswordSetupEmail(null)}
-          onOpenLink={() => {
+            if (!emailReviewState) return;
             try { sessionStorage.removeItem("authData"); } catch {}
-            setPasswordSetupEmail(null);
+            setEmailReviewState(null);
+            // Prototype: treat Understood as having followed the email link —
+            // route straight to Change Your Password while remaining logged out.
+            // Do not open the obsolete illustrated "Open your email" modal.
             setShowChangePassword(true);
           }}
         />

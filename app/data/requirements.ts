@@ -195,7 +195,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
         items: [
           { text: "LINE (Preferred) / Google method tiles", sub: [
             "LINE opens the LINE permissions sheet (official-account friend toggle + grant permissions) → processing → Complete signup (email, DOB, country, invite, consent) → email verification.",
-            "Google opens account picker → permissions → processing → Complete signup (DOB, country, invite, consent).",
+            "Google opens account picker → permissions → processing → Complete signup (country, invite, consent).",
           ] },
         ],
         tbc: ["Real OAuth is mocked with hardcoded accounts.", "Apple sheet exists in older code but is not on the primary CTA row."],
@@ -238,12 +238,11 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
       {
         title: "SEON phone step-up (demo email seon.stepup@gmail.com)",
         items: [
-          "Phone capture with dial country, SMS consent, then 6-digit OTP (must be 123456; 30s expiry; max 5 attempts).",
+          "Phone capture with dial country, then 6-digit OTP (must be 123456; 30s expiry; max 5 attempts).",
           "Success saves auth with seonStepUp + phoneVerified and lands in the lobby.",
         ],
         validation: [
           "Phone: exactly 10 digits; demo number 9012345678 is rejected as already used.",
-          "SMS consent required to continue.",
           "OTP: only 123456 accepted.",
         ],
       },
