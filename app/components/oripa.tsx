@@ -69,21 +69,6 @@ let myPageScrollTop = 0;
 // Lazy "Load more" pagination. Reveals `pageSize` rows at a time; newly
 // revealed rows animate in one-by-one (staggered) via `animate-fade-slide`.
 const LOAD_MORE_PAGE = 6;
-function usePagedList<T>(all: T[], pageSize = LOAD_MORE_PAGE) {
-  const [visible, setVisible] = useState(pageSize);
-  const [loading, setLoading] = useState(false);
-  const hasMore = visible < all.length;
-  const loadMore = () => {
-    if (loading || !hasMore) return;
-    setLoading(true);
-    // Small delay to emulate fetching, keeping the reveal smooth.
-    setTimeout(() => {
-      setVisible((v) => Math.min(v + pageSize, all.length));
-      setLoading(false);
-    }, 400);
-  };
-  return { items: all.slice(0, visible), hasMore, loading, loadMore, pageSize };
-}
 
 function LoadMoreButton({ t, loading, onClick }: { t: Dict; loading: boolean; onClick: () => void }) {
   return (
@@ -589,38 +574,6 @@ function lobbyItemsForCat(cat: string): OripaItem[] {
   return out;
 }
 
-// Compact card used in the search / category grid.
-function LobbyMiniCard({ item, t, lang, fullWidth, onView }: { item: OripaItem; t: Dict; lang: Lang; fullWidth?: boolean; onView?: () => void }) {
-  const pct = Math.round((item.remaining / item.total) * 100);
-  return (
-    <button
-      onClick={onView}
-      className={`flex flex-col overflow-hidden rounded-xl bg-white text-left shadow-[0_2px_8px_rgba(0,0,0,0.1)] active:scale-[0.98] ${fullWidth ? "w-full" : "w-[152px] shrink-0"}`}
-    >
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#ededf0]">
-        {item.image ? (
-          <img src={item.image} alt="" className="h-full w-full object-cover" />
-        ) : (
-          <span className="flex h-full w-full items-center justify-center">
-            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#c2c6cc" strokeWidth="1.6"><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="8.5" cy="10" r="1.6" /><path d="M21 16l-5-5-7 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          </span>
-        )}
-        <span className="absolute left-1.5 top-1.5 rounded-full bg-[#D10005] px-2 py-[2px] text-[9.5px] font-extrabold uppercase tracking-wide text-white">{item.gem ? t.tagSsr : t.tagPopular}</span>
-      </div>
-      <div className="flex flex-1 flex-col gap-1.5 p-2.5">
-        <h4 className="line-clamp-2 text-[12px] font-extrabold leading-tight text-[#1d2129]">{locTitle(item, lang)}</h4>
-        <span className="mt-auto flex items-center gap-1">
-          <CoinIcon size={15} />
-          <span className="text-[13px] font-extrabold text-[#1d2129]">1,000</span>
-          <span className="text-[10px] font-bold text-[#8a9099]">{t.perDraw}</span>
-        </span>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/[0.08]"><span className="block h-full rounded-full bg-[#D10005]" style={{ width: `${pct}%` }} /></div>
-        <span className="text-[10px] font-bold text-[#D10005]">{t.remainingTimeLabel} {t.minUnit(item.endsIn)}</span>
-      </div>
-    </button>
-  );
-}
-
 // V2 lobby feed. `onView` (tap on any card) is inert in the logged-in lobby
 // and routes to Sign-up on the logged-out landing.
 function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onReset, onClearFilters, onView, onOpenDraw }: { t: Dict; lang: Lang; filters: Record<string, boolean>; query: string; onToggle: (k: string) => void; onQueryChange: (v: string) => void; onReset: () => void; onClearFilters: () => void; onView?: () => void; onOpenDraw?: (item: OripaItem) => void }) {
@@ -770,9 +723,6 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
   // pack; the logged-out lobby falls back to `onView` (sign-up bridge).
   const canOpen = !!(onOpenDraw || onView);
   const openCard = (it: OripaItem) => (onOpenDraw ? onOpenDraw(it) : onView?.());
-  const mini = (it: OripaItem, fw?: boolean) => (
-    <LobbyMiniCard key={it.id} item={it} t={t} lang={lang} fullWidth={fw} onView={canOpen ? () => openCard(it) : undefined} />
-  );
   const full = (it: OripaItem) => (
     <OripaCard key={it.id} item={it} t={t} onView={canOpen ? () => openCard(it) : undefined} onDraw={canOpen ? () => openCard(it) : undefined} />
   );
@@ -802,7 +752,7 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
     const items = transform(ALL_ORIPA);
     body = items.length === 0
       ? <div className="px-6 py-16 text-center text-[13px] font-semibold text-[#8a9099]">{L.empty}</div>
-      : <div className="grid grid-cols-2 gap-3 px-3.5 py-3">{items.map((it) => mini(it, true))}</div>;
+      : <div className="flex flex-col gap-3 px-3.5 py-3">{items.map(full)}</div>;
   } else if (cat === "all") {
     body = (
       <div>
@@ -3804,7 +3754,7 @@ const COIN_HISTORY_TEMPLATE: Omit<CoinTxn, "id" | "date">[] = [
   { kind: "granted", amount: 5000, sign: "+", currency: "point", paymentId: "35812349", expires: "2027/02/03 at 22:14" },
   { kind: "expired", amount: 500, sign: "-", currency: "point" },
 ];
-const COIN_HISTORY: CoinTxn[] = Array.from({ length: 18 }, (_, i) => ({
+const COIN_HISTORY: CoinTxn[] = Array.from({ length: 24 }, (_, i) => ({
   id: `c${i + 1}`,
   date: `Feb ${((23 - i + 27) % 28) + 1}, 2026, 22:14`,
   ...COIN_HISTORY_TEMPLATE[i % COIN_HISTORY_TEMPLATE.length],
@@ -3812,7 +3762,24 @@ const COIN_HISTORY: CoinTxn[] = Array.from({ length: 18 }, (_, i) => ({
 
 function CoinHistoryPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: Lang; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void }) {
   const t = STR[lang];
-  const { items, hasMore, loading, loadMore, pageSize } = usePagedList(COIN_HISTORY);
+  // Scroll-driven lazy loading (same as Winning History / My Loot): reveal a
+  // batch at a time as the user nears the bottom — no "Load more" button.
+  const PAGE = 6;
+  const [visible, setVisible] = useState(PAGE);
+  const busy = useRef(false);
+  const items = COIN_HISTORY.slice(0, visible);
+  const hasMore = visible < COIN_HISTORY.length;
+  function onCoinScroll(e: React.UIEvent<HTMLDivElement>) {
+    const el = e.currentTarget;
+    if (busy.current || visible >= COIN_HISTORY.length) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 160) {
+      busy.current = true;
+      setTimeout(() => {
+        setVisible((v) => Math.min(v + PAGE, COIN_HISTORY.length));
+        busy.current = false;
+      }, 450);
+    }
+  }
   const clock = (
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></svg>
   );
@@ -3836,7 +3803,7 @@ function CoinHistoryPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
         <h1 className="text-[16px] font-bold text-[#1d2129]">{t.coinHistoryTitle}</h1>
       </div>
 
-      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-3">
+      <div onScroll={onCoinScroll} className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-3">
         {/* Balance summary */}
         <div className="rounded-2xl bg-white p-3 shadow-[0_1px_3px_rgba(0,0,0,0.07)]">
           <div className="flex items-stretch">
@@ -3872,7 +3839,7 @@ function CoinHistoryPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
             const amountColor = !isCoin ? "#2f6fed" : positive ? "#E8890C" : "#1d2129";
             const subLabel = sub(tx.kind);
             return (
-              <div key={tx.id} className="animate-fade-slide rounded-xl bg-white px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.07)]" style={{ animationDelay: `${(i % pageSize) * 70}ms` }}>
+              <div key={tx.id} className="animate-fade-slide rounded-xl bg-white px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.07)]" style={{ animationDelay: `${(i % PAGE) * 70}ms` }}>
                 <div className="flex items-center gap-1.5 text-[13px] font-medium text-[#8a9099]">
                   {clock}
                   {tx.date}
@@ -3894,10 +3861,16 @@ function CoinHistoryPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
               </div>
             );
           })}
-          {hasMore && <LoadMoreButton t={t} loading={loading} onClick={loadMore} />}
         </div>
 
-        <SiteFooter t={t} />
+        {hasMore ? (
+          <div className="flex items-center justify-center gap-2 py-6 text-[12px] font-semibold text-[#8a9099]">
+            <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#D10005] border-t-transparent" />
+            {t.loadingMore}
+          </div>
+        ) : (
+          <SiteFooter t={t} />
+        )}
       </div>
     </div>
   );
