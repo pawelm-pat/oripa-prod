@@ -210,10 +210,8 @@ export function KycOverlay({ lang, state, setState, onExit, onContextReturn }: {
   const update = (patch: Partial<KycState>) => setState((s) => ({ ...s, ...patch }));
   const returnToPreparation = () => update({ activeScreen: "beforeStart" });
   const provider = screen.startsWith("provider");
-  const completeCta =
-    state.entryContext === "prizeHistory" ? c.proceedShipping
-    : state.entryContext === "profile" ? c.proceedProfile
-    : c.proceedStore;
+  // Happy-path completion always uses the same store CTA, regardless of entry context.
+  const completeCta = c.proceedStore;
   const card = "relative w-full max-w-[350px] rounded-2xl bg-white px-5 pb-5 pt-5 shadow-[0_18px_55px_rgba(0,0,0,.3)]";
   const redButton = "w-full rounded-lg bg-[#e60012] py-3 text-[14px] font-extrabold text-white active:scale-[.99]";
 
