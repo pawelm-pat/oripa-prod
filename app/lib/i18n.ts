@@ -5,6 +5,7 @@ import type { Category, Lang } from "./types";
 
 const SHIP_MIN_COINS = 1500;
 const FREE_SHIP_QUOTA = 3;
+const SHIP_FEE = 500;
 
 type SortKey = "coinDesc" | "coinAsc" | "wonNew" | "wonOld" | "expSoon";
 
@@ -56,6 +57,8 @@ const EN = {
   freeShippingElig: "You're eligible",
   minCoinsBadge: `Min. ${SHIP_MIN_COINS.toLocaleString()} coins`,
   freeShippingQuota: (n: number) => `Free Shipping, remaining quota:${n}`,
+  paidShipBadge: `Standard Shipping fee ¥${SHIP_FEE.toLocaleString()}`,
+  shipSelectHintPaid: `To request shipping, you must select items totalling ${SHIP_MIN_COINS.toLocaleString()} coins or more. (Monthly free quota used 0/${FREE_SHIP_QUOTA}. Shipping fee applies at checkout.)`,
   helperShort: (n: number) => `Select ${n.toLocaleString()} more coins of prizes to request shipping (min ${SHIP_MIN_COINS.toLocaleString()}).`,
   toastSelectFirst: "Select one or more prizes first",
   toastShort: (n: number) => `Select ${n.toLocaleString()} more coins of prizes to request shipping (min ${SHIP_MIN_COINS.toLocaleString()})`,
@@ -1036,6 +1039,8 @@ const JA: Dict = {
   freeShippingElig: "対象です",
   minCoinsBadge: `最低${SHIP_MIN_COINS.toLocaleString()}コイン`,
   freeShippingQuota: (n) => `送料無料 · 残り${n}回`,
+  paidShipBadge: `通常配送料 ¥${SHIP_FEE.toLocaleString()}`,
+  shipSelectHintPaid: `発送をリクエストするには、合計${SHIP_MIN_COINS.toLocaleString()}コイン以上のアイテムを選択してください。（今月の無料枠 0/${FREE_SHIP_QUOTA}回使用。配送料はお会計時に加算されます。）`,
   helperShort: (n) => `発送依頼にはあと${n.toLocaleString()}コイン分の景品の選択が必要です（最低${SHIP_MIN_COINS.toLocaleString()}）。`,
   toastSelectFirst: "景品を1つ以上選択してください",
   toastShort: (n) => `発送依頼にはあと${n.toLocaleString()}コイン分の景品の選択が必要です（最低${SHIP_MIN_COINS.toLocaleString()}）`,

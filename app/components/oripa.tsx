@@ -1991,7 +1991,7 @@ function USStateSelect({ value, onChange, label }: { value: string; onChange: (v
 /* ── Prize History ───────────────────────────────────────────────────── */
 type Toast = { id: number; text: string };
 
-function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddressesChange, onBack, onHome, empty = false, onGoGacha, lootMode = false, onRequestKyc }: { lang: Lang; coins: number; setCoins: Dispatch<SetStateAction<number>>; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; onBack: () => void; onHome: () => void; empty?: boolean; onGoGacha?: () => void; lootMode?: boolean; onRequestKyc?: () => boolean }) {
+function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddressesChange, onBack, onHome, empty = false, onGoGacha, lootMode = false, onRequestKyc, freeShipAvailable = true }: { lang: Lang; coins: number; setCoins: Dispatch<SetStateAction<number>>; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; onBack: () => void; onHome: () => void; empty?: boolean; onGoGacha?: () => void; lootMode?: boolean; onRequestKyc?: () => boolean; freeShipAvailable?: boolean }) {
   // "My Loot" reuses this screen but shows only the most valuable cards
   // (top UR tier) and hides the Won/Waiting/Shipped tabs.
   const screenTitle = lootMode ? STR[lang].mmItems : STR[lang].prizeHistory;
@@ -2325,20 +2325,29 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
           <div className="grid grid-cols-2 gap-2.5">
             {/* Request Shipping on the left (POC placement). */}
             <div className="relative">
-              {/* Two states: red "min coins" while the selection is short of the
-                  threshold, green "free shipping" once it clears it. */}
-              {listCanShip ? (
+              {/* Three states, badge inset to align with the CTA:
+                  - red "min coins" while the selection is short of the threshold
+                  - green "free shipping" once eligible AND free quota remains
+                  - amber "standard shipping fee" once eligible with no free quota */}
+              {!listCanShip ? (
+                <div className="pointer-events-none absolute -top-2.5 left-3 z-10 flex items-center gap-1 whitespace-nowrap rounded-full bg-[#e30613] px-2.5 py-[3px] text-white shadow-[0_2px_6px_rgba(227,6,19,0.4)] ring-1 ring-white/30">
+                  <svg width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M12 7v6" stroke="#e30613" strokeWidth="2.6" strokeLinecap="round" /><circle cx="12" cy="16.6" r="1.35" fill="#e30613" /></svg>
+                  <span className="text-[9.5px] font-extrabold tracking-wide">{t.minCoinsBadge}</span>
+                </div>
+              ) : freeShipAvailable ? (
                 <div
-                  className="pointer-events-none absolute -top-2.5 left-0 z-10 flex items-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-br from-[#1eae52] to-[#12813c] px-2.5 py-[3px] text-white ring-1 ring-white/30"
+                  className="pointer-events-none absolute -top-2.5 left-3 z-10 flex items-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-br from-[#1eae52] to-[#12813c] px-2.5 py-[3px] text-white ring-1 ring-white/30"
                   style={{ animation: "mlBadgeIn .3s cubic-bezier(.2,.9,.3,1) both, mlBadgePulse 2.4s ease-in-out infinite" }}
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M7.5 12.5l3 3 6-6.5" stroke="#12813c" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
                   <span className="text-[9.5px] font-extrabold tracking-wide">{t.freeShippingQuota(FREE_SHIP_QUOTA)}</span>
                 </div>
               ) : (
-                <div className="pointer-events-none absolute -top-2.5 left-0 z-10 flex items-center gap-1 whitespace-nowrap rounded-full bg-[#e30613] px-2.5 py-[3px] text-white shadow-[0_2px_6px_rgba(227,6,19,0.4)] ring-1 ring-white/30">
-                  <svg width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M12 7v6" stroke="#e30613" strokeWidth="2.6" strokeLinecap="round" /><circle cx="12" cy="16.6" r="1.35" fill="#e30613" /></svg>
-                  <span className="text-[9.5px] font-extrabold tracking-wide">{t.minCoinsBadge}</span>
+                <div
+                  className="pointer-events-none absolute -top-2.5 left-3 z-10 flex items-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-br from-[#ffcf33] to-[#f5a623] px-2.5 py-[3px] text-[#3a2a00] ring-1 ring-black/10"
+                  style={{ animation: "mlBadgeIn .3s cubic-bezier(.2,.9,.3,1) both" }}
+                >
+                  <span className="text-[9.5px] font-extrabold tracking-wide">{t.paidShipBadge}</span>
                 </div>
               )}
               <button
@@ -2363,7 +2372,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
               {t.exchange}
             </button>
           </div>
-          <p className="mt-2 text-center text-[10.5px] leading-tight text-[#8a9099]">{t.shipSelectHint}</p>
+          <p className="mt-2 text-center text-[10.5px] leading-tight text-[#8a9099]">{freeShipAvailable ? t.shipSelectHint : t.shipSelectHintPaid}</p>
         </div>
       )}
 
@@ -3920,8 +3929,8 @@ function StorePage({
   );
 }
 
-export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "happy" }: {
-  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario;
+export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "happy", freeShipAvailable = true }: {
+  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean;
 }) {
   const t = STR[lang];
   const [screen, setScreen] = useState<Screen>("landing");
@@ -4185,6 +4194,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onGoGacha={goHome}
             lootMode
             onRequestKyc={() => requestKyc("prizeHistory")}
+            freeShipAvailable={freeShipAvailable}
           />
         )}
         {screen === "purchaseHistory" && (

@@ -15,6 +15,9 @@ export default function Page() {
   const [screen, setScreen] = useState<Screen>("landing");
   const [kycScenario, setKycScenario] = useState<KycScenario>("happy");
   const [kycResetToken, setKycResetToken] = useState(0);
+  // Demo control: whether the member still has free shipping quota left.
+  // Drives the My Loot shipping badge (free vs. paid ¥500) and hint copy.
+  const [freeShipping, setFreeShipping] = useState(true);
 
   function changeKycScenario(value: KycScenario) {
     try { sessionStorage.removeItem(KYC_SESSION_KEY); } catch {}
@@ -34,6 +37,7 @@ export default function Page() {
         <div className="absolute right-full top-3 mr-4 flex w-max flex-col items-end gap-4">
           <LangToggle lang={lang} setLang={setLang} />
           <KycScenarioControl value={kycScenario} onChange={changeKycScenario} onReset={resetKycSession} />
+          <FreeShippingControl value={freeShipping} onChange={setFreeShipping} />
         </div>
         <div className="rounded-[2.6rem] border border-white/12 bg-[#1b1c22] p-3 shadow-[0_35px_90px_rgba(0,0,0,0.55)]">
           <div className="rounded-[2.1rem] border border-white/8 bg-black p-2">
@@ -45,6 +49,7 @@ export default function Page() {
                 noHistory={false}
                 initialKycScenario={kycScenario}
                 onScreenChange={setScreen}
+                freeShipAvailable={freeShipping}
               />
             </div>
           </div>
@@ -59,6 +64,7 @@ export default function Page() {
           noHistory={false}
           initialKycScenario={kycScenario}
           onScreenChange={setScreen}
+          freeShipAvailable={freeShipping}
         />
       </div>
 
@@ -67,5 +73,26 @@ export default function Page() {
       <UpdatePrompt />
       <VersionBadge />
     </main>
+  );
+}
+
+// Demo toggle (dev harness only): switch the My Loot shipping badge between
+// "free shipping remaining" and "no free quota → pay ¥500 at checkout".
+function FreeShippingControl({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex flex-col items-start gap-2">
+      <span className="text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-white/45">Free shipping</span>
+      <div className="inline-flex overflow-hidden rounded-lg border border-white/15">
+        {([["Yes", true], ["No", false]] as const).map(([label, v]) => (
+          <button
+            key={label}
+            onClick={() => onChange(v)}
+            className={`px-4 py-1.5 text-[11px] font-semibold transition ${value === v ? "bg-[#f5670a] text-white" : "bg-[#202127] text-white/60"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
