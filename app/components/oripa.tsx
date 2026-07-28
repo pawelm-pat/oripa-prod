@@ -2310,7 +2310,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
 
       {lootMode && tab === "won" && won.length > 0 && (
         <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2.5 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
-          <style>{`@keyframes mlBadgeIn{from{opacity:0;transform:translate(-50%,-6px) scale(.9)}to{opacity:1;transform:translate(-50%,0)}}@keyframes mlBadgePulse{0%,100%{box-shadow:0 3px 8px rgba(18,129,60,0.45)}50%{box-shadow:0 3px 14px rgba(18,129,60,0.75)}}`}</style>
+          <style>{`@keyframes mlBadgeIn{from{opacity:0;transform:translateY(-6px) scale(.9)}to{opacity:1;transform:translateY(0)}}@keyframes mlBadgePulse{0%,100%{box-shadow:0 3px 8px rgba(18,129,60,0.45)}50%{box-shadow:0 3px 14px rgba(18,129,60,0.75)}}`}</style>
           {/* Selection summary + bulk actions */}
           <div className="mb-2 flex items-center justify-between">
             <span className="flex items-center gap-1.5">
@@ -2329,14 +2329,14 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                   threshold, green "free shipping" once it clears it. */}
               {listCanShip ? (
                 <div
-                  className="pointer-events-none absolute -top-2.5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-br from-[#1eae52] to-[#12813c] px-2.5 py-[3px] text-white ring-1 ring-white/30"
+                  className="pointer-events-none absolute -top-2.5 left-0 z-10 flex items-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-br from-[#1eae52] to-[#12813c] px-2.5 py-[3px] text-white ring-1 ring-white/30"
                   style={{ animation: "mlBadgeIn .3s cubic-bezier(.2,.9,.3,1) both, mlBadgePulse 2.4s ease-in-out infinite" }}
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M7.5 12.5l3 3 6-6.5" stroke="#12813c" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
                   <span className="text-[9.5px] font-extrabold tracking-wide">{t.freeShippingQuota(FREE_SHIP_QUOTA)}</span>
                 </div>
               ) : (
-                <div className="pointer-events-none absolute -top-2.5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full bg-[#e30613] px-2.5 py-[3px] text-white shadow-[0_2px_6px_rgba(227,6,19,0.4)] ring-1 ring-white/30">
+                <div className="pointer-events-none absolute -top-2.5 left-0 z-10 flex items-center gap-1 whitespace-nowrap rounded-full bg-[#e30613] px-2.5 py-[3px] text-white shadow-[0_2px_6px_rgba(227,6,19,0.4)] ring-1 ring-white/30">
                   <svg width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M12 7v6" stroke="#e30613" strokeWidth="2.6" strokeLinecap="round" /><circle cx="12" cy="16.6" r="1.35" fill="#e30613" /></svg>
                   <span className="text-[9.5px] font-extrabold tracking-wide">{t.minCoinsBadge}</span>
                 </div>

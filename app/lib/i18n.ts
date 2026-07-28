@@ -55,7 +55,7 @@ const EN = {
   freeShipping: "Free shipping",
   freeShippingElig: "You're eligible",
   minCoinsBadge: `Min. ${SHIP_MIN_COINS.toLocaleString()} coins`,
-  freeShippingQuota: (n: number) => `Free shipping, remaining quota:${n}`,
+  freeShippingQuota: (n: number) => `Free Shipping, remaining quota:${n}`,
   helperShort: (n: number) => `Select ${n.toLocaleString()} more coins of prizes to request shipping (min ${SHIP_MIN_COINS.toLocaleString()}).`,
   toastSelectFirst: "Select one or more prizes first",
   toastShort: (n: number) => `Select ${n.toLocaleString()} more coins of prizes to request shipping (min ${SHIP_MIN_COINS.toLocaleString()})`,
