@@ -34,6 +34,7 @@ import {
   NOW,
   PREFECTURES_EN,
   PREFECTURES_JA,
+  FREE_SHIP_QUOTA,
   RARITY_IMG,
   RARITY_META,
   SHIP_MIN_COINS,
@@ -2063,6 +2064,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
     setListSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   }
   function listReset() { setListSelected(new Set()); }
+  function listSelectAll() { setListSelected(new Set(displayedWon.map((p) => p.id))); }
   function listExchange() {
     if (listSelected.size === 0) return;
     const ids = new Set(listSelected);
@@ -2306,57 +2308,61 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
         {tab === "shipped" && <ShippedTab prizes={shipped} onCopy={(c) => pushToast(t.toastCopied(c))} t={t} lang={lang} />}
       </div>
 
-      {lootMode && tab === "won" && won.length > 0 && listSelected.size > 0 && (
-        <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
-          {listSelected.size > 0 && (
-            <>
-              <div className="mb-2 flex items-center justify-between text-[11px] font-semibold">
-                <span className="text-[#8a9099]">{t.deckSorted}</span>
-                <button onClick={listReset} className="text-[#8a9099] underline">{t.itemsReset}</button>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="relative">
-                  {/* Free-shipping eligibility badge — sits on the top-right of the
-                      Request Shipping CTA once the selection reaches the threshold. */}
-                  {listCanShip && (
-                    <div
-                      className="pointer-events-none absolute -top-2.5 right-0 z-10 flex items-center gap-1 rounded-full bg-gradient-to-br from-[#1eae52] to-[#12813c] px-2 py-[3px] text-white ring-1 ring-white/30"
-                      style={{ animation: "freeShipIn .3s cubic-bezier(.2,.9,.3,1) both, freeShipPulse 2.4s ease-in-out infinite" }}
-                    >
-                      <style>{`@keyframes freeShipIn{from{opacity:0;transform:translateY(-6px) scale(.9)}to{opacity:1;transform:none}}@keyframes freeShipPulse{0%,100%{box-shadow:0 3px 8px rgba(18,129,60,0.45)}50%{box-shadow:0 3px 14px rgba(18,129,60,0.75)}}`}</style>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M3 6h11v9H3z" /><path d="M14 9h4l3 3v3h-7z" /><circle cx="7" cy="18" r="1.6" /><circle cx="17.5" cy="18" r="1.6" />
-                      </svg>
-                      <span className="text-[9.5px] font-extrabold tracking-wide">{t.freeShipping}</span>
-                    </div>
-                  )}
-                  <button
-                    onClick={() => {
-                      if (!listCanShip) { pushToast(t.toastShort(listShortfall)); return; }
-                      if (onRequestKyc && !onRequestKyc()) return;
-                      setListShipOpen(true);
-                    }}
-                    className="w-full rounded-xl border-2 py-2 text-[12.5px] font-bold leading-tight transition"
-                    style={{ borderColor: "#f5670a", color: "#f5670a", background: "#fff", opacity: listCanShip ? 1 : 0.6 }}
-                  >
-                    ← {t.requestShipping} · {listSelected.size}
-                    <span className="mt-0.5 block text-[10px] font-semibold opacity-80">{listTotal.toLocaleString()} coins</span>
-                  </button>
-                </div>
-                <button
-                  onClick={listExchange}
-                  className="rounded-xl py-2 text-[12.5px] font-bold leading-tight text-white transition"
-                  style={{ background: "linear-gradient(180deg,#ff5a5f,#c8061a)" }}
+      {lootMode && tab === "won" && won.length > 0 && (
+        <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2.5 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
+          <style>{`@keyframes mlBadgeIn{from{opacity:0;transform:translate(-50%,-6px) scale(.9)}to{opacity:1;transform:translate(-50%,0)}}@keyframes mlBadgePulse{0%,100%{box-shadow:0 3px 8px rgba(18,129,60,0.45)}50%{box-shadow:0 3px 14px rgba(18,129,60,0.75)}}`}</style>
+          {/* Selection summary + bulk actions */}
+          <div className="mb-2 flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <CoinIcon size={20} />
+              <span className="text-[18px] font-extrabold text-[#1d2129]">{listTotal.toLocaleString()}</span>
+            </span>
+            <div className="flex items-center gap-4 text-[13px] font-bold">
+              <button onClick={listSelectAll} className="text-[#1d2129] active:opacity-70">{t.selectAll}</button>
+              <button onClick={listReset} className="text-[#8a9099] active:opacity-70">{t.itemsReset}</button>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2.5">
+            {/* Exchange stays available; guarded when nothing is selected. */}
+            <button
+              onClick={listExchange}
+              className="rounded-xl border-2 py-3 text-[14px] font-extrabold transition active:scale-[0.98]"
+              style={{ borderColor: "#f5670a", color: "#1d2129", background: "#fff" }}
+            >
+              {t.exchange}
+            </button>
+            <div className="relative">
+              {/* Two states: red "min coins" while the selection is short of the
+                  threshold, green "free shipping" once it clears it. */}
+              {listCanShip ? (
+                <div
+                  className="pointer-events-none absolute -top-2.5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-br from-[#1eae52] to-[#12813c] px-2.5 py-[3px] text-white ring-1 ring-white/30"
+                  style={{ animation: "mlBadgeIn .3s cubic-bezier(.2,.9,.3,1) both, mlBadgePulse 2.4s ease-in-out infinite" }}
                 >
-                  {t.exchange} · {listSelected.size} →
-                  <span className="mt-0.5 block text-[10px] font-semibold opacity-90">{listTotal.toLocaleString()} coins</span>
-                </button>
-              </div>
-              <p className="mt-1.5 text-center text-[10.5px] leading-tight text-[#8a9099]">
-                {t.shipSelectHint}
-              </p>
-            </>
-          )}
+                  <svg width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M7.5 12.5l3 3 6-6.5" stroke="#12813c" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  <span className="text-[9.5px] font-extrabold tracking-wide">{t.freeShippingQuota(FREE_SHIP_QUOTA)}</span>
+                </div>
+              ) : (
+                <div className="pointer-events-none absolute -top-2.5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full bg-[#e30613] px-2.5 py-[3px] text-white shadow-[0_2px_6px_rgba(227,6,19,0.4)] ring-1 ring-white/30">
+                  <svg width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M12 7v6" stroke="#e30613" strokeWidth="2.6" strokeLinecap="round" /><circle cx="12" cy="16.6" r="1.35" fill="#e30613" /></svg>
+                  <span className="text-[9.5px] font-extrabold tracking-wide">{t.minCoinsBadge}</span>
+                </div>
+              )}
+              <button
+                onClick={() => {
+                  if (listSelected.size === 0) { pushToast(t.toastSelectFirst); return; }
+                  if (!listCanShip) { pushToast(t.toastShort(listShortfall)); return; }
+                  if (onRequestKyc && !onRequestKyc()) return;
+                  setListShipOpen(true);
+                }}
+                className="w-full rounded-xl py-3 text-[14px] font-extrabold text-white transition active:scale-[0.98]"
+                style={{ background: listCanShip ? "#f5670a" : "#c9ced6" }}
+              >
+                {t.requestShipping}
+              </button>
+            </div>
+          </div>
+          <p className="mt-2 text-center text-[10.5px] leading-tight text-[#8a9099]">{t.shipSelectHint}</p>
         </div>
       )}
 

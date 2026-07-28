@@ -4,6 +4,7 @@
 import type { Category, Lang } from "./types";
 
 const SHIP_MIN_COINS = 1500;
+const FREE_SHIP_QUOTA = 3;
 
 type SortKey = "coinDesc" | "coinAsc" | "wonNew" | "wonOld" | "expSoon";
 
@@ -49,10 +50,12 @@ const EN = {
   exchange: "Exchange to Coins",
   requestShipping: "Request Shipping",
   helperNone: "Select prizes to exchange or request shipping.",
-  shipSelectHint: "To request shipping, you must select items totaling 500 coins or more.",
+  shipSelectHint: `To request shipping, you must select items totalling ${SHIP_MIN_COINS.toLocaleString()} coins or more. (${FREE_SHIP_QUOTA}/${FREE_SHIP_QUOTA} free shipping remaining this month)`,
   helperReady: "Shipping is free · delivery within 14 business days.",
   freeShipping: "Free shipping",
   freeShippingElig: "You're eligible",
+  minCoinsBadge: `Min. ${SHIP_MIN_COINS.toLocaleString()} coins`,
+  freeShippingQuota: (n: number) => `Free shipping, remaining quota:${n}`,
   helperShort: (n: number) => `Select ${n.toLocaleString()} more coins of prizes to request shipping (min ${SHIP_MIN_COINS.toLocaleString()}).`,
   toastSelectFirst: "Select one or more prizes first",
   toastShort: (n: number) => `Select ${n.toLocaleString()} more coins of prizes to request shipping (min ${SHIP_MIN_COINS.toLocaleString()})`,
@@ -1027,10 +1030,12 @@ const JA: Dict = {
   exchange: "コインに交換",
   requestShipping: "発送依頼",
   helperNone: "交換または発送する景品を選択してください。",
-  shipSelectHint: "発送をリクエストするには、合計500コイン以上のアイテムを選択してください。",
+  shipSelectHint: `発送をリクエストするには、合計${SHIP_MIN_COINS.toLocaleString()}コイン以上のアイテムを選択してください。（今月の送料無料 残り${FREE_SHIP_QUOTA}/${FREE_SHIP_QUOTA}回）`,
   helperReady: "送料無料 · 14営業日以内にお届け。",
   freeShipping: "送料無料",
   freeShippingElig: "対象です",
+  minCoinsBadge: `最低${SHIP_MIN_COINS.toLocaleString()}コイン`,
+  freeShippingQuota: (n) => `送料無料 · 残り${n}回`,
   helperShort: (n) => `発送依頼にはあと${n.toLocaleString()}コイン分の景品の選択が必要です（最低${SHIP_MIN_COINS.toLocaleString()}）。`,
   toastSelectFirst: "景品を1つ以上選択してください",
   toastShort: (n) => `発送依頼にはあと${n.toLocaleString()}コイン分の景品の選択が必要です（最低${SHIP_MIN_COINS.toLocaleString()}）`,

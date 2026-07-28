@@ -17,6 +17,8 @@ export const NOW = Date.UTC(2025, 11, 12, 9, 30); // 2025-12-12 09:30 UTC
 export const DAY = 24 * 60 * 60 * 1000;
 export const SHIP_WINDOW_DAYS = 7;
 export const SHIP_MIN_COINS = 1500;
+// Free-shipping allowance remaining this month (used by the My Loot ship bar).
+export const FREE_SHIP_QUOTA = 3;
 
 export const CATEGORIES: Category[] = ["pokemon", "onepiece", "baseball", "football"];
 
