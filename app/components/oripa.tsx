@@ -2323,14 +2323,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2.5">
-            {/* Exchange stays available; guarded when nothing is selected. */}
-            <button
-              onClick={listExchange}
-              className="rounded-xl border-2 py-3 text-[14px] font-extrabold transition active:scale-[0.98]"
-              style={{ borderColor: "#f5670a", color: "#1d2129", background: "#fff" }}
-            >
-              {t.exchange}
-            </button>
+            {/* Request Shipping on the left (POC placement). */}
             <div className="relative">
               {/* Two states: red "min coins" while the selection is short of the
                   threshold, green "free shipping" once it clears it. */}
@@ -2361,6 +2354,14 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                 {t.requestShipping}
               </button>
             </div>
+            {/* Exchange on the right; guarded when nothing is selected. */}
+            <button
+              onClick={listExchange}
+              className="rounded-xl border-2 py-3 text-[14px] font-extrabold transition active:scale-[0.98]"
+              style={{ borderColor: "#f5670a", color: "#1d2129", background: "#fff" }}
+            >
+              {t.exchange}
+            </button>
           </div>
           <p className="mt-2 text-center text-[10.5px] leading-tight text-[#8a9099]">{t.shipSelectHint}</p>
         </div>
