@@ -1590,7 +1590,16 @@ function DrawResults({ lang, coins, cards, onDrawAgain, onClose, onHome, onOpenS
           {/* Request Shipping on the left (matches My Loot placement). */}
           <div className="relative">
             <style>{`@keyframes freeShipIn{from{opacity:0;transform:translateY(-6px) scale(.9)}to{opacity:1;transform:none}}@keyframes freeShipPulse{0%,100%{box-shadow:0 3px 8px rgba(18,129,60,0.45)}50%{box-shadow:0 3px 14px rgba(18,129,60,0.75)}}`}</style>
-            {canShip && (freeShipAvailable ? (
+            {/* Three states (matches My Loot):
+                - red "min coins" while the selection is short of the threshold
+                - green "free shipping" once eligible AND free quota remains
+                - amber "standard shipping fee" once eligible with no free quota */}
+            {!canShip ? (
+              <div className="pointer-events-none absolute -top-2.5 left-0 right-0 z-10 flex items-center justify-center gap-1 whitespace-nowrap rounded-full bg-[#e30613] px-2.5 py-[3px] text-white shadow-[0_2px_6px_rgba(227,6,19,0.4)] ring-1 ring-white/30">
+                <svg width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M12 7v6" stroke="#e30613" strokeWidth="2.6" strokeLinecap="round" /><circle cx="12" cy="16.6" r="1.35" fill="#e30613" /></svg>
+                <span className="text-[9.5px] font-extrabold tracking-wide">{t.minCoinsBadge}</span>
+              </div>
+            ) : freeShipAvailable ? (
               <div
                 className="pointer-events-none absolute -top-2.5 left-0 right-0 z-10 flex items-center justify-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-br from-[#1eae52] to-[#12813c] px-2 py-[3px] text-white ring-1 ring-white/30"
                 style={{ animation: "freeShipIn .3s cubic-bezier(.2,.9,.3,1) both, freeShipPulse 2.4s ease-in-out infinite" }}
@@ -1605,12 +1614,11 @@ function DrawResults({ lang, coins, cards, onDrawAgain, onClose, onHome, onOpenS
               >
                 <span className="text-[9.5px] font-extrabold tracking-wide">{t.paidShipBadge}</span>
               </div>
-            ))}
+            )}
             <button
               onClick={ship}
-              disabled={selected.size === 0}
-              className="w-full rounded-xl py-3 text-[14px] font-extrabold text-white active:scale-[0.98] disabled:opacity-40"
-              style={{ background: "#f5670a" }}
+              className="w-full rounded-xl py-3 text-[14px] font-extrabold text-white transition active:scale-[0.98]"
+              style={{ background: canShip ? "#f5670a" : "#c9ced6" }}
             >
               {t.requestShipping}
             </button>
@@ -2798,6 +2806,7 @@ function ShippingFlow({
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
                 </button>
               )}
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M3 11.2 12 4l9 7.2" stroke="#D10005" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><path d="M5 10v9h14v-9" stroke="#D10005" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><path d="M9.5 19v-4.5h5V19" stroke="#D10005" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><path d="M6.5 7.5v-2.2h2.2" stroke="#D10005" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
               <h3 className="text-[15px] font-bold text-[#1d2129]">{t.shippingAddNew}</h3>
             </div>
 
