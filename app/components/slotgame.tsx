@@ -10,7 +10,7 @@ import { RARITY_META } from "../data/prizes";
    /public/slot. Opened from the Store "Buy a pack" CTA.
 
    Mechanics: every WIN drops cards into the stack until credits hit 0. Most
-   wins drop a single card; rare BIG WINS flood the grid and drop 5–20 at once.
+   wins drop a single card; BIG WINS flood the grid and drop 5–30 at once.
    The payline is the 2nd row; three CARD symbols there = a win. When the spins
    run out we show the oripa "your stack" summary where cards can be exchanged
    for coins or shipped.
@@ -23,6 +23,10 @@ const MUTED = "#8a9099";
 const BRAND = "#D10005";
 const SHIP = "#f5670a";
 const SHIP_MIN_COINS = 1500;
+// Per-card stagger of the summary flip ceremony (veils flip away one by one).
+// v7 pacing for small stacks; compressed for card floods so the whole
+// ceremony stays ~3s instead of 10s+ on a 30-card session.
+const flipStep = (n: number) => (n <= 10 ? 320 : Math.max(80, Math.round(3200 / n)));
 
 type DemoRarity = "COMMON" | "RARE" | "CHASE";
 const DEMO_TO_ORIPA: Record<DemoRarity, Rarity> = { COMMON: "N", RARE: "SR", CHASE: "UR" };
@@ -103,18 +107,21 @@ const SYMS = [
 const CARD_SYM = 9;
 const COLS = 5, ROWS = 3, PAYROW = 1;
 
-/* ── Slot engine ──────────────────────────────────────────────────────── */
+/* ── Slot engine — demo-tuned hot: frequent wins, chunky multi-card drops
+   (up to 30 in one spin) and a generous rare/chase mix so the face-down
+   aura moments show up often. ─────────────────────────────────────────── */
 const V2 = {
-  baseHit: 0.30,
-  pityCap: 4,
-  rarityWeights: [["CHASE", 0.06], ["RARE", 0.30], ["COMMON", 0.64]] as [DemoRarity, number][],
-  bigWinChance: 0.025,
+  baseHit: 0.45,
+  pityCap: 3,
+  rarityWeights: [["CHASE", 0.10], ["RARE", 0.35], ["COMMON", 0.55]] as [DemoRarity, number][],
+  bigWinChance: 0.12,
   bigWinMin: 5,
-  bigWinMax: 20,
+  bigWinMax: 30,
 };
 function bigWinSize() {
   const r = Math.random();
-  return V2.bigWinMin + Math.floor(r * r * (V2.bigWinMax - V2.bigWinMin + 1));
+  // Mild skew towards the small end, but 20–30 card floods stay reachable.
+  return V2.bigWinMin + Math.floor(Math.pow(r, 1.6) * (V2.bigWinMax - V2.bigWinMin + 1));
 }
 function decideSpin(creditsLeft: number, spinCost: number, wonLen: number, dryStreak: number) {
   const spinsLeft = Math.ceil(creditsLeft / spinCost);
@@ -166,34 +173,31 @@ const reduceMotion = () => typeof matchMedia !== "undefined" && matchMedia("(pre
 /* ── i18n ─────────────────────────────────────────────────────────────── */
 const STR = {
   en: {
-    spinsLeft: (n: number) => `${n} spins left`,
     toPayout: "% to payout",
-    stacked: "cards stacked — the bar tracks credits spent, at 100% the stack is yours",
-    winsDrop: "Wins drop a card into your stack — BIG WINS drop a pile",
+    winsDrop: "Wins bank face-down cards — the aura colour hints how rare",
     spin: (n: number, total: number) => `SPIN · ${n} of ${total}`,
     exit: "← Exit",
     quickSpin: (on: boolean) => `⚡ Quick spin ${on ? "on" : "off"}`,
     fastForward: "Fast-forward ⏩",
-    banked: "Banked — keep spinning",
-    bankedBig: (n: number) => `💥 ${n} cards banked!`,
-    stackComplete: "Stack complete — collecting…",
+    banked: "Card banked face-down — flips at 100%",
+    bankedRare: "✨ A RARE aura joined your stack",
+    bankedChase: "★ Something legendary is in your stack — flips at 100%",
+    bankedBig: (n: number) => `💥 ${n} cards banked face-down`,
+    stackComplete: "Stack complete — flipping your cards…",
     soClose: "So close…",
     cardWin: "CARD WIN!",
-    bigWinLine: (n: number) => `💥 BIG WIN — ${n} cards!`,
-    theChase: "★ THE CHASE ★",
-    bankIt: "Bank it →",
-    bankThem: "Bank them →",
-    takeStack: "Take your stack ✓",
-    addToLoot: "Add to My Loot →",
-    addThemToLoot: "Add them to My Loot →",
-    exchangeFreeSpin: "Exchange for a free spin ⟳",
-    freeSpinRound: "FREE SPIN ROUND",
-    freeSpinSub: "On the house — this spin won't use any of your spins",
-    bigWin: "💥 BIG WIN 💥",
-    cardsInSpin: (n: number) => `${n} cards in one spin`,
-    chaseIncluded: "★ chase included ★",
-    tapOpen: "Tap to rip it open",
-    yourStack: "your stack",
+    rareGlow: "✨ A rare glow…",
+    legendaryAura: "★ A LEGENDARY AURA…",
+    bigWinLine: (n: number) => `💥 BIG WIN — ${n} cards incoming!`,
+    stackTitle: (n: number) => `Your stack — ${n} card${n === 1 ? "" : "s"}`,
+    faceDownHint: "Face-down until 100% — the auras hint at what's inside.",
+    cardN: (i: number) => `Card #${i}`,
+    auraChase: "★ LEGENDARY AURA",
+    auraRare: "✨ RARE AURA",
+    faceDown: "FACE-DOWN",
+    nothingYet: "Nothing yet — keep spinning.",
+    close: "Close",
+    flipping: "flipping them over…",
     summary: (credits: number, spins: number, cards: number) => `${credits} credits · ${spins} spins · ${cards} cards won`,
     backToShop: "Back to shop",
     openAnother: "Open another",
@@ -213,34 +217,31 @@ const STR = {
     rarity: { N: "COMMON", SR: "RARE", UR: "CHASE" } as Record<Rarity, string>,
   },
   ja: {
-    spinsLeft: (n: number) => `残り${n}回`,
     toPayout: "% 達成まで",
-    stacked: "枚ストック — バーは消費クレジット、100%でストックがあなたのものに",
-    winsDrop: "当たりでカードがストックに、大当たりでまとめてゲット",
+    winsDrop: "当たりはカードが裏向きでストックへ — オーラの色がレア度のヒント",
     spin: (n: number, total: number) => `スピン · ${n} / ${total}`,
     exit: "← 退出",
     quickSpin: (on: boolean) => `⚡ クイックスピン ${on ? "オン" : "オフ"}`,
     fastForward: "早送り ⏩",
-    banked: "獲得 — 続けてスピン",
-    bankedBig: (n: number) => `💥 ${n}枚獲得！`,
-    stackComplete: "ストック完成 — 回収中…",
+    banked: "カードを裏向きでストック — 100%でオープン",
+    bankedRare: "✨ レアのオーラがストックに加わった",
+    bankedChase: "★ 伝説の気配がストックに — 100%でオープン",
+    bankedBig: (n: number) => `💥 ${n}枚を裏向きでストック！`,
+    stackComplete: "ストック完成 — カードをオープン中…",
     soClose: "惜しい…",
     cardWin: "カード当たり！",
-    bigWinLine: (n: number) => `💥 大当たり — ${n}枚！`,
-    theChase: "★ ザ・チェイス ★",
-    bankIt: "獲得する →",
-    bankThem: "まとめて獲得 →",
-    takeStack: "ストックを受け取る ✓",
-    addToLoot: "My Lootに追加 →",
-    addThemToLoot: "まとめてMy Lootに追加 →",
-    exchangeFreeSpin: "フリースピンに交換 ⟳",
-    freeSpinRound: "フリースピンラウンド",
-    freeSpinSub: "サービススピン — 回数を消費しません",
-    bigWin: "💥 大当たり 💥",
-    cardsInSpin: (n: number) => `1スピンで${n}枚`,
-    chaseIncluded: "★ チェイス含む ★",
-    tapOpen: "タップして開封",
-    yourStack: "あなたのストック",
+    rareGlow: "✨ レアな輝き…",
+    legendaryAura: "★ 伝説のオーラ…",
+    bigWinLine: (n: number) => `💥 大当たり — ${n}枚がやってくる！`,
+    stackTitle: (n: number) => `ストック — ${n}枚`,
+    faceDownHint: "100%まで裏向き — オーラが中身のヒント。",
+    cardN: (i: number) => `カード #${i}`,
+    auraChase: "★ 伝説のオーラ",
+    auraRare: "✨ レアオーラ",
+    faceDown: "裏向き",
+    nothingYet: "まだありません",
+    close: "閉じる",
+    flipping: "オープン中…",
     summary: (credits: number, spins: number, cards: number) => `${credits}クレジット · ${spins}スピン · ${cards}枚獲得`,
     backToShop: "ショップに戻る",
     openAnother: "もう一つ開ける",
@@ -270,6 +271,9 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
   // React re-renders; a forced tick reconciles the DOM at rest points.
   const [, tick] = useReducer((x: number) => x + 1, 0);
   const wonRef = useRef<WonCard[]>([]);
+  // Stack count SHOWN in the header — lags wonRef during the fly animation so
+  // a won card never appears in the stack before it visually lands there.
+  const shownWonRef = useRef(0);
   const creditsLeftRef = useRef(credits);
   const spinIndexRef = useRef(0);
   const dryStreakRef = useRef(0);
@@ -281,23 +285,23 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
   const tokenRef = useRef(0);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const rootRef = useRef<HTMLDivElement>(null);
-  const afterRevealRef = useRef<() => void>(() => {});
   if (!restGridRef.current) restGridRef.current = newRestGrid();
 
   const [phase, setPhase] = useState<"intro" | "play" | "summary">(reduceMotion() ? "play" : "intro");
   const [quick, setQuick] = useState(false);
-  const [reveal, setReveal] = useState<{ cards: WonCard[]; big: boolean; done: boolean } | null>(null);
   const [stackOpen, setStackOpen] = useState(false);
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const [toast, setToast] = useState<string | null>(null);
-  const [freeBanner, setFreeBanner] = useState(false);
+  // v7 mystery banking: the summary flips the face-down stack over card by card;
+  // selection unlocks only once every veil has flipped away.
+  const [flipDone, setFlipDone] = useState(false);
   // Gates the SPIN CTA until the cabinet's intro reel-roll settles.
   const [ready, setReady] = useState(reduceMotion());
 
   const at = (ms: number, fn: () => void) => { const t = setTimeout(fn, ms); timersRef.current.push(t); return t; };
   useEffect(() => {
     // Preload art so reels/reveals never pop in blank.
-    [...cat.pool.map((c) => c.img), cat.chase.img, packImage, "/slot/gacha-bg.jpg", "/slot/crack-mask.png", ...SYMS].forEach((s) => { const im = new Image(); im.src = s; });
+    [...cat.pool.map((c) => c.img), cat.chase.img, packImage, "/slot/gacha-bg.jpg", "/slot/crack-mask.png", "/slot/card-back.png", ...SYMS].forEach((s) => { const im = new Image(); im.src = s; });
     return () => { timersRef.current.forEach(clearTimeout); tokenRef.current++; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -349,46 +353,131 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
+  // Kick the summary flip ceremony: veils flip away staggered (commons first,
+  // chase last); selection unlocks once the last veil is gone.
+  useEffect(() => {
+    if (phase !== "summary") return;
+    const n = wonRef.current.length;
+    if (reduceMotion() || n === 0) { setFlipDone(true); return; }
+    const t = setTimeout(() => setFlipDone(true), 400 + n * flipStep(n) + 500);
+    return () => clearTimeout(t);
+  }, [phase]);
+
   function makeCard(): WonCard {
     const d = drawDemoCard(cat);
     return { id: idRef.current++, name: d.name, nameJa: d.name, rarity: DEMO_TO_ORIPA[d.demoRarity], demoRarity: d.demoRarity, img: d.img };
   }
 
-  /* Won cards fly from the cabinet into the stack; the badge counts up. */
+  /* v7 mystery banking: won cards fly FACE-DOWN from the cabinet into the
+     stack — the aura (border glow) shows the tier, never the card. Commons
+     stream over first; the batch's best rare/chase flies LAST as a hero
+     flight with a charge-up swell, sparkle trail and landing shockwave. */
+  const AURA = { COMMON: "#c9ced6", RARE: SHIP, CHASE: BRAND } as const;
+
+  function spark(root: HTMLElement, x: number, y: number, col: string) {
+    const d = document.createElement("div");
+    d.className = "spark";
+    d.style.left = (x - 3) + "px"; d.style.top = (y - 3) + "px";
+    d.style.setProperty("--sc", col);
+    d.style.setProperty("--dx", (Math.random() * 74 - 37) + "px");
+    d.style.setProperty("--dy", (Math.random() * 74 - 37) + "px");
+    root.appendChild(d);
+    setTimeout(() => d.remove(), 720);
+  }
+  function ringAt(root: HTMLElement, x: number, y: number, col: string, size: number) {
+    const r = document.createElement("div");
+    r.className = "shockring";
+    r.style.left = (x - size / 2) + "px"; r.style.top = (y - size / 2) + "px";
+    r.style.width = size + "px"; r.style.height = size + "px";
+    r.style.setProperty("--sc", col);
+    root.appendChild(r);
+    setTimeout(() => r.remove(), 600);
+  }
+
   function flyCards(cards: WonCard[], preWon: number, done: () => void) {
     const root = rootRef.current;
     const cab = root?.querySelector(".cab") as HTMLElement | null;
     const st = root?.querySelector(".stack") as HTMLElement | null;
-    if (!root || !cab || !st || reduceMotion()) { done(); return; }
+    if (!root || !cab || !st || reduceMotion()) { shownWonRef.current = preWon + cards.length; done(); return; }
     const R = root.getBoundingClientRect();
     const a = cab.getBoundingClientRect(), b = st.getBoundingClientRect();
     const n = cards.length, show = Math.min(n, 8);
-    const per = quick ? 65 : 95, flight = quick ? 330 : 540;
+    const RANK = { COMMON: 0, RARE: 1, CHASE: 2 };
+    const batch = cards.slice(0, show).sort((x, y) => RANK[x.demoRarity] - RANK[y.demoRarity]); // hero last
+    const per = quick ? 65 : 95;
     const badge = st.querySelector("b");
     let landed = 0;
-    for (let i = 0; i < show; i++) {
-      at(i * per, () => {
-        const el = document.createElement("div");
-        el.className = "flycard";
-        el.style.transitionDuration = (flight / 1000) + "s," + (flight / 1000) + "s";
-        if (cards[i].img) el.innerHTML = `<img src="${cards[i].img}" alt="">`;
-        const jx = Math.random() * 90 - 45, jy = Math.random() * 46 - 23;
-        const sx = (a.left - R.left) + a.width / 2 - 22 + jx, sy = (a.top - R.top) + a.height / 2 - 29 + jy;
-        el.style.left = sx + "px"; el.style.top = sy + "px";
-        root.appendChild(el);
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-          const dx = ((b.left - R.left) + b.width / 2 - 22) - sx, dy = ((b.top - R.top) + b.height / 2 - 29) - sy;
-          el.style.transform = `translate(${dx}px,${dy}px) rotate(${160 + Math.random() * 140}deg) scale(.3)`;
-          el.style.opacity = ".35";
-        }));
-        at(flight, () => {
-          el.remove(); landed++;
-          if (badge) badge.textContent = String(Math.round(preWon + (landed / show) * n));
-          st.classList.remove("bump"); void st.offsetWidth; st.classList.add("bump");
-          if (landed === show) { if (badge) badge.textContent = String(preWon + n); done(); }
-        });
+    const landTick = () => {
+      landed++;
+      shownWonRef.current = Math.round(preWon + (landed / show) * n);
+      if (badge) badge.textContent = String(shownWonRef.current);
+      st.classList.remove("bump"); void st.offsetWidth; st.classList.add("bump");
+      if (landed === show) { shownWonRef.current = preWon + n; if (badge) badge.textContent = String(preWon + n); done(); }
+    };
+    batch.forEach((card, i) => at(i * per, () => {
+      const hero = i === show - 1 && card.demoRarity !== "COMMON";
+      if (hero) heroFly(root, card, a, b, R, landTick);
+      else plainFly(root, card, a, b, R, landTick);
+    }));
+  }
+
+  function plainFly(root: HTMLElement, card: WonCard, a: DOMRect, b: DOMRect, R: DOMRect, cb: () => void) {
+    const flight = quick ? 330 : 540;
+    const el = document.createElement("div");
+    el.className = "flycard fd-" + card.demoRarity;
+    el.innerHTML = `<img src="/slot/card-back.png" alt="">`;
+    const jx = Math.random() * 90 - 45, jy = Math.random() * 46 - 23;
+    const sx = (a.left - R.left) + a.width / 2 - 22 + jx, sy = (a.top - R.top) + a.height / 2 - 29 + jy;
+    el.style.left = sx + "px"; el.style.top = sy + "px";
+    root.appendChild(el);
+    el.animate([
+      { transform: "none", opacity: 1 },
+      { transform: `translate(${((b.left - R.left) + b.width / 2 - 22) - sx}px,${((b.top - R.top) + b.height / 2 - 29) - sy}px) rotate(${160 + Math.random() * 140}deg) scale(.3)`, opacity: 0.35 },
+    ], { duration: flight, easing: "cubic-bezier(.3,.75,.35,1)", fill: "forwards" });
+    at(flight, () => { el.remove(); cb(); });
+  }
+
+  function heroFly(root: HTMLElement, card: WonCard, a: DOMRect, b: DOMRect, R: DOMRect, cb: () => void) {
+    const chase = card.demoRarity === "CHASE";
+    const col = AURA[chase ? "CHASE" : "RARE"];
+    const hw = chase ? 30 : 26, hh = chase ? 39 : 34;
+    const dim = document.createElement("div");
+    dim.className = "flydim";
+    root.appendChild(dim);
+    requestAnimationFrame(() => { dim.style.opacity = "1"; });
+    const el = document.createElement("div");
+    el.className = "flycard fd-" + card.demoRarity;
+    el.innerHTML = `<img src="/slot/card-back.png" alt="">`;
+    const sx = (a.left - R.left) + a.width / 2 - hw, sy = (a.top - R.top) + a.height / 2 - hh;
+    el.style.left = sx + "px"; el.style.top = sy + "px";
+    root.appendChild(el);
+    ringAt(root, sx + hw, sy + hh, col, chase ? 190 : 130);
+    const swell = `translateY(-26px) scale(${chase ? 1.75 : 1.4}) rotate(${Math.random() * 10 - 5}deg)`;
+    el.animate([{ transform: "none" }, { transform: swell }],
+      { duration: 340, easing: "cubic-bezier(.2,1.35,.4,1)", fill: "forwards" });
+    const hold = quick ? (chase ? 420 : 260) : (chase ? 700 : 420);
+    at(340 + hold, () => {
+      const fl = quick ? 380 : (chase ? 620 : 520);
+      el.animate([
+        { transform: swell, opacity: 1 },
+        { transform: `translate(${((b.left - R.left) + b.width / 2 - hw) - sx}px,${((b.top - R.top) + b.height / 2 - hh) - sy}px) rotate(${chase ? 280 : 220}deg) scale(.3)`, opacity: 0.45 },
+      ], { duration: fl, easing: "cubic-bezier(.3,.7,.35,1)", fill: "forwards" });
+      const trail = setInterval(() => {
+        const r = el.getBoundingClientRect();
+        spark(root, r.left - R.left + r.width / 2, r.top - R.top + r.height / 2, col);
+        if (chase) spark(root, r.left - R.left + r.width / 2 + (Math.random() * 18 - 9), r.top - R.top + r.height / 2 + (Math.random() * 18 - 9), "#fff");
+      }, 45);
+      at(fl, () => {
+        clearInterval(trail);
+        el.remove();
+        dim.style.opacity = "0";
+        setTimeout(() => dim.remove(), 320);
+        const bx = (b.left - R.left) + b.width / 2, by = (b.top - R.top) + b.height / 2;
+        ringAt(root, bx, by, col, chase ? 170 : 120);
+        for (let k = 0; k < (chase ? 14 : 9); k++) spark(root, bx, by, k % 3 ? col : "#fff");
+        cb();
       });
-    }
+    });
   }
 
   function confetti(el: Element | null, chase: boolean) {
@@ -406,30 +495,42 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
     }
   }
 
-  function doSpin(free = false) {
+  function doSpin() {
     if (spinningRef.current) return;
-    if (!free && creditsLeftRef.current <= 0) return;
+    if (creditsLeftRef.current <= 0) return;
     const winN = decideSpin(creditsLeftRef.current, spinCost, wonRef.current.length, dryStreakRef.current);
     const hit = winN > 0, isBig = winN > 1;
     const cards = Array.from({ length: winN }, () => makeCard());
 
     spinIndexRef.current += 1;
-    // Free spins are on the house — they never consume a paid spin/credit.
-    if (!free) creditsLeftRef.current -= spinCost;
+    creditsLeftRef.current -= spinCost;
     if (hit) { wonRef.current = [...wonRef.current, ...cards]; dryStreakRef.current = 0; }
     else dryStreakRef.current += 1;
     const sessionOver = creditsLeftRef.current <= 0;
     const preWon = wonRef.current.length - winN;
+    // The header keeps showing the pre-spin count until the cards land.
+    shownWonRef.current = preWon;
     const isChase = cards.some((c) => c.demoRarity === "CHASE");
+    const topRar: DemoRarity = isChase ? "CHASE" : cards.some((c) => c.demoRarity === "RARE") ? "RARE" : "COMMON";
     const nearMiss = !hit && Math.random() < 0.35;
     const { g: finalG, winCells } = buildGrid(winN, nearMiss);
     const Q = quick;
 
+    // Win → face-down cards fly straight into the stack (no reveal — the aura
+    // is the only tell until the 100% flip).
     const afterWin = () => {
       flyCards(cards, preWon, () => {
         setSpin(false);
         if (sessionOver) { setStatusDom(L.stackComplete, "hint-win"); at(Q ? 450 : 800, () => setPhase("summary")); }
-        else { setStatusDom(isBig ? L.bankedBig(winN) : L.banked, "hint-win"); tick(); }
+        else {
+          setStatusDom(
+            isBig ? L.bankedBig(winN)
+            : topRar === "CHASE" ? L.bankedChase
+            : topRar === "RARE" ? L.bankedRare
+            : L.banked,
+            topRar === "CHASE" ? "hint-chase" : topRar === "RARE" ? "hint-near" : "hint-win");
+          tick();
+        }
       });
     };
     const finishDry = () => {
@@ -444,15 +545,14 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
       tick();
       if (!hit) { finishDry(); return; }
       setSpin(true);
-      afterRevealRef.current = afterWin;
-      setReveal({ cards, big: isBig, done: sessionOver });
+      afterWin();
       return;
     }
 
     setSpin(true);
     const token = ++tokenRef.current;
     const live = () => tokenRef.current === token && rootRef.current;
-    setStatusDom(free ? L.freeSpinRound : "", free ? "hint-win" : "");
+    setStatusDom("", "");
     updateBarDom(preWon);
 
     const ivs: (ReturnType<typeof setInterval> | null)[] = [];
@@ -505,7 +605,7 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
         cab.appendChild(sw);
         setTimeout(() => sw.remove(), 800);
       }
-      cab?.classList.add(isBig ? "goldflash" : "winflash");
+      cab?.classList.add(isChase ? "chaseflash" : isBig ? "goldflash" : "winflash");
       if (isBig && cab) {
         const sp = document.createElement("div");
         sp.className = "bigsplash"; sp.textContent = "BIG WIN";
@@ -514,9 +614,13 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
       }
       confetti(cab, isChase || isBig);
       if (isChase || isBig) rootQ(".room")?.classList.add("shake");
-      setStatusDom(isBig ? L.bigWinLine(winN) : L.cardWin, "hint-win");
-      afterRevealRef.current = afterWin;
-      at(isBig ? (Q ? 550 : 950) : (Q ? 300 : 620), () => { if (live()) setReveal({ cards, big: isBig, done: sessionOver }); });
+      setStatusDom(
+        isBig ? L.bigWinLine(winN)
+        : topRar === "CHASE" ? L.legendaryAura
+        : topRar === "RARE" ? L.rareGlow
+        : L.cardWin,
+        topRar === "CHASE" ? "hint-chase" : topRar === "RARE" ? "hint-near" : "hint-win");
+      at(isBig ? (Q ? 550 : 950) : (Q ? 300 : 620), () => { if (live()) afterWin(); });
     });
   }
 
@@ -529,28 +633,8 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
       if (winN > 0) { wonRef.current = [...wonRef.current, ...Array.from({ length: winN }, () => makeCard())]; dryStreakRef.current = 0; }
       else dryStreakRef.current += 1;
     }
+    shownWonRef.current = wonRef.current.length;
     setPhase("summary");
-  }
-
-  function dismissReveal() {
-    setReveal(null);
-    const fn = afterRevealRef.current;
-    afterRevealRef.current = () => {};
-    fn();
-  }
-
-  // Trade the just-won card(s) for a bonus spin. The card is given up (never
-  // banked), we flash a "Free spin round" banner, then auto-spin a free spin
-  // that doesn't cost a paid spin. The reel lock is held through the banner so
-  // no manual spin can sneak in.
-  function exchangeForFreeSpin() {
-    const ids = new Set((reveal?.cards ?? []).map((c) => c.id));
-    wonRef.current = wonRef.current.filter((c) => !ids.has(c.id));
-    afterRevealRef.current = () => {};
-    setReveal(null);
-    tick();
-    setFreeBanner(true);
-    at(1250, () => { setFreeBanner(false); setSpin(false); doSpin(true); });
   }
 
   /* ── Summary helpers (exchange / ship) ── */
@@ -586,15 +670,18 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
 
   const rarityCls = (d: DemoRarity) => (d === "CHASE" ? "CHASE" : d === "RARE" ? "RARE" : "COMMON");
 
-  /* ── Summary screen ── */
+  /* ── Summary screen — the 100% flip ceremony, then exchange / ship ── */
   if (phase === "summary") {
+    // Commons flip first — chase last (v7 ceremony order).
+    const RANK = { COMMON: 0, RARE: 1, CHASE: 2 };
+    const display = [...won].sort((a, b) => RANK[a.demoRarity] - RANK[b.demoRarity]);
     return (
       <div ref={rootRef} className="sg-root absolute inset-0 z-[70] flex flex-col text-[#1d2129]" style={{ fontFamily: FONT, background: SURFACE }}>
         {header}
         <div className="flex shrink-0 items-center justify-between gap-2 border-b border-black/10 bg-white px-4 py-2.5">
           <div className="min-w-0">
             <p className="truncate text-[14px] font-extrabold leading-tight" style={{ color: BRAND }}>{packName}</p>
-            <p className="text-[10px] font-medium" style={{ color: MUTED }}>{L.summary(credits, spins, won.length)}</p>
+            <p className="text-[10px] font-medium" style={{ color: MUTED }}>{L.summary(credits, spins, won.length)}{!flipDone && won.length > 0 ? <b style={{ color: BRAND }}> — {L.flipping}</b> : null}</p>
           </div>
           <div className="flex shrink-0 gap-1.5">
             <button onClick={onClose} className="rounded-lg border border-[#e5e8ec] bg-white px-2.5 py-1.5 text-[11px] font-bold text-[#1d2129] active:scale-95">{L.backToShop}</button>
@@ -607,25 +694,31 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
             <p className="mt-10 text-center text-[13px]" style={{ color: MUTED }}>{L.noCards}</p>
           ) : singleCard ? (
             <div className="flex flex-col items-center pt-2">
-              <img src={won[0].img} alt="" className="w-[168px] rounded-xl object-cover" style={{ aspectRatio: "5/7", boxShadow: "0 10px 26px rgba(0,0,0,0.22)" }} />
+              <div className="relative w-[168px]" style={{ aspectRatio: "5/7" }}>
+                <img src={won[0].img} alt="" className="h-full w-full rounded-xl object-cover" style={{ boxShadow: "0 10px 26px rgba(0,0,0,0.22)" }} />
+                {!flipDone && <div className="veil" style={{ animationDelay: "400ms" }}>?</div>}
+              </div>
               <p className="mt-3 text-center text-[15px] font-extrabold leading-tight text-[#1d2129]">{lang === "ja" ? won[0].nameJa : won[0].name}</p>
               <p className="mt-1 text-[10.5px] font-extrabold uppercase tracking-wider" style={{ color: won[0].demoRarity === "CHASE" ? BRAND : won[0].demoRarity === "RARE" ? SHIP : MUTED }}>{L.rarity[won[0].rarity]} · {coinOf(won[0].rarity).toLocaleString()} {L.coinsUnit}</p>
             </div>
           ) : (
             <>
-              {picked.size === 0 && <p className="mb-2 text-[11px] font-semibold" style={{ color: MUTED }}>{L.tapToSelect}</p>}
+              {flipDone && picked.size === 0 && <p className="mb-2 text-[11px] font-semibold" style={{ color: MUTED }}>{L.tapToSelect}</p>}
               <div className="space-y-3">
-                {won.map((c) => {
+                {display.map((c, i) => {
                   const isSel = picked.has(c.id);
                   const rc = c.demoRarity === "CHASE" ? BRAND : c.demoRarity === "RARE" ? SHIP : MUTED;
                   return (
                     <button
                       key={c.id}
-                      onClick={() => togglePick(c.id)}
+                      onClick={() => { if (flipDone) togglePick(c.id); }}
                       className="flex w-full gap-3 rounded-2xl bg-white p-2.5 text-left shadow-[0_1px_4px_rgba(0,0,0,0.08)] transition active:scale-[0.995]"
                       style={{ border: isSel ? "2.5px solid #FF7A1A" : "1.5px solid rgba(0,0,0,0.08)" }}
                     >
-                      <img src={c.img} alt="" className="shrink-0 rounded-lg object-cover" style={{ width: 82, aspectRatio: "5/7", boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }} />
+                      <div className="relative shrink-0" style={{ width: 82, aspectRatio: "5/7" }}>
+                        <img src={c.img} alt="" className="h-full w-full rounded-lg object-cover" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }} />
+                        {!flipDone && <div className="veil" style={{ animationDelay: (400 + i * flipStep(display.length)) + "ms", borderRadius: 8, fontSize: 18 }}>?</div>}
+                      </div>
                       <div className="flex min-w-0 flex-1 flex-col">
                         <div className="flex items-start justify-between gap-2">
                           <span className="text-[11px] font-extrabold uppercase tracking-wider" style={{ color: rc }}>{L.rarity[c.rarity]}</span>
@@ -648,7 +741,7 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
           )}
         </div>
 
-        {won.length > 0 && sel.size > 0 && (
+        {flipDone && won.length > 0 && sel.size > 0 && (
           <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
             <div className="mb-2 flex items-center justify-between text-[11px] font-semibold">
               <span style={{ color: MUTED }}>{sel.size} · {pickedTotal.toLocaleString()} {L.coinsUnit}</span>
@@ -679,8 +772,10 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
   const spinsLeft = Math.ceil(creditsLeftRef.current / spinCost);
   const totalSpins = Math.max(1, Math.ceil(credits / spinCost));
   const spinNo = Math.min(totalSpins - spinsLeft + 1, totalSpins);
-  const shownWon = wonRef.current.length;
-  const revCard = reveal?.cards[0];
+  // Mid-flight renders show the lagged count; the pile aura also only counts
+  // cards that have already landed, so nothing "arrives" ahead of its flight.
+  const shownWon = shownWonRef.current;
+  const bankedSoFar = wonRef.current.slice(0, shownWon);
 
   return (
     <div ref={rootRef} className="sg-root absolute inset-0 z-[70] flex flex-col text-[#1d2129]" style={{ fontFamily: FONT, background: SURFACE }}>
@@ -694,18 +789,20 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
             </div>
             <div className="stackbar">
               <div className="bar" style={{ flex: 1 }}><div className="fill" style={{ width: pct + "%" }} /></div>
-              <button className="stack" onClick={() => { if (!spinningRef.current) setStackOpen(true); }} aria-label="Your card stack">
-                <img className="pileimg p3" src="/slot/sym-char-hero.png" alt="" />
-                <img className="pileimg p2" src="/slot/sym-char-hero.png" alt="" />
-                <img className="pileimg p1" src="/slot/sym-char-hero.png" alt="" />
+              <button
+                className={`stack ${bankedSoFar.some((w) => w.demoRarity === "CHASE") ? "has-chase" : bankedSoFar.some((w) => w.demoRarity === "RARE") ? "has-rare" : ""}`}
+                onClick={() => { if (!spinningRef.current) setStackOpen(true); }}
+                aria-label="Your face-down card stack"
+              >
+                <span className="pileimg p3" /><span className="pileimg p2" /><span className="pileimg p1" />
                 <b>{shownWon}</b>
               </button>
             </div>
             <div className="bar-sub">
               {lang === "ja" ? (
-                <><span className="cnt-n">{shownWon}</span>枚ストック — バーは消費クレジットを表示、<b>100%</b>でストックがあなたのものに</>
+                <><span className="cnt-n">{shownWon}</span>枚を裏向きでストック — バーは消費クレジット、<b>100%</b>で全てオープン</>
               ) : (
-                <><span className="cnt-n">{shownWon}</span> card{shownWon === 1 ? "" : "s"} stacked — the bar tracks credits spent, at <b>100%</b> the stack is yours</>
+                <><span className="cnt-n">{shownWon}</span> card{shownWon === 1 ? "" : "s"} banked face-down — the bar tracks credits spent; at <b>100%</b> they all flip</>
               )}
             </div>
           </div>
@@ -741,70 +838,28 @@ export function SlotGame({ packId, packName, packImage, credits, spins, lang, he
         <PackOpenIntro image={packImage} name={packName} lang={lang} onDone={() => setPhase("play")} />
       )}
 
-      {/* Reveal overlay */}
-      {reveal && !reveal.big && revCard && (
-        <div className="ovl" onClick={dismissReveal}>
-          <div className={`rev r-${revCard.demoRarity}`} onClick={(e) => e.stopPropagation()}>
-            {revCard.demoRarity === "CHASE" && <div className="chasebanner">{L.theChase}</div>}
-            <div className="big-card"><img src={revCard.img} alt="" /></div>
-            <div className="r-name">{revCard.name}</div>
-            <div className="r-rar">{revCard.demoRarity}</div>
-            <div className="rev-cta">
-              <button className="cta-loot" onClick={dismissReveal}>{reveal.done ? L.takeStack : L.addToLoot}</button>
-              <button className="cta-free" onClick={exchangeForFreeSpin}>{L.exchangeFreeSpin}</button>
-            </div>
-          </div>
-        </div>
-      )}
-      {reveal && reveal.big && (
-        <div className="ovl" onClick={dismissReveal}>
-          <div className="rev" style={{ maxWidth: 360 }} onClick={(e) => e.stopPropagation()}>
-            <div className="chasebanner" style={{ color: BRAND }}>{L.bigWin}</div>
-            <div className="r-name">{L.cardsInSpin(reveal.cards.length)}</div>
-            {reveal.cards.some((c) => c.demoRarity === "CHASE") && <div className="r-rar" style={{ color: BRAND }}>{L.chaseIncluded}</div>}
-            <div className="sum-cards stagger" style={{ margin: "12px 0 4px", maxHeight: "46vh", overflowY: "auto" }}>
-              {[...reveal.cards].sort((a, b) => ({ CHASE: 0, RARE: 1, COMMON: 2 }[a.demoRarity] - { CHASE: 0, RARE: 1, COMMON: 2 }[b.demoRarity])).map((cd, i) => (
-                <div className={`sc ${rarityCls(cd.demoRarity)}`} style={{ animationDelay: Math.min(i * 60, 700) + "ms" }} key={cd.id}>
-                  <img className="aimg" src={cd.img} alt="" />
-                  <div className="n">{cd.name}</div>
-                  <div className="r">{cd.demoRarity}</div>
-                </div>
-              ))}
-            </div>
-            <button onClick={dismissReveal}>{reveal.done ? L.takeStack : L.addThemToLoot}</button>
-          </div>
-        </div>
-      )}
-
-      {/* Free-spin round banner — shows briefly, then the bonus spin auto-starts */}
-      {freeBanner && (
-        <div className="ovl free-ovl">
-          <div className="free-banner">
-            <div className="fb-badge">{L.freeSpinRound}</div>
-            <div className="fb-sub">{L.freeSpinSub}</div>
-          </div>
-        </div>
-      )}
-
-      {/* Mid-session stack peek */}
+      {/* Mid-session stack peek — face-down until 100%; auras hint at the tier */}
       {stackOpen && (
         <div className="ovl" onClick={() => setStackOpen(false)}>
           <div className="rev" style={{ maxWidth: 340 }} onClick={(e) => e.stopPropagation()}>
-            <div className="r-name" style={{ marginBottom: 4 }}>{lang === "ja" ? `ストック — ${wonRef.current.length}枚` : `Your stack — ${wonRef.current.length} card${wonRef.current.length === 1 ? "" : "s"}`}</div>
+            <div className="r-name" style={{ marginBottom: 4 }}>{L.stackTitle(wonRef.current.length)}</div>
+            <p style={{ fontSize: 10.5, color: "#a0a6af", marginBottom: 12 }}>{L.faceDownHint}</p>
             {wonRef.current.length ? (
-              <div className="sum-cards" style={{ margin: "8px 0 4px", maxHeight: "46vh", overflowY: "auto" }}>
-                {wonRef.current.map((g) => (
-                  <div className={`sc ${rarityCls(g.demoRarity)}`} key={g.id}>
-                    <img className="aimg" src={g.img} alt="" />
-                    <div className="n">{g.name}</div>
-                    <div className="r">{g.demoRarity}</div>
+              <div className="sum-cards" style={{ margin: "0 0 4px", maxHeight: "46vh", overflowY: "auto" }}>
+                {wonRef.current.map((g, i) => (
+                  <div className={`sc fd-sc-${rarityCls(g.demoRarity)}`} key={g.id}>
+                    <div className="backpat">?</div>
+                    <div className="n">{L.cardN(i + 1)}</div>
+                    <div className="r" style={{ color: g.demoRarity === "CHASE" ? BRAND : g.demoRarity === "RARE" ? SHIP : MUTED }}>
+                      {g.demoRarity === "CHASE" ? L.auraChase : g.demoRarity === "RARE" ? L.auraRare : L.faceDown}
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p style={{ fontSize: 12, color: MUTED, padding: "16px 0" }}>{lang === "ja" ? "まだありません" : "Nothing yet — keep spinning."}</p>
+              <p style={{ fontSize: 12, color: MUTED, padding: "16px 0" }}>{L.nothingYet}</p>
             )}
-            <button onClick={() => setStackOpen(false)}>{lang === "ja" ? "閉じる" : "Close"}</button>
+            <button onClick={() => setStackOpen(false)}>{L.close}</button>
           </div>
         </div>
       )}
@@ -831,7 +886,10 @@ function SlotStyle() {
 @keyframes sgsheen{to{transform:translateX(100%)}}
 .sg-root .stackbar{display:flex;align-items:center;gap:10px}
 .sg-root .stack{position:relative;width:52px;height:48px;border:none;background:none;cursor:pointer;flex-shrink:0}
-.sg-root .stack .pileimg{position:absolute;left:50%;top:50%;width:30px;height:40px;border-radius:5px;object-fit:contain;background:linear-gradient(180deg,#fff,#f0f2f5);border:1.5px solid rgba(209,0,5,.35);box-shadow:0 3px 7px rgba(0,0,0,.18)}
+.sg-root .stack .pileimg{position:absolute;left:50%;top:50%;width:30px;height:40px;border-radius:5px;background:url(/slot/card-back.png) center/cover;border:1.5px solid rgba(209,0,5,.35);box-shadow:0 3px 7px rgba(0,0,0,.18)}
+.sg-root .stack.has-rare .p1{border-color:rgba(245,103,10,.95);box-shadow:0 0 13px rgba(245,103,10,.65)}
+.sg-root .stack.has-chase .p1{border-color:rgba(209,0,5,.95);box-shadow:0 0 17px rgba(209,0,5,.9);animation:sgfdpulse 1.1s ease-in-out infinite}
+@keyframes sgfdpulse{50%{filter:brightness(1.45)}}
 .sg-root .stack .p1{transform:translate(-50%,-50%)}
 .sg-root .stack .p2{transform:translate(-50%,-50%) rotate(-9deg) translateX(-4px)}
 .sg-root .stack .p3{transform:translate(-50%,-50%) rotate(10deg) translateX(4px)}
@@ -849,6 +907,8 @@ function SlotStyle() {
 @keyframes sgcabwin{50%{filter:drop-shadow(0 0 20px rgba(22,163,74,.75)) drop-shadow(0 14px 28px rgba(0,0,0,.22))}}
 .sg-root .cab.goldflash{animation:sgcabgold .55s ease-in-out 3}
 @keyframes sgcabgold{50%{filter:drop-shadow(0 0 24px rgba(255,180,60,.8)) drop-shadow(0 14px 28px rgba(0,0,0,.22))}}
+.sg-root .cab.chaseflash{animation:sgcabchase .6s ease-in-out 3}
+@keyframes sgcabchase{50%{filter:drop-shadow(0 0 26px rgba(209,0,5,.85)) drop-shadow(0 14px 28px rgba(0,0,0,.22))}}
 .sg-root .cab.cab-in{animation:sgcabin .6s cubic-bezier(.2,1.45,.35,1) both}
 @keyframes sgcabin{0%{transform:translateY(24px) scale(.9);opacity:0}55%{transform:translateY(0) scale(1.04);opacity:1}100%{transform:translateY(0) scale(1)}}
 /* Reels fill the transparent window of frame-neon.png (measured insets, tucked ~0.6% under the neon) */
@@ -922,6 +982,8 @@ function SlotStyle() {
 .sg-root .status{min-height:34px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:13px;font-weight:800;color:var(--muted);margin-bottom:10px;line-height:1.35}
 .sg-root .status.hint-near{color:var(--ship)}
 .sg-root .status.hint-win{color:var(--good)}
+.sg-root .status.hint-chase{color:var(--brand);animation:sgchpulse 1.1s ease-in-out infinite}
+@keyframes sgchpulse{50%{opacity:.55}}
 .sg-root .spin-btn{position:relative;width:100%;border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:900;letter-spacing:.04em;cursor:pointer;background:var(--brand);color:#fff;box-shadow:0 6px 18px rgba(209,0,5,.28);transition:transform .12s}
 .sg-root .spin-btn:not(:disabled){animation:sgbtnring 2.6s ease-in-out infinite}
 @keyframes sgbtnring{50%{box-shadow:0 8px 24px rgba(209,0,5,.42)}}
@@ -929,44 +991,32 @@ function SlotStyle() {
 .sg-root .spin-btn:disabled{opacity:.55;cursor:default;transform:none;animation:none}
 .sg-root .aux{display:flex;justify-content:space-between;margin-top:12px;position:relative;z-index:1}
 .sg-root .aux button{border:none;background:none;color:var(--muted);font-size:11.5px;font-weight:700;cursor:pointer;text-decoration:underline;padding:6px 2px}
-.sg-root .flycard{position:absolute;width:44px;height:58px;border-radius:7px;overflow:hidden;z-index:55;pointer-events:none;border:1.5px solid rgba(209,0,5,.45);box-shadow:0 8px 20px rgba(0,0,0,.25),0 0 12px rgba(209,0,5,.25);transition:transform .55s cubic-bezier(.3,.75,.35,1),opacity .55s}
+/* Face-down flycards: the v7 golden card back + rarity aura is all you see mid-session */
+.sg-root .flycard{position:absolute;width:44px;height:58px;border-radius:7px;overflow:hidden;z-index:55;pointer-events:none;border:1.5px solid rgba(255,205,110,.85);box-shadow:0 8px 20px rgba(0,0,0,.3),0 0 14px rgba(255,190,80,.5)}
 .sg-root .flycard img{width:100%;height:100%;object-fit:cover}
+.sg-root .flycard.fd-RARE{width:52px;height:68px;border-color:rgba(245,103,10,.95);box-shadow:0 8px 20px rgba(0,0,0,.35),0 0 28px rgba(245,103,10,.8)}
+.sg-root .flycard.fd-CHASE{width:60px;height:78px;border-color:rgba(209,0,5,.95);box-shadow:0 8px 20px rgba(0,0,0,.35),0 0 36px rgba(209,0,5,.95);animation:sgfdpulse .45s ease-in-out infinite}
+.sg-root .flydim{position:absolute;inset:0;background:rgba(29,33,41,.45);z-index:52;pointer-events:none;opacity:0;transition:opacity .3s}
+.sg-root .spark{position:absolute;width:6px;height:6px;border-radius:50%;pointer-events:none;z-index:56;background:radial-gradient(circle,#fff,var(--sc,#f5a623) 55%,transparent 78%);animation:sgsparkfade .7s ease-out forwards}
+@keyframes sgsparkfade{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+.sg-root .shockring{position:absolute;border-radius:50%;pointer-events:none;z-index:54;border:2.5px solid var(--sc,#f5a623);box-shadow:0 0 18px var(--sc,#f5a623);animation:sgringout .55s ease-out forwards}
+@keyframes sgringout{from{transform:scale(.2);opacity:.95}to{transform:scale(1);opacity:0}}
+/* Card backs: stack-peek tiles and the summary flip veils */
+.sg-root .backpat{width:100%;aspect-ratio:3/4;border-radius:8px;border:1px solid rgba(0,0,0,.1);background:repeating-linear-gradient(135deg,rgba(255,255,255,.16) 0 5px,#b40206 5px 10px);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:rgba(255,255,255,.85)}
+.sg-root .veil{position:absolute;inset:0;border-radius:12px;border:1px solid rgba(0,0,0,.12);background:repeating-linear-gradient(135deg,rgba(255,255,255,.16) 0 5px,#b40206 5px 10px);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:rgba(255,255,255,.9);z-index:2;transform-origin:center;animation:sgveilout .45s ease forwards}
+@keyframes sgveilout{55%{opacity:1}to{transform:rotateY(90deg) scale(1.06);opacity:0}}
 .sg-root .ovl{position:absolute;inset:0;background:rgba(29,33,41,.55);display:flex;align-items:center;justify-content:center;z-index:40;padding:20px;backdrop-filter:blur(3px)}
 .sg-root .rev{background:#fff;border:1px solid #e5e8ec;border-radius:20px;padding:26px 22px;text-align:center;max-width:320px;width:100%;animation:sgpop .35s cubic-bezier(.2,1.4,.4,1);box-shadow:0 24px 50px rgba(0,0,0,.22)}
 @keyframes sgpop{from{transform:scale(.7);opacity:0}}
-.sg-root .rev .big-card{position:relative;width:176px;height:235px;border-radius:14px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 28px rgba(0,0,0,.2);overflow:hidden;animation:sgcardflip .55s cubic-bezier(.2,1.4,.4,1) both}
-@keyframes sgcardflip{from{transform:rotateY(85deg) scale(.72);opacity:0}}
-.sg-root .rev .big-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.sg-root .rev .big-card::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 28%,rgba(255,255,255,.38) 46%,transparent 62%);transform:translateX(-130%);animation:sgcardshine 1s ease .45s forwards}
-@keyframes sgcardshine{to{transform:translateX(130%)}}
 .sg-root .rev .r-name{font-size:17px;font-weight:800;color:var(--text)}
-.sg-root .rev .r-rar{font-size:10.5px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;margin-top:4px}
 .sg-root .rev button{margin-top:16px;width:100%;border:none;border-radius:12px;padding:13px;font-weight:800;cursor:pointer;background:var(--brand);color:#fff;font-size:14px;box-shadow:0 4px 14px rgba(209,0,5,.28)}
-.sg-root .rev-cta{display:flex;flex-direction:column;gap:9px;margin-top:16px}
-.sg-root .rev-cta button{margin-top:0}
-.sg-root .rev-cta .cta-loot{background:var(--brand);color:#fff}
-.sg-root .rev-cta .cta-free{background:#fff;color:var(--brand);border:2px solid var(--brand);box-shadow:none;padding:11px}
-.sg-root .rev-cta .cta-free:active{background:#fff5f5}
-.sg-root .free-ovl{background:rgba(29,33,41,.42);z-index:45}
-.sg-root .free-banner{text-align:center;animation:sgfreein .5s cubic-bezier(.2,1.5,.4,1) both}
-.sg-root .fb-badge{display:inline-block;background:linear-gradient(135deg,#ff3b4e,#B40206);color:#fff;font-weight:900;font-size:26px;letter-spacing:.05em;padding:16px 30px;border-radius:18px;border:2px solid rgba(255,255,255,.92);box-shadow:0 12px 34px rgba(209,0,5,.5);text-shadow:0 2px 8px rgba(120,0,10,.45);animation:sgfreepulse 1.1s ease-in-out infinite}
-.sg-root .fb-sub{margin:14px auto 0;max-width:280px;color:#fff;font-size:12.5px;font-weight:700;line-height:1.4;text-shadow:0 1px 6px rgba(0,0,0,.55)}
-@keyframes sgfreein{from{transform:scale(.6) translateY(12px);opacity:0}}
-@keyframes sgfreepulse{50%{transform:scale(1.05)}}
-.sg-root .r-COMMON .r-rar{color:var(--muted)} .sg-root .r-RARE .r-rar{color:var(--ship)} .sg-root .r-CHASE .r-rar{color:var(--brand)}
-.sg-root .r-RARE .big-card{box-shadow:0 0 28px rgba(245,103,10,.35)}
-.sg-root .r-CHASE .big-card{box-shadow:0 0 36px rgba(209,0,5,.4)}
-.sg-root .chasebanner{font-size:12px;font-weight:800;letter-spacing:.2em;color:var(--brand);margin-bottom:6px}
 .sg-root .sum-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:10px}
 .sg-root .sc{border:1px solid #e5e8ec;border-radius:12px;background:#f7f8fa;padding:10px 6px;text-align:center;position:relative}
-.sg-root .sum-cards.stagger .sc{animation:sgtilein .45s cubic-bezier(.2,1.3,.4,1) both}
-@keyframes sgtilein{from{transform:translateY(14px) scale(.85);opacity:0}}
-.sg-root .sc .aimg{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:8px;display:block}
 .sg-root .sc .n{font-size:10.5px;font-weight:800;margin-top:5px;line-height:1.3;color:var(--text)}
 .sg-root .sc .r{font-size:8.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin-top:2px}
-.sg-root .sc.CHASE{box-shadow:0 0 14px rgba(209,0,5,.2);border-color:rgba(209,0,5,.4)}
-.sg-root .sc.CHASE .r{color:var(--brand)} .sg-root .sc.RARE .r{color:var(--ship)} .sg-root .sc.COMMON .r{color:var(--muted)}
-@media(prefers-reduced-motion:reduce){.sg-root *{animation:none!important;transition:none!important}}
+.sg-root .sc.fd-sc-CHASE{box-shadow:0 0 14px rgba(209,0,5,.25);border-color:rgba(209,0,5,.5)}
+.sg-root .sc.fd-sc-RARE{border-color:rgba(245,103,10,.5)}
+@media(prefers-reduced-motion:reduce){.sg-root *{animation:none!important;transition:none!important}.sg-root .veil{display:none}}
 `}</style>
   );
 }
