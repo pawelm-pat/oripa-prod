@@ -1578,13 +1578,7 @@ function DrawResults({ lang, coins, cards, onDrawAgain, onClose, onHome, onOpenS
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={exchange}
-            disabled={selected.size === 0}
-            className="rounded-xl border-2 border-[#D10005] bg-white py-3 text-[14px] font-extrabold text-[#D10005] active:scale-[0.98] disabled:opacity-40"
-          >
-            {t.exchange}
-          </button>
+          {/* Request Shipping on the left (matches My Loot placement). */}
           <div className="relative">
             <style>{`@keyframes freeShipIn{from{opacity:0;transform:translateY(-6px) scale(.9)}to{opacity:1;transform:none}}@keyframes freeShipPulse{0%,100%{box-shadow:0 3px 8px rgba(18,129,60,0.45)}50%{box-shadow:0 3px 14px rgba(18,129,60,0.75)}}`}</style>
             {canShip && (freeShipAvailable ? (
@@ -1612,6 +1606,14 @@ function DrawResults({ lang, coins, cards, onDrawAgain, onClose, onHome, onOpenS
               {t.requestShipping}
             </button>
           </div>
+          {/* Exchange on the right. */}
+          <button
+            onClick={exchange}
+            disabled={selected.size === 0}
+            className="rounded-xl border-2 border-[#D10005] bg-white py-3 text-[14px] font-extrabold text-[#D10005] active:scale-[0.98] disabled:opacity-40"
+          >
+            {t.exchange}
+          </button>
         </div>
         <p className="mt-1.5 text-center text-[10.5px] leading-tight text-[#8a9099]">{freeShipAvailable ? t.shipSelectHint : t.shipSelectHintPaid}</p>
       </div>
