@@ -37,7 +37,10 @@ export default function Page() {
         <div className="absolute right-full top-3 mr-4 flex w-max flex-col items-end gap-4">
           <LangToggle lang={lang} setLang={setLang} />
           <KycScenarioControl value={kycScenario} onChange={changeKycScenario} onReset={resetKycSession} />
-          <FreeShippingControl value={freeShipping} onChange={setFreeShipping} />
+          {/* Only relevant where prizes can be selected for shipping. */}
+          {(screen === "myLoot" || screen === "drawDetail") && (
+            <FreeShippingControl value={freeShipping} onChange={setFreeShipping} />
+          )}
         </div>
         <div className="rounded-[2.6rem] border border-white/12 bg-[#1b1c22] p-3 shadow-[0_35px_90px_rgba(0,0,0,0.55)]">
           <div className="rounded-[2.1rem] border border-white/8 bg-black p-2">

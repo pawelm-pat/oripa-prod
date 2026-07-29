@@ -1041,7 +1041,7 @@ function DrawPromoBanner({ t, item, className = "", showCountdown = true }: { t:
   );
 }
 
-function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void }) {
+function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean }) {
   const t = STR[lang];
   const pct = Math.round((item.remaining / item.total) * 100);
   const soldOut = item.remaining <= 0;
@@ -1387,6 +1387,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: 
           onClose={() => setResults(null)}
           onHome={onHome}
           onOpenStore={onOpenStore}
+          freeShipAvailable={freeShipAvailable}
         />
       )}
     </div>
@@ -1396,7 +1397,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore }: { lang: 
 // Gacha results — "list mode". Shown after any draw (×1 / ×10 / custom). Lets
 // the player review the cards they pulled, filter by tier, sort, select, and
 // exchange to coins or request shipping. Self-contained (local selection).
-function DrawResults({ lang, coins, cards, onDrawAgain, onClose, onHome, onOpenStore }: { lang: Lang; coins: number; cards: WonPrize[]; onDrawAgain: () => void; onClose: () => void; onHome: () => void; onOpenStore?: () => void }) {
+function DrawResults({ lang, coins, cards, onDrawAgain, onClose, onHome, onOpenStore, freeShipAvailable = true }: { lang: Lang; coins: number; cards: WonPrize[]; onDrawAgain: () => void; onClose: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean }) {
   const t = STR[lang];
   const [list, setList] = useState<WonPrize[]>(cards);
   const [tier, setTier] = useState<"all" | Rarity>("all");
@@ -1581,16 +1582,23 @@ function DrawResults({ lang, coins, cards, onDrawAgain, onClose, onHome, onOpenS
             {t.exchange}
           </button>
           <div className="relative">
-            {canShip && (
+            <style>{`@keyframes freeShipIn{from{opacity:0;transform:translateY(-6px) scale(.9)}to{opacity:1;transform:none}}@keyframes freeShipPulse{0%,100%{box-shadow:0 3px 8px rgba(18,129,60,0.45)}50%{box-shadow:0 3px 14px rgba(18,129,60,0.75)}}`}</style>
+            {canShip && (freeShipAvailable ? (
               <div
-                className="pointer-events-none absolute -top-2.5 right-0 z-10 flex items-center gap-1 rounded-full bg-gradient-to-br from-[#1eae52] to-[#12813c] px-2 py-[3px] text-white ring-1 ring-white/30"
+                className="pointer-events-none absolute -top-2.5 left-0 right-0 z-10 flex items-center justify-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-br from-[#1eae52] to-[#12813c] px-2 py-[3px] text-white ring-1 ring-white/30"
                 style={{ animation: "freeShipIn .3s cubic-bezier(.2,.9,.3,1) both, freeShipPulse 2.4s ease-in-out infinite" }}
               >
-                <style>{`@keyframes freeShipIn{from{opacity:0;transform:translateY(-6px) scale(.9)}to{opacity:1;transform:none}}@keyframes freeShipPulse{0%,100%{box-shadow:0 3px 8px rgba(18,129,60,0.45)}50%{box-shadow:0 3px 14px rgba(18,129,60,0.75)}}`}</style>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h11v9H3z" /><path d="M14 9h4l3 3v3h-7z" /><circle cx="7" cy="18" r="1.6" /><circle cx="17.5" cy="18" r="1.6" /></svg>
-                <span className="text-[9.5px] font-extrabold tracking-wide">{t.freeShipping}</span>
+                <svg width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M7.5 12.5l3 3 6-6.5" stroke="#12813c" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                <span className="text-[9.5px] font-extrabold tracking-wide">{t.freeShippingQuota(FREE_SHIP_QUOTA)}</span>
               </div>
-            )}
+            ) : (
+              <div
+                className="pointer-events-none absolute -top-2.5 left-0 right-0 z-10 flex items-center justify-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-br from-[#ffcf33] to-[#f5a623] px-2 py-[3px] text-[#3a2a00] ring-1 ring-black/10"
+                style={{ animation: "freeShipIn .3s cubic-bezier(.2,.9,.3,1) both" }}
+              >
+                <span className="text-[9.5px] font-extrabold tracking-wide">{t.paidShipBadge}</span>
+              </div>
+            ))}
             <button
               onClick={ship}
               disabled={selected.size === 0}
@@ -1601,7 +1609,7 @@ function DrawResults({ lang, coins, cards, onDrawAgain, onClose, onHome, onOpenS
             </button>
           </div>
         </div>
-        <p className="mt-1.5 text-center text-[10.5px] leading-tight text-[#8a9099]">{t.shipSelectHint}</p>
+        <p className="mt-1.5 text-center text-[10.5px] leading-tight text-[#8a9099]">{freeShipAvailable ? t.shipSelectHint : t.shipSelectHintPaid}</p>
       </div>
 
       {toast && (
@@ -4127,6 +4135,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onBack={goHome}
             onHome={goHome}
             onOpenStore={openStore}
+            freeShipAvailable={freeShipAvailable}
           />
         )}
         {screen === "notifications" && <NotificationsScreen lang={lang} coins={coins} empty={noHistory} only={notifOnly} onBack={() => setScreen(prevScreen)} onHome={goHome} />}
