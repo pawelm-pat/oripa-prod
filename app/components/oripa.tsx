@@ -27,6 +27,7 @@ import { LEGAL, type LegalDocKey } from "../data/legal";
 import {
   CATEGORIES,
   DAY,
+  DEFAULT_SHIPPING_ADDRESSES,
   EMPTY_SHIPPING_FORM,
   INITIAL_SHIPPED,
   INITIAL_WAITING,
@@ -1041,7 +1042,7 @@ function DrawPromoBanner({ t, item, className = "", showCountdown = true }: { t:
   );
 }
 
-function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void }) {
+function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>> }) {
   const t = STR[lang];
   const pct = Math.round((item.remaining / item.total) * 100);
   const soldOut = item.remaining <= 0;
@@ -1392,6 +1393,8 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
           onHome={onHome}
           onOpenStore={onOpenStore}
           freeShipAvailable={freeShipAvailable}
+          shippingAddresses={shippingAddresses}
+          onShippingAddressesChange={onShippingAddressesChange}
         />
       )}
     </div>
@@ -1401,13 +1404,14 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
 // Gacha results — "list mode". Shown after any draw (×1 / ×10 / custom). Lets
 // the player review the cards they pulled, filter by tier, sort, select, and
 // exchange to coins or request shipping. Self-contained (local selection).
-function DrawResults({ lang, coins, cards, onDrawAgain, onClose, onHome, onOpenStore, freeShipAvailable = true }: { lang: Lang; coins: number; cards: WonPrize[]; onDrawAgain: () => void; onClose: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean }) {
+function DrawResults({ lang, coins, cards, onDrawAgain, onClose, onHome, onOpenStore, freeShipAvailable = true, shippingAddresses, onShippingAddressesChange }: { lang: Lang; coins: number; cards: WonPrize[]; onDrawAgain: () => void; onClose: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>> }) {
   const t = STR[lang];
   const [list, setList] = useState<WonPrize[]>(cards);
   const [tier, setTier] = useState<"all" | Rarity>("all");
   const [sortKey, setSortKey] = useState<SortKey>("coinDesc");
   const [sortOpen, setSortOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [shipOpen, setShipOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -1462,9 +1466,14 @@ function DrawResults({ lang, coins, cards, onDrawAgain, onClose, onHome, onOpenS
   function ship() {
     if (selected.size === 0) return;
     if (!canShip) { pushToast(t.toastShort(shortfall)); return; }
+    setShipOpen(true);
+  }
+  // Confirmed from inside the shipping flow (address → confirm).
+  function doShip() {
     const ids = new Set(selected);
     setList((l) => l.filter((p) => !ids.has(p.id)));
     setSelected(new Set());
+    setShipOpen(false);
     pushToast(t.toastShipReq);
   }
 
@@ -1622,6 +1631,20 @@ function DrawResults({ lang, coins, cards, onDrawAgain, onClose, onHome, onOpenS
         <div className="pointer-events-none absolute inset-x-0 bottom-28 z-[70] flex justify-center px-4">
           <div className="rounded-full bg-black/85 px-4 py-2 text-[12px] font-semibold text-white shadow-lg">{toast}</div>
         </div>
+      )}
+
+      {shipOpen && (
+        <ShippingFlow
+          prizes={selectedPrizes}
+          total={total}
+          onClose={() => setShipOpen(false)}
+          onConfirm={doShip}
+          t={t}
+          lang={lang}
+          shippingAddresses={shippingAddresses}
+          onShippingAddressesChange={onShippingAddressesChange}
+          freeShipAvailable={freeShipAvailable}
+        />
       )}
     </div>
   );
@@ -2400,6 +2423,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
           lang={lang}
           shippingAddresses={shippingAddresses}
           onShippingAddressesChange={onShippingAddressesChange}
+          freeShipAvailable={freeShipAvailable}
         />
       )}
 
@@ -2582,6 +2606,7 @@ function ShippingFlow({
   lang,
   shippingAddresses,
   onShippingAddressesChange,
+  freeShipAvailable = true,
 }: {
   prizes: WonPrize[];
   total: number;
@@ -2591,7 +2616,19 @@ function ShippingFlow({
   lang: Lang;
   shippingAddresses: ShippingAddr[];
   onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>;
+  freeShipAvailable?: boolean;
 }) {
+  // Shipping badge shown over the primary CTA on the address + confirm steps.
+  const shipBadge = (
+    <div
+      className={`pointer-events-none absolute -top-2.5 left-0 right-0 z-10 flex items-center justify-center gap-1 whitespace-nowrap rounded-full px-2 py-[3px] ring-1 ${freeShipAvailable ? "bg-gradient-to-br from-[#1eae52] to-[#12813c] text-white ring-white/30" : "bg-gradient-to-br from-[#ffcf33] to-[#f5a623] text-[#3a2a00] ring-black/10"}`}
+      style={{ animation: "freeShipIn .3s cubic-bezier(.2,.9,.3,1) both" }}
+    >
+      <style>{`@keyframes freeShipIn{from{opacity:0;transform:translateY(-6px) scale(.9)}to{opacity:1;transform:none}}`}</style>
+      {freeShipAvailable && <svg width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M7.5 12.5l3 3 6-6.5" stroke="#12813c" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+      <span className="text-[9.5px] font-extrabold tracking-wide">{freeShipAvailable ? t.freeShippingQuota(FREE_SHIP_QUOTA) : t.paidShipBadge}</span>
+    </div>
+  );
   const [step, setStep] = useState<"address" | "confirm" | "addNew">(shippingAddresses.length === 0 ? "addNew" : "address");
   const [addrId, setAddrId] = useState<string>(() => {
     const def = shippingAddresses.find(a => a.isDefault);
@@ -2735,14 +2772,17 @@ function ShippingFlow({
             <button onClick={openAddNew} className="mt-2 w-full rounded-xl border border-dashed border-black/20 py-2.5 text-[13px] font-bold text-[#5c626b]">
               {t.addNewAddress}
             </button>
-            <button
-              disabled={!chosen}
-              onClick={() => setStep("confirm")}
-              className="mt-3 w-full rounded-xl py-3 text-[14px] font-bold text-white disabled:opacity-40"
-              style={{ background: "linear-gradient(180deg,#ff8a1f,#f5670a)" }}
-            >
-              {t.continueBtn}
-            </button>
+            <div className="relative mt-3">
+              {chosen && shipBadge}
+              <button
+                disabled={!chosen}
+                onClick={() => setStep("confirm")}
+                className="w-full rounded-xl py-3 text-[14px] font-bold text-white disabled:opacity-40"
+                style={{ background: "linear-gradient(180deg,#ff8a1f,#f5670a)" }}
+              >
+                {t.continueBtn}
+              </button>
+            </div>
           </>
         )}
 
@@ -2937,7 +2977,10 @@ function ShippingFlow({
             <p className="mt-2 text-center text-[11px] text-[#8a9099]">{t.freeShip}</p>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <button onClick={() => setStep("address")} className="rounded-xl border border-black/15 py-2.5 text-[13px] font-bold text-[#5c626b]">{t.back}</button>
-              <button onClick={onConfirm} className="rounded-xl py-2.5 text-[13px] font-bold text-white" style={{ background: "linear-gradient(180deg,#ff8a1f,#f5670a)" }}>{t.requestShippingBtn}</button>
+              <div className="relative">
+                {shipBadge}
+                <button onClick={onConfirm} className="w-full rounded-xl py-2.5 text-[13px] font-bold text-white" style={{ background: "linear-gradient(180deg,#ff8a1f,#f5670a)" }}>{t.requestShippingBtn}</button>
+              </div>
             </div>
           </>
         )}
@@ -3987,7 +4030,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   });
   // Shipping addresses are shared between the Shipping Address page and the
   // in-flow "request shipping" address picker.
-  const [shippingAddresses, setShippingAddresses] = useState<ShippingAddr[]>([]);
+  const [shippingAddresses, setShippingAddresses] = useState<ShippingAddr[]>(DEFAULT_SHIPPING_ADDRESSES);
   // KYC / identity verification launched from My Profile → Verification Status.
   const [kyc, setKyc] = useState<KycState>(() => {
     const base = createDefaultKycState(initialKycScenario);
@@ -4143,6 +4186,8 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onOpenStore={openStore}
             freeShipAvailable={freeShipAvailable}
             onResultsChange={onDrawResultsChange}
+            shippingAddresses={shippingAddresses}
+            onShippingAddressesChange={setShippingAddresses}
           />
         )}
         {screen === "notifications" && <NotificationsScreen lang={lang} coins={coins} empty={noHistory} only={notifOnly} onBack={() => setScreen(prevScreen)} onHome={goHome} />}
