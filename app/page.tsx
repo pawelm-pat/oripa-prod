@@ -20,6 +20,10 @@ export default function Page() {
   const [freeShipping, setFreeShipping] = useState(true);
   // True only while the draw-results overlay is open (not draw selection).
   const [drawResultsOpen, setDrawResultsOpen] = useState(false);
+  // Demo control: whether the member already has a saved shipping address.
+  // No -> shipping flow opens on the "Add address" form; Yes -> pre-populated
+  // "Choose shipping address" step.
+  const [addressProvided, setAddressProvided] = useState(true);
 
   function changeKycScenario(value: KycScenario) {
     try { sessionStorage.removeItem(KYC_SESSION_KEY); } catch {}
@@ -42,7 +46,10 @@ export default function Page() {
           {/* Only relevant where prizes can be selected for shipping:
               My Loot, and the draw-results overlay (not draw selection). */}
           {(screen === "myLoot" || drawResultsOpen) && (
-            <FreeShippingControl value={freeShipping} onChange={setFreeShipping} />
+            <>
+              <ToggleControl label="Free shipping" value={freeShipping} onChange={setFreeShipping} />
+              <ToggleControl label="Address provided" value={addressProvided} onChange={setAddressProvided} />
+            </>
           )}
         </div>
         <div className="rounded-[2.6rem] border border-white/12 bg-[#1b1c22] p-3 shadow-[0_35px_90px_rgba(0,0,0,0.55)]">
@@ -57,6 +64,7 @@ export default function Page() {
                 onScreenChange={setScreen}
                 freeShipAvailable={freeShipping}
                 onDrawResultsChange={setDrawResultsOpen}
+                addressProvided={addressProvided}
               />
             </div>
           </div>
@@ -73,6 +81,7 @@ export default function Page() {
           onScreenChange={setScreen}
           freeShipAvailable={freeShipping}
           onDrawResultsChange={setDrawResultsOpen}
+          addressProvided={addressProvided}
         />
       </div>
 
@@ -84,20 +93,20 @@ export default function Page() {
   );
 }
 
-// Demo toggle (dev harness only): switch the My Loot shipping badge between
-// "free shipping remaining" and "no free quota → pay ¥500 at checkout".
-function FreeShippingControl({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+// Demo Yes/No toggle (dev harness only). Used for "Free shipping" (free vs.
+// paid ¥500 badge) and "Address provided" (pre-populated address vs. add-new).
+function ToggleControl({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
   return (
     <div className="flex flex-col items-start gap-2">
-      <span className="text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-white/45">Free shipping</span>
+      <span className="text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-white/45">{label}</span>
       <div className="inline-flex overflow-hidden rounded-lg border border-white/15">
-        {([["Yes", true], ["No", false]] as const).map(([label, v]) => (
+        {([["Yes", true], ["No", false]] as const).map(([lbl, v]) => (
           <button
-            key={label}
+            key={lbl}
             onClick={() => onChange(v)}
             className={`px-4 py-1.5 text-[11px] font-semibold transition ${value === v ? "bg-[#f5670a] text-white" : "bg-[#202127] text-white/60"}`}
           >
-            {label}
+            {lbl}
           </button>
         ))}
       </div>

@@ -2738,6 +2738,10 @@ function ShippingFlow({
       <div className="max-h-[88%] w-full overflow-y-auto rounded-t-2xl bg-white px-4 pb-5 pt-3" onClick={(e) => e.stopPropagation()}>
         <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-black/15" />
 
+        {/* Keyed wrapper: each step change replays a soft slide-in transition. */}
+        <div key={step} style={{ animation: "sfStepIn 300ms cubic-bezier(0.22,0.61,0.36,1) both" }}>
+        <style>{`@keyframes sfStepIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}`}</style>
+
         {step === "address" && (
           <>
             <h3 className="mb-2 text-[15px] font-bold text-[#1d2129]">{t.chooseAddress}</h3>
@@ -2984,6 +2988,7 @@ function ShippingFlow({
             </div>
           </>
         )}
+        </div>
       </div>
     </div>
   );
@@ -3986,8 +3991,8 @@ function StorePage({
   );
 }
 
-export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "happy", freeShipAvailable = true, onDrawResultsChange }: {
-  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void;
+export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "happy", freeShipAvailable = true, onDrawResultsChange, addressProvided = true }: {
+  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean;
 }) {
   const t = STR[lang];
   const [screen, setScreen] = useState<Screen>("landing");
@@ -4030,7 +4035,13 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   });
   // Shipping addresses are shared between the Shipping Address page and the
   // in-flow "request shipping" address picker.
-  const [shippingAddresses, setShippingAddresses] = useState<ShippingAddr[]>(DEFAULT_SHIPPING_ADDRESSES);
+  // Seeded with a default address when the demo "Address provided" toggle is
+  // on; empty otherwise so the flow opens on the "Add address" form. Resets
+  // whenever the toggle flips.
+  const [shippingAddresses, setShippingAddresses] = useState<ShippingAddr[]>(addressProvided ? DEFAULT_SHIPPING_ADDRESSES : []);
+  useEffect(() => {
+    setShippingAddresses(addressProvided ? DEFAULT_SHIPPING_ADDRESSES : []);
+  }, [addressProvided]);
   // KYC / identity verification launched from My Profile → Verification Status.
   const [kyc, setKyc] = useState<KycState>(() => {
     const base = createDefaultKycState(initialKycScenario);
