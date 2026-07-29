@@ -55,6 +55,15 @@ export function generateDraw(count: number): WonPrize[] {
       rarity, coinValue: meta.coin, wonAt: NOW - i * 60 * 1000,
     });
   }
+  // Guarantee at least one sub-threshold (< 1,500 coins) card in multi-draws
+  // so the "shipping not possible" flow can be tested from the results screen.
+  if (count > 1 && !out.some((c) => c.coinValue < SHIP_MIN_COINS)) {
+    const n = RARITY_META.N;
+    out[out.length - 1] = {
+      ...out[out.length - 1],
+      rarity: "N", name: n.name, nameJa: n.nameJa, desc: n.desc, descJa: n.descJa, coinValue: n.coin,
+    };
+  }
   return out;
 }
 
@@ -89,6 +98,11 @@ export const INITIAL_WON: WonPrize[] = [
   { id: "w22", name: "Football — Neymar UR", nameJa: "サッカー — ネイマール UR", desc: "Samba icon", descJa: "サンバアイコン", rarity: "UR", coinValue: 51000, wonAt: NOW - 19 * DAY, category: "football" },
   { id: "w23", name: "Pokémon — Gengar UR", nameJa: "ポケモン — ゲンガー UR", desc: "Shadow holo", descJa: "シャドウホログラフィック", rarity: "UR", coinValue: 57000, wonAt: NOW - 20 * DAY, category: "pokemon" },
   { id: "w24", name: "Football — Club Badge", nameJa: "サッカー — クラブバッジ", desc: "Collectible badge", descJa: "コレクタブルバッジ", rarity: "N", coinValue: 300, wonAt: NOW - 21 * DAY, category: "football" },
+  // Low-value UR pulls (< 1,500 coins) so the "shipping not possible" flow
+  // (selection under the free-shipping threshold) can be tested in My Loot.
+  { id: "w25", name: "Pokémon — Pikachu Mini UR", nameJa: "ポケモン — ピカチュウ ミニ UR", desc: "Petit holo pull", descJa: "プチホログラフィック", rarity: "UR", coinValue: 800, wonAt: NOW - 22 * DAY, category: "pokemon" },
+  { id: "w26", name: "One Piece — Nami Chibi UR", nameJa: "ワンピース — ナミ ちび UR", desc: "Chibi parallel", descJa: "ちびパラレル", rarity: "UR", coinValue: 1200, wonAt: NOW - 23 * DAY, category: "onepiece" },
+  { id: "w27", name: "Baseball — Mini Relic UR", nameJa: "野球 — ミニレリック UR", desc: "Mini relic card", descJa: "ミニレリックカード", rarity: "UR", coinValue: 500, wonAt: NOW - 24 * DAY, category: "baseball" },
 ];
 
 export const INITIAL_WAITING: WaitingPrize[] = [

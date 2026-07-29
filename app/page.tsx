@@ -18,6 +18,8 @@ export default function Page() {
   // Demo control: whether the member still has free shipping quota left.
   // Drives the My Loot shipping badge (free vs. paid ¥500) and hint copy.
   const [freeShipping, setFreeShipping] = useState(true);
+  // True only while the draw-results overlay is open (not draw selection).
+  const [drawResultsOpen, setDrawResultsOpen] = useState(false);
 
   function changeKycScenario(value: KycScenario) {
     try { sessionStorage.removeItem(KYC_SESSION_KEY); } catch {}
@@ -37,8 +39,9 @@ export default function Page() {
         <div className="absolute right-full top-3 mr-4 flex w-max flex-col items-end gap-4">
           <LangToggle lang={lang} setLang={setLang} />
           <KycScenarioControl value={kycScenario} onChange={changeKycScenario} onReset={resetKycSession} />
-          {/* Only relevant where prizes can be selected for shipping. */}
-          {(screen === "myLoot" || screen === "drawDetail") && (
+          {/* Only relevant where prizes can be selected for shipping:
+              My Loot, and the draw-results overlay (not draw selection). */}
+          {(screen === "myLoot" || drawResultsOpen) && (
             <FreeShippingControl value={freeShipping} onChange={setFreeShipping} />
           )}
         </div>
@@ -53,6 +56,7 @@ export default function Page() {
                 initialKycScenario={kycScenario}
                 onScreenChange={setScreen}
                 freeShipAvailable={freeShipping}
+                onDrawResultsChange={setDrawResultsOpen}
               />
             </div>
           </div>
@@ -68,6 +72,7 @@ export default function Page() {
           initialKycScenario={kycScenario}
           onScreenChange={setScreen}
           freeShipAvailable={freeShipping}
+          onDrawResultsChange={setDrawResultsOpen}
         />
       </div>
 

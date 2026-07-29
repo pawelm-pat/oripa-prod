@@ -1041,7 +1041,7 @@ function DrawPromoBanner({ t, item, className = "", showCountdown = true }: { t:
   );
 }
 
-function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean }) {
+function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void }) {
   const t = STR[lang];
   const pct = Math.round((item.remaining / item.total) * 100);
   const soldOut = item.remaining <= 0;
@@ -1063,6 +1063,10 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
     toastTimer.current = setTimeout(() => setToast(null), 2600);
   }
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
+  // Surface whether the draw-results overlay is open so the harness can show
+  // the Free-shipping toggle only on the results screen (not draw selection).
+  useEffect(() => { onResultsChange?.(results !== null); }, [results, onResultsChange]);
+  useEffect(() => () => { onResultsChange?.(false); }, [onResultsChange]);
 
   function draw(count: number) {
     if (soldOut) return;
@@ -3937,8 +3941,8 @@ function StorePage({
   );
 }
 
-export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "happy", freeShipAvailable = true }: {
-  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean;
+export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "happy", freeShipAvailable = true, onDrawResultsChange }: {
+  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void;
 }) {
   const t = STR[lang];
   const [screen, setScreen] = useState<Screen>("landing");
@@ -4136,6 +4140,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onHome={goHome}
             onOpenStore={openStore}
             freeShipAvailable={freeShipAvailable}
+            onResultsChange={onDrawResultsChange}
           />
         )}
         {screen === "notifications" && <NotificationsScreen lang={lang} coins={coins} empty={noHistory} only={notifOnly} onBack={() => setScreen(prevScreen)} onHome={goHome} />}
