@@ -2325,18 +2325,18 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
           <div className="grid grid-cols-2 gap-2.5">
             {/* Request Shipping on the left (POC placement). */}
             <div className="relative">
-              {/* Three states, badge inset to align with the CTA:
+              {/* Three states; badge spans the full CTA width like a ribbon:
                   - red "min coins" while the selection is short of the threshold
                   - green "free shipping" once eligible AND free quota remains
                   - amber "standard shipping fee" once eligible with no free quota */}
               {!listCanShip ? (
-                <div className="pointer-events-none absolute -top-2.5 left-3 z-10 flex items-center gap-1 whitespace-nowrap rounded-full bg-[#e30613] px-2.5 py-[3px] text-white shadow-[0_2px_6px_rgba(227,6,19,0.4)] ring-1 ring-white/30">
+                <div className="pointer-events-none absolute -top-2.5 left-0 right-0 z-10 flex items-center justify-center gap-1 whitespace-nowrap rounded-full bg-[#e30613] px-2.5 py-[3px] text-white shadow-[0_2px_6px_rgba(227,6,19,0.4)] ring-1 ring-white/30">
                   <svg width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M12 7v6" stroke="#e30613" strokeWidth="2.6" strokeLinecap="round" /><circle cx="12" cy="16.6" r="1.35" fill="#e30613" /></svg>
                   <span className="text-[9.5px] font-extrabold tracking-wide">{t.minCoinsBadge}</span>
                 </div>
               ) : freeShipAvailable ? (
                 <div
-                  className="pointer-events-none absolute -top-2.5 left-3 z-10 flex items-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-br from-[#1eae52] to-[#12813c] px-2.5 py-[3px] text-white ring-1 ring-white/30"
+                  className="pointer-events-none absolute -top-2.5 left-0 right-0 z-10 flex items-center justify-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-br from-[#1eae52] to-[#12813c] px-2.5 py-[3px] text-white ring-1 ring-white/30"
                   style={{ animation: "mlBadgeIn .3s cubic-bezier(.2,.9,.3,1) both, mlBadgePulse 2.4s ease-in-out infinite" }}
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M7.5 12.5l3 3 6-6.5" stroke="#12813c" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -2344,7 +2344,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                 </div>
               ) : (
                 <div
-                  className="pointer-events-none absolute -top-2.5 left-3 z-10 flex items-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-br from-[#ffcf33] to-[#f5a623] px-2.5 py-[3px] text-[#3a2a00] ring-1 ring-black/10"
+                  className="pointer-events-none absolute -top-2.5 left-0 right-0 z-10 flex items-center justify-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-br from-[#ffcf33] to-[#f5a623] px-2.5 py-[3px] text-[#3a2a00] ring-1 ring-black/10"
                   style={{ animation: "mlBadgeIn .3s cubic-bezier(.2,.9,.3,1) both" }}
                 >
                   <span className="text-[9.5px] font-extrabold tracking-wide">{t.paidShipBadge}</span>
