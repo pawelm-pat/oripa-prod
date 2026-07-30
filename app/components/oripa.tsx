@@ -690,17 +690,23 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
   }, [hasQuery, filterCount, searchActive]);
 
   // Close the filter dropdown when clicking/tapping outside of it.
+  // We intercept the click in the CAPTURE phase and swallow it, so a stray
+  // outside click only dismisses the panel and never falls through to trigger
+  // a button behind it (e.g. a card's Draw/View action). Using `click` (not
+  // `mousedown`) means we cancel the very event that would otherwise activate
+  // the button, and it doesn't block scrolling.
   useEffect(() => {
     if (!searchActive) return;
-    const onDown = (e: MouseEvent | TouchEvent) => {
-      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target as Node)) setSearchActive(false);
+    const onClickCapture = (e: MouseEvent) => {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target as Node)) {
+        e.preventDefault();
+        e.stopPropagation();
+        setSearchActive(false);
+        inputRef.current?.blur();
+      }
     };
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("touchstart", onDown);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("touchstart", onDown);
-    };
+    document.addEventListener("click", onClickCapture, true);
+    return () => document.removeEventListener("click", onClickCapture, true);
   }, [searchActive]);
 
   const catList: { key: string; label: string }[] = [
