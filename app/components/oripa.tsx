@@ -422,7 +422,7 @@ function catIcon(key: string, color: string) {
 function LegalOverlay({ lang, doc, onClose }: { lang: Lang; doc: LegalDocKey; onClose: () => void }) {
   const { title, body } = LEGAL[lang][doc];
   return (
-    <div className="absolute inset-0 z-[60] flex items-end justify-center bg-black/60" onClick={onClose}>
+    <div className="absolute inset-0 z-[70] flex items-end justify-center bg-black/60" onClick={onClose}>
       <div className="flex max-h-[86%] w-full flex-col overflow-hidden rounded-t-2xl bg-white" onClick={(e) => e.stopPropagation()}>
         <style>{`.legal-scroll::-webkit-scrollbar{width:7px}.legal-scroll::-webkit-scrollbar-track{background:rgba(0,0,0,0.05);border-radius:9999px}.legal-scroll::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.3);border-radius:9999px}.legal-scroll::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,0.45)}`}</style>
         <div className="flex shrink-0 items-center justify-between border-b border-black/10 px-4 py-3">
@@ -1044,6 +1044,8 @@ function DrawPromoBanner({ t, item, className = "", showCountdown = true }: { t:
 
 function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>> }) {
   const t = STR[lang];
+  // Opens a stored legal document (T&Cs, etc.) in the shared overlay.
+  const openLegal = useContext(LegalNavContext);
   const pct = Math.round((item.remaining / item.total) * 100);
   const soldOut = item.remaining <= 0;
   const [toast, setToast] = useState<string | null>(null);
@@ -1264,7 +1266,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
               {/* Terms */}
               <p className="text-center text-[12px] font-semibold text-[#1d2129]">
                 {t.drawConfirmTerms}{" "}
-                <button onClick={() => pushToast(t.drawCustomTBC)} className="font-bold text-[#D10005] underline decoration-[#D10005] underline-offset-2">
+                <button onClick={() => openLegal("terms")} className="font-bold text-[#D10005] underline decoration-[#D10005] underline-offset-2">
                   {t.drawConfirmTermsLink}
                 </button>
               </p>
@@ -1358,7 +1360,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
               {/* Terms */}
               <p className="text-center text-[12px] font-semibold text-[#1d2129]">
                 {t.drawConfirmTerms}{" "}
-                <button onClick={() => pushToast(t.drawCustomTBC)} className="font-bold text-[#D10005] underline decoration-[#D10005] underline-offset-2">
+                <button onClick={() => openLegal("terms")} className="font-bold text-[#D10005] underline decoration-[#D10005] underline-offset-2">
                   {t.drawConfirmTermsLink}
                 </button>
               </p>
