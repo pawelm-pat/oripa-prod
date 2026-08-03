@@ -1720,14 +1720,14 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
                 <>
                   <div className="my-3.5 border-t border-dashed border-black/20" />
                   <p className="mb-2.5 text-center text-[12px] font-bold text-[#8a9099]">{t.drawOtherOripa}</p>
-                  <div className="relative px-10">
+                  <div className="relative px-8">
                     {(() => {
                       const other = otherOripa[otherIdx % otherOripa.length];
                       return (
                         <div className="overflow-hidden rounded-2xl border border-black/10 bg-white shadow-[0_4px_14px_rgba(0,0,0,0.08)]">
                           <img src={other.image || "/oripa-banner-adkakutei.png"} alt="" draggable={false} className="h-[150px] w-full object-cover object-center" style={{ WebkitUserDrag: "none" } as React.CSSProperties} />
-                          <div className="flex items-center justify-between gap-2 px-3 pb-3 pt-2.5">
-                            <div className="flex min-w-0 flex-col gap-0.5">
+                          <div className="flex items-center justify-between gap-2.5 px-3 pb-3 pt-2.5">
+                            <div className="flex flex-col gap-0.5">
                               <span className="flex items-baseline gap-1 whitespace-nowrap text-[12px] font-bold text-[#1d2129]">
                                 {t.remainingLabel}
                                 <span className="text-[15px] font-extrabold">{other.remaining}</span>
@@ -1740,7 +1740,7 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
                             </div>
                             <button
                               onClick={() => { setLimitOpen(false); onOpenDraw?.(other); }}
-                              className="shrink-0 rounded-xl bg-[#D10005] px-6 py-2.5 text-[14px] font-extrabold text-white shadow-[0_3px_8px_rgba(209,0,5,0.35)] active:scale-[0.97]"
+                              className="shrink-0 rounded-xl bg-[#D10005] px-5 py-2.5 text-[14px] font-extrabold text-white shadow-[0_3px_8px_rgba(209,0,5,0.35)] active:scale-[0.97]"
                             >
                               {t.btnDraw}
                             </button>
