@@ -80,6 +80,9 @@ export type OripaItem = {
   image?: string;
   title: string;
   titleJa?: string;
+  // Permanently sold-out / expired pack: the draw screen opens greyed out with
+  // no draw CTAs (used for a demo example that doesn't need the harness toggle).
+  expired?: boolean;
 };
 
 export type SectionIconKey = "star" | "new" | "popular" | "pokemon" | "limited" | "cards";

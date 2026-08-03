@@ -1206,7 +1206,8 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
   // latched greyed-out state that follows once it's dismissed.
   const [soldOutPopup, setSoldOutPopup] = useState(false);
   const [soldOutHit, setSoldOutHit] = useState(false);
-  const soldOut = item.remaining <= 0 || soldOutHit;
+  // `item.expired` packs are permanently sold out: greyed on open, no CTAs.
+  const soldOut = item.remaining <= 0 || soldOutHit || !!item.expired;
   const pct = soldOut ? 0 : Math.round((item.remaining / item.total) * 100);
   const remainingShown = soldOut ? 0 : item.remaining;
   const [toast, setToast] = useState<string | null>(null);
