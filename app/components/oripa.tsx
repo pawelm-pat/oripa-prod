@@ -1700,7 +1700,7 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
           <style>{`@keyframes drawConfirmIn{0%{opacity:0;transform:translateY(12px) scale(.94)}100%{opacity:1;transform:none}}`}</style>
           <div
             className="no-scrollbar flex max-h-full w-full max-w-[380px] flex-col overflow-y-auto rounded-2xl bg-white shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
-            style={{ animation: "drawConfirmIn 260ms cubic-bezier(0.22,0.61,0.36,1) both" }}
+            style={{ animation: "drawConfirmIn 260ms cubic-bezier(0.22,0.61,0.36,1) both", fontFamily: "var(--font-noto-sans-jp), system-ui, sans-serif" }}
             onClick={(e) => e.stopPropagation()}
           >
             <img src="/oripa-banner-adkakutei.png" alt="" draggable={false} className="h-[168px] w-full rounded-t-2xl object-cover object-center" style={{ WebkitUserDrag: "none" } as React.CSSProperties} />
@@ -1711,7 +1711,7 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
 
               <button
                 onClick={() => setLimitOpen(false)}
-                className="mt-3.5 w-full rounded-[10px] border border-black/15 bg-white py-3 text-[14px] font-bold text-[#3a3f47] active:scale-[0.98]"
+                className="mt-3.5 w-full rounded-[14px] border-[1.5px] border-[#b5b8bd] bg-white py-3.5 text-[15px] font-bold text-[#6b7075] active:scale-[0.98]"
               >
                 {t.drawLimitClose}
               </button>
@@ -1720,27 +1720,27 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
                 <>
                   <div className="my-3.5 border-t border-dashed border-black/20" />
                   <p className="mb-2.5 text-center text-[12px] font-bold text-[#8a9099]">{t.drawOtherOripa}</p>
-                  <div className="relative px-6">
+                  <div className="relative px-10">
                     {(() => {
                       const other = otherOripa[otherIdx % otherOripa.length];
                       return (
                         <div className="overflow-hidden rounded-2xl border border-black/10 bg-white shadow-[0_4px_14px_rgba(0,0,0,0.08)]">
                           <img src={other.image || "/oripa-banner-adkakutei.png"} alt="" draggable={false} className="h-[150px] w-full object-cover object-center" style={{ WebkitUserDrag: "none" } as React.CSSProperties} />
                           <div className="flex items-center justify-between gap-2 px-3 pb-3 pt-2.5">
-                            <div className="flex flex-col gap-0.5">
-                              <span className="flex items-baseline gap-1 text-[12px] font-bold text-[#1d2129]">
+                            <div className="flex min-w-0 flex-col gap-0.5">
+                              <span className="flex items-baseline gap-1 whitespace-nowrap text-[12px] font-bold text-[#1d2129]">
                                 {t.remainingLabel}
                                 <span className="text-[15px] font-extrabold">{other.remaining}</span>
                                 <span className="text-[11px] font-bold text-[#8a9099]">/{other.total}</span>
                               </span>
-                              <span className="flex items-baseline gap-1 text-[12px] font-bold text-[#D10005]">
+                              <span className="flex items-baseline gap-1 whitespace-nowrap text-[12px] font-bold text-[#D10005]">
                                 {t.remainingTimeLabel}
                                 <span className="text-[14px] font-extrabold">{t.minUnit(other.endsIn)}</span>
                               </span>
                             </div>
                             <button
                               onClick={() => { setLimitOpen(false); onOpenDraw?.(other); }}
-                              className="rounded-xl bg-[#D10005] px-8 py-2.5 text-[14px] font-extrabold text-white shadow-[0_3px_8px_rgba(209,0,5,0.35)] active:scale-[0.97]"
+                              className="shrink-0 rounded-xl bg-[#D10005] px-6 py-2.5 text-[14px] font-extrabold text-white shadow-[0_3px_8px_rgba(209,0,5,0.35)] active:scale-[0.97]"
                             >
                               {t.btnDraw}
                             </button>
@@ -1753,16 +1753,16 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
                         <button
                           aria-label="Previous"
                           onClick={() => setOtherIdx((i) => (i - 1 + otherOripa.length) % otherOripa.length)}
-                          className="absolute left-0 top-[42%] flex h-9 w-9 -translate-y-1/2 items-center justify-center active:scale-90"
+                          className="absolute left-0 top-[38%] flex h-8 w-8 -translate-y-1/2 items-center justify-center active:scale-90"
                         >
-                          <img src="/icons/carousel-arrow-left.png" alt="" className="h-6 w-6" draggable={false} />
+                          <img src="/icons/carousel-arrow-left.png" alt="" className="h-5 w-5" draggable={false} />
                         </button>
                         <button
                           aria-label="Next"
                           onClick={() => setOtherIdx((i) => (i + 1) % otherOripa.length)}
-                          className="absolute right-0 top-[42%] flex h-9 w-9 -translate-y-1/2 items-center justify-center active:scale-90"
+                          className="absolute right-0 top-[38%] flex h-8 w-8 -translate-y-1/2 items-center justify-center active:scale-90"
                         >
-                          <img src="/icons/carousel-arrow-right.png" alt="" className="h-6 w-6" draggable={false} />
+                          <img src="/icons/carousel-arrow-right.png" alt="" className="h-5 w-5" draggable={false} />
                         </button>
                       </>
                     )}
