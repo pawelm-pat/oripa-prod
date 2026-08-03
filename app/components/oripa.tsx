@@ -1286,9 +1286,10 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
             Fiery radial burst + ray sweep, gold 3D headline, "new-only"
             ribbon, tagline, mascot and a countdown chip. */}
         <div className="px-3 pt-3">
-          {/* When sold out the creative is desaturated per design. */}
+          {/* When sold out the creative is desaturated and the countdown chip
+              is hidden (the pack is no longer time-limited). */}
           <div className={soldOut ? "grayscale" : ""}>
-            <DrawPromoBanner t={t} item={item} className="rounded-2xl ring-1 ring-[#ffcf5a]/40" />
+            <DrawPromoBanner t={t} item={item} className="rounded-2xl ring-1 ring-[#ffcf5a]/40" showCountdown={!soldOut} />
           </div>
           {/* sales period */}
           <p className="mt-2 text-center text-[11.5px] font-semibold text-[#8a9099]">{t.periodLabel("2026/01/01")}</p>
