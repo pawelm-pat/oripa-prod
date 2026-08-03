@@ -605,23 +605,58 @@ function priceValToPct(v: number): number {
 }
 
 // Dual-handle price slider with keyboard-editable min/max boxes (0–999,999).
-// Dragging the max handle to the far right means "20,000+" (all above).
+// Built from pointer events (not overlapping native range inputs, which fight
+// the controlled re-render and trap the max handle at the far right). The track
+// and the value ticks are clickable, and a drag always moves the nearest handle
+// so either end can be pulled back.
 function PriceRangeFilter({ label, min, max, onMin, onMax }: { label: string; min: number; max: number; onMin: (v: number) => void; onMax: (v: number) => void }) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef<null | "min" | "max">(null);
   const minPct = priceValToPct(min);
   const maxPct = priceValToPct(max);
-  const lo = Math.min(minPct, maxPct);
-  const hi = Math.max(minPct, maxPct);
   const parseNum = (s: string) => { const n = parseInt(s.replace(/[^0-9]/g, ""), 10); return isNaN(n) ? 0 : Math.min(n, PRICE_MAX); };
-  const ticks = ["0", "100", "500", "1,000", "5,000", "10,000", "20,000+"];
+  const ticks: [string, number][] = [["0", 0], ["100", 100], ["500", 500], ["1,000", 1000], ["5,000", 5000], ["10,000", 10000], ["20,000+", PRICE_TOP]];
+
+  const pctFromX = (clientX: number) => {
+    const el = trackRef.current;
+    if (!el) return 0;
+    const r = el.getBoundingClientRect();
+    return Math.min(100, Math.max(0, ((clientX - r.left) / r.width) * 100));
+  };
+  const applyPct = (which: "min" | "max", pct: number) => {
+    if (which === "min") onMin(Math.min(pricePctToVal(pct), max));
+    else onMax(pct >= 99.9 ? PRICE_MAX : Math.max(pricePctToVal(pct), min));
+  };
+  // Pick the handle to move: the closer one, but when both sit together choose
+  // by side so a handle parked at an end can still be grabbed and dragged away.
+  const pickHandle = (pct: number): "min" | "max" => {
+    const dMin = Math.abs(pct - minPct);
+    const dMax = Math.abs(pct - maxPct);
+    if (dMin === dMax) return pct < minPct ? "min" : "max";
+    return dMin < dMax ? "min" : "max";
+  };
+  const onPointerDown = (e: React.PointerEvent) => {
+    e.preventDefault();
+    const pct = pctFromX(e.clientX);
+    const which = pickHandle(pct);
+    dragging.current = which;
+    try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } catch { /* noop */ }
+    applyPct(which, pct);
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!dragging.current) return;
+    applyPct(dragging.current, pctFromX(e.clientX));
+  };
+  const endDrag = () => { dragging.current = null; };
+  const clickTick = (stopVal: number) => {
+    const pct = priceValToPct(stopVal);
+    const which = pickHandle(pct);
+    if (which === "min") onMin(Math.min(stopVal, max));
+    else onMax(stopVal >= PRICE_TOP ? PRICE_MAX : Math.max(stopVal, min));
+  };
+
   return (
-    <div className="mt-5">
-      <style>{`
-        .price-range{-webkit-appearance:none;appearance:none;background:transparent;pointer-events:none;position:absolute;left:0;right:0;top:0;width:100%;height:20px;margin:0}
-        .price-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;pointer-events:auto;width:20px;height:20px;border-radius:9999px;background:#fff;border:3px solid #D10005;box-shadow:0 1px 3px rgba(0,0,0,.3);cursor:pointer}
-        .price-range::-moz-range-thumb{pointer-events:auto;width:20px;height:20px;border-radius:9999px;background:#fff;border:3px solid #D10005;box-shadow:0 1px 3px rgba(0,0,0,.3);cursor:pointer}
-        .price-range::-webkit-slider-runnable-track{background:transparent;border:none}
-        .price-range::-moz-range-track{background:transparent;border:none}
-      `}</style>
+    <div className="mt-5 select-none">
       <h4 className="mb-2.5 text-[15px] font-extrabold text-[#1d2129]">{label}</h4>
       <div className="flex items-center gap-3">
         <input
@@ -639,16 +674,25 @@ function PriceRangeFilter({ label, min, max, onMin, onMax }: { label: string; mi
           aria-label={`${label} max`}
         />
       </div>
-      <div className="relative mt-4 h-5">
-        <div className="pointer-events-none absolute left-0 right-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-[#e3e6ea]" />
-        <div className="pointer-events-none absolute top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-[#D10005]" style={{ left: `${lo}%`, right: `${100 - hi}%` }} />
-        <input type="range" min={0} max={100} step={0.5} value={minPct} onChange={(e) => { const v = pricePctToVal(+e.target.value); onMin(Math.min(v, max)); }} className="price-range" />
-        {/* Only the exact far-right position snaps to the "20,000+" sentinel; any
-            position below it uses the real value, so the handle can slide back. */}
-        <input type="range" min={0} max={100} step={0.5} value={maxPct} onChange={(e) => { const p = +e.target.value; onMax(p >= 100 ? PRICE_MAX : Math.max(pricePctToVal(p), min)); }} className="price-range" />
+      {/* Clickable track: tap anywhere to jump the nearest handle, or drag it. */}
+      <div
+        ref={trackRef}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        className="relative mx-2.5 mt-4 h-5 cursor-pointer"
+        style={{ touchAction: "none" }}
+      >
+        <div className="pointer-events-none absolute inset-x-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-[#e3e6ea]" />
+        <div className="pointer-events-none absolute top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-[#D10005]" style={{ left: `${minPct}%`, right: `${100 - maxPct}%` }} />
+        <span className="pointer-events-none absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#D10005] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.3)]" style={{ left: `${minPct}%` }} />
+        <span className="pointer-events-none absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#D10005] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.3)]" style={{ left: `${maxPct}%` }} />
       </div>
-      <div className="mt-1.5 flex justify-between text-[11px] font-semibold text-[#8a9099]">
-        {ticks.map((t) => <span key={t}>{t}</span>)}
+      <div className="mx-2.5 mt-1.5 flex justify-between text-[11px] font-semibold text-[#8a9099]">
+        {ticks.map(([lbl, val]) => (
+          <button key={lbl} type="button" onClick={() => clickTick(val)} className="-mx-1 cursor-pointer px-1 active:text-[#D10005]">{lbl}</button>
+        ))}
       </div>
     </div>
   );
