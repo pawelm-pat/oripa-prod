@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Lang, Screen } from "./lib/types";
+import type { DrawScenario, Lang, Screen } from "./lib/types";
 import { LangToggle, PhoneApp, UpdatePrompt, VersionBadge } from "./components/oripa";
 import { CommentsPanel } from "./components/comments";
 import { DevPanels } from "./components/devpanels";
@@ -31,11 +31,12 @@ export default function Page() {
   // Demo control (draw screen only): whether the pack is expired/sold out.
   // Yes -> confirming a draw shows the "Sold Out" popup, then the draw screen
   // greys out with no CTAs; No -> normal draw flow.
-  const [expired, setExpired] = useState(false);
-  // Demo control (draw screen only): simulate a connection error on draw.
-  // Yes -> confirming a draw shows the Connection Error popup (Retry succeeds,
-  // Cancel returns to the draw screen); No -> normal draw flow.
-  const [connError, setConnError] = useState(false);
+  // Demo control (draw screen only): pick a draw scenario.
+  //   off      -> normal draw flow
+  //   expired  -> Sold Out popup, then greyed-out draw screen
+  //   connError-> Connection Error popup (Retry succeeds, Cancel returns)
+  //   stock    -> only 8 left; drawing more prompts "draw remaining 8"
+  const [drawScenario, setDrawScenario] = useState<DrawScenario>("off");
 
   function changeKycScenario(value: KycScenario) {
     try { sessionStorage.removeItem(KYC_SESSION_KEY); } catch {}
@@ -66,13 +67,19 @@ export default function Page() {
               )}
             </>
           )}
-          {/* Draw screen only: simulate an expired / sold-out pack, or a
-              connection error on draw. */}
+          {/* Draw screen only: pick a draw scenario to simulate. */}
           {screen === "drawDetail" && !drawResultsOpen && (
-            <>
-              <ToggleControl label="Expired" value={expired} onChange={setExpired} />
-              <ToggleControl label="Connection error" value={connError} onChange={setConnError} />
-            </>
+            <SelectControl
+              label="Draw scenario"
+              value={drawScenario}
+              onChange={setDrawScenario}
+              options={[
+                ["Off", "off"],
+                ["Draw expired", "expired"],
+                ["Connection Error", "connError"],
+                ["Insufficient Stock Left", "stock"],
+              ]}
+            />
           )}
         </div>
         <div className="rounded-[2.6rem] border border-white/12 bg-[#1b1c22] p-3 shadow-[0_35px_90px_rgba(0,0,0,0.55)]">
@@ -89,8 +96,7 @@ export default function Page() {
                 onDrawResultsChange={setDrawResultsOpen}
                 addressProvided={addressProvided}
                 dailyLimitReached={dailyLimit}
-                expired={expired}
-                connError={connError}
+                drawScenario={drawScenario}
               />
             </div>
           </div>
@@ -109,8 +115,7 @@ export default function Page() {
           onDrawResultsChange={setDrawResultsOpen}
           addressProvided={addressProvided}
           dailyLimitReached={dailyLimit}
-          expired={expired}
-          connError={connError}
+          drawScenario={drawScenario}
         />
       </div>
 
@@ -136,6 +141,27 @@ function ToggleControl({ label, value, onChange }: { label: string; value: boole
             key={lbl}
             onClick={() => onChange(v)}
             className={`flex-1 py-1.5 text-[11px] font-semibold transition ${value === v ? "bg-[#f5670a] text-white" : "bg-[#202127] text-white/60"}`}
+          >
+            {lbl}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Demo single-select (dev harness only): a stacked list of mutually exclusive
+// options. Used for the draw-screen scenario picker.
+function SelectControl<T extends string>({ label, value, onChange, options }: { label: string; value: T; onChange: (v: T) => void; options: readonly (readonly [string, T])[] }) {
+  return (
+    <div className="flex w-[168px] flex-col items-start gap-2">
+      <span className="whitespace-nowrap text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-white/45">{label}</span>
+      <div className="flex w-full flex-col overflow-hidden rounded-lg border border-white/15">
+        {options.map(([lbl, v]) => (
+          <button
+            key={v}
+            onClick={() => onChange(v)}
+            className={`w-full px-2.5 py-1.5 text-left text-[11px] font-semibold transition ${value === v ? "bg-[#f5670a] text-white" : "bg-[#202127] text-white/60"}`}
           >
             {lbl}
           </button>

@@ -6,6 +6,7 @@ import { APP_VERSION } from "../version";
 import type {
   Category,
   Lang,
+  DrawScenario,
   OripaItem,
   Rarity,
   Screen,
@@ -1198,10 +1199,17 @@ function DrawPromoBanner({ t, item, className = "", showCountdown = true }: { t:
   );
 }
 
-function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, expired = false, connError = false, onOpenDraw }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; expired?: boolean; connError?: boolean; onOpenDraw?: (item: OripaItem) => void }) {
+function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", onOpenDraw }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; onOpenDraw?: (item: OripaItem) => void }) {
   const t = STR[lang];
   // Opens a stored legal document (T&Cs, etc.) in the shared overlay.
   const openLegal = useContext(LegalNavContext);
+  // Draw-screen demo scenarios (dev harness): expired pack, connection error,
+  // or insufficient remaining stock.
+  const expired = drawScenario === "expired";
+  const connError = drawScenario === "connError";
+  const insufficientStock = drawScenario === "stock";
+  // In the insufficient-stock scenario only this many draws remain.
+  const STOCK_LEFT = 8;
   // "Sold Out" popup (shown when an expired pack's draw is confirmed) and the
   // latched greyed-out state that follows once it's dismissed.
   const [soldOutPopup, setSoldOutPopup] = useState(false);
@@ -1210,10 +1218,14 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
   // retry when the user taps Retry.
   const [connErrorPopup, setConnErrorPopup] = useState(false);
   const [retryCount, setRetryCount] = useState(1);
+  // Insufficient-stock popup + the count the user attempted (to show the
+  // original vs. remaining cost).
+  const [stockPopup, setStockPopup] = useState(false);
+  const [stockReqCount, setStockReqCount] = useState(0);
   // `item.expired` packs are permanently sold out: greyed on open, no CTAs.
   const soldOut = item.remaining <= 0 || soldOutHit || !!item.expired;
-  const pct = soldOut ? 0 : Math.round((item.remaining / item.total) * 100);
-  const remainingShown = soldOut ? 0 : item.remaining;
+  const remainingShown = soldOut ? 0 : (insufficientStock ? STOCK_LEFT : item.remaining);
+  const pct = soldOut ? 0 : Math.round((remainingShown / item.total) * 100);
   const [toast, setToast] = useState<string | null>(null);
   const [cautionOpen, setCautionOpen] = useState(false);
   // Draw-confirmation popup: holds the requested draw count while open.
@@ -1240,6 +1252,9 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
   function draw(count: number) {
     if (soldOut) return;
     if (coins < DRAW_PRICE * count) { pushToast(t.drawInsufficient); return; }
+    // Insufficient stock: asking for more than what's left prompts the
+    // "draw remaining" popup instead of the normal confirmation.
+    if (insufficientStock && count > STOCK_LEFT) { setStockReqCount(count); setStockPopup(true); return; }
     // Open the confirmation popup; the actual draw is triggered from there.
     setConfirmCount(count);
   }
@@ -1273,6 +1288,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
     if (coins < DRAW_PRICE * customQty) { pushToast(t.drawInsufficient); return; }
     if (expired) { setCustomOpen(false); setSoldOutPopup(true); return; }
     if (connError) { setCustomOpen(false); setRetryCount(customQty); setConnErrorPopup(true); return; }
+    if (insufficientStock && customQty > STOCK_LEFT) { setCustomOpen(false); setStockReqCount(customQty); setStockPopup(true); return; }
     runDraw(customQty);
   }
 
@@ -1621,6 +1637,52 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
             <button
               onClick={() => setConnErrorPopup(false)}
               className="mt-2.5 w-full rounded-[14px] border-[1.5px] border-[#b5b8bd] bg-white py-3.5 text-[15px] font-bold text-[#6b7075] active:scale-[0.98]"
+            >
+              {t.cancel}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Insufficient Stock popup — the requested count exceeds what's left.
+          "Draw Remaining" rolls the remaining stock; Cancel returns. */}
+      {stockPopup && (
+        <div
+          className="animate-popup-backdrop absolute inset-0 z-[65] flex items-center justify-center p-4"
+          style={{ background: "rgba(20,8,4,0.62)" }}
+          onClick={() => setStockPopup(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="animate-popup-pop w-full max-w-[340px] rounded-2xl bg-white px-6 pb-6 pt-7 text-center shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+            style={{ fontFamily: "var(--font-noto-sans-jp), system-ui, sans-serif" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto flex h-[92px] w-[92px] items-center justify-center rounded-full border-[5px] border-[#D10005]">
+              <span className="text-[52px] font-black leading-none text-[#D10005]">!</span>
+            </div>
+            <h3 className="mt-4 text-[22px] font-extrabold text-[#1d2129]">{t.stockTitle}</h3>
+            <p className="mx-auto mt-2 max-w-[290px] text-[13px] leading-relaxed text-[#6b7075]">{t.stockBody(STOCK_LEFT)}</p>
+            {/* Original requested cost → remaining (M) draw cost */}
+            <div className="mt-4 flex items-center justify-center gap-2 rounded-[12px] border border-black/10 bg-white px-3 py-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+              <CoinIcon size={22} />
+              <span className="text-[16px] font-extrabold text-[#1d2129]">{(DRAW_PRICE * stockReqCount).toLocaleString()}</span>
+              <span className="text-[11px] font-bold text-[#8a9099]">{t.stockDrawCost(stockReqCount)}</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a9099" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="mx-0.5 shrink-0"><path d="M9 6l6 6-6 6" /></svg>
+              <CoinIcon size={22} />
+              <span className="text-[16px] font-extrabold text-[#D10005]">{(DRAW_PRICE * STOCK_LEFT).toLocaleString()}</span>
+            </div>
+            <button
+              onClick={() => { setStockPopup(false); runDraw(STOCK_LEFT); }}
+              className="mt-4 w-full rounded-[14px] bg-[#D10005] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]"
+            >
+              {t.stockDrawRemaining(STOCK_LEFT)}
+            </button>
+            <div className="my-3.5 border-t border-dashed border-black/20" />
+            <button
+              onClick={() => setStockPopup(false)}
+              className="w-full rounded-[14px] border-[1.5px] border-[#b5b8bd] bg-white py-3.5 text-[15px] font-bold text-[#6b7075] active:scale-[0.98]"
             >
               {t.cancel}
             </button>
@@ -4365,8 +4427,8 @@ function StorePage({
   );
 }
 
-export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "happy", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, expired = false, connError = false }: {
-  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; expired?: boolean; connError?: boolean;
+export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "happy", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off" }: {
+  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario;
 }) {
   const t = STR[lang];
   const [screen, setScreen] = useState<Screen>("landing");
@@ -4573,8 +4635,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onOpenDraw={openDraw}
             freeShipAvailable={freeShipAvailable}
             dailyLimitReached={dailyLimitReached}
-            expired={expired}
-            connError={connError}
+            drawScenario={drawScenario}
             onResultsChange={onDrawResultsChange}
             shippingAddresses={shippingAddresses}
             onShippingAddressesChange={setShippingAddresses}

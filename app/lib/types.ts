@@ -85,6 +85,10 @@ export type OripaItem = {
   expired?: boolean;
 };
 
+// Draw-screen demo scenario (dev harness): normal, permanently sold out,
+// simulated connection error, or insufficient remaining stock.
+export type DrawScenario = "off" | "expired" | "connError" | "stock";
+
 export type SectionIconKey = "star" | "new" | "popular" | "pokemon" | "limited" | "cards";
 
 export type HomeSection = {
