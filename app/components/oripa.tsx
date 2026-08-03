@@ -1048,7 +1048,7 @@ function DrawPromoBanner({ t, item, className = "", showCountdown = true }: { t:
   );
 }
 
-function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>> }) {
+function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, onOpenDraw }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; onOpenDraw?: (item: OripaItem) => void }) {
   const t = STR[lang];
   // Opens a stored legal document (T&Cs, etc.) in the shared overlay.
   const openLegal = useContext(LegalNavContext);
@@ -1395,8 +1395,14 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
           key={resultsRun}
           lang={lang}
           coins={coins}
+          item={item}
           cards={results}
-          onDrawAgain={() => setResults(null)}
+          dailyLimitReached={dailyLimitReached}
+          onOpenDraw={onOpenDraw}
+          // "Draw again" (within the daily limit): close the results and
+          // re-open the draw-confirmation popup for the same count. Cancelling
+          // it leaves the player on the draw screen; confirming rolls again.
+          onDrawAgain={() => { const c = results?.length ?? 1; setResults(null); setConfirmCount(c); }}
           onClose={() => setResults(null)}
           onHome={onHome}
           onOpenStore={onOpenStore}
@@ -1412,7 +1418,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
 // Gacha results — "list mode". Shown after any draw (×1 / ×10 / custom). Lets
 // the player review the cards they pulled, filter by tier, sort, select, and
 // exchange to coins or request shipping. Self-contained (local selection).
-function DrawResults({ lang, coins, cards, onDrawAgain, onClose, onHome, onOpenStore, freeShipAvailable = true, shippingAddresses, onShippingAddressesChange }: { lang: Lang; coins: number; cards: WonPrize[]; onDrawAgain: () => void; onClose: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>> }) {
+function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, onOpenStore, freeShipAvailable = true, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, onOpenDraw }: { lang: Lang; coins: number; item: OripaItem; cards: WonPrize[]; onDrawAgain: () => void; onClose: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; onOpenDraw?: (item: OripaItem) => void }) {
   const t = STR[lang];
   const [list, setList] = useState<WonPrize[]>(cards);
   const [tier, setTier] = useState<"all" | Rarity>("all");
@@ -1420,6 +1426,12 @@ function DrawResults({ lang, coins, cards, onDrawAgain, onClose, onHome, onOpenS
   const [sortOpen, setSortOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [shipOpen, setShipOpen] = useState(false);
+  // "Daily Limit Reached" popup, shown when Draw again is tapped and the
+  // player has hit today's cap. Closing it returns to the results screen.
+  const [limitOpen, setLimitOpen] = useState(false);
+  // Index into the "Other Oripa" carousel shown in the limit popup.
+  const [otherIdx, setOtherIdx] = useState(0);
+  const otherOripa = useMemo(() => ALL_ORIPA.filter((o) => o.id !== item.id).slice(0, 6), [item.id]);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -1491,7 +1503,7 @@ function DrawResults({ lang, coins, cards, onDrawAgain, onClose, onHome, onOpenS
 
       {/* Top actions: Draw again + Swipe to reveal */}
       <div className="shrink-0 flex gap-3 bg-white px-3 py-3">
-        <button onClick={onDrawAgain} className="flex-1 rounded-xl bg-[#D10005] py-3 text-[14px] font-extrabold text-white active:scale-[0.99]">
+        <button onClick={() => { if (dailyLimitReached) { setOtherIdx(0); setLimitOpen(true); } else { onDrawAgain(); } }} className="flex-1 rounded-xl bg-[#D10005] py-3 text-[14px] font-extrabold text-white active:scale-[0.99]">
           {t.drawAgain}
         </button>
         <button onClick={() => pushToast(t.drawSwipeTBC)} className="flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-black/15 bg-white py-3 text-[14px] font-extrabold text-[#1d2129] active:scale-[0.99]">
@@ -1661,6 +1673,98 @@ function DrawResults({ lang, coins, cards, onDrawAgain, onClose, onHome, onOpenS
           onShippingAddressesChange={onShippingAddressesChange}
           freeShipAvailable={freeShipAvailable}
         />
+      )}
+
+      {/* Daily Limit Reached popup — shown when Draw again is tapped while the
+          player has hit today's cap. Close returns to the results screen. */}
+      {limitOpen && (
+        <div
+          className="absolute inset-0 z-[60] flex items-center justify-center p-4"
+          style={{ background: "rgba(20,8,4,0.62)" }}
+          onClick={() => setLimitOpen(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <style>{`@keyframes drawConfirmIn{0%{opacity:0;transform:translateY(12px) scale(.94)}100%{opacity:1;transform:none}}`}</style>
+          <div
+            className="no-scrollbar flex max-h-full w-full max-w-[380px] flex-col overflow-y-auto rounded-2xl bg-white shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+            style={{ animation: "drawConfirmIn 260ms cubic-bezier(0.22,0.61,0.36,1) both" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <DrawPromoBanner t={t} item={item} className="rounded-t-2xl" showCountdown={false} />
+
+            <div className="px-4 pb-4 pt-3.5">
+              <h3 className="text-center text-[18px] font-extrabold text-[#D10005]">{t.drawLimitTitle}</h3>
+              <p className="mx-auto mt-1.5 max-w-[300px] text-center text-[12px] leading-relaxed text-[#5c626b]">{t.drawLimitBody}</p>
+
+              <button
+                onClick={() => setLimitOpen(false)}
+                className="mt-3.5 w-full rounded-[10px] border border-black/15 bg-white py-3 text-[14px] font-bold text-[#3a3f47] active:scale-[0.98]"
+              >
+                {t.drawLimitClose}
+              </button>
+
+              {otherOripa.length > 0 && (
+                <>
+                  <div className="my-3.5 border-t border-dashed border-black/20" />
+                  <p className="mb-2.5 text-center text-[12px] font-bold text-[#8a9099]">{t.drawOtherOripa}</p>
+                  <div className="relative">
+                    {(() => {
+                      const other = otherOripa[otherIdx % otherOripa.length];
+                      return (
+                        <div className="overflow-hidden rounded-xl border border-black/10">
+                          <DrawPromoBanner t={t} item={other} showCountdown={false} />
+                          <div className="flex items-center justify-between gap-2 px-3 py-2.5">
+                            <span className="flex items-baseline gap-1 text-[12px] font-bold text-[#1d2129]">
+                              {t.remainingLabel}
+                              <span className="text-[15px] font-extrabold">{other.remaining}</span>
+                              <span className="text-[11px] font-bold text-[#8a9099]">/{other.total}</span>
+                            </span>
+                            <span className="flex items-baseline gap-1 text-[12px] font-bold text-[#D10005]">
+                              {t.remainingTimeLabel}
+                              <span className="text-[14px] font-extrabold">{t.minUnit(other.endsIn)}</span>
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => { setLimitOpen(false); onOpenDraw?.(other); }}
+                            className="w-full rounded-b-xl bg-[#D10005] py-2.5 text-[13px] font-extrabold text-white active:scale-[0.99]"
+                          >
+                            {t.btnDraw}
+                          </button>
+                        </div>
+                      );
+                    })()}
+                    {otherOripa.length > 1 && (
+                      <>
+                        <button
+                          aria-label="Previous"
+                          onClick={() => setOtherIdx((i) => (i - 1 + otherOripa.length) % otherOripa.length)}
+                          className="absolute left-1 top-[38%] flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#1d2129] shadow-md active:scale-95"
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M15 6l-6 6 6 6" /></svg>
+                        </button>
+                        <button
+                          aria-label="Next"
+                          onClick={() => setOtherIdx((i) => (i + 1) % otherOripa.length)}
+                          className="absolute right-1 top-[38%] flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#1d2129] shadow-md active:scale-95"
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  {otherOripa.length > 1 && (
+                    <div className="mt-2.5 flex items-center justify-center gap-1.5">
+                      {otherOripa.map((_, i) => (
+                        <span key={i} className="h-1.5 rounded-full transition-all" style={{ width: i === otherIdx % otherOripa.length ? 16 : 6, background: i === otherIdx % otherOripa.length ? "#D10005" : "#cfd3da" }} />
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -4008,8 +4112,8 @@ function StorePage({
   );
 }
 
-export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "happy", freeShipAvailable = true, onDrawResultsChange, addressProvided = true }: {
-  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean;
+export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "happy", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false }: {
+  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean;
 }) {
   const t = STR[lang];
   const [screen, setScreen] = useState<Screen>("landing");
@@ -4206,13 +4310,16 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
         {screen === "oripa" && <OripaHome lang={lang} coins={coins} onHome={goHome} onOpenStore={openStore} onOpenDraw={openDraw} />}
         {screen === "drawDetail" && drawItem && (
           <DrawDetail
+            key={drawItem.id}
             lang={lang}
             item={drawItem}
             coins={coins}
             onBack={goHome}
             onHome={goHome}
             onOpenStore={openStore}
+            onOpenDraw={openDraw}
             freeShipAvailable={freeShipAvailable}
+            dailyLimitReached={dailyLimitReached}
             onResultsChange={onDrawResultsChange}
             shippingAddresses={shippingAddresses}
             onShippingAddressesChange={setShippingAddresses}

@@ -24,6 +24,10 @@ export default function Page() {
   // No -> shipping flow opens on the "Add address" form; Yes -> pre-populated
   // "Choose shipping address" step.
   const [addressProvided, setAddressProvided] = useState(true);
+  // Demo control (draw results only): whether today's draw limit is reached.
+  // Yes -> "Draw again" shows the Daily Limit Reached popup; No -> it re-opens
+  // the draw-confirmation popup.
+  const [dailyLimit, setDailyLimit] = useState(false);
 
   function changeKycScenario(value: KycScenario) {
     try { sessionStorage.removeItem(KYC_SESSION_KEY); } catch {}
@@ -49,6 +53,9 @@ export default function Page() {
             <>
               <ToggleControl label="Free shipping" value={freeShipping} onChange={setFreeShipping} />
               <ToggleControl label="Address provided" value={addressProvided} onChange={setAddressProvided} />
+              {drawResultsOpen && (
+                <ToggleControl label="Daily limit" value={dailyLimit} onChange={setDailyLimit} />
+              )}
             </>
           )}
         </div>
@@ -65,6 +72,7 @@ export default function Page() {
                 freeShipAvailable={freeShipping}
                 onDrawResultsChange={setDrawResultsOpen}
                 addressProvided={addressProvided}
+                dailyLimitReached={dailyLimit}
               />
             </div>
           </div>
@@ -82,6 +90,7 @@ export default function Page() {
           freeShipAvailable={freeShipping}
           onDrawResultsChange={setDrawResultsOpen}
           addressProvided={addressProvided}
+          dailyLimitReached={dailyLimit}
         />
       </div>
 
@@ -94,17 +103,19 @@ export default function Page() {
 }
 
 // Demo Yes/No toggle (dev harness only). Used for "Free shipping" (free vs.
-// paid ¥500 badge) and "Address provided" (pre-populated address vs. add-new).
+// paid ¥500 badge), "Address provided" (pre-populated address vs. add-new) and
+// "Daily limit" (draw-again limit popup vs. re-open confirm). Fixed width with
+// equal-width Yes/No halves so all toggles line up neatly in the rail.
 function ToggleControl({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
   return (
-    <div className="flex flex-col items-start gap-2">
-      <span className="text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-white/45">{label}</span>
-      <div className="inline-flex overflow-hidden rounded-lg border border-white/15">
+    <div className="flex w-[168px] flex-col items-start gap-2">
+      <span className="whitespace-nowrap text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-white/45">{label}</span>
+      <div className="flex w-full overflow-hidden rounded-lg border border-white/15">
         {([["Yes", true], ["No", false]] as const).map(([lbl, v]) => (
           <button
             key={lbl}
             onClick={() => onChange(v)}
-            className={`px-4 py-1.5 text-[11px] font-semibold transition ${value === v ? "bg-[#f5670a] text-white" : "bg-[#202127] text-white/60"}`}
+            className={`flex-1 py-1.5 text-[11px] font-semibold transition ${value === v ? "bg-[#f5670a] text-white" : "bg-[#202127] text-white/60"}`}
           >
             {lbl}
           </button>
