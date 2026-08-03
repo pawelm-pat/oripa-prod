@@ -32,6 +32,10 @@ export default function Page() {
   // Yes -> confirming a draw shows the "Sold Out" popup, then the draw screen
   // greys out with no CTAs; No -> normal draw flow.
   const [expired, setExpired] = useState(false);
+  // Demo control (draw screen only): simulate a connection error on draw.
+  // Yes -> confirming a draw shows the Connection Error popup (Retry succeeds,
+  // Cancel returns to the draw screen); No -> normal draw flow.
+  const [connError, setConnError] = useState(false);
 
   function changeKycScenario(value: KycScenario) {
     try { sessionStorage.removeItem(KYC_SESSION_KEY); } catch {}
@@ -62,9 +66,13 @@ export default function Page() {
               )}
             </>
           )}
-          {/* Draw screen only: simulate an expired / sold-out pack. */}
+          {/* Draw screen only: simulate an expired / sold-out pack, or a
+              connection error on draw. */}
           {screen === "drawDetail" && !drawResultsOpen && (
-            <ToggleControl label="Expired" value={expired} onChange={setExpired} />
+            <>
+              <ToggleControl label="Expired" value={expired} onChange={setExpired} />
+              <ToggleControl label="Connection error" value={connError} onChange={setConnError} />
+            </>
           )}
         </div>
         <div className="rounded-[2.6rem] border border-white/12 bg-[#1b1c22] p-3 shadow-[0_35px_90px_rgba(0,0,0,0.55)]">
@@ -82,6 +90,7 @@ export default function Page() {
                 addressProvided={addressProvided}
                 dailyLimitReached={dailyLimit}
                 expired={expired}
+                connError={connError}
               />
             </div>
           </div>
@@ -101,6 +110,7 @@ export default function Page() {
           addressProvided={addressProvided}
           dailyLimitReached={dailyLimit}
           expired={expired}
+          connError={connError}
         />
       </div>
 

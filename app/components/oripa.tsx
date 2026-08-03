@@ -1198,7 +1198,7 @@ function DrawPromoBanner({ t, item, className = "", showCountdown = true }: { t:
   );
 }
 
-function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, expired = false, onOpenDraw }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; expired?: boolean; onOpenDraw?: (item: OripaItem) => void }) {
+function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, expired = false, connError = false, onOpenDraw }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; expired?: boolean; connError?: boolean; onOpenDraw?: (item: OripaItem) => void }) {
   const t = STR[lang];
   // Opens a stored legal document (T&Cs, etc.) in the shared overlay.
   const openLegal = useContext(LegalNavContext);
@@ -1206,6 +1206,10 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
   // latched greyed-out state that follows once it's dismissed.
   const [soldOutPopup, setSoldOutPopup] = useState(false);
   const [soldOutHit, setSoldOutHit] = useState(false);
+  // Connection-error popup (simulated network failure) + the draw count to
+  // retry when the user taps Retry.
+  const [connErrorPopup, setConnErrorPopup] = useState(false);
+  const [retryCount, setRetryCount] = useState(1);
   // `item.expired` packs are permanently sold out: greyed on open, no CTAs.
   const soldOut = item.remaining <= 0 || soldOutHit || !!item.expired;
   const pct = soldOut ? 0 : Math.round((item.remaining / item.total) * 100);
@@ -1253,6 +1257,8 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
     if (count == null) return;
     // Expired pack: the draw fails — show the Sold Out popup instead of results.
     if (expired) { setConfirmCount(null); setSoldOutPopup(true); return; }
+    // Simulated connection error: show the error popup; Retry re-runs the draw.
+    if (connError) { setConfirmCount(null); setRetryCount(count); setConnErrorPopup(true); return; }
     runDraw(count);
   }
 
@@ -1266,6 +1272,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
   function confirmCustomDraw() {
     if (coins < DRAW_PRICE * customQty) { pushToast(t.drawInsufficient); return; }
     if (expired) { setCustomOpen(false); setSoldOutPopup(true); return; }
+    if (connError) { setCustomOpen(false); setRetryCount(customQty); setConnErrorPopup(true); return; }
     runDraw(customQty);
   }
 
@@ -1559,15 +1566,15 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
           it latches the greyed-out sold-out state on the draw screen. */}
       {soldOutPopup && (
         <div
-          className="absolute inset-0 z-[65] flex items-center justify-center p-4"
+          className="animate-popup-backdrop absolute inset-0 z-[65] flex items-center justify-center p-4"
           style={{ background: "rgba(20,8,4,0.62)" }}
           onClick={() => { setSoldOutPopup(false); setSoldOutHit(true); }}
           role="dialog"
           aria-modal="true"
         >
           <div
-            className="w-full max-w-[340px] rounded-2xl bg-white px-6 pb-6 pt-7 text-center shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
-            style={{ animation: "drawConfirmIn 260ms cubic-bezier(0.22,0.61,0.36,1) both", fontFamily: "var(--font-noto-sans-jp), system-ui, sans-serif" }}
+            className="animate-popup-pop w-full max-w-[340px] rounded-2xl bg-white px-6 pb-6 pt-7 text-center shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+            style={{ fontFamily: "var(--font-noto-sans-jp), system-ui, sans-serif" }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mx-auto flex h-[92px] w-[92px] items-center justify-center rounded-full border-[5px] border-[#D10005]">
@@ -1580,6 +1587,42 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
               className="mt-5 w-full rounded-[14px] border-[1.5px] border-[#b5b8bd] bg-white py-3.5 text-[15px] font-bold text-[#6b7075] active:scale-[0.98]"
             >
               {t.drawLimitClose}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Connection Error popup — simulated network failure on draw. Retry
+          re-attempts (and succeeds); Cancel returns to the draw screen. */}
+      {connErrorPopup && (
+        <div
+          className="animate-popup-backdrop absolute inset-0 z-[65] flex items-center justify-center p-4"
+          style={{ background: "rgba(20,8,4,0.62)" }}
+          onClick={() => setConnErrorPopup(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="animate-popup-pop w-full max-w-[340px] rounded-2xl bg-white px-6 pb-6 pt-7 text-center shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+            style={{ fontFamily: "var(--font-noto-sans-jp), system-ui, sans-serif" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto flex h-[92px] w-[92px] items-center justify-center rounded-full border-[5px] border-[#D10005]">
+              <span className="text-[52px] font-black leading-none text-[#D10005]">!</span>
+            </div>
+            <h3 className="mt-4 text-[22px] font-extrabold text-[#1d2129]">{t.connErrorTitle}</h3>
+            <p className="mx-auto mt-2 max-w-[280px] text-[13px] leading-relaxed text-[#6b7075]">{t.connErrorBody}</p>
+            <button
+              onClick={() => { setConnErrorPopup(false); runDraw(retryCount); }}
+              className="mt-5 w-full rounded-[14px] bg-[#D10005] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]"
+            >
+              {t.connErrorRetry}
+            </button>
+            <button
+              onClick={() => setConnErrorPopup(false)}
+              className="mt-2.5 w-full rounded-[14px] border-[1.5px] border-[#b5b8bd] bg-white py-3.5 text-[15px] font-bold text-[#6b7075] active:scale-[0.98]"
+            >
+              {t.cancel}
             </button>
           </div>
         </div>
@@ -4322,8 +4365,8 @@ function StorePage({
   );
 }
 
-export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "happy", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, expired = false }: {
-  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; expired?: boolean;
+export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "happy", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, expired = false, connError = false }: {
+  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; expired?: boolean; connError?: boolean;
 }) {
   const t = STR[lang];
   const [screen, setScreen] = useState<Screen>("landing");
@@ -4531,6 +4574,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             freeShipAvailable={freeShipAvailable}
             dailyLimitReached={dailyLimitReached}
             expired={expired}
+            connError={connError}
             onResultsChange={onDrawResultsChange}
             shippingAddresses={shippingAddresses}
             onShippingAddressesChange={setShippingAddresses}

@@ -55,6 +55,31 @@ a {
   animation: fadeSlideIn 0.45s ease both;
 }
 
+/* Modal popups: backdrop fade + a gentle spring pop-in for the dialog. */
+@keyframes popupBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes popupPopIn {
+  0% { opacity: 0; transform: scale(0.82) translateY(10px); }
+  55% { opacity: 1; transform: scale(1.03) translateY(0); }
+  75% { transform: scale(0.99); }
+  100% { transform: scale(1); }
+}
+.animate-popup-backdrop {
+  animation: popupBackdropIn 0.2s ease-out both;
+}
+.animate-popup-pop {
+  animation: popupPopIn 0.34s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  will-change: opacity, transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-popup-backdrop,
+  .animate-popup-pop {
+    animation: none;
+  }
+}
+
 /* Soft screen-to-screen transition on navigation (body only — header stays put) */
 @keyframes screenIn {
   from {
