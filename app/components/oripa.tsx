@@ -399,12 +399,33 @@ function HomeHero({ lang }: { lang: Lang }) {
   );
 }
 
+// 12-point starburst outline for the "New" category icon, computed once so it
+// can inherit the active/inactive colour like the other line icons.
+const NEW_BURST_PATH = (() => {
+  const cx = 12, cy = 12, spikes = 12, R = 9.6, r = 7.1;
+  let d = "";
+  for (let k = 0; k < spikes * 2; k++) {
+    const rad = k % 2 === 0 ? R : r;
+    const a = ((-90 + k * (180 / spikes)) * Math.PI) / 180;
+    const x = +(cx + rad * Math.cos(a)).toFixed(2);
+    const y = +(cy + rad * Math.sin(a)).toFixed(2);
+    d += (k === 0 ? "M" : "L") + x + " " + y + " ";
+  }
+  return d + "Z";
+})();
+
 function catIcon(key: string, color: string) {
   switch (key) {
     case "all":
       return <svg width="23" height="23" viewBox="0 0 24 24" fill={color}><rect x="3" y="3" width="7.5" height="7.5" rx="2.2" /><rect x="13.5" y="3" width="7.5" height="7.5" rx="2.2" /><rect x="3" y="13.5" width="7.5" height="7.5" rx="2.2" /><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2.2" /></svg>;
     case "new":
-      return <img src="/icons/new-badge.png" alt="" width="26" height="26" className="h-[26px] w-[26px] object-contain" />;
+      return (
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round">
+          <path d={NEW_BURST_PATH} />
+          <path d="M12 8v4" />
+          <path d="M12 15h.01" />
+        </svg>
+      );
     case "popular":
       return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" /></svg>;
     case "pokemon":
