@@ -1431,7 +1431,19 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
   const [limitOpen, setLimitOpen] = useState(false);
   // Index into the "Other Oripa" carousel shown in the limit popup.
   const [otherIdx, setOtherIdx] = useState(0);
-  const otherOripa = useMemo(() => ALL_ORIPA.filter((o) => o.id !== item.id).slice(0, 6), [item.id]);
+  // 3 switchable "Other Oripa" suggestions, de-duped by banner art so each
+  // slide looks visibly different.
+  const otherOripa = useMemo(() => {
+    const seenImg = new Set<string>();
+    const out: OripaItem[] = [];
+    for (const o of ALL_ORIPA) {
+      if (o.id === item.id) continue;
+      if (o.image) { if (seenImg.has(o.image)) continue; seenImg.add(o.image); }
+      out.push(o);
+      if (out.length >= 3) break;
+    }
+    return out;
+  }, [item.id]);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -1691,10 +1703,10 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
             style={{ animation: "drawConfirmIn 260ms cubic-bezier(0.22,0.61,0.36,1) both" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <DrawPromoBanner t={t} item={item} className="rounded-t-2xl" showCountdown={false} />
+            <img src="/oripa-banner-adkakutei.png" alt="" draggable={false} className="h-[168px] w-full rounded-t-2xl object-cover object-center" style={{ WebkitUserDrag: "none" } as React.CSSProperties} />
 
             <div className="px-4 pb-4 pt-3.5">
-              <h3 className="text-center text-[18px] font-extrabold text-[#D10005]">{t.drawLimitTitle}</h3>
+              <h3 className="text-center text-[19px] font-extrabold tracking-tight text-[#D10005]">{t.drawLimitTitle}</h3>
               <p className="mx-auto mt-1.5 max-w-[300px] text-center text-[12px] leading-relaxed text-[#5c626b]">{t.drawLimitBody}</p>
 
               <button
@@ -1708,29 +1720,31 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
                 <>
                   <div className="my-3.5 border-t border-dashed border-black/20" />
                   <p className="mb-2.5 text-center text-[12px] font-bold text-[#8a9099]">{t.drawOtherOripa}</p>
-                  <div className="relative">
+                  <div className="relative px-6">
                     {(() => {
                       const other = otherOripa[otherIdx % otherOripa.length];
                       return (
-                        <div className="overflow-hidden rounded-xl border border-black/10">
-                          <DrawPromoBanner t={t} item={other} showCountdown={false} />
-                          <div className="flex items-center justify-between gap-2 px-3 py-2.5">
-                            <span className="flex items-baseline gap-1 text-[12px] font-bold text-[#1d2129]">
-                              {t.remainingLabel}
-                              <span className="text-[15px] font-extrabold">{other.remaining}</span>
-                              <span className="text-[11px] font-bold text-[#8a9099]">/{other.total}</span>
-                            </span>
-                            <span className="flex items-baseline gap-1 text-[12px] font-bold text-[#D10005]">
-                              {t.remainingTimeLabel}
-                              <span className="text-[14px] font-extrabold">{t.minUnit(other.endsIn)}</span>
-                            </span>
+                        <div className="overflow-hidden rounded-2xl border border-black/10 bg-white shadow-[0_4px_14px_rgba(0,0,0,0.08)]">
+                          <img src={other.image || "/oripa-banner-adkakutei.png"} alt="" draggable={false} className="h-[150px] w-full object-cover object-center" style={{ WebkitUserDrag: "none" } as React.CSSProperties} />
+                          <div className="flex items-center justify-between gap-2 px-3 pb-3 pt-2.5">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="flex items-baseline gap-1 text-[12px] font-bold text-[#1d2129]">
+                                {t.remainingLabel}
+                                <span className="text-[15px] font-extrabold">{other.remaining}</span>
+                                <span className="text-[11px] font-bold text-[#8a9099]">/{other.total}</span>
+                              </span>
+                              <span className="flex items-baseline gap-1 text-[12px] font-bold text-[#D10005]">
+                                {t.remainingTimeLabel}
+                                <span className="text-[14px] font-extrabold">{t.minUnit(other.endsIn)}</span>
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => { setLimitOpen(false); onOpenDraw?.(other); }}
+                              className="rounded-xl bg-[#D10005] px-8 py-2.5 text-[14px] font-extrabold text-white shadow-[0_3px_8px_rgba(209,0,5,0.35)] active:scale-[0.97]"
+                            >
+                              {t.btnDraw}
+                            </button>
                           </div>
-                          <button
-                            onClick={() => { setLimitOpen(false); onOpenDraw?.(other); }}
-                            className="w-full rounded-b-xl bg-[#D10005] py-2.5 text-[13px] font-extrabold text-white active:scale-[0.99]"
-                          >
-                            {t.btnDraw}
-                          </button>
                         </div>
                       );
                     })()}
@@ -1739,16 +1753,16 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
                         <button
                           aria-label="Previous"
                           onClick={() => setOtherIdx((i) => (i - 1 + otherOripa.length) % otherOripa.length)}
-                          className="absolute left-1 top-[38%] flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#1d2129] shadow-md active:scale-95"
+                          className="absolute left-0 top-[42%] flex h-9 w-9 -translate-y-1/2 items-center justify-center active:scale-90"
                         >
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M15 6l-6 6 6 6" /></svg>
+                          <img src="/icons/carousel-arrow-left.png" alt="" className="h-6 w-6" draggable={false} />
                         </button>
                         <button
                           aria-label="Next"
                           onClick={() => setOtherIdx((i) => (i + 1) % otherOripa.length)}
-                          className="absolute right-1 top-[38%] flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#1d2129] shadow-md active:scale-95"
+                          className="absolute right-0 top-[42%] flex h-9 w-9 -translate-y-1/2 items-center justify-center active:scale-90"
                         >
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg>
+                          <img src="/icons/carousel-arrow-right.png" alt="" className="h-6 w-6" draggable={false} />
                         </button>
                       </>
                     )}
