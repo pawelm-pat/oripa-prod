@@ -28,6 +28,10 @@ export default function Page() {
   // Yes -> "Draw again" shows the Daily Limit Reached popup; No -> it re-opens
   // the draw-confirmation popup.
   const [dailyLimit, setDailyLimit] = useState(false);
+  // Demo control (draw screen only): whether the pack is expired/sold out.
+  // Yes -> confirming a draw shows the "Sold Out" popup, then the draw screen
+  // greys out with no CTAs; No -> normal draw flow.
+  const [expired, setExpired] = useState(false);
 
   function changeKycScenario(value: KycScenario) {
     try { sessionStorage.removeItem(KYC_SESSION_KEY); } catch {}
@@ -58,6 +62,10 @@ export default function Page() {
               )}
             </>
           )}
+          {/* Draw screen only: simulate an expired / sold-out pack. */}
+          {screen === "drawDetail" && !drawResultsOpen && (
+            <ToggleControl label="Expired" value={expired} onChange={setExpired} />
+          )}
         </div>
         <div className="rounded-[2.6rem] border border-white/12 bg-[#1b1c22] p-3 shadow-[0_35px_90px_rgba(0,0,0,0.55)]">
           <div className="rounded-[2.1rem] border border-white/8 bg-black p-2">
@@ -73,6 +81,7 @@ export default function Page() {
                 onDrawResultsChange={setDrawResultsOpen}
                 addressProvided={addressProvided}
                 dailyLimitReached={dailyLimit}
+                expired={expired}
               />
             </div>
           </div>
@@ -91,6 +100,7 @@ export default function Page() {
           onDrawResultsChange={setDrawResultsOpen}
           addressProvided={addressProvided}
           dailyLimitReached={dailyLimit}
+          expired={expired}
         />
       </div>
 

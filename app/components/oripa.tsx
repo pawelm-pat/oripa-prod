@@ -1198,12 +1198,17 @@ function DrawPromoBanner({ t, item, className = "", showCountdown = true }: { t:
   );
 }
 
-function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, onOpenDraw }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; onOpenDraw?: (item: OripaItem) => void }) {
+function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, expired = false, onOpenDraw }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; expired?: boolean; onOpenDraw?: (item: OripaItem) => void }) {
   const t = STR[lang];
   // Opens a stored legal document (T&Cs, etc.) in the shared overlay.
   const openLegal = useContext(LegalNavContext);
-  const pct = Math.round((item.remaining / item.total) * 100);
-  const soldOut = item.remaining <= 0;
+  // "Sold Out" popup (shown when an expired pack's draw is confirmed) and the
+  // latched greyed-out state that follows once it's dismissed.
+  const [soldOutPopup, setSoldOutPopup] = useState(false);
+  const [soldOutHit, setSoldOutHit] = useState(false);
+  const soldOut = item.remaining <= 0 || soldOutHit;
+  const pct = soldOut ? 0 : Math.round((item.remaining / item.total) * 100);
+  const remainingShown = soldOut ? 0 : item.remaining;
   const [toast, setToast] = useState<string | null>(null);
   const [cautionOpen, setCautionOpen] = useState(false);
   // Draw-confirmation popup: holds the requested draw count while open.
@@ -1245,6 +1250,8 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
   function confirmDraw() {
     const count = confirmCount;
     if (count == null) return;
+    // Expired pack: the draw fails — show the Sold Out popup instead of results.
+    if (expired) { setConfirmCount(null); setSoldOutPopup(true); return; }
     runDraw(count);
   }
 
@@ -1257,6 +1264,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
 
   function confirmCustomDraw() {
     if (coins < DRAW_PRICE * customQty) { pushToast(t.drawInsufficient); return; }
+    if (expired) { setCustomOpen(false); setSoldOutPopup(true); return; }
     runDraw(customQty);
   }
 
@@ -1277,7 +1285,10 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
             Fiery radial burst + ray sweep, gold 3D headline, "new-only"
             ribbon, tagline, mascot and a countdown chip. */}
         <div className="px-3 pt-3">
-          <DrawPromoBanner t={t} item={item} className="rounded-2xl ring-1 ring-[#ffcf5a]/40" />
+          {/* When sold out the creative is desaturated per design. */}
+          <div className={soldOut ? "grayscale" : ""}>
+            <DrawPromoBanner t={t} item={item} className="rounded-2xl ring-1 ring-[#ffcf5a]/40" />
+          </div>
           {/* sales period */}
           <p className="mt-2 text-center text-[11.5px] font-semibold text-[#8a9099]">{t.periodLabel("2026/01/01")}</p>
         </div>
@@ -1307,14 +1318,18 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
             )}
           </div>
           <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-[13px] font-bold text-[#1d2129]">{t.remainingLabel}</span>
-            <span className="leading-none"><span className="text-[20px] font-extrabold text-[#1d2129]">{item.remaining}</span><span className="text-[12px] font-bold text-[#8a9099]">/{item.total}</span></span>
+            <span className={`text-[13px] font-bold ${soldOut ? "text-[#D10005]" : "text-[#1d2129]"}`}>{t.remainingLabel}</span>
+            <span className="leading-none"><span className={`text-[20px] font-extrabold ${soldOut ? "text-[#D10005]" : "text-[#1d2129]"}`}>{remainingShown}</span><span className="text-[12px] font-bold text-[#8a9099]">/{item.total}</span></span>
           </div>
           <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-black/[0.08]"><span className="block h-full rounded-full bg-[#D10005]" style={{ width: `${pct}%` }} /></div>
-          <p className="mt-2 flex items-center justify-between text-[#D10005]">
-            <span className="text-[12px] font-bold">{t.remainingTimeLabel}</span>
-            <span className="text-[14px] font-extrabold">{t.minUnit(item.endsIn)}</span>
-          </p>
+          {soldOut ? (
+            <p className="mt-2 text-center text-[15px] font-extrabold text-[#D10005]">{t.soldOutLabel}</p>
+          ) : (
+            <p className="mt-2 flex items-center justify-between text-[#D10005]">
+              <span className="text-[12px] font-bold">{t.remainingTimeLabel}</span>
+              <span className="text-[14px] font-extrabold">{t.minUnit(item.endsIn)}</span>
+            </p>
+          )}
         </div>
 
         {/* Caution — collapsible accordion */}
@@ -1355,11 +1370,10 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
         <SiteFooter t={t} />
       </div>
 
-      {/* Sticky draw CTA — pinned just above the bottom navigation */}
-      <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2.5 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
-        {soldOut ? (
-          <div className="rounded-xl bg-black/10 py-3 text-center text-[15px] font-extrabold text-[#8a9099]">{t.drawSoldOut}</div>
-        ) : (
+      {/* Sticky draw CTA — pinned just above the bottom navigation. Hidden
+          entirely once sold out: the only remaining action is the back button. */}
+      {!soldOut && (
+        <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2.5 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
           <div className="flex gap-2">
             <button onClick={() => draw(1)} className="flex-1 rounded-[10px] border-2 border-[#D10005] bg-white py-3 text-[13px] font-extrabold text-[#1d2129] active:scale-[0.98]">
               {t.drawDraw1}
@@ -1371,8 +1385,8 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
               {t.drawDrawCustom}
             </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Draw-confirmation popup */}
       {confirmCount != null && (
@@ -1536,6 +1550,36 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
       {toast && (
         <div className="pointer-events-none absolute inset-x-0 bottom-24 z-[70] flex justify-center px-4">
           <div className="rounded-full bg-black/85 px-4 py-2 text-[12px] font-semibold text-white shadow-lg">{toast}</div>
+        </div>
+      )}
+
+      {/* Sold Out popup — shown when an expired pack's draw is confirmed. Closing
+          it latches the greyed-out sold-out state on the draw screen. */}
+      {soldOutPopup && (
+        <div
+          className="absolute inset-0 z-[65] flex items-center justify-center p-4"
+          style={{ background: "rgba(20,8,4,0.62)" }}
+          onClick={() => { setSoldOutPopup(false); setSoldOutHit(true); }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="w-full max-w-[340px] rounded-2xl bg-white px-6 pb-6 pt-7 text-center shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+            style={{ animation: "drawConfirmIn 260ms cubic-bezier(0.22,0.61,0.36,1) both", fontFamily: "var(--font-noto-sans-jp), system-ui, sans-serif" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto flex h-[92px] w-[92px] items-center justify-center rounded-full border-[5px] border-[#D10005]">
+              <span className="text-[52px] font-black leading-none text-[#D10005]">!</span>
+            </div>
+            <h3 className="mt-4 text-[22px] font-extrabold text-[#1d2129]">{t.soldOutTitle}</h3>
+            <p className="mx-auto mt-2 max-w-[280px] text-[13px] leading-relaxed text-[#6b7075]">{t.soldOutBody}</p>
+            <button
+              onClick={() => { setSoldOutPopup(false); setSoldOutHit(true); }}
+              className="mt-5 w-full rounded-[14px] border-[1.5px] border-[#b5b8bd] bg-white py-3.5 text-[15px] font-bold text-[#6b7075] active:scale-[0.98]"
+            >
+              {t.drawLimitClose}
+            </button>
+          </div>
         </div>
       )}
 
@@ -4276,8 +4320,8 @@ function StorePage({
   );
 }
 
-export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "happy", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false }: {
-  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean;
+export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "happy", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, expired = false }: {
+  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; expired?: boolean;
 }) {
   const t = STR[lang];
   const [screen, setScreen] = useState<Screen>("landing");
@@ -4484,6 +4528,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onOpenDraw={openDraw}
             freeShipAvailable={freeShipAvailable}
             dailyLimitReached={dailyLimitReached}
+            expired={expired}
             onResultsChange={onDrawResultsChange}
             shippingAddresses={shippingAddresses}
             onShippingAddressesChange={setShippingAddresses}
