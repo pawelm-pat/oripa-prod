@@ -643,7 +643,9 @@ function PriceRangeFilter({ label, min, max, onMin, onMax }: { label: string; mi
         <div className="pointer-events-none absolute left-0 right-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-[#e3e6ea]" />
         <div className="pointer-events-none absolute top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-[#D10005]" style={{ left: `${lo}%`, right: `${100 - hi}%` }} />
         <input type="range" min={0} max={100} step={0.5} value={minPct} onChange={(e) => { const v = pricePctToVal(+e.target.value); onMin(Math.min(v, max)); }} className="price-range" />
-        <input type="range" min={0} max={100} step={0.5} value={maxPct} onChange={(e) => { const p = +e.target.value; onMax(p >= 99.5 ? PRICE_MAX : Math.max(pricePctToVal(p), min)); }} className="price-range" />
+        {/* Only the exact far-right position snaps to the "20,000+" sentinel; any
+            position below it uses the real value, so the handle can slide back. */}
+        <input type="range" min={0} max={100} step={0.5} value={maxPct} onChange={(e) => { const p = +e.target.value; onMax(p >= 100 ? PRICE_MAX : Math.max(pricePctToVal(p), min)); }} className="price-range" />
       </div>
       <div className="mt-1.5 flex justify-between text-[11px] font-semibold text-[#8a9099]">
         {ticks.map((t) => <span key={t}>{t}</span>)}
