@@ -542,6 +542,7 @@ const LOBBY_NAV_STR = {
     filter: "Filter",
     clearAll: "Clear all",
     filtersApplied: "Filters applied",
+    cost: "Cost",
     pokemonHeading: "Pokemon",
     filterTags: [["popular", "Popular"], ["pokemon", "Pokemon"], ["psa10", "PSA 10 Guaranteed"], ["limit1", "Limited to 1 per day"], ["gvalue", "Guaranteed Value"], ["min60", "Minimum Guarantee of 60% or more"], ["campaign", "Campaign"], ["endsoon", "End soon"], ["ranklimited", "Rank Limited"], ["lastone", "Last One Prize"]] as [string, string][],
     pokemonTags: [["pikachu", "Pikachu"], ["lillie", "Lillie"], ["umbreon", "Umbreon"], ["gengar", "Gengar"], ["charizard", "Charizard"]] as [string, string][],
@@ -560,6 +561,7 @@ const LOBBY_NAV_STR = {
     filter: "絞り込む",
     clearAll: "すべてクリア",
     filtersApplied: "適用中のフィルター",
+    cost: "価格帯",
     pokemonHeading: "ポケモン",
     filterTags: [["popular", "人気"], ["pokemon", "ポケモン"], ["psa10", "PSA10確定"], ["limit1", "1日1点限定"], ["gvalue", "価値保証"], ["min60", "最低保証60%以上"], ["campaign", "キャンペーン"], ["endsoon", "まもなく終了"], ["ranklimited", "ランク限定"], ["lastone", "ラストワン賞"]] as [string, string][],
     pokemonTags: [["pikachu", "ピカチュウ"], ["lillie", "リーリエ"], ["umbreon", "ブラッキー"], ["gengar", "ゲンガー"], ["charizard", "リザードン"]] as [string, string][],
@@ -576,6 +578,80 @@ function lobbyItemsForCat(cat: string): OripaItem[] {
   return out;
 }
 
+// Price-range filter scale. The track is divided into equal visual segments
+// between these labelled stops (so the low end is more granular). The last
+// stop (20,000) is treated as "20,000+" — everything at or above shows.
+const PRICE_STOPS = [0, 100, 500, 1000, 5000, 10000, 20000];
+const PRICE_TOP = 20000;      // slider ceiling; >= this means "20,000+"
+const PRICE_MAX = 999999;     // keyboard cap and the "all above" sentinel for max
+
+function pricePctToVal(pct: number): number {
+  const p = Math.min(Math.max(pct, 0), 100) / 100;
+  const seg = p * (PRICE_STOPS.length - 1);
+  const i = Math.min(Math.floor(seg), PRICE_STOPS.length - 2);
+  const frac = seg - i;
+  return Math.round(PRICE_STOPS[i] + (PRICE_STOPS[i + 1] - PRICE_STOPS[i]) * frac);
+}
+function priceValToPct(v: number): number {
+  if (v <= 0) return 0;
+  if (v >= PRICE_TOP) return 100;
+  for (let i = 0; i < PRICE_STOPS.length - 1; i++) {
+    if (v <= PRICE_STOPS[i + 1]) {
+      const frac = (v - PRICE_STOPS[i]) / (PRICE_STOPS[i + 1] - PRICE_STOPS[i]);
+      return ((i + frac) / (PRICE_STOPS.length - 1)) * 100;
+    }
+  }
+  return 100;
+}
+
+// Dual-handle price slider with keyboard-editable min/max boxes (0–999,999).
+// Dragging the max handle to the far right means "20,000+" (all above).
+function PriceRangeFilter({ label, min, max, onMin, onMax }: { label: string; min: number; max: number; onMin: (v: number) => void; onMax: (v: number) => void }) {
+  const minPct = priceValToPct(min);
+  const maxPct = priceValToPct(max);
+  const lo = Math.min(minPct, maxPct);
+  const hi = Math.max(minPct, maxPct);
+  const parseNum = (s: string) => { const n = parseInt(s.replace(/[^0-9]/g, ""), 10); return isNaN(n) ? 0 : Math.min(n, PRICE_MAX); };
+  const ticks = ["0", "100", "500", "1,000", "5,000", "10,000", "20,000+"];
+  return (
+    <div className="mt-5">
+      <style>{`
+        .price-range{-webkit-appearance:none;appearance:none;background:transparent;pointer-events:none;position:absolute;left:0;right:0;top:0;width:100%;height:20px;margin:0}
+        .price-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;pointer-events:auto;width:20px;height:20px;border-radius:9999px;background:#fff;border:3px solid #D10005;box-shadow:0 1px 3px rgba(0,0,0,.3);cursor:pointer}
+        .price-range::-moz-range-thumb{pointer-events:auto;width:20px;height:20px;border-radius:9999px;background:#fff;border:3px solid #D10005;box-shadow:0 1px 3px rgba(0,0,0,.3);cursor:pointer}
+        .price-range::-webkit-slider-runnable-track{background:transparent;border:none}
+        .price-range::-moz-range-track{background:transparent;border:none}
+      `}</style>
+      <h4 className="mb-2.5 text-[15px] font-extrabold text-[#1d2129]">{label}</h4>
+      <div className="flex items-center gap-3">
+        <input
+          inputMode="numeric"
+          value={min.toLocaleString()}
+          onChange={(e) => onMin(Math.min(parseNum(e.target.value), max))}
+          className="w-full rounded-lg border border-[#c9ced6] px-3 py-2 text-center text-[14px] font-bold text-[#1d2129] focus:border-[#D10005] focus:outline-none"
+          aria-label={`${label} min`}
+        />
+        <input
+          inputMode="numeric"
+          value={max.toLocaleString()}
+          onChange={(e) => onMax(Math.max(parseNum(e.target.value), min))}
+          className="w-full rounded-lg border border-[#c9ced6] px-3 py-2 text-center text-[14px] font-bold text-[#1d2129] focus:border-[#D10005] focus:outline-none"
+          aria-label={`${label} max`}
+        />
+      </div>
+      <div className="relative mt-4 h-5">
+        <div className="pointer-events-none absolute left-0 right-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-[#e3e6ea]" />
+        <div className="pointer-events-none absolute top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-[#D10005]" style={{ left: `${lo}%`, right: `${100 - hi}%` }} />
+        <input type="range" min={0} max={100} step={0.5} value={minPct} onChange={(e) => { const v = pricePctToVal(+e.target.value); onMin(Math.min(v, max)); }} className="price-range" />
+        <input type="range" min={0} max={100} step={0.5} value={maxPct} onChange={(e) => { const p = +e.target.value; onMax(p >= 99.5 ? PRICE_MAX : Math.max(pricePctToVal(p), min)); }} className="price-range" />
+      </div>
+      <div className="mt-1.5 flex justify-between text-[11px] font-semibold text-[#8a9099]">
+        {ticks.map((t) => <span key={t}>{t}</span>)}
+      </div>
+    </div>
+  );
+}
+
 // V2 lobby feed. `onView` (tap on any card) is inert in the logged-in lobby
 // and routes to Sign-up on the logged-out landing.
 function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onReset, onClearFilters, onView, onOpenDraw }: { t: Dict; lang: Lang; filters: Record<string, boolean>; query: string; onToggle: (k: string) => void; onQueryChange: (v: string) => void; onReset: () => void; onClearFilters: () => void; onView?: () => void; onOpenDraw?: (item: OripaItem) => void }) {
@@ -583,6 +659,11 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
   const [cat, setCat] = useState("all");
   const [searchActive, setSearchActive] = useState(false);
   const [searchHidden, setSearchHidden] = useState(false);
+  // Price-range filter (0–999,999; max at 20,000+ means "all above").
+  const [priceMin, setPriceMin] = useState(0);
+  const [priceMax, setPriceMax] = useState(PRICE_MAX);
+  const priceActive = priceMin > 0 || priceMax < PRICE_TOP;
+  const resetPrice = () => { setPriceMin(0); setPriceMax(PRICE_MAX); };
   const searchBoxRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastScrollY = useRef(0);
@@ -685,9 +766,9 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
   // Track whether the search bar must stay visible for the scroll handler, and
   // reveal it immediately whenever a query / applied filters / open dropdown appear.
   useEffect(() => {
-    keepVisibleRef.current = hasQuery || filterCount > 0 || searchActive;
+    keepVisibleRef.current = hasQuery || filterCount > 0 || searchActive || priceActive;
     if (keepVisibleRef.current) { searchHiddenRef.current = false; setSearchHidden(false); }
-  }, [hasQuery, filterCount, searchActive]);
+  }, [hasQuery, filterCount, searchActive, priceActive]);
 
   // Close the filter dropdown when clicking/tapping outside of it.
   // We intercept the click in the CAPTURE phase and swallow it, so a stray
@@ -723,7 +804,8 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
   }
   function transform(list: OripaItem[]): OripaItem[] {
     let arr = applyQuery(list.slice());
-    if (filterCount) arr = arr.filter((_, i) => i % (filterCount + 1) !== 0);
+    const activeCount = filterCount + (priceActive ? 1 : 0);
+    if (activeCount) arr = arr.filter((_, i) => i % (activeCount + 1) !== 0);
     return arr;
   }
 
@@ -754,7 +836,7 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
     <div className="px-3.5 pt-3"><PromoCarousel /></div>
   );
 
-  const showResults = hasQuery || filterCount > 0;
+  const showResults = hasQuery || filterCount > 0 || priceActive;
   let body: React.ReactNode;
   if (showResults) {
     const items = transform(ALL_ORIPA);
@@ -931,9 +1013,10 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
             <div className="flex flex-wrap gap-2.5">{L.filterTags.map(tagPill)}</div>
             <h4 className="mb-2.5 mt-5 text-[15px] font-extrabold text-[#1d2129]">{L.pokemonHeading}</h4>
             <div className="flex flex-wrap gap-2.5">{L.pokemonTags.map(tagPill)}</div>
+            <PriceRangeFilter label={L.cost} min={priceMin} max={priceMax} onMin={setPriceMin} onMax={setPriceMax} />
           </div>
           <div className="flex gap-3 border-t border-black/10 bg-white px-4 py-3">
-            <button onClick={() => { onReset(); setSearchActive(false); inputRef.current?.blur(); }} className="flex-1 rounded-[10px] border-[1.6px] border-[#1d2129] bg-white py-3 text-[15px] font-extrabold text-[#1d2129] active:scale-[0.99]">{L.reset}</button>
+            <button onClick={() => { onReset(); resetPrice(); setSearchActive(false); inputRef.current?.blur(); }} className="flex-1 rounded-[10px] border-[1.6px] border-[#1d2129] bg-white py-3 text-[15px] font-extrabold text-[#1d2129] active:scale-[0.99]">{L.reset}</button>
             <button onClick={() => setSearchActive(false)} className="flex-1 rounded-[10px] bg-[#D10005] py-3 text-[15px] font-extrabold text-white active:scale-[0.99]">{L.filter}</button>
           </div>
         </div>
