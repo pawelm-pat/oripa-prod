@@ -882,8 +882,8 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
               ref={inputRef}
               type="text"
               value={query}
-              onFocus={() => { if (!hasQuery) setSearchActive(true); }}
-              onClick={() => { if (!hasQuery) setSearchActive(true); }}
+              onFocus={() => { setCat("all"); if (!hasQuery) setSearchActive(true); }}
+              onClick={() => { setCat("all"); if (!hasQuery) setSearchActive(true); }}
               onChange={(e) => { const v = e.target.value; onQueryChange(v); setSearchActive(v.trim().length === 0); }}
               placeholder={L.searchPlaceholder}
               className={`w-full rounded-[10px] border-[1.5px] border-[#D10005] bg-white py-3 pl-12 text-[15px] font-medium text-[#1d2129] outline-none placeholder:text-[#9aa0a8] ${hasQuery ? "pr-11" : "pr-3"}`}
