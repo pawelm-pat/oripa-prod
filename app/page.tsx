@@ -74,7 +74,7 @@ export default function Page() {
               value={drawScenario}
               onChange={setDrawScenario}
               options={[
-                ["Off", "off"],
+                ["Happy path", "off"],
                 ["Draw expired", "expired"],
                 ["Connection Error", "connError"],
                 ["Insufficient Stock Left", "stock"],

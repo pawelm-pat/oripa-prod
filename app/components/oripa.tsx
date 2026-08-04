@@ -1716,6 +1716,83 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
   );
 }
 
+// Confirmation dialog shown before exchanging selected prizes to coins.
+// A normal selection shows a simple confirm; a selection that includes any
+// high-rarity card (SR / UR) shows the irreversible "High-Rarity Warning".
+function ExchangeConfirm({ lang, coins, prizes, total, onConfirm, onClose }: { lang: Lang; coins: number; prizes: WonPrize[]; total: number; onConfirm: () => void; onClose: () => void }) {
+  const t = STR[lang];
+  const rareCards = prizes.filter((p) => p.rarity !== "N");
+  const hasRare = rareCards.length > 0;
+  const topCard = rareCards.reduce<WonPrize | null>((best, p) => (!best || p.coinValue > best.coinValue ? p : best), null);
+  const after = coins + total;
+  return (
+    <div
+      className="animate-popup-backdrop absolute inset-0 z-[80] flex items-center justify-center p-4"
+      style={{ background: "rgba(20,8,4,0.62)" }}
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="animate-popup-pop w-full max-w-[360px] rounded-2xl bg-white px-6 pb-6 pt-7 text-center shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+        style={{ fontFamily: "var(--font-noto-sans-jp), system-ui, sans-serif" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {hasRare ? (
+          <>
+            <h3 className="flex items-center justify-center gap-2 text-[21px] font-extrabold leading-tight text-[#D10005]">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-[2px] border-[#D10005] text-[14px] leading-none">!</span>
+              {t.exWarnTitle}
+            </h3>
+            <p className="mx-auto mt-2 max-w-[310px] text-[13px] leading-relaxed text-[#1d2129]">
+              {t.exWarnLead}
+              <span className="font-bold text-[#D10005]">{t.exWarnHi}</span>
+              <span className="font-bold text-[#D10005]">{t.exWarnUndone}</span>
+              {t.exWarnTail}
+            </p>
+            {topCard && (
+              <div className="mt-4 flex items-center gap-3 rounded-[14px] bg-[#fdeaea] px-3 py-2.5">
+                <img src={RARITY_IMG[topCard.rarity]} alt="" className="h-[52px] w-[40px] shrink-0 rounded-[4px] object-cover" />
+                <span className="flex-1 text-left text-[13px] font-extrabold tracking-wide text-[#1d2129]">{t.exTopCardPrizes}</span>
+                <span className="flex items-center gap-1.5 rounded-[8px] bg-[#f7d9a6] px-3 py-1.5">
+                  <CoinIcon size={18} />
+                  <span className="text-[14px] font-extrabold text-[#1d2129]">{topCard.coinValue.toLocaleString()}</span>
+                </span>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <h3 className="text-[22px] font-extrabold text-[#1d2129]">{t.exConfirmTitle}</h3>
+            <p className="mx-auto mt-2 max-w-[300px] text-[13px] leading-relaxed text-[#6b7075]">{t.exConfirmBody}</p>
+          </>
+        )}
+        {/* Balance before → after (green) */}
+        <div className="mt-4 flex items-center justify-center gap-2.5 rounded-[12px] border border-black/10 bg-white px-3 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+          <CoinIcon size={22} />
+          <span className="text-[17px] font-extrabold text-[#1d2129]">{coins.toLocaleString()}</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a9099" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="mx-0.5 shrink-0"><path d="M9 6l6 6-6 6" /></svg>
+          <CoinIcon size={22} />
+          <span className="text-[17px] font-extrabold text-[#12a150]">{after.toLocaleString()}</span>
+        </div>
+        <button
+          onClick={onConfirm}
+          className="mt-4 w-full rounded-[14px] bg-[#f5670a] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]"
+        >
+          {t.exchange}
+        </button>
+        <div className="my-3.5 border-t border-dashed border-black/20" />
+        <button
+          onClick={onClose}
+          className="w-full rounded-[14px] border-[1.5px] border-[#b5b8bd] bg-white py-3.5 text-[15px] font-bold text-[#6b7075] active:scale-[0.98]"
+        >
+          {t.cancel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // Gacha results — "list mode". Shown after any draw (×1 / ×10 / custom). Lets
 // the player review the cards they pulled, filter by tier, sort, select, and
 // exchange to coins or request shipping. Self-contained (local selection).
@@ -1727,6 +1804,8 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
   const [sortOpen, setSortOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [shipOpen, setShipOpen] = useState(false);
+  // Exchange-to-coins confirmation dialog.
+  const [exchangeOpen, setExchangeOpen] = useState(false);
   // "Daily Limit Reached" popup, shown when Draw again is tapped and the
   // player has hit today's cap. Closing it returns to the results screen.
   const [limitOpen, setLimitOpen] = useState(false);
@@ -1956,9 +2035,9 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
               {t.requestShipping}
             </button>
           </div>
-          {/* Exchange on the right. */}
+          {/* Exchange on the right — opens the confirmation dialog. */}
           <button
-            onClick={exchange}
+            onClick={() => { if (selected.size > 0) setExchangeOpen(true); }}
             disabled={selected.size === 0}
             className="rounded-xl border-2 border-[#D10005] bg-white py-3 text-[14px] font-extrabold text-[#D10005] active:scale-[0.98] disabled:opacity-40"
           >
@@ -1985,6 +2064,17 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
           shippingAddresses={shippingAddresses}
           onShippingAddressesChange={onShippingAddressesChange}
           freeShipAvailable={freeShipAvailable}
+        />
+      )}
+
+      {exchangeOpen && (
+        <ExchangeConfirm
+          lang={lang}
+          coins={coins}
+          prizes={selectedPrizes}
+          total={total}
+          onConfirm={() => { setExchangeOpen(false); exchange(); }}
+          onClose={() => setExchangeOpen(false)}
         />
       )}
 
@@ -2464,11 +2554,13 @@ function USStateSelect({ value, onChange, label }: { value: string; onChange: (v
 type Toast = { id: number; text: string };
 
 function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddressesChange, onBack, onHome, empty = false, onGoGacha, lootMode = false, onRequestKyc, freeShipAvailable = true }: { lang: Lang; coins: number; setCoins: Dispatch<SetStateAction<number>>; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; onBack: () => void; onHome: () => void; empty?: boolean; onGoGacha?: () => void; lootMode?: boolean; onRequestKyc?: () => boolean; freeShipAvailable?: boolean }) {
-  // "My Loot" reuses this screen but shows only the most valuable cards
-  // (top UR tier) and hides the Won/Waiting/Shipped tabs.
+  // "My Loot" reuses this screen but leads with the most valuable cards and
+  // hides the Won/Waiting/Shipped tabs. It keeps a couple of normal (N) pulls
+  // alongside the high-rarity ones so both exchange-confirm dialogs (simple vs.
+  // "High-Rarity Warning") can be demoed from the same screen.
   const screenTitle = lootMode ? STR[lang].mmItems : STR[lang].prizeHistory;
-  // "Best cards" = only the top tier (UR).
-  const bestOnly = <T extends { rarity: Rarity }>(arr: T[]) => (lootMode ? arr.filter((p) => p.rarity === "UR") : arr);
+  // Loot view = top-tier (UR) pulls plus a few normal cards for contrast.
+  const bestOnly = <T extends { rarity: Rarity }>(arr: T[]) => (lootMode ? arr.filter((p) => p.rarity === "UR" || p.rarity === "N") : arr);
   const t = STR[lang];
 
   const [tab, setTab] = useState<PrizeTab>("won");
@@ -2481,6 +2573,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
 
   const [listSelected, setListSelected] = useState<Set<string>>(new Set());
   const [listShipOpen, setListShipOpen] = useState(false);
+  const [listExchangeOpen, setListExchangeOpen] = useState(false);
   const [category, setCategory] = useState<"all" | Category>("all");
   const [query, setQuery] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -2835,9 +2928,9 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                 {t.requestShipping}
               </button>
             </div>
-            {/* Exchange on the right; guarded when nothing is selected. */}
+            {/* Exchange on the right — opens the confirmation dialog. */}
             <button
-              onClick={listExchange}
+              onClick={() => { if (listSelected.size === 0) { pushToast(t.toastSelectFirst); return; } setListExchangeOpen(true); }}
               className="rounded-xl border-2 py-3 text-[14px] font-extrabold transition active:scale-[0.98]"
               style={{ borderColor: "#f5670a", color: "#1d2129", background: "#fff" }}
             >
@@ -2859,6 +2952,17 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
           shippingAddresses={shippingAddresses}
           onShippingAddressesChange={onShippingAddressesChange}
           freeShipAvailable={freeShipAvailable}
+        />
+      )}
+
+      {listExchangeOpen && (
+        <ExchangeConfirm
+          lang={lang}
+          coins={coins}
+          prizes={listSelectedPrizes}
+          total={listTotal}
+          onConfirm={() => { setListExchangeOpen(false); listExchange(); }}
+          onClose={() => setListExchangeOpen(false)}
         />
       )}
 
