@@ -1717,11 +1717,11 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
 }
 
 // Confirmation dialog shown before exchanging selected prizes to coins.
-// A normal selection shows a simple confirm; a selection that includes a
-// top-tier (UR / 1st prize) card shows the irreversible "High-Rarity Warning".
+// Tier-3 (N) selections show the simple confirm; a selection that includes a
+// tier-1 (UR) or tier-2 (SR) card shows the irreversible "High-Rarity Warning".
 function ExchangeConfirm({ lang, coins, prizes, total, onConfirm, onClose }: { lang: Lang; coins: number; prizes: WonPrize[]; total: number; onConfirm: () => void; onClose: () => void }) {
   const t = STR[lang];
-  const hiCards = prizes.filter((p) => p.rarity === "UR");
+  const hiCards = prizes.filter((p) => rarityTier(p.rarity) <= 2);
   const hasRare = hiCards.length > 0;
   const topCard = hiCards.reduce<WonPrize | null>((best, p) => (!best || p.coinValue > best.coinValue ? p : best), null);
   const after = coins + total;
@@ -2559,8 +2559,9 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
   // alongside the high-rarity ones so both exchange-confirm dialogs (simple vs.
   // "High-Rarity Warning") can be demoed from the same screen.
   const screenTitle = lootMode ? STR[lang].mmItems : STR[lang].prizeHistory;
-  // Loot view = top-tier (UR) pulls plus a few normal cards for contrast.
-  const bestOnly = <T extends { rarity: Rarity }>(arr: T[]) => (lootMode ? arr.filter((p) => p.rarity === "UR" || p.rarity === "N") : arr);
+  // Loot view keeps all tiers (UR / SR / N) so both exchange-confirm dialogs
+  // (simple for tier-3, "High-Rarity Warning" for tier-1/2) are demoable.
+  const bestOnly = <T extends { rarity: Rarity }>(arr: T[]) => arr;
   const t = STR[lang];
 
   const [tab, setTab] = useState<PrizeTab>("won");
