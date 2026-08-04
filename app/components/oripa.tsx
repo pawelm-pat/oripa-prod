@@ -1717,13 +1717,13 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
 }
 
 // Confirmation dialog shown before exchanging selected prizes to coins.
-// A normal selection shows a simple confirm; a selection that includes any
-// high-rarity card (SR / UR) shows the irreversible "High-Rarity Warning".
+// A normal selection shows a simple confirm; a selection that includes a
+// top-tier (UR / 1st prize) card shows the irreversible "High-Rarity Warning".
 function ExchangeConfirm({ lang, coins, prizes, total, onConfirm, onClose }: { lang: Lang; coins: number; prizes: WonPrize[]; total: number; onConfirm: () => void; onClose: () => void }) {
   const t = STR[lang];
-  const rareCards = prizes.filter((p) => p.rarity !== "N");
-  const hasRare = rareCards.length > 0;
-  const topCard = rareCards.reduce<WonPrize | null>((best, p) => (!best || p.coinValue > best.coinValue ? p : best), null);
+  const hiCards = prizes.filter((p) => p.rarity === "UR");
+  const hasRare = hiCards.length > 0;
+  const topCard = hiCards.reduce<WonPrize | null>((best, p) => (!best || p.coinValue > best.coinValue ? p : best), null);
   const after = coins + total;
   return (
     <div
@@ -1740,11 +1740,11 @@ function ExchangeConfirm({ lang, coins, prizes, total, onConfirm, onClose }: { l
       >
         {hasRare ? (
           <>
-            <h3 className="flex items-center justify-center gap-2 text-[21px] font-extrabold leading-tight text-[#D10005]">
+            <h3 className="flex items-center justify-center gap-2 text-[20px] font-bold leading-tight text-[#D10005]">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-[2px] border-[#D10005] text-[14px] leading-none">!</span>
               {t.exWarnTitle}
             </h3>
-            <p className="mx-auto mt-2 max-w-[310px] text-[13px] leading-relaxed text-[#1d2129]">
+            <p className="mx-auto mt-2 max-w-[310px] text-[12px] font-medium leading-relaxed text-[#1d2129]">
               {t.exWarnLead}
               <span className="font-bold text-[#D10005]">{t.exWarnHi}</span>
               <span className="font-bold text-[#D10005]">{t.exWarnUndone}</span>
@@ -1763,8 +1763,8 @@ function ExchangeConfirm({ lang, coins, prizes, total, onConfirm, onClose }: { l
           </>
         ) : (
           <>
-            <h3 className="text-[22px] font-extrabold text-[#1d2129]">{t.exConfirmTitle}</h3>
-            <p className="mx-auto mt-2 max-w-[300px] text-[13px] leading-relaxed text-[#6b7075]">{t.exConfirmBody}</p>
+            <h3 className="text-[20px] font-bold text-[#1d2129]">{t.exConfirmTitle}</h3>
+            <p className="mx-auto mt-2 max-w-[300px] text-[12px] font-medium leading-relaxed text-[#6b7075]">{t.exConfirmBody}</p>
           </>
         )}
         {/* Balance before → after (green) */}
@@ -1777,7 +1777,7 @@ function ExchangeConfirm({ lang, coins, prizes, total, onConfirm, onClose }: { l
         </div>
         <button
           onClick={onConfirm}
-          className="mt-4 w-full rounded-[14px] bg-[#f5670a] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]"
+          className="mt-4 w-full rounded-[14px] bg-[#FF8A00] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]"
         >
           {t.exchange}
         </button>
