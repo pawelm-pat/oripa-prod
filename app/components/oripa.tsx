@@ -209,6 +209,10 @@ function TagPill({ children, variant }: { children: React.ReactNode; variant: "r
 
 function OripaCard({ item, t, onView, onDraw }: { item: OripaItem; t: Dict; onView?: () => void; onDraw?: (count: number, free?: boolean) => void }) {
   const pct = Math.round((item.remaining / item.total) * 100);
+  // Expired / sold-out packs: greyed artwork, an "期限切れ / Expired" label in
+  // place of the stock+countdown, and no Draw CTAs (the card still opens the
+  // greyed-out draw view on tap). See DRAW-5 / DRAW-4 in the product spec.
+  const expired = !!item.expired || item.remaining <= 0;
   const price = (
     <span className="flex items-baseline">
       <span className="text-[15px] font-extrabold text-[#1d2129] underline decoration-[#D10005] decoration-2 underline-offset-2">1,000</span>
@@ -216,7 +220,10 @@ function OripaCard({ item, t, onView, onDraw }: { item: OripaItem; t: Dict; onVi
     </span>
   );
   return (
-    <div className="overflow-hidden rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.12)]">
+    <div
+      className={`overflow-hidden rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.12)] ${expired ? "cursor-pointer" : ""}`}
+      onClick={expired ? onView : undefined}
+    >
       <div className="flex flex-wrap items-center gap-1.5 px-2.5 pt-2.5">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D10005" strokeWidth="1.8" strokeLinejoin="round" className="shrink-0"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" /></svg>
         <TagPill variant="redOutline">{t.tagPopular}</TagPill>
@@ -226,7 +233,7 @@ function OripaCard({ item, t, onView, onDraw }: { item: OripaItem; t: Dict; onVi
       </div>
       <div className="mx-2.5 mt-2 flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg bg-[#ededf0]">
         {/* Figma placeholder until final oripa-draw creative is signed off. */}
-        <img src="/placeholder-oripa.png" alt="" className="h-full w-full object-cover" />
+        <img src="/placeholder-oripa.png" alt="" className="h-full w-full object-cover" style={expired ? { filter: "grayscale(1)", opacity: 0.6 } : undefined} />
       </div>
       <div className="mt-2.5 bg-[#1d1d1d] px-3 py-1 text-center text-[11px] font-bold text-white">{t.periodLabel("2026/01/01")}</div>
       <div className="flex items-stretch px-3 py-2.5">
@@ -235,23 +242,31 @@ function OripaCard({ item, t, onView, onDraw }: { item: OripaItem; t: Dict; onVi
           {item.gem && <span className="flex items-center gap-1.5"><GemIcon size={20} />{price}</span>}
         </div>
         <div className="flex flex-1 flex-col justify-center gap-1 pl-3">
-          <p className="flex items-baseline justify-center gap-0.5 leading-none">
-            <span className="text-[13px] font-bold text-[#1d2129]">{t.remainingLabel}</span>
-            <span className="text-[19px] font-extrabold text-[#1d2129]">{item.remaining}</span>
-            <span className="text-[12px] font-bold text-[#8a9099]">/{item.total}</span>
-          </p>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-black/[0.08]"><span className="block h-full rounded-full bg-[#D10005]" style={{ width: `${pct}%` }} /></div>
-          <p className="flex items-baseline justify-center gap-0.5 leading-none text-[#D10005]">
-            <span className="text-[13px] font-bold">{t.remainingTimeLabel}</span>
-            <span className="text-[17px] font-extrabold">{t.minUnit(item.endsIn)}</span>
-          </p>
+          {expired ? (
+            <span className="text-center text-[18px] font-extrabold tracking-wide text-[#D10005]">{t.expiredLabel}</span>
+          ) : (
+            <>
+              <p className="flex items-baseline justify-center gap-0.5 leading-none">
+                <span className="text-[13px] font-bold text-[#1d2129]">{t.remainingLabel}</span>
+                <span className="text-[19px] font-extrabold text-[#1d2129]">{item.remaining}</span>
+                <span className="text-[12px] font-bold text-[#8a9099]">/{item.total}</span>
+              </p>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-black/[0.08]"><span className="block h-full rounded-full bg-[#D10005]" style={{ width: `${pct}%` }} /></div>
+              <p className="flex items-baseline justify-center gap-0.5 leading-none text-[#D10005]">
+                <span className="text-[13px] font-bold">{t.remainingTimeLabel}</span>
+                <span className="text-[17px] font-extrabold">{t.minUnit(item.endsIn)}</span>
+              </p>
+            </>
+          )}
         </div>
       </div>
-      <div className="flex gap-2 px-3 pb-3">
-        <button onClick={onView} className="flex-1 rounded-lg py-2 text-[12px] font-bold text-white" style={{ background: "#D10005" }}>{t.btnDraw}</button>
-        {item.free && <button onClick={() => onDraw?.(1, true)} className="flex-1 rounded-lg border border-[#D10005] py-2 text-[12px] font-bold text-[#D10005]">{t.btnFree}</button>}
-        <button onClick={onView} className="flex-1 rounded-lg border border-black/40 py-2 text-[12px] font-bold text-[#1d2129]">{t.btnView}</button>
-      </div>
+      {!expired && (
+        <div className="flex gap-2 px-3 pb-3">
+          <button onClick={onView} className="flex-1 rounded-lg py-2 text-[12px] font-bold text-white" style={{ background: "#D10005" }}>{t.btnDraw}</button>
+          {item.free && <button onClick={() => onDraw?.(1, true)} className="flex-1 rounded-lg border border-[#D10005] py-2 text-[12px] font-bold text-[#D10005]">{t.btnFree}</button>}
+          <button onClick={onView} className="flex-1 rounded-lg border border-black/40 py-2 text-[12px] font-bold text-[#1d2129]">{t.btnView}</button>
+        </div>
+      )}
     </div>
   );
 }

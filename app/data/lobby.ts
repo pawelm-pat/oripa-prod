@@ -24,6 +24,9 @@ export const HOME_SECTIONS: HomeSection[] = [
 
   // New
   { id: "new", titleKey: "secNew", icon: "new", variant: "light", cats: ["new"], items: [
+    // Expired example — surfaced below the recommended band; card shows the
+    // greyed-out "期限切れ / Expired" state and opens the disabled draw view.
+    { id: "n0", gem: false, free: false, remaining: 0, total: 1000, endsIn: 0, expired: true, image: "/oripa-banner-1.png", title: "Start Dash Pack", titleJa: "スタートダッシュパック" },
     { id: "n1", gem: false, free: true, remaining: 940, total: 1000, endsIn: 71, image: "/oripa-banner-2.png", title: "Pokémon VSTAR New Arrival", titleJa: "ポケモン VSTAR 新着オリパ" },
     { id: "n2", gem: true, free: false, remaining: 610, total: 1000, endsIn: 33, image: "/oripa-list-3.png", title: "Yu-Gi-Oh! Fresh Pack", titleJa: "遊戯王 フレッシュパック" },
   ] },
