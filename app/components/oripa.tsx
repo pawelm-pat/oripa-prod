@@ -854,24 +854,38 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
   }, [hasQuery, filterCount, searchActive, priceActive]);
 
   // Close the filter dropdown when clicking/tapping outside of it.
-  // We intercept the click in the CAPTURE phase and swallow it, so a stray
-  // outside click only dismisses the panel and never falls through to trigger
-  // a button behind it (e.g. a card's Draw/View action). Using `click` (not
-  // `mousedown`) means we cancel the very event that would otherwise activate
-  // the button, and it doesn't block scrolling.
+  // We intercept the click in the CAPTURE phase. When the click lands inside
+  // the feed (a card behind the dropdown) we swallow it, so the same tap only
+  // dismisses the panel and doesn't also trigger the card's Draw/View action.
+  // Clicks outside the feed — the app header, the bottom tab bar, the hero —
+  // fall through, so those navigation buttons act on the first tap (they just
+  // also close the search) instead of needing a second click. Using `click`
+  // (not `mousedown`) doesn't block scrolling.
   useEffect(() => {
     if (!searchActive) return;
     const onClickCapture = (e: MouseEvent) => {
-      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      // Inside the search nav (category bar + field + dropdown): handled elsewhere.
+      if (searchBoxRef.current && searchBoxRef.current.contains(target)) return;
+      setSearchActive(false);
+      inputRef.current?.blur();
+      // Only cancel the event for clicks within the feed area itself.
+      if (rootRef.current && rootRef.current.contains(target)) {
         e.preventDefault();
         e.stopPropagation();
-        setSearchActive(false);
-        inputRef.current?.blur();
       }
     };
     document.addEventListener("click", onClickCapture, true);
     return () => document.removeEventListener("click", onClickCapture, true);
   }, [searchActive]);
+
+  // Switching category closes the search dropdown (and blurs the field) so an
+  // open search doesn't linger over the new category's feed.
+  const selectCat = (key: string) => {
+    setSearchActive(false);
+    inputRef.current?.blur();
+    setCat(key);
+  };
 
   const catList: { key: string; label: string }[] = [
     { key: "all", label: t.catAll },
@@ -1001,7 +1015,7 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
             return (
               <button
                 key={c.key}
-                onClick={() => setCat(c.key)}
+                onClick={() => selectCat(c.key)}
                 aria-pressed={on}
                 className="sticky left-0 z-[3] flex shrink-0 items-stretch bg-white pr-2.5"
               >
@@ -1016,7 +1030,7 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
           return (
             <button
               key={c.key}
-              onClick={() => setCat(c.key)}
+              onClick={() => selectCat(c.key)}
               className="relative flex shrink-0 flex-col items-center justify-center gap-1 px-3 py-2.5"
             >
               {catIcon(c.key, color)}
