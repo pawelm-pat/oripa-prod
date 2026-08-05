@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { APP_VERSION } from "../version";
 import type {
@@ -1125,18 +1125,31 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
   );
 }
 
-function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw }: { lang: Lang; coins: number; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem) => void }) {
+function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, scrollRef }: { lang: Lang; coins: number; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem) => void; scrollRef?: { current: number } }) {
   const t = STR[lang];
   const [filters, setFilters] = useState<Record<string, boolean>>({});
   const [query, setQuery] = useState("");
   const toggleFilter = (k: string) => setFilters((f) => { const n = { ...f }; if (n[k]) delete n[k]; else n[k] = true; return n; });
   const clearFilters = () => { setFilters({}); setQuery(""); };
   const clearAllFilters = () => setFilters({});
+  // Preserve the lobby's scroll position across navigation (e.g. opening a draw
+  // and coming back) so the user lands where they were, not at the top. The
+  // offset lives in a ref owned by the app root, so it survives this screen's
+  // remount; we save it on scroll and restore it on mount.
+  const scrollElRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = scrollElRef.current;
+    if (el && scrollRef) el.scrollTop = scrollRef.current;
+  }, [scrollRef]);
   return (
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
       <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
 
-      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
+      <div
+        ref={scrollElRef}
+        onScroll={(e) => { if (scrollRef) scrollRef.current = e.currentTarget.scrollTop; }}
+        className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto"
+      >
         <HomeHero lang={lang} />
 
         <LobbyNavFeed t={t} lang={lang} filters={filters} query={query} onToggle={toggleFilter} onQueryChange={setQuery} onReset={clearFilters} onClearFilters={clearAllFilters} onOpenDraw={onOpenDraw} />
@@ -1625,8 +1638,8 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
             <div className="mx-auto flex h-[92px] w-[92px] items-center justify-center rounded-full border-[5px] border-[#D10005]">
               <span className="text-[52px] font-black leading-none text-[#D10005]">!</span>
             </div>
-            <h3 className="mt-4 text-[22px] font-extrabold text-[#1d2129]">{t.soldOutTitle}</h3>
-            <p className="mx-auto mt-2 max-w-[280px] text-[13px] leading-relaxed text-[#6b7075]">{t.soldOutBody}</p>
+            <h3 className="mt-4 text-[12px] font-medium text-[#1d2129]">{t.soldOutTitle}</h3>
+            <p className="mx-auto mt-2 max-w-[280px] text-[12px] font-medium leading-relaxed text-[#6b7075]">{t.soldOutBody}</p>
             <button
               onClick={() => { setSoldOutPopup(false); setSoldOutHit(true); }}
               className="mt-5 w-full rounded-[14px] border-[1.5px] border-[#b5b8bd] bg-white py-3.5 text-[15px] font-bold text-[#6b7075] active:scale-[0.98]"
@@ -4668,6 +4681,10 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
     setScreen("oripa");
   };
   const [notifOnly, setNotifOnly] = useState<"you" | "notice" | undefined>(undefined);
+  // Lobby scroll offset, tracked live and restored whenever the lobby remounts,
+  // so returning from a draw (or another screen) lands the user where they were
+  // instead of at the top. Owned by the root so it survives the lobby's remount.
+  const homeScroll = useRef(0);
   const goHome = () => setScreen("oripa");
   // PROD: login/sign-up land straight on the lobby (no onboarding flow).
   const enterHome = (method?: "line") => {
@@ -4756,7 +4773,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
           />
         )}
         {/* Logged-in lobby — V2 format */}
-        {screen === "oripa" && <OripaHome lang={lang} coins={coins} onHome={goHome} onOpenStore={openStore} onOpenDraw={openDraw} />}
+        {screen === "oripa" && <OripaHome lang={lang} coins={coins} onHome={goHome} onOpenStore={openStore} onOpenDraw={openDraw} scrollRef={homeScroll} />}
         {screen === "drawDetail" && drawItem && (
           <DrawDetail
             key={drawItem.id}
