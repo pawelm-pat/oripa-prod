@@ -2329,7 +2329,7 @@ function LandingPage({ lang, onSignUp, onLogin }: { lang: Lang; onSignUp: () => 
 /* ── PhoneApp ─────────────────────────────────────────────────────────── */
 
 
-function NotificationsScreen({ lang, coins, empty = false, only, onBack, onHome }: { lang: Lang; coins: number; empty?: boolean; only?: "you" | "notice"; onBack: () => void; onHome: () => void }) {
+function NotificationsScreen({ lang, coins, empty = false, only, onBack, onHome, onOpenStore }: { lang: Lang; coins: number; empty?: boolean; only?: "you" | "notice"; onBack: () => void; onHome: () => void; onOpenStore?: () => void }) {
   const t = STR[lang];
   const [tab, setTab] = useState<"you" | "notice">(only ?? "you");
   // Locally track which notifications have been opened (reset per visit).
@@ -2347,7 +2347,7 @@ function NotificationsScreen({ lang, coins, empty = false, only, onBack, onHome 
       <header className="shrink-0 bg-white">
         <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
           <BrandLogo onClick={onHome} />
-          <BalancePill coins={coins} t={t} />
+          <BalancePill coins={coins} t={t} onOpenStore={onOpenStore} />
         </div>
 
         {/* Tabs (hidden in single-tab mode) — each carries an unread badge */}
@@ -2596,7 +2596,7 @@ function USStateSelect({ value, onChange, label }: { value: string; onChange: (v
 /* ── Prize History ───────────────────────────────────────────────────── */
 type Toast = { id: number; text: string };
 
-function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddressesChange, onBack, onHome, empty = false, onGoGacha, lootMode = false, onRequestKyc, freeShipAvailable = true }: { lang: Lang; coins: number; setCoins: Dispatch<SetStateAction<number>>; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; onBack: () => void; onHome: () => void; empty?: boolean; onGoGacha?: () => void; lootMode?: boolean; onRequestKyc?: () => boolean; freeShipAvailable?: boolean }) {
+function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddressesChange, onBack, onHome, empty = false, onGoGacha, lootMode = false, onRequestKyc, freeShipAvailable = true, onOpenStore }: { lang: Lang; coins: number; setCoins: Dispatch<SetStateAction<number>>; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; onBack: () => void; onHome: () => void; empty?: boolean; onGoGacha?: () => void; lootMode?: boolean; onRequestKyc?: () => boolean; freeShipAvailable?: boolean; onOpenStore?: () => void }) {
   // "My Loot" reuses this screen but leads with the most valuable cards and
   // hides the Won/Waiting/Shipped tabs. It keeps a couple of normal (N) pulls
   // alongside the high-rarity ones so both exchange-confirm dialogs (simple vs.
@@ -2780,7 +2780,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
         <header className="shrink-0 bg-white">
           <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
             <BrandLogo onClick={onHome} />
-            <BalancePill coins={coins} t={t} />
+            <BalancePill coins={coins} t={t} onOpenStore={onOpenStore} />
           </div>
           <div className="flex items-center gap-2 px-3 py-2.5">
             <button onClick={onBack} aria-label={t.backAria} className="flex h-8 w-8 items-center justify-center text-[#D10005] hover:bg-black/5">
@@ -2799,7 +2799,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
       <header className="shrink-0 bg-white">
         <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
           <BrandLogo onClick={onHome} />
-          <BalancePill coins={coins} t={t} />
+          <BalancePill coins={coins} t={t} onOpenStore={onOpenStore} />
         </div>
 
         <div className="flex items-center gap-2 px-3 py-2.5">
@@ -4793,7 +4793,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onShippingAddressesChange={setShippingAddresses}
           />
         )}
-        {screen === "notifications" && <NotificationsScreen lang={lang} coins={coins} empty={noHistory} only={notifOnly} onBack={() => setScreen(prevScreen)} onHome={goHome} />}
+        {screen === "notifications" && <NotificationsScreen lang={lang} coins={coins} empty={noHistory} only={notifOnly} onBack={() => setScreen(prevScreen)} onHome={goHome} onOpenStore={openStore} />}
         {screen === "mypage" && (
           <MyPage
             lang={lang}
@@ -4843,6 +4843,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             empty={false}
             onGoGacha={goHome}
             onRequestKyc={() => requestKyc("prizeHistory")}
+            onOpenStore={openStore}
           />
         )}
         {screen === "myLoot" && (
@@ -4859,6 +4860,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             lootMode
             onRequestKyc={() => requestKyc("prizeHistory")}
             freeShipAvailable={freeShipAvailable}
+            onOpenStore={openStore}
           />
         )}
         {screen === "purchaseHistory" && (
