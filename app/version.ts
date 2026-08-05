@@ -1,2 +1,2 @@
 // Auto-bumped on each commit by scripts/bump-version.mjs
-export const APP_VERSION = "v20.4";
+export const APP_VERSION = "v20.5";

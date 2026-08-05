@@ -119,7 +119,7 @@ const STATUS_EMOJI: Record<Status, string> = {
 
 // Build a link that opens the app directly on the screen the comment lives on.
 function appLink(section?: string): string {
-  const base = (process.env.PROD_URL || "https://oripa-prod-one.vercel.app/").replace(/\/+$/, "");
+  const base = (process.env.PROD_URL || "https://oripa-prod-psi.vercel.app/").replace(/\/+$/, "");
   return section ? `${base}/?screen=${encodeURIComponent(section)}` : `${base}/`;
 }
 
