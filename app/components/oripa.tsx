@@ -1760,33 +1760,25 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
 }
 
 // Overlapping thumbnail pile shown in the exchange dialog so the player can
-// tell they're exchanging more than one card. Up to 3 card faces fan out (the
-// first sits on top); any beyond the third collapse into a trailing "+N" tile.
-function CardStack({ prizes, cardW = 42, cardH = 56 }: { prizes: WonPrize[]; cardW?: number; cardH?: number }) {
-  const faces = prizes.slice(0, 3);
-  const extra = prizes.length - faces.length;
-  const shift = Math.round(cardW * 0.44);
-  const tileCount = faces.length + (extra > 0 ? 1 : 0);
-  if (tileCount === 0) return null;
+// tell they're exchanging more than one card. Every selected card face is
+// rendered and stays visible; when there are many, the overlap tightens so the
+// whole pile fits (each face still peeks out).
+function CardStack({ prizes, cardW = 46, cardH = 62, maxWidth = 240 }: { prizes: WonPrize[]; cardW?: number; cardH?: number; maxWidth?: number }) {
+  const count = prizes.length;
+  if (count === 0) return null;
+  const defaultShift = Math.round(cardW * 0.44);
+  const shift = count > 1 ? Math.max(10, Math.min(defaultShift, Math.floor((maxWidth - cardW) / (count - 1)))) : 0;
   return (
-    <div className="relative shrink-0" style={{ width: cardW + shift * (tileCount - 1), height: cardH }}>
-      {faces.map((p, i) => (
+    <div className="relative shrink-0" style={{ width: cardW + shift * (count - 1), height: cardH }}>
+      {prizes.map((p, i) => (
         <img
           key={p.id}
           src={RARITY_IMG[p.rarity]}
           alt=""
           className="absolute top-0 rounded-[5px] object-cover shadow-[0_2px_6px_rgba(0,0,0,0.28)] ring-1 ring-white/70"
-          style={{ left: i * shift, width: cardW, height: cardH, zIndex: tileCount - i }}
+          style={{ left: i * shift, width: cardW, height: cardH, zIndex: count - i }}
         />
       ))}
-      {extra > 0 && (
-        <span
-          className="absolute top-0 flex items-center justify-center rounded-[5px] bg-[#1d2129] font-extrabold text-white shadow-[0_2px_6px_rgba(0,0,0,0.28)] ring-1 ring-white/40"
-          style={{ left: faces.length * shift, width: cardW, height: cardH, zIndex: 0, fontSize: Math.round(cardH * 0.26) }}
-        >
-          +{extra}
-        </span>
-      )}
     </div>
   );
 }
@@ -1796,9 +1788,7 @@ function CardStack({ prizes, cardW = 42, cardH = 56 }: { prizes: WonPrize[]; car
 // tier-1 (UR) or tier-2 (SR) card shows the irreversible "High-Rarity Warning".
 function ExchangeConfirm({ lang, coins, prizes, total, onConfirm, onClose }: { lang: Lang; coins: number; prizes: WonPrize[]; total: number; onConfirm: () => void; onClose: () => void }) {
   const t = STR[lang];
-  const hiCards = prizes.filter((p) => rarityTier(p.rarity) <= 2);
-  const hasRare = hiCards.length > 0;
-  const topCard = hiCards.reduce<WonPrize | null>((best, p) => (!best || p.coinValue > best.coinValue ? p : best), null);
+  const hasRare = prizes.some((p) => rarityTier(p.rarity) <= 2);
   const after = coins + total;
   return (
     <div
@@ -1825,16 +1815,6 @@ function ExchangeConfirm({ lang, coins, prizes, total, onConfirm, onClose }: { l
               <span className="font-bold text-[#D10005]">{t.exWarnUndone}</span>
               {t.exWarnTail}
             </p>
-            {topCard && (
-              <div className="mt-4 flex items-center gap-3 rounded-[14px] bg-[#fdeaea] px-3 py-2.5">
-                <img src={RARITY_IMG[topCard.rarity]} alt="" className="h-[52px] w-[40px] shrink-0 rounded-[4px] object-cover" />
-                <span className="flex-1 text-left text-[13px] font-extrabold tracking-wide text-[#1d2129]">{t.exTopCardPrizes}</span>
-                <span className="flex items-center gap-1.5 rounded-[8px] bg-[#f7d9a6] px-3 py-1.5">
-                  <CoinIcon size={18} />
-                  <span className="text-[14px] font-extrabold text-[#1d2129]">{topCard.coinValue.toLocaleString()}</span>
-                </span>
-              </div>
-            )}
           </>
         ) : (
           <>
