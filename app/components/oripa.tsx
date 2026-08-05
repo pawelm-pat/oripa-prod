@@ -231,7 +231,12 @@ function OripaCard({ item, t, onView, onDraw }: { item: OripaItem; t: Dict; onVi
         <TagPill variant="darkOutline">{t.tagLv5}</TagPill>
         <TagPill variant="darkOutline">{t.tagSsr}</TagPill>
       </div>
-      <div className="mx-2.5 mt-2 flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg bg-[#ededf0]">
+      {/* Banner opens the draw detail, same as the Draw / View CTAs. Expired
+          cards let the whole card handle the tap (parent onClick). */}
+      <div
+        className={`mx-2.5 mt-2 flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg bg-[#ededf0] ${!expired && onView ? "cursor-pointer" : ""}`}
+        onClick={!expired && onView ? onView : undefined}
+      >
         {/* Figma placeholder until final oripa-draw creative is signed off. */}
         <img src="/placeholder-oripa.png" alt="" className="h-full w-full object-cover" style={expired ? { filter: "grayscale(1)", opacity: 0.6 } : undefined} />
       </div>
