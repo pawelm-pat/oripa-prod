@@ -1759,6 +1759,38 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
   );
 }
 
+// Overlapping thumbnail pile shown in the exchange dialog so the player can
+// tell they're exchanging more than one card. Up to 3 card faces fan out (the
+// first sits on top); any beyond the third collapse into a trailing "+N" tile.
+function CardStack({ prizes, cardW = 42, cardH = 56 }: { prizes: WonPrize[]; cardW?: number; cardH?: number }) {
+  const faces = prizes.slice(0, 3);
+  const extra = prizes.length - faces.length;
+  const shift = Math.round(cardW * 0.44);
+  const tileCount = faces.length + (extra > 0 ? 1 : 0);
+  if (tileCount === 0) return null;
+  return (
+    <div className="relative shrink-0" style={{ width: cardW + shift * (tileCount - 1), height: cardH }}>
+      {faces.map((p, i) => (
+        <img
+          key={p.id}
+          src={RARITY_IMG[p.rarity]}
+          alt=""
+          className="absolute top-0 rounded-[5px] object-cover shadow-[0_2px_6px_rgba(0,0,0,0.28)] ring-1 ring-white/70"
+          style={{ left: i * shift, width: cardW, height: cardH, zIndex: tileCount - i }}
+        />
+      ))}
+      {extra > 0 && (
+        <span
+          className="absolute top-0 flex items-center justify-center rounded-[5px] bg-[#1d2129] font-extrabold text-white shadow-[0_2px_6px_rgba(0,0,0,0.28)] ring-1 ring-white/40"
+          style={{ left: faces.length * shift, width: cardW, height: cardH, zIndex: 0, fontSize: Math.round(cardH * 0.26) }}
+        >
+          +{extra}
+        </span>
+      )}
+    </div>
+  );
+}
+
 // Confirmation dialog shown before exchanging selected prizes to coins.
 // Tier-3 (N) selections show the simple confirm; a selection that includes a
 // tier-1 (UR) or tier-2 (SR) card shows the irreversible "High-Rarity Warning".
@@ -1810,6 +1842,14 @@ function ExchangeConfirm({ lang, coins, prizes, total, onConfirm, onClose }: { l
             <p className="mx-auto mt-2 max-w-[300px] text-[12px] font-medium leading-relaxed text-[#6b7075]">{t.exConfirmBody}</p>
           </>
         )}
+        {/* Card pile: makes it clear how many cards are being exchanged. Shows
+            the first 3 faces; anything beyond collapses into a "+N" tile. */}
+        <div className="mt-4 flex items-center justify-center gap-2">
+          <CardStack prizes={prizes} cardW={46} cardH={62} />
+          {prizes.length > 1 && (
+            <span className="text-[12px] font-bold text-[#6b7075]">{t.exCardCount(prizes.length)}</span>
+          )}
+        </div>
         {/* Balance before → after (green) */}
         <div className="mt-4 flex items-center justify-center gap-2.5 rounded-[12px] border border-black/10 bg-white px-3 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
           <CoinIcon size={22} />
