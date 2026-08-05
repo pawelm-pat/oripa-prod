@@ -927,11 +927,12 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
   };
 
   // Promo banner — rendered between the recommended (red) oripas and the rest
-  // of the feed. Single banner with dots (same carousel as logged-out users);
-  // swap the placeholder creative for real art later.
-  const promoBanners = (
+  // of the feed. Single banner with dots; swap the placeholder creative for
+  // real art later. Only shown to logged-in users (the logged-in lobby passes
+  // `onOpenDraw`); the logged-out landing feed omits it.
+  const promoBanners = onOpenDraw ? (
     <div className="px-3.5 pt-3"><PromoCarousel /></div>
-  );
+  ) : null;
 
   const showResults = hasQuery || filterCount > 0 || priceActive;
   let body: React.ReactNode;
