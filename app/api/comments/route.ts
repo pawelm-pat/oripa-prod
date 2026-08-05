@@ -290,51 +290,7 @@ function parseList(raw: Comment[]): Comment[] {
   });
 }
 
-// TEMP diagnostic: GET /api/comments?diag=slack reports Slack wiring health
-// without leaking secrets (presence booleans, channel names, error codes).
-async function slackDiag(): Promise<Record<string, unknown>> {
-  const botPresent = !!process.env.SLACK_BOT_TOKEN;
-  const intCh = process.env.SLACK_CHANNEL_ID || null;
-  const extCh = process.env.SLACK_EXTERNAL_CHANNEL_ID || null;
-  const out: Record<string, unknown> = {
-    env: {
-      SLACK_BOT_TOKEN: botPresent,
-      SLACK_CHANNEL_ID: !!intCh,
-      SLACK_EXTERNAL_CHANNEL_ID: !!extCh,
-      SLACK_WEBHOOK_URL: !!process.env.SLACK_WEBHOOK_URL,
-    },
-  };
-  const token = process.env.SLACK_BOT_TOKEN;
-  const raw = async (method: string, payload: object): Promise<Record<string, unknown>> => {
-    if (!token) return { ok: false, error: "no_token" };
-    try {
-      const res = await fetch(`https://slack.com/api/${method}`, {
-        method: "POST",
-        headers: { "content-type": "application/json; charset=utf-8", authorization: `Bearer ${token}` },
-        body: JSON.stringify(payload),
-      });
-      return (await res.json()) as Record<string, unknown>;
-    } catch (e) {
-      return { ok: false, error: String(e) };
-    }
-  };
-  const auth = await raw("auth.test", {});
-  out.authTest = { ok: auth.ok, error: auth.error, team: auth.team, botUser: auth.user };
-  const info = async (id: string | null) => {
-    if (!id) return { id: null };
-    const data = await raw("conversations.info", { channel: id });
-    const ch = (data.channel as Record<string, unknown>) || {};
-    return { id, ok: data.ok, error: data.error, name: ch.name, is_member: ch.is_member, is_private: ch.is_private };
-  };
-  out.internalChannel = await info(intCh);
-  out.externalChannel = await info(extCh);
-  return out;
-}
-
 export async function GET(req: Request) {
-  if (new URL(req.url).searchParams.get("diag") === "slack") {
-    return NextResponse.json(await slackDiag());
-  }
   const redis = getRedis();
   if (!redis) {
     return NextResponse.json(
