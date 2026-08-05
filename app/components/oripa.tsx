@@ -1836,13 +1836,141 @@ function ExchangeConfirm({ lang, coins, prizes, total, onConfirm, onClose }: { l
   );
 }
 
+// Shared "Narrow down" bottom-sheet used by both Draw Results and My Loot so
+// the two screens filter identically: a free-text search, a rarity/tier filter
+// and (when the set spans multiple franchises) a category filter. Purely a
+// filter — selection for bulk actions is handled by the host screen.
+function NarrowDownSheet({
+  lang,
+  items,
+  query,
+  setQuery,
+  rarity,
+  setRarity,
+  category,
+  setCategory,
+  onReset,
+  onClose,
+}: {
+  lang: Lang;
+  items: WonPrize[];
+  query: string;
+  setQuery: (v: string) => void;
+  rarity: "all" | Rarity;
+  setRarity: (v: "all" | Rarity) => void;
+  category: "all" | Category;
+  setCategory: (v: "all" | Category) => void;
+  onReset: () => void;
+  onClose: () => void;
+}) {
+  const t = STR[lang];
+  const LF = LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"];
+  const q = query.trim().toLowerCase();
+  const matchesQuery = (p: WonPrize) => {
+    if (!q) return true;
+    const hay = `${locName(p, lang)} ${locDesc(p, lang)}`.toLowerCase();
+    return q.split(/\s+/).every((w) => hay.includes(w));
+  };
+  // Tier counts respect the active text query (but not the tier itself).
+  const tierScope = items.filter(matchesQuery);
+  const tierChips: { key: "all" | Rarity; label: string }[] = [
+    { key: "all", label: t.deckAll },
+    { key: "UR", label: t.prizeTier(1) },
+    { key: "SR", label: t.prizeTier(2) },
+    { key: "N", label: t.prizeTier(3) },
+  ];
+  const tierCount = (key: "all" | Rarity) => (key === "all" ? tierScope.length : tierScope.filter((p) => p.rarity === key).length);
+  // Category chips only appear when the set spans more than one franchise
+  // (e.g. My Loot). A single-pack draw stays search + tier only.
+  const presentCats = CATEGORIES.filter((c) => items.some((p) => p.category === c));
+  const showCats = presentCats.length > 1;
+  const cats: ("all" | Category)[] = ["all", ...presentCats];
+  const catScope = items.filter((p) => matchesQuery(p) && (rarity === "all" || p.rarity === rarity));
+  const catCount = (c: "all" | Category) => (c === "all" ? catScope.length : catScope.filter((p) => p.category === c).length);
+
+  return (
+    <div className="absolute inset-0 z-[60] flex items-end justify-center bg-black/50" onClick={onClose}>
+      <div className="flex max-h-[90%] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-[0_-10px_30px_rgba(0,0,0,0.2)]" onClick={(e) => e.stopPropagation()} style={{ animation: "lobbySheetUp .28s cubic-bezier(.2,.8,.2,1) both" }}>
+        <style>{`@keyframes lobbySheetUp{from{transform:translateY(100%)}to{transform:none}}`}</style>
+        <div className="relative flex shrink-0 items-center justify-center border-b border-black/5 px-4 py-3.5">
+          <h3 className="text-[16px] font-extrabold text-[#1d2129]">{LF.narrowDown}</h3>
+          <button onClick={onClose} aria-label="Close" className="absolute right-3 flex h-8 w-8 items-center justify-center rounded-full text-[#1d2129] active:bg-black/5">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+        </div>
+        <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-4">
+          <div className="relative">
+            <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9aa0a8]">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.2-3.2" /></svg>
+            </span>
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={LF.searchPlaceholder}
+              className="w-full rounded-xl bg-[#f4f5f7] py-3 pl-11 pr-10 text-[14px] font-semibold text-[#1d2129] outline-none placeholder:text-[#9aa0a8] focus:bg-white focus:ring-2 focus:ring-[#D10005]/30"
+            />
+            {query.length > 0 && (
+              <button
+                onClick={() => setQuery("")}
+                aria-label="Clear search"
+                className="absolute right-2.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full bg-black/10 text-[#5c626b] active:bg-black/20"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+              </button>
+            )}
+          </div>
+
+          <div className="mt-5">
+            <h4 className="mb-3 text-[15px] font-extrabold text-[#1d2129]">{lang === "ja" ? "レアリティで絞り込み" : "Filter by tier"}</h4>
+            <div className="flex flex-wrap gap-2.5">
+              {tierChips.map((c) => {
+                const on = rarity === c.key;
+                return (
+                  <button key={c.key} onClick={() => setRarity(c.key)} className="rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold transition" style={{ background: on ? "#D10005" : "#fff", color: on ? "#fff" : "#5c626b", borderColor: on ? "#D10005" : "rgba(0,0,0,0.15)" }}>
+                    {c.label}<span className="ml-1 opacity-75">{tierCount(c.key)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {showCats && (
+            <div className="mt-5 border-t border-black/5 pt-4">
+              <h4 className="mb-3 text-[15px] font-extrabold text-[#1d2129]">{LF.quickFilters}</h4>
+              <div className="flex flex-wrap gap-2.5">
+                {cats.map((c) => {
+                  const on = category === c;
+                  const label = c === "all" ? t.deckCategoryAll : t.cardCategory(c);
+                  return (
+                    <button key={c} onClick={() => setCategory(c)} className={`rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold transition ${on ? "border-[#D10005] bg-[#D10005] text-white" : "border-black/15 bg-white text-[#5c626b] active:bg-black/[0.03]"}`}>{label}<span className="ml-1 opacity-75">{catCount(c)}</span></button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="flex shrink-0 gap-3 border-t border-black/10 px-4 py-3">
+          <button onClick={onReset} className="flex-1 rounded-[10px] border-[1.6px] border-[#1d2129] bg-white py-3 text-[15px] font-extrabold text-[#1d2129] active:scale-[0.99]">{LF.reset}</button>
+          <button onClick={onClose} className="flex-1 rounded-[10px] bg-[#D10005] py-3 text-[15px] font-extrabold text-white active:scale-[0.99]">{LF.filter}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Gacha results — "list mode". Shown after any draw (×1 / ×10 / custom). Lets
-// the player review the cards they pulled, filter by tier, sort, select, and
-// exchange to coins or request shipping. Self-contained (local selection).
+// the player review the cards they pulled, narrow down by tier/search, sort,
+// select, and exchange to coins or request shipping. Self-contained (local
+// selection). Mirrors the My Loot screen (which shows all un-actioned cards).
 function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, onOpenStore, freeShipAvailable = true, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, onOpenDraw }: { lang: Lang; coins: number; item: OripaItem; cards: WonPrize[]; onDrawAgain: () => void; onClose: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; onOpenDraw?: (item: OripaItem) => void }) {
   const t = STR[lang];
   const [list, setList] = useState<WonPrize[]>(cards);
+  // "Narrow down" filters (mirrors My Loot): rarity/tier + free-text search.
   const [tier, setTier] = useState<"all" | Rarity>("all");
+  const [category, setCategory] = useState<"all" | Category>("all");
+  const [query, setQuery] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("coinDesc");
   const [sortOpen, setSortOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -1891,14 +2019,20 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
     return arr;
   }, [list, sortKey]);
 
-  const displayed = tier === "all" ? sorted : sorted.filter((p) => p.rarity === tier);
-  const tierTabs: { key: "all" | Rarity; label: string }[] = [
-    { key: "all", label: t.deckAll },
-    { key: "UR", label: t.drawTier1 },
-    { key: "SR", label: t.drawTier2 },
-    { key: "N", label: t.drawTier3 },
-  ];
-  const tierCount = (key: "all" | Rarity) => (key === "all" ? list.length : list.filter((p) => p.rarity === key).length);
+  // "Narrow down" scope: rarity/tier + free-text search (name/desc).
+  const q = query.trim().toLowerCase();
+  const matchesQuery = (p: WonPrize) => {
+    if (!q) return true;
+    const hay = `${locName(p, lang)} ${locDesc(p, lang)}`.toLowerCase();
+    return q.split(/\s+/).every((w) => hay.includes(w));
+  };
+  const inScope = (p: WonPrize) => (tier === "all" || p.rarity === tier) && (category === "all" || p.category === category) && matchesQuery(p);
+  const displayed = sorted.filter(inScope);
+  const filterActive = tier !== "all" || category !== "all" || q.length > 0;
+
+  // Selection is scoped to the current filter so the summary never counts
+  // cards hidden behind an active tier/search filter.
+  useEffect(() => { setSelected(new Set()); }, [tier, category, query]);
 
   const selectedPrizes = list.filter((p) => selected.has(p.id));
   const total = selectedPrizes.reduce((s, p) => s + p.coinValue, 0);
@@ -1936,40 +2070,31 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
     <div className="absolute inset-0 z-50 flex h-full flex-col bg-[#eef0f3]">
       <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
 
-      {/* Top actions: Draw again + Swipe to reveal */}
-      <div className="shrink-0 flex gap-3 bg-white px-3 py-3">
+      {/* Top actions: Close (X) + Draw again */}
+      <div className="shrink-0 flex items-center gap-3 bg-white px-3 py-3">
+        <button
+          onClick={onClose}
+          aria-label={t.drawLimitClose}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-black/15 text-[#1d2129] active:scale-[0.97]"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
         <button onClick={() => { if (dailyLimitReached) { setOtherIdx(0); setLimitOpen(true); } else { onDrawAgain(); } }} className="flex-1 rounded-xl bg-[#D10005] py-3 text-[14px] font-extrabold text-white active:scale-[0.99]">
           {t.drawAgain}
         </button>
-        <button onClick={() => pushToast(t.drawSwipeTBC)} className="flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-black/15 bg-white py-3 text-[14px] font-extrabold text-[#1d2129] active:scale-[0.99]">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8l4-4 4 4M8 4v10M20 16l-4 4-4-4M16 20V10" /></svg>
-          {t.drawSwipeReveal}
+      </div>
+
+      {/* Narrow down + Sort toolbar (mirrors My Loot) */}
+      <div className="relative shrink-0 flex items-stretch border-b border-black/10 bg-white">
+        <button onClick={() => setFilterOpen(true)} className="flex flex-1 items-center justify-center gap-2 py-3 text-[14px] font-extrabold text-[#1d2129] active:bg-black/[0.03]">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><circle cx="7" cy="8" r="2" /><circle cx="16" cy="16" r="2" /><path d="M9 8h11M4 8h1M15 16h5M4 16h9" /></svg>
+          {LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"].narrowDown}
+          {filterActive && <span className="flex h-[8px] w-[8px] rounded-full bg-[#D10005]" />}
         </button>
-      </div>
-
-      {/* Tier tabs with counts */}
-      <div className="no-scrollbar shrink-0 flex items-center gap-2 overflow-x-auto border-b border-black/10 bg-white px-3 py-2">
-        {tierTabs.map((tb) => {
-          const on = tier === tb.key;
-          return (
-            <button
-              key={tb.key}
-              onClick={() => { setTier(tb.key); setSelected(new Set()); }}
-              className={`flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] font-bold transition ${on ? "bg-[#D10005] text-white" : "text-[#5c626b]"}`}
-            >
-              {tb.label}
-              <span className={`text-[12px] font-extrabold ${on ? "text-white" : "text-[#9aa0a8]"}`}>{tierCount(tb.key)}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Sort row */}
-      <div className="relative shrink-0 flex justify-end border-b border-black/10 bg-white px-3 py-2.5">
-        <button onClick={() => setSortOpen((v) => !v)} className="flex items-center gap-1.5 text-[14px] font-extrabold text-[#1d2129] active:opacity-70">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4" /></svg>
+        <span className="my-2 w-px bg-black/10" />
+        <button onClick={() => setSortOpen((v) => !v)} className="flex flex-1 items-center justify-center gap-1.5 py-3 text-[14px] font-extrabold text-[#1d2129] active:bg-black/[0.03]">
           {t.sortLabels[sortKey]}
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={sortOpen ? "rotate-180" : ""}><path d="M6 9l6 6 6-6" /></svg>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4" /></svg>
         </button>
         {sortOpen && (
           <div className="absolute right-3 top-full z-20 mt-1 w-[220px] overflow-hidden rounded-xl border border-black/10 bg-white shadow-[0_16px_30px_rgba(0,0,0,0.18)]">
@@ -2118,6 +2243,21 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
           total={total}
           onConfirm={() => { setExchangeOpen(false); exchange(); }}
           onClose={() => setExchangeOpen(false)}
+        />
+      )}
+
+      {filterOpen && (
+        <NarrowDownSheet
+          lang={lang}
+          items={list}
+          query={query}
+          setQuery={setQuery}
+          rarity={tier}
+          setRarity={setTier}
+          category={category}
+          setCategory={setCategory}
+          onReset={() => { setQuery(""); setTier("all"); setCategory("all"); setSelected(new Set()); }}
+          onClose={() => setFilterOpen(false)}
         />
       )}
 
@@ -2619,6 +2759,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
   const [listShipOpen, setListShipOpen] = useState(false);
   const [listExchangeOpen, setListExchangeOpen] = useState(false);
   const [category, setCategory] = useState<"all" | Category>("all");
+  const [rarityFilter, setRarityFilter] = useState<"all" | Rarity>("all");
   const [query, setQuery] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -2641,7 +2782,11 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
     setWonVisible(WON_PAGE);
     wonBusy.current = false;
     setWonLoading(false);
-  }, [category, query, sortKey, tab, WON_PAGE]);
+  }, [category, rarityFilter, query, sortKey, tab, WON_PAGE]);
+
+  // Keep the bulk selection scoped to what's visible: whenever a narrow-down
+  // filter changes, drop selections for cards that are now hidden.
+  useEffect(() => { setListSelected(new Set()); }, [category, rarityFilter, query]);
 
   function pushToast(text: string) {
     const id = (toastSeq.current += 1);
@@ -2713,11 +2858,10 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
     const hay = `${locName(p, lang)} ${locDesc(p, lang)}`.toLowerCase();
     return q.split(/\s+/).every((w) => hay.includes(w));
   };
-  const inScope = (p: WonPrize) => (category === "all" || p.category === category) && matchesQuery(p);
-  const catWon = won.filter(inScope);
+  const inScope = (p: WonPrize) => (category === "all" || p.category === category) && (rarityFilter === "all" || p.rarity === rarityFilter) && matchesQuery(p);
   const displayedWon = sortedWon.filter(inScope);
-  const filterActive = category !== "all" || q.length > 0;
-  function clearFilters() { setCategory("all"); setQuery(""); setListSelected(new Set()); }
+  const filterActive = category !== "all" || rarityFilter !== "all" || q.length > 0;
+  function clearFilters() { setCategory("all"); setRarityFilter("all"); setQuery(""); setListSelected(new Set()); }
 
   // Paged slice of the won list + scroll-driven "load more".
   const pagedWon = displayedWon.slice(0, wonVisible);
@@ -2736,24 +2880,6 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
       }, 450);
     }
   }
-
-  // Tier chips: "All" selects everything, a tier chip selects that rarity;
-  // tapping the active chip again deselects. Scoped to the selected category.
-  const tierIds = (key: "all" | Rarity) =>
-    (key === "all" ? catWon : catWon.filter((p) => p.rarity === key)).map((p) => p.id);
-  const isTierActive = (key: "all" | Rarity) => {
-    const ids = tierIds(key);
-    return ids.length > 0 && ids.length === listSelected.size && ids.every((id) => listSelected.has(id));
-  };
-  function selectTier(key: "all" | Rarity) {
-    setListSelected(isTierActive(key) ? new Set() : new Set(tierIds(key)));
-  }
-  const tierChips: { key: "all" | Rarity; label: string }[] = [
-    { key: "all", label: t.deckAll },
-    { key: "UR", label: t.prizeTier(1) },
-    { key: "SR", label: t.prizeTier(2) },
-    { key: "N", label: t.prizeTier(3) },
-  ];
 
   const counts = { won: won.length, waiting: waiting.length, shipped: shipped.length };
 
@@ -3010,83 +3136,20 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
         />
       )}
 
-      {filterOpen && (() => {
-        const LF = LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"];
-        const cats: ("all" | Category)[] = ["all", ...CATEGORIES.filter((c) => won.some((p) => p.category === c))];
-        return (
-          <div className="absolute inset-0 z-[60] flex items-end justify-center bg-black/50" onClick={() => setFilterOpen(false)}>
-            <div className="flex max-h-[90%] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-[0_-10px_30px_rgba(0,0,0,0.2)]" onClick={(e) => e.stopPropagation()} style={{ animation: "lobbySheetUp .28s cubic-bezier(.2,.8,.2,1) both" }}>
-              <style>{`@keyframes lobbySheetUp{from{transform:translateY(100%)}to{transform:none}}`}</style>
-              <div className="relative flex shrink-0 items-center justify-center border-b border-black/5 px-4 py-3.5">
-                <h3 className="text-[16px] font-extrabold text-[#1d2129]">{LF.narrowDown}</h3>
-                <button onClick={() => setFilterOpen(false)} aria-label="Close" className="absolute right-3 flex h-8 w-8 items-center justify-center rounded-full text-[#1d2129] active:bg-black/5">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
-                </button>
-              </div>
-              <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-4">
-                <div className="relative">
-                  <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9aa0a8]">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.2-3.2" /></svg>
-                  </span>
-                  <input
-                    type="text"
-                    value={query}
-                    onChange={(e) => { setQuery(e.target.value); setListSelected(new Set()); }}
-                    placeholder={LF.searchPlaceholder}
-                    className="w-full rounded-xl bg-[#f4f5f7] py-3 pl-11 pr-10 text-[14px] font-semibold text-[#1d2129] outline-none placeholder:text-[#9aa0a8] focus:bg-white focus:ring-2 focus:ring-[#D10005]/30"
-                  />
-                  {query.length > 0 && (
-                    <button
-                      onClick={() => { setQuery(""); setListSelected(new Set()); }}
-                      aria-label="Clear search"
-                      className="absolute right-2.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full bg-black/10 text-[#5c626b] active:bg-black/20"
-                    >
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
-                    </button>
-                  )}
-                </div>
-                {lootMode && (
-                <div className="mt-5">
-                  <h4 className="mb-3 text-[15px] font-extrabold text-[#1d2129]">{lang === "ja" ? "レアリティで選択" : "Select by tier"}</h4>
-                  <div className="flex flex-wrap gap-2.5">
-                    {tierChips.map((c) => {
-                      const n = tierIds(c.key).length;
-                      const on = isTierActive(c.key);
-                      return (
-                        <button key={c.key} onClick={() => selectTier(c.key)} className="rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold transition" style={{ background: on ? "#D10005" : "#fff", color: on ? "#fff" : "#5c626b", borderColor: on ? "#D10005" : "rgba(0,0,0,0.15)" }}>
-                          {c.label}<span className="ml-1 opacity-75">{n}</span>
-                        </button>
-                      );
-                    })}
-                    <button onClick={() => selectTier("all")} className="rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold transition" style={{ background: isTierActive("all") ? "#1d2129" : "#fff", color: isTierActive("all") ? "#fff" : "#1d2129", borderColor: "rgba(0,0,0,0.15)" }}>
-                      {t.selectAll}
-                    </button>
-                  </div>
-                </div>
-                )}
-
-                <div className="mt-5 border-t border-black/5 pt-4">
-                  <h4 className="mb-3 text-[15px] font-extrabold text-[#1d2129]">{LF.quickFilters}</h4>
-                  <div className="flex flex-wrap gap-2.5">
-                    {cats.map((c) => {
-                      const on = category === c;
-                      const n = c === "all" ? won.length : won.filter((p) => p.category === c).length;
-                      const label = c === "all" ? t.deckCategoryAll : t.cardCategory(c);
-                      return (
-                        <button key={c} onClick={() => { setCategory(c); setListSelected(new Set()); }} className={`rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold transition ${on ? "border-[#D10005] bg-[#D10005] text-white" : "border-black/15 bg-white text-[#5c626b] active:bg-black/[0.03]"}`}>{label}<span className="ml-1 opacity-75">{n}</span></button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-              <div className="flex shrink-0 gap-3 border-t border-black/10 px-4 py-3">
-                <button onClick={() => { clearFilters(); setFilterOpen(false); }} className="flex-1 rounded-[10px] border-[1.6px] border-[#1d2129] bg-white py-3 text-[15px] font-extrabold text-[#1d2129] active:scale-[0.99]">{LF.reset}</button>
-                <button onClick={() => setFilterOpen(false)} className="flex-1 rounded-[10px] bg-[#D10005] py-3 text-[15px] font-extrabold text-white active:scale-[0.99]">{LF.filter}</button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      {filterOpen && (
+        <NarrowDownSheet
+          lang={lang}
+          items={won}
+          query={query}
+          setQuery={setQuery}
+          rarity={rarityFilter}
+          setRarity={setRarityFilter}
+          category={category}
+          setCategory={setCategory}
+          onReset={() => { clearFilters(); setFilterOpen(false); }}
+          onClose={() => setFilterOpen(false)}
+        />
+      )}
 
       {sortOpen && (
         <BottomSheet title={t.sortTitle} onClose={() => setSortOpen(false)}>
