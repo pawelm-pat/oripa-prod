@@ -3067,7 +3067,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                           </div>
                           <p className="mt-1.5 text-[14px] font-bold leading-tight text-[#1d2129]">{locName(p, lang)}</p>
                           <p className="mt-1 line-clamp-2 text-[10px] font-normal leading-relaxed text-[#8a9099]">{locDesc(p, lang)}</p>
-                          <p className="mt-1 text-[11px] font-semibold text-[#8a9099]">{t.itemsDateWon}{fmtDate(p.wonAt)}</p>
+                          <p className="mt-1 text-[11px] font-semibold text-[#8a9099]">{lootMode ? `${t.itemsExchangeDate}${fmtDate(expiresAt(p.wonAt))}` : `${t.itemsDateWon}${fmtDate(p.wonAt)}`}</p>
                           <div className="mt-auto flex items-center justify-center gap-1.5 rounded-xl border border-black/10 bg-white pt-2 pb-2" style={{ marginTop: 8 }}>
                             <CoinIcon size={18} />
                             <span className="text-[18px] font-bold text-[#1d2129]">{p.coinValue.toLocaleString()}</span>
