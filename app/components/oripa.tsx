@@ -742,16 +742,21 @@ function PriceRangeFilter({ label, min, max, onMin, onMax }: { label: string; mi
 
 // V2 lobby feed. `onView` (tap on any card) is inert in the logged-in lobby
 // and routes to Sign-up on the logged-out landing.
-function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onReset, onClearFilters, onView, onOpenDraw }: { t: Dict; lang: Lang; filters: Record<string, boolean>; query: string; onToggle: (k: string) => void; onQueryChange: (v: string) => void; onReset: () => void; onClearFilters: () => void; onView?: () => void; onOpenDraw?: (item: OripaItem) => void }) {
+function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll, onView, onOpenDraw }: { t: Dict; lang: Lang; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void; onView?: () => void; onOpenDraw?: (item: OripaItem) => void }) {
   const L = LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"];
   const [cat, setCat] = useState("all");
   const [searchActive, setSearchActive] = useState(false);
   const [searchHidden, setSearchHidden] = useState(false);
-  // Price-range filter (0–999,999; max at 20,000+ means "all above").
-  const [priceMin, setPriceMin] = useState(0);
-  const [priceMax, setPriceMax] = useState(PRICE_MAX);
+  // Draft filter state edited inside the search/filter dropdown. Nothing here
+  // affects the feed until the "Filter" CTA commits it to the applied props
+  // (query / filters / price) that actually drive the results. Seeded from the
+  // applied state so returning to the lobby shows what's currently in effect.
+  const [draftQuery, setDraftQuery] = useState(query);
+  const [draftFilters, setDraftFilters] = useState<Record<string, boolean>>(filters);
+  const [draftMin, setDraftMin] = useState(priceMin);
+  const [draftMax, setDraftMax] = useState(priceMax);
+  // Applied price range (0–999,999; max at 20,000+ means "all above").
   const priceActive = priceMin > 0 || priceMax < PRICE_TOP;
-  const resetPrice = () => { setPriceMin(0); setPriceMax(PRICE_MAX); };
   const searchBoxRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastScrollY = useRef(0);
@@ -773,6 +778,27 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
     return hit ? hit[1] : k;
   };
   const activeFilterKeys = Object.keys(filters);
+
+  // Draft-side derived values (drive the input + dropdown chips only).
+  const draftHasText = draftQuery.trim().length > 0;
+  const toggleDraft = (k: string) => setDraftFilters((f) => { const n = { ...f }; if (n[k]) delete n[k]; else n[k] = true; return n; });
+  // Commit the draft to the applied filters — this is the only path that
+  // actually filters the feed (the "Filter" CTA).
+  const applyFilters = () => { onApply(draftQuery, draftFilters, draftMin, draftMax); setSearchActive(false); inputRef.current?.blur(); };
+  // Clear everything (draft + applied), used by "Reset" and "Clear all".
+  const clearEverything = () => {
+    setDraftQuery(""); setDraftFilters({}); setDraftMin(0); setDraftMax(PRICE_MAX);
+    onClearAll();
+  };
+  // Remove a single applied filter chip (also drop it from the draft so the two
+  // stay in sync when the dropdown is reopened).
+  const removeAppliedFilter = (k: string) => {
+    onToggleApplied(k);
+    setDraftFilters((f) => { const n = { ...f }; delete n[k]; return n; });
+  };
+  // Clear-text (X) button in the search field: drop the query from both draft
+  // and applied immediately, keeping any tag/price filters intact.
+  const clearQuery = () => { setDraftQuery(""); onApply("", filters, priceMin, priceMax); setSearchActive(false); inputRef.current?.blur(); };
 
   // When switching categories: if the user has already scrolled past the promo
   // banner (so the feed has scrolled up under the top nav), bring the top nav
@@ -919,11 +945,11 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
     <OripaCard key={it.id} item={it} t={t} onView={canOpen ? () => openCard(it) : undefined} onDraw={canOpen ? () => openCard(it) : undefined} />
   );
   const tagPill = ([key, label]: [string, string]) => {
-    const on = !!filters[key];
+    const on = !!draftFilters[key];
     return (
       <button
         key={key}
-        onClick={() => onToggle(key)}
+        onClick={() => toggleDraft(key)}
         className={`rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition active:scale-95 ${on ? "border-[#D10005] bg-[#D10005] text-white" : "border-[#a3a8b0] bg-white text-[#4b5058]"}`}
       >
         {label}
@@ -1066,18 +1092,18 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
             <input
               ref={inputRef}
               type="text"
-              value={query}
-              onFocus={() => { setCat("all"); if (!hasQuery) setSearchActive(true); }}
-              onClick={() => { setCat("all"); if (!hasQuery) setSearchActive(true); }}
-              onChange={(e) => { const v = e.target.value; onQueryChange(v); setSearchActive(v.trim().length === 0); }}
+              value={draftQuery}
+              onFocus={() => { setCat("all"); setSearchActive(true); }}
+              onClick={() => { setCat("all"); setSearchActive(true); }}
+              onChange={(e) => { setDraftQuery(e.target.value); setSearchActive(true); }}
               placeholder={L.searchPlaceholder}
-              className={`w-full rounded-[10px] border-[1.5px] border-[#D10005] bg-white py-3 pl-12 text-[15px] font-medium text-[#1d2129] outline-none placeholder:text-[#9aa0a8] ${hasQuery ? "pr-11" : "pr-3"}`}
+              className={`w-full rounded-[10px] border-[1.5px] border-[#D10005] bg-white py-3 pl-12 text-[15px] font-medium text-[#1d2129] outline-none placeholder:text-[#9aa0a8] ${draftHasText ? "pr-11" : "pr-3"}`}
             />
-            {hasQuery && (
+            {draftHasText && (
               <button
                 type="button"
                 aria-label="Clear search"
-                onClick={() => { onQueryChange(""); setSearchActive(false); inputRef.current?.blur(); }}
+                onClick={clearQuery}
                 className="absolute right-2.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full bg-[#e5e7eb] text-[#4b5058] active:scale-90"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
@@ -1095,7 +1121,7 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
             {activeFilterKeys.map((k) => (
               <button
                 key={k}
-                onClick={() => onToggle(k)}
+                onClick={() => removeAppliedFilter(k)}
                 className="flex shrink-0 items-center gap-1 rounded-full border border-[#D10005] bg-[#D10005]/[0.08] px-2.5 py-1 text-[12px] font-semibold text-[#D10005] active:scale-95"
               >
                 {filterLabel(k)}
@@ -1103,7 +1129,7 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
               </button>
             ))}
           </div>
-          <button onClick={onClearFilters} className="shrink-0 whitespace-nowrap text-[12px] font-extrabold text-[#D10005] underline underline-offset-2 active:opacity-70">{L.clearAll}</button>
+          <button onClick={clearEverything} className="shrink-0 whitespace-nowrap text-[12px] font-extrabold text-[#D10005] underline underline-offset-2 active:opacity-70">{L.clearAll}</button>
         </div>
       )}
 
@@ -1116,11 +1142,11 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
             <div className="flex flex-wrap gap-2.5">{L.filterTags.map(tagPill)}</div>
             <h4 className="mb-2.5 mt-5 text-[15px] font-extrabold text-[#1d2129]">{L.pokemonHeading}</h4>
             <div className="flex flex-wrap gap-2.5">{L.pokemonTags.map(tagPill)}</div>
-            <PriceRangeFilter label={L.cost} min={priceMin} max={priceMax} onMin={setPriceMin} onMax={setPriceMax} />
+            <PriceRangeFilter label={L.cost} min={draftMin} max={draftMax} onMin={setDraftMin} onMax={setDraftMax} />
           </div>
           <div className="flex gap-3 border-t border-black/10 bg-white px-4 py-3">
-            <button onClick={() => { onReset(); resetPrice(); setSearchActive(false); inputRef.current?.blur(); }} className="flex-1 rounded-[10px] border-[1.6px] border-[#1d2129] bg-white py-3 text-[15px] font-extrabold text-[#1d2129] active:scale-[0.99]">{L.reset}</button>
-            <button onClick={() => setSearchActive(false)} className="flex-1 rounded-[10px] bg-[#D10005] py-3 text-[15px] font-extrabold text-white active:scale-[0.99]">{L.filter}</button>
+            <button onClick={clearEverything} className="flex-1 rounded-[10px] border-[1.6px] border-[#1d2129] bg-white py-3 text-[15px] font-extrabold text-[#1d2129] active:scale-[0.99]">{L.reset}</button>
+            <button onClick={applyFilters} className="flex-1 rounded-[10px] bg-[#D10005] py-3 text-[15px] font-extrabold text-white active:scale-[0.99]">{L.filter}</button>
           </div>
         </div>
       )}
@@ -1131,13 +1157,8 @@ function LobbyNavFeed({ t, lang, filters, query, onToggle, onQueryChange, onRese
   );
 }
 
-function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, scrollRef }: { lang: Lang; coins: number; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem) => void; scrollRef?: { current: number } }) {
+function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, scrollRef, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll }: { lang: Lang; coins: number; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem) => void; scrollRef?: { current: number }; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void }) {
   const t = STR[lang];
-  const [filters, setFilters] = useState<Record<string, boolean>>({});
-  const [query, setQuery] = useState("");
-  const toggleFilter = (k: string) => setFilters((f) => { const n = { ...f }; if (n[k]) delete n[k]; else n[k] = true; return n; });
-  const clearFilters = () => { setFilters({}); setQuery(""); };
-  const clearAllFilters = () => setFilters({});
   // Preserve the lobby's scroll position across navigation (e.g. opening a draw
   // and coming back) so the user lands where they were, not at the top. The
   // offset lives in a ref owned by the app root, so it survives this screen's
@@ -1158,7 +1179,7 @@ function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, scrollRef }: 
       >
         <HomeHero lang={lang} />
 
-        <LobbyNavFeed t={t} lang={lang} filters={filters} query={query} onToggle={toggleFilter} onQueryChange={setQuery} onReset={clearFilters} onClearFilters={clearAllFilters} onOpenDraw={onOpenDraw} />
+        <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={onApply} onToggleApplied={onToggleApplied} onClearAll={onClearAll} onOpenDraw={onOpenDraw} />
 
         <SiteFooter t={t} />
       </div>
@@ -2471,11 +2492,15 @@ function BottomNav({ screen, t, onNavigate }: { screen: Screen; t: Dict; onNavig
 // category-filtered card sections. Card taps prompt sign-up.
 function LandingPage({ lang, onSignUp, onLogin }: { lang: Lang; onSignUp: () => void; onLogin: () => void }) {
   const t = STR[lang];
-  const [filters, setFilters] = useState<Record<string, boolean>>({});
   const [query, setQuery] = useState("");
-  const toggleFilter = (k: string) => setFilters((f) => { const n = { ...f }; if (n[k]) delete n[k]; else n[k] = true; return n; });
-  const clearFilters = () => { setFilters({}); setQuery(""); };
-  const clearAllFilters = () => setFilters({});
+  const [filters, setFilters] = useState<Record<string, boolean>>({});
+  const [priceMin, setPriceMin] = useState(0);
+  const [priceMax, setPriceMax] = useState(PRICE_MAX);
+  const applyLobby = (q: string, f: Record<string, boolean>, min: number, max: number) => {
+    setQuery(q); setFilters(f); setPriceMin(min); setPriceMax(max);
+  };
+  const toggleApplied = (k: string) => setFilters((f) => { const n = { ...f }; if (n[k]) delete n[k]; else n[k] = true; return n; });
+  const clearAll = () => { setQuery(""); setFilters({}); setPriceMin(0); setPriceMax(PRICE_MAX); };
   return (
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
       <AuthHeader lang={lang} onSignUp={onSignUp} onLogin={onLogin} />
@@ -2483,7 +2508,7 @@ function LandingPage({ lang, onSignUp, onLogin }: { lang: Lang; onSignUp: () => 
       <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
         <div className="px-3 pb-4 pt-3"><PromoCarousel /></div>
 
-        <LobbyNavFeed t={t} lang={lang} filters={filters} query={query} onToggle={toggleFilter} onQueryChange={setQuery} onReset={clearFilters} onClearFilters={clearAllFilters} onView={onSignUp} />
+        <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={applyLobby} onToggleApplied={toggleApplied} onClearAll={clearAll} onView={onSignUp} />
 
         <SiteFooter t={t} />
       </div>
@@ -4774,6 +4799,18 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   // so returning from a draw (or another screen) lands the user where they were
   // instead of at the top. Owned by the root so it survives the lobby's remount.
   const homeScroll = useRef(0);
+  // Applied lobby search/filter state. Owned by the root (not the lobby) so it
+  // survives the lobby's remount — returning from a draw keeps the same filters
+  // in place. Only the "Filter" CTA (or chip / clear actions) mutate these.
+  const [lobbyQuery, setLobbyQuery] = useState("");
+  const [lobbyFilters, setLobbyFilters] = useState<Record<string, boolean>>({});
+  const [lobbyPriceMin, setLobbyPriceMin] = useState(0);
+  const [lobbyPriceMax, setLobbyPriceMax] = useState(PRICE_MAX);
+  const applyLobby = (q: string, f: Record<string, boolean>, min: number, max: number) => {
+    setLobbyQuery(q); setLobbyFilters(f); setLobbyPriceMin(min); setLobbyPriceMax(max);
+  };
+  const toggleLobbyFilter = (k: string) => setLobbyFilters((f) => { const n = { ...f }; if (n[k]) delete n[k]; else n[k] = true; return n; });
+  const clearLobbyFilters = () => { setLobbyQuery(""); setLobbyFilters({}); setLobbyPriceMin(0); setLobbyPriceMax(PRICE_MAX); };
   const goHome = () => setScreen("oripa");
   // PROD: login/sign-up land straight on the lobby (no onboarding flow).
   const enterHome = (method?: "line") => {
@@ -4862,7 +4899,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
           />
         )}
         {/* Logged-in lobby — V2 format */}
-        {screen === "oripa" && <OripaHome lang={lang} coins={coins} onHome={goHome} onOpenStore={openStore} onOpenDraw={openDraw} scrollRef={homeScroll} />}
+        {screen === "oripa" && <OripaHome lang={lang} coins={coins} onHome={goHome} onOpenStore={openStore} onOpenDraw={openDraw} scrollRef={homeScroll} query={lobbyQuery} filters={lobbyFilters} priceMin={lobbyPriceMin} priceMax={lobbyPriceMax} onApply={applyLobby} onToggleApplied={toggleLobbyFilter} onClearAll={clearLobbyFilters} />}
         {screen === "drawDetail" && drawItem && (
           <DrawDetail
             key={drawItem.id}
