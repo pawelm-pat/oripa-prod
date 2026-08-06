@@ -2012,13 +2012,8 @@ function NarrowDownSheet({
 function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, onOpenStore, freeShipAvailable = true, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, onOpenDraw }: { lang: Lang; coins: number; item: OripaItem; cards: WonPrize[]; onDrawAgain: () => void; onClose: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; onOpenDraw?: (item: OripaItem) => void }) {
   const t = STR[lang];
   const [list, setList] = useState<WonPrize[]>(cards);
-  // "Narrow down" filters (mirrors My Loot): rarity/tier + free-text search.
-  const [tier, setTier] = useState<"all" | Rarity>("all");
-  const [category, setCategory] = useState<"all" | Category>("all");
-  const [query, setQuery] = useState("");
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [sortKey, setSortKey] = useState<SortKey>("coinDesc");
-  const [sortOpen, setSortOpen] = useState(false);
+  // Draw results show exactly what was drawn (highest coin value first). No
+  // narrow-down / sort here — filtering a fresh draw doesn't make sense.
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [shipOpen, setShipOpen] = useState(false);
   // Exchange-to-coins confirmation dialog.
@@ -2051,34 +2046,8 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
   }
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
-  const sorted = useMemo(() => {
-    const arr = [...list];
-    arr.sort((a, b) => {
-      switch (sortKey) {
-        case "coinDesc": return b.coinValue - a.coinValue;
-        case "coinAsc": return a.coinValue - b.coinValue;
-        case "wonNew": return b.wonAt - a.wonAt;
-        case "wonOld": return a.wonAt - b.wonAt;
-        case "expSoon": return expiresAt(a.wonAt) - expiresAt(b.wonAt);
-      }
-    });
-    return arr;
-  }, [list, sortKey]);
-
-  // "Narrow down" scope: rarity/tier + free-text search (name/desc).
-  const q = query.trim().toLowerCase();
-  const matchesQuery = (p: WonPrize) => {
-    if (!q) return true;
-    const hay = `${locName(p, lang)} ${locDesc(p, lang)}`.toLowerCase();
-    return q.split(/\s+/).every((w) => hay.includes(w));
-  };
-  const inScope = (p: WonPrize) => (tier === "all" || p.rarity === tier) && (category === "all" || p.category === category) && matchesQuery(p);
-  const displayed = sorted.filter(inScope);
-  const filterActive = tier !== "all" || category !== "all" || q.length > 0;
-
-  // Selection is scoped to the current filter so the summary never counts
-  // cards hidden behind an active tier/search filter.
-  useEffect(() => { setSelected(new Set()); }, [tier, category, query]);
+  // Highest coin value first.
+  const displayed = useMemo(() => [...list].sort((a, b) => b.coinValue - a.coinValue), [list]);
 
   const selectedPrizes = list.filter((p) => selected.has(p.id));
   const total = selectedPrizes.reduce((s, p) => s + p.coinValue, 0);
@@ -2130,36 +2099,14 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
         </button>
       </div>
 
-      {/* Narrow down + Sort toolbar (mirrors My Loot) */}
-      <div className="relative shrink-0 flex items-stretch border-b border-black/10 bg-white">
-        <button onClick={() => setFilterOpen(true)} className="flex flex-1 items-center justify-center gap-2 py-3 text-[14px] font-extrabold text-[#1d2129] active:bg-black/[0.03]">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><circle cx="7" cy="8" r="2" /><circle cx="16" cy="16" r="2" /><path d="M9 8h11M4 8h1M15 16h5M4 16h9" /></svg>
-          {LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"].narrowDown}
-          {filterActive && <span className="flex h-[8px] w-[8px] rounded-full bg-[#D10005]" />}
-        </button>
-        <span className="my-2 w-px bg-black/10" />
-        <button onClick={() => setSortOpen((v) => !v)} className="flex flex-1 items-center justify-center gap-1.5 py-3 text-[14px] font-extrabold text-[#1d2129] active:bg-black/[0.03]">
-          {t.sortLabels[sortKey]}
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4" /></svg>
-        </button>
-        {sortOpen && (
-          <div className="absolute right-3 top-full z-20 mt-1 w-[220px] overflow-hidden rounded-xl border border-black/10 bg-white shadow-[0_16px_30px_rgba(0,0,0,0.18)]">
-            {SORT_KEYS.map((key) => (
-              <button
-                key={key}
-                onClick={() => { setSortKey(key); setSortOpen(false); }}
-                className={`flex w-full items-center justify-between px-3.5 py-2.5 text-left text-[13px] font-semibold ${key === sortKey ? "bg-[#D10005]/[0.06] text-[#D10005]" : "text-[#1d2129]"}`}
-              >
-                {t.sortLabels[key]}
-                {key === sortKey && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5 9-11" /></svg>}
-              </button>
-            ))}
-          </div>
-        )}
+      {/* Drawn / selected counter (no narrow-down or sort on a fresh draw) */}
+      <div className="shrink-0 flex items-center justify-between border-b border-black/10 bg-white px-4 py-2.5">
+        <span className="text-[13px] font-extrabold text-[#1d2129]">{t.drawResultsTotal(list.length)}</span>
+        <span className="text-[13px] font-extrabold" style={{ color: selected.size > 0 ? "#FF7A1A" : "#8a9099" }}>{t.drawResultsSelected(selected.size)}</span>
       </div>
 
       {/* Results list */}
-      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-3" onClick={() => sortOpen && setSortOpen(false)}>
+      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-3">
         {displayed.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="mb-2 text-[32px]">🔍</div>
@@ -2291,21 +2238,6 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
           total={total}
           onConfirm={() => { setExchangeOpen(false); exchange(); }}
           onClose={() => setExchangeOpen(false)}
-        />
-      )}
-
-      {filterOpen && (
-        <NarrowDownSheet
-          lang={lang}
-          items={list}
-          query={query}
-          setQuery={setQuery}
-          rarity={tier}
-          setRarity={setTier}
-          category={category}
-          setCategory={setCategory}
-          onReset={() => { setQuery(""); setTier("all"); setCategory("all"); setSelected(new Set()); }}
-          onClose={() => setFilterOpen(false)}
         />
       )}
 
@@ -2806,6 +2738,10 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
 
   const [sortKey, setSortKey] = useState<SortKey>("coinDesc");
   const [sortOpen, setSortOpen] = useState(false);
+  // Winning History is an audit view where expiration/exchange no longer
+  // applies, so drop the "Expiration: soonest first" option there (kept in
+  // My Loot, where the exchange date is still meaningful).
+  const sortKeys = lootMode ? SORT_KEYS : SORT_KEYS.filter((k) => k !== "expSoon");
 
   const [listSelected, setListSelected] = useState<Set<string>>(new Set());
   const [listShipOpen, setListShipOpen] = useState(false);
@@ -3207,7 +3143,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
 
       {sortOpen && (
         <BottomSheet title={t.sortTitle} onClose={() => setSortOpen(false)}>
-          {SORT_KEYS.map((key) => (
+          {sortKeys.map((key) => (
             <button
               key={key}
               onClick={() => { setSortKey(key); setSortOpen(false); }}
