@@ -2212,6 +2212,7 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
             <button onClick={reset} className="text-[#8a9099] active:opacity-70">{t.itemsReset}</button>
           </div>
         </div>
+        {selected.size > 0 && (
         <div className="grid grid-cols-2 gap-2">
           {/* Request Shipping on the left (matches My Loot placement). */}
           <div className="relative">
@@ -2258,6 +2259,7 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
             {t.exchange}
           </button>
         </div>
+        )}
         <p className="mt-1.5 text-center text-[10.5px] leading-tight text-[#8a9099]">{freeShipAvailable ? t.shipSelectHint : t.shipSelectHintPaid}</p>
       </div>
 
@@ -3107,6 +3109,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
               <button onClick={listReset} className="text-[#8a9099] active:opacity-70">{t.itemsReset}</button>
             </div>
           </div>
+          {listSelected.size > 0 && (
           <div className="grid grid-cols-2 gap-2.5">
             {/* Request Shipping on the left (POC placement). */}
             <div className="relative">
@@ -3157,6 +3160,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
               {t.exchange}
             </button>
           </div>
+          )}
           <p className="mt-2 text-center text-[10.5px] leading-tight text-[#8a9099]">{freeShipAvailable ? t.shipSelectHint : t.shipSelectHintPaid}</p>
         </div>
       )}
