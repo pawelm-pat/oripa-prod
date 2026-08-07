@@ -2012,8 +2012,9 @@ function NarrowDownSheet({
 function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, onOpenStore, freeShipAvailable = true, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, onOpenDraw }: { lang: Lang; coins: number; item: OripaItem; cards: WonPrize[]; onDrawAgain: () => void; onClose: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; onOpenDraw?: (item: OripaItem) => void }) {
   const t = STR[lang];
   const [list, setList] = useState<WonPrize[]>(cards);
-  // Draw results show exactly what was drawn (highest coin value first). No
-  // narrow-down / sort here — filtering a fresh draw doesn't make sense.
+  // Draw results are filtered by rarity tier via the top tabs (All / Ultra /
+  // Gold / Silver). Each tab shows how many cards were drawn in that tier.
+  const [tierFilter, setTierFilter] = useState<"all" | number>("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [shipOpen, setShipOpen] = useState(false);
   // Exchange-to-coins confirmation dialog.
@@ -2046,8 +2047,16 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
   }
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
-  // Highest coin value first.
-  const displayed = useMemo(() => [...list].sort((a, b) => b.coinValue - a.coinValue), [list]);
+  // Highest coin value first, then narrowed to the active rarity-tier tab.
+  const displayed = useMemo(() => {
+    const arr = [...list].sort((a, b) => b.coinValue - a.coinValue);
+    return tierFilter === "all" ? arr : arr.filter((p) => rarityTier(p.rarity) === tierFilter);
+  }, [list, tierFilter]);
+  // Per-tier drawn counts for the tab labels.
+  const tierCount = (tier: number) => list.filter((p) => rarityTier(p.rarity) === tier).length;
+  // Switching tabs resets the selection so the summary never counts cards
+  // hidden behind the active tier.
+  useEffect(() => { setSelected(new Set()); }, [tierFilter]);
 
   const selectedPrizes = list.filter((p) => selected.has(p.id));
   const total = selectedPrizes.reduce((s, p) => s + p.coinValue, 0);
@@ -2085,24 +2094,30 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
     <div className="absolute inset-0 z-50 flex h-full flex-col bg-[#eef0f3]">
       <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
 
-      {/* Top actions: Close (X) + Draw again */}
-      <div className="shrink-0 flex items-center gap-3 bg-white px-3 py-3">
-        <button
-          onClick={onClose}
-          aria-label={t.drawLimitClose}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-black/15 text-[#1d2129] active:scale-[0.97]"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
-        </button>
-        <button onClick={() => { if (dailyLimitReached) { setOtherIdx(0); setLimitOpen(true); } else { onDrawAgain(); } }} className="flex-1 rounded-xl bg-[#D10005] py-3 text-[14px] font-extrabold text-white active:scale-[0.99]">
+      {/* Top action: Draw again */}
+      <div className="shrink-0 bg-white px-3 py-3">
+        <button onClick={() => { if (dailyLimitReached) { setOtherIdx(0); setLimitOpen(true); } else { onDrawAgain(); } }} className="w-full rounded-xl bg-[#D10005] py-3 text-[14px] font-extrabold text-white active:scale-[0.99]">
           {t.drawAgain}
         </button>
       </div>
 
-      {/* Drawn / selected counter (no narrow-down or sort on a fresh draw) */}
-      <div className="shrink-0 flex items-center justify-between border-b border-black/10 bg-white px-4 py-2.5">
-        <span className="text-[13px] font-extrabold text-[#1d2129]">{t.drawResultsTotal(list.length)}</span>
-        <span className="text-[13px] font-extrabold" style={{ color: selected.size > 0 ? "#FF7A1A" : "#8a9099" }}>{t.drawResultsSelected(selected.size)}</span>
+      {/* Rarity-tier tabs — All + one per tier, each with the drawn count. */}
+      <div className="no-scrollbar shrink-0 flex items-stretch overflow-x-auto border-b border-black/10 bg-white">
+        {([["all", t.catAll, list.length], [1, t.prizeTier(1), tierCount(1)], [2, t.prizeTier(2), tierCount(2)], [3, t.prizeTier(3), tierCount(3)]] as [("all" | number), string, number][]).map(([key, label, count]) => {
+          const on = tierFilter === key;
+          const color = on ? "#D10005" : "#1d2129";
+          return (
+            <button
+              key={String(key)}
+              onClick={() => setTierFilter(key)}
+              className="relative flex flex-1 shrink-0 flex-col items-center justify-center gap-0.5 px-4 py-2.5"
+            >
+              <span className="whitespace-nowrap text-[13px] font-extrabold" style={{ color }}>{label}</span>
+              <span className="text-[11px] font-bold" style={{ color: on ? "#D10005" : "#8a9099" }}>{count}</span>
+              {on && <span className="absolute inset-x-3 bottom-0 h-[3px] rounded-full bg-[#D10005]" />}
+            </button>
+          );
+        })}
       </div>
 
       {/* Results list */}
