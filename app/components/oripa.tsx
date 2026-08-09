@@ -4055,7 +4055,7 @@ function myMenuIcon(key: string) {
   }
 }
 
-function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onOpenMyLoot, onOpenPurchaseHistory, onOpenAnnouncements, onOpenShippingAddress, onOpenProfile, onHome, onLogout, onOpenStore }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenMyLoot: () => void; onOpenPurchaseHistory: () => void; onOpenAnnouncements: () => void; onOpenShippingAddress: () => void; onOpenProfile: () => void; onHome: () => void; onLogout: () => void; onOpenStore?: () => void }) {
+function MyPage({ lang, coins, displayName = "Username", onOpenQuest, onOpenPrizeHistory, onOpenMyLoot, onOpenPurchaseHistory, onOpenAnnouncements, onOpenShippingAddress, onOpenProfile, onHome, onLogout, onOpenStore }: { lang: Lang; coins: number; displayName?: string; onOpenQuest: () => void; onOpenPrizeHistory: () => void; onOpenMyLoot: () => void; onOpenPurchaseHistory: () => void; onOpenAnnouncements: () => void; onOpenShippingAddress: () => void; onOpenProfile: () => void; onHome: () => void; onLogout: () => void; onOpenStore?: () => void }) {
   const t = STR[lang];
   const openLegal = useContext(LegalNavContext);
   const openCoinHistory = useContext(CoinHistoryNavContext);
@@ -4072,7 +4072,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
   // other row renders but is inert (no onClick) — those screens are not ported
   // into PROD yet.
   const menu: { key: string; label: string; onClick?: () => void }[] = [
-    { key: "quest", label: t.mmQuest },
+    { key: "quest", label: t.mmQuest, onClick: onOpenQuest },
     { key: "items", label: t.mmItems, onClick: onOpenMyLoot },
     { key: "history", label: t.mmPrizeHistory, onClick: onOpenPrizeHistory },
     { key: "purchases", label: t.mmPurchases, onClick: onOpenPurchaseHistory },
@@ -4590,6 +4590,371 @@ function CoinHistoryPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
   );
 }
 
+/* ── Quest: pack-purchase chain ──────────────────────────────────────────
+   Engagement loop: buying oripa packs clears the steps of a chain. Steps
+   unlock sequentially (finish one to reveal the next); clearing every step in
+   a chain unlocks a grand Coin bonus. Self-contained POC — "Challenge"
+   simulates a pack purchase so the whole flow is demoable without leaving the
+   screen. Three parallel chains (Beginner / Daily / Weekly). */
+
+// Numeric config (shared across languages so targets/rewards never drift).
+const QUEST_CHAINS = [
+  {
+    id: "beginner",
+    grand: 10000,
+    steps: [
+      { target: 1, inc: 1, reward: 100 },
+      { target: 3, inc: 1, reward: 100 },
+      { target: 5, inc: 1, reward: 150 },
+      { target: 3000, inc: 1000, reward: 200 },
+      { target: 10, inc: 5, reward: 300 },
+    ],
+  },
+  {
+    id: "daily",
+    grand: 3000,
+    steps: [
+      { target: 1, inc: 1, reward: 50 },
+      { target: 3, inc: 1, reward: 80 },
+      { target: 1000, inc: 500, reward: 120 },
+    ],
+  },
+  {
+    id: "weekly",
+    grand: 5000,
+    steps: [
+      { target: 10, inc: 3, reward: 150 },
+      { target: 10000, inc: 3000, reward: 250 },
+    ],
+  },
+] as const;
+
+type QuestChainId = (typeof QUEST_CHAINS)[number]["id"];
+
+const QUEST_TEXT: Record<Lang, {
+  title: string;
+  heroTitle: string;
+  heroSub: string;
+  endsIn: string;
+  special: string;
+  coinsUnit: string;
+  cleared: (a: number, b: number) => string;
+  reward: string;
+  claim: string;
+  claimed: string;
+  challenge: string;
+  showDetails: string;
+  hideDetails: string;
+  locked: string;
+  claimGrand: string;
+  grandLocked: (n: number) => string;
+  grandDone: string;
+  toastStep: (n: number) => string;
+  toastGrand: (n: number) => string;
+  simNote: string;
+  labels: Record<QuestChainId, string>;
+  steps: Record<QuestChainId, { title: string; detail: string }[]>;
+}> = {
+  en: {
+    title: "Quests",
+    heroTitle: "Unlock special rewards!",
+    heroSub: "Buy oripa packs to clear each step of the chain, then claim the grand bonus.",
+    endsIn: "Ends in",
+    special: "Special reward",
+    coinsUnit: "Oripa Coins",
+    cleared: (a, b) => `${a}/${b} quests cleared`,
+    reward: "Reward",
+    claim: "Claim",
+    claimed: "Claimed",
+    challenge: "Challenge",
+    showDetails: "Show details",
+    hideDetails: "Hide details",
+    locked: "Complete the previous quest to unlock",
+    claimGrand: "Claim grand bonus",
+    grandLocked: (n) => `Clear all ${n} steps to unlock`,
+    grandDone: "Grand bonus claimed",
+    toastStep: (n) => `+${n} points claimed!`,
+    toastGrand: (n) => `Grand bonus unlocked! +${n.toLocaleString()} coins`,
+    simNote: "Demo: each tap simulates buying a pack.",
+    labels: { beginner: "Beginner", daily: "Daily", weekly: "Weekly" },
+    steps: {
+      beginner: [
+        { title: "Buy your first oripa pack", detail: "Open any oripa pack from the lobby to take your first step into the chain and start earning bonus rewards." },
+        { title: "Buy 3 oripa packs", detail: "Draw from any three packs. Purchases from every category count toward this step of the chain." },
+        { title: "Buy 5 oripa packs", detail: "Keep the momentum going — five pack purchases unlock the next milestone of the beginner chain." },
+        { title: "Spend 3,000 coins on packs", detail: "Spend a total of 3,000 Oripa Coins on pack draws. Bigger pulls clear this step faster." },
+        { title: "Complete a 10-pull", detail: "Finish a single 10-pull to clear the final step and unlock the grand Coin bonus." },
+      ],
+      daily: [
+        { title: "Open 1 pack today", detail: "Your daily chain resets every day. Open a single pack to get it started." },
+        { title: "Open 3 packs today", detail: "Draw from three packs today to keep the daily streak alive." },
+        { title: "Spend 1,000 coins today", detail: "Spend 1,000 Oripa Coins on today's draws to clear the daily chain." },
+      ],
+      weekly: [
+        { title: "Open 10 packs this week", detail: "Open ten packs across the week to progress the weekly chain." },
+        { title: "Spend 10,000 coins this week", detail: "Spend 10,000 Oripa Coins this week to unlock the weekly grand bonus." },
+      ],
+    },
+  },
+  ja: {
+    title: "クエスト",
+    heroTitle: "特別報酬を解放しよう！",
+    heroSub: "オリパパックを購入してチェーンの各ステップを達成し、特別報酬を受け取ろう。",
+    endsIn: "終了まで",
+    special: "特別報酬",
+    coinsUnit: "オリバコイン",
+    cleared: (a, b) => `${a}/${b} クエスト達成`,
+    reward: "報酬",
+    claim: "受け取る",
+    claimed: "受取済み",
+    challenge: "挑戦する",
+    showDetails: "詳細を表示",
+    hideDetails: "詳細を閉じる",
+    locked: "アンロックするには前のクエストを完了してください",
+    claimGrand: "特別報酬を受け取る",
+    grandLocked: (n) => `全${n}ステップを達成すると解放`,
+    grandDone: "特別報酬を受け取りました",
+    toastStep: (n) => `+${n}ポイント獲得！`,
+    toastGrand: (n) => `特別報酬を解放！ +${n.toLocaleString()}コイン`,
+    simNote: "デモ：タップするとパック購入をシミュレートします。",
+    labels: { beginner: "ビギナー", daily: "デイリー", weekly: "ウィークリー" },
+    steps: {
+      beginner: [
+        { title: "初めてのオリパパックを購入する", detail: "ロビーから好きなオリパパックを開封して、チェーンの最初のステップを踏み出し、ボーナス報酬を獲得しましょう。" },
+        { title: "オリパパックを3つ購入する", detail: "任意の3つのパックを引きましょう。すべてのカテゴリーの購入がこのステップにカウントされます。" },
+        { title: "オリパパックを5つ購入する", detail: "この調子で続けましょう。5回の購入でビギナーチェーンの次のマイルストーンが解放されます。" },
+        { title: "パックに3,000コイン使用する", detail: "パックの抽選に合計3,000オリバコインを使用しましょう。大きな抽選ほど早く達成できます。" },
+        { title: "10連を1回引く", detail: "10連を1回引いて最終ステップを達成し、特別なコインボーナスを解放しましょう。" },
+      ],
+      daily: [
+        { title: "今日1パック開封する", detail: "デイリーチェーンは毎日リセットされます。まずは1パック開封しましょう。" },
+        { title: "今日3パック開封する", detail: "今日3つのパックを引いてデイリーの連続記録を維持しましょう。" },
+        { title: "今日1,000コイン使用する", detail: "今日の抽選で1,000オリバコインを使用してデイリーチェーンを達成しましょう。" },
+      ],
+      weekly: [
+        { title: "今週10パック開封する", detail: "今週中に10パック開封してウィークリーチェーンを進めましょう。" },
+        { title: "今週10,000コイン使用する", detail: "今週10,000オリバコインを使用してウィークリーの特別報酬を解放しましょう。" },
+      ],
+    },
+  },
+};
+
+// Runtime state is purely numeric (progress / claimed) so language toggles
+// never clobber it — all copy is derived from QUEST_TEXT at render time.
+type QuestStepState = { id: string; target: number; inc: number; reward: number; progress: number; claimed: boolean };
+type QuestChainState = { id: QuestChainId; grand: number; grandClaimed: boolean; steps: QuestStepState[] };
+
+function buildQuestChains(): QuestChainState[] {
+  return QUEST_CHAINS.map((c) => ({
+    id: c.id,
+    grand: c.grand,
+    grandClaimed: false,
+    steps: c.steps.map((s, i) => ({ id: `${c.id}-${i}`, target: s.target, inc: s.inc, reward: s.reward, progress: 0, claimed: false })),
+  }));
+}
+
+function QuestLock({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="4" y="10" width="16" height="11" rx="2.5" fill="#c3c8d0" />
+      <path d="M8 10V7.5a4 4 0 0 1 8 0V10" stroke="#c3c8d0" strokeWidth="2.2" strokeLinecap="round" />
+      <circle cx="12" cy="15.5" r="1.7" fill="#fff" />
+    </svg>
+  );
+}
+
+function QuestScreen({ lang, coins, setCoins, onBack, onHome, onOpenStore }: { lang: Lang; coins: number; setCoins: Dispatch<SetStateAction<number>>; onBack: () => void; onHome: () => void; onOpenStore?: () => void }) {
+  const t = STR[lang];
+  const tx = QUEST_TEXT[lang];
+  const countdown = useHeroCountdown(3 * 3600 + 8 * 60 + 32);
+  const [chains, setChains] = useState<QuestChainState[]>(() => buildQuestChains());
+  const [tab, setTab] = useState<QuestChainId>("beginner");
+  const [open, setOpen] = useState<Record<string, boolean>>({});
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flash = (msg: string) => {
+    setToast(msg);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 2200);
+  };
+  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
+
+  const chain = chains.find((c) => c.id === tab)!;
+  const clearedCount = chain.steps.filter((s) => s.claimed).length;
+  const totalSteps = chain.steps.length;
+  const grandPct = totalSteps ? Math.round((clearedCount / totalSteps) * 100) : 0;
+  const grandReady = clearedCount === totalSteps && !chain.grandClaimed;
+
+  const mutateStep = (stepId: string, fn: (s: QuestStepState) => QuestStepState) =>
+    setChains((prev) => prev.map((c) => (c.id === tab ? { ...c, steps: c.steps.map((s) => (s.id === stepId ? fn(s) : s)) } : c)));
+
+  const challenge = (s: QuestStepState) => mutateStep(s.id, (st) => ({ ...st, progress: Math.min(st.target, st.progress + st.inc) }));
+  const claimStep = (s: QuestStepState) => {
+    mutateStep(s.id, (st) => ({ ...st, claimed: true }));
+    flash(tx.toastStep(s.reward));
+  };
+  const claimGrand = () => {
+    setChains((prev) => prev.map((c) => (c.id === tab ? { ...c, grandClaimed: true } : c)));
+    setCoins((v) => v + chain.grand);
+    flash(tx.toastGrand(chain.grand));
+  };
+
+  return (
+    <div className="flex h-full flex-col bg-[#eef0f3]">
+      <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
+
+      {/* Title row */}
+      <div className="shrink-0 flex items-center gap-2 border-b border-black/10 bg-white px-4 py-3">
+        <button onClick={onBack} aria-label={t.backAria} className="flex h-8 w-8 items-center justify-center text-[#D10005] hover:bg-black/5">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 12H4M10 6l-6 6 6 6" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </button>
+        <h1 className="text-[16px] font-bold text-[#1d2129]">{tx.title}</h1>
+      </div>
+
+      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
+        {/* Hero banner */}
+        <div className="relative aspect-[16/7] w-full select-none overflow-hidden bg-[#2a1c11]">
+          <img src="/hero/bg-day.png" alt="" className="absolute inset-0 h-full w-full object-cover" />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(90deg,rgba(180,20,10,0.82) 0%,rgba(180,20,10,0.35) 55%,rgba(180,20,10,0) 100%)" }} />
+          <img src="/hero/hero.png" alt="" className="pointer-events-none absolute -right-2 bottom-0 h-[128%] max-w-none object-contain object-bottom drop-shadow-[0_8px_16px_rgba(0,0,0,0.35)]" />
+          <div className="absolute inset-0 flex flex-col justify-center gap-1.5 px-4">
+            <h2 className="max-w-[64%] text-[20px] font-extrabold leading-tight text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.5)]">{tx.heroTitle}</h2>
+            <p className="max-w-[58%] text-[11px] font-bold leading-snug text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">{tx.heroSub}</p>
+          </div>
+        </div>
+
+        {/* Chain tabs — each shows the number of steps still to clear. */}
+        <div className="sticky top-0 z-10 flex items-stretch border-b border-black/10 bg-white">
+          {chains.map((c) => {
+            const on = c.id === tab;
+            const remaining = c.steps.filter((s) => !s.claimed).length;
+            return (
+              <button key={c.id} onClick={() => setTab(c.id)} className="relative flex flex-1 items-center justify-center gap-1.5 px-2 py-3">
+                <span className="text-[14px] font-extrabold" style={{ color: on ? "#D10005" : "#1d2129" }}>{tx.labels[c.id]}</span>
+                {remaining > 0 && (
+                  <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#D10005] px-1 text-[10px] font-bold text-white">{remaining}</span>
+                )}
+                {on && <span className="absolute inset-x-4 bottom-0 h-[3px] rounded-full bg-[#D10005]" />}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="px-3 py-3">
+          {/* Grand reward card */}
+          <div className="overflow-hidden rounded-2xl border-2 border-[#D10005] bg-white shadow-[0_2px_8px_rgba(209,0,5,0.12)]">
+            <div className="flex items-center justify-center gap-1.5 bg-[#D10005] py-1.5 text-[12px] font-bold text-white">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></svg>
+              {tx.endsIn} <span className="tabular-nums">{countdown}</span>
+            </div>
+            <div className="px-4 py-4">
+              <div className="flex items-center justify-center">
+                <span className="rounded-md px-3 py-1 text-[15px] font-extrabold text-[#D10005]">{tx.special}</span>
+              </div>
+              <div className="mt-2 flex items-center justify-center gap-2">
+                <CoinIcon size={40} />
+                <span className="text-[26px] font-extrabold text-[#1d2129]">{chain.grand.toLocaleString()}</span>
+                <span className="text-[13px] font-bold text-[#5b616b]">{tx.coinsUnit}</span>
+              </div>
+              {/* Progress toward the grand bonus */}
+              <div className="relative mt-3 h-5 w-full overflow-hidden rounded-full bg-[#efe0e0]">
+                <div className="absolute left-0 top-0 h-full rounded-full transition-[width] duration-500" style={{ width: `${grandPct}%`, background: "linear-gradient(90deg,#ff6a3d,#D10005)" }} />
+                <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-[#1d2129]">{grandPct}%</span>
+              </div>
+              <p className="mt-1.5 text-center text-[12px] font-semibold text-[#5b616b]">{tx.cleared(clearedCount, totalSteps)}</p>
+              <button
+                onClick={grandReady ? claimGrand : undefined}
+                disabled={!grandReady}
+                className="mt-3 w-full rounded-xl py-2.5 text-[14px] font-extrabold transition active:scale-[0.99] disabled:active:scale-100"
+                style={grandReady ? { background: "#FF8A00", color: "#fff" } : { background: "#f0f1f3", color: "#a2a8b0" }}
+              >
+                {chain.grandClaimed ? tx.grandDone : grandReady ? tx.claimGrand : tx.grandLocked(totalSteps)}
+              </button>
+            </div>
+          </div>
+
+          <p className="px-1 py-2 text-[10px] font-medium text-[#8a9099]">{tx.simNote}</p>
+
+          {/* Chain steps */}
+          <div className="space-y-2.5">
+            {chain.steps.map((s, i) => {
+              const prevClaimed = i === 0 || chain.steps[i - 1].claimed;
+              const locked = !prevClaimed;
+              const done = s.progress >= s.target;
+              const claimable = done && !s.claimed;
+              const pct = Math.min(100, Math.round((s.progress / s.target) * 100));
+              const isOpen = !!open[s.id];
+              const copy = tx.steps[chain.id][i];
+
+              if (locked) {
+                return (
+                  <div key={s.id} className="rounded-2xl bg-white px-4 py-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+                    <div className="flex flex-col items-center gap-2 text-center">
+                      <QuestLock />
+                      <p className="text-[12px] font-medium text-[#8a9099]">{tx.locked}</p>
+                    </div>
+                    <div className="mt-3 flex items-center gap-1.5 border-t border-black/5 pt-2.5 text-[13px] font-bold text-[#8a9099]">
+                      {tx.reward}<GemIcon size={16} /><span className="tabular-nums">{s.reward}</span>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div key={s.id} className={`rounded-2xl border bg-white px-4 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] ${s.claimed ? "border-black/5" : "border-[#f2c3c4]"}`}>
+                  <div className="flex items-center gap-1.5">
+                    {s.claimed ? (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#3DB54A" /><path d="M7 12.5l3.2 3.2L17 9" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#D10005" /><path d="M12 7v6" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" /><circle cx="12" cy="16.5" r="1.2" fill="#fff" /></svg>
+                    )}
+                    <span className="text-[12px] font-bold text-[#D10005]">{tx.labels[chain.id]} · {i + 1}</span>
+                  </div>
+                  <p className="mt-1 text-[15px] font-bold text-[#1d2129]">{copy.title}</p>
+
+                  {/* Progress bar + CTA */}
+                  <div className="mt-2 flex items-center gap-3">
+                    <div className="relative h-5 flex-1 overflow-hidden rounded-full bg-[#eef0f3]">
+                      <div className="absolute left-0 top-0 h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: done ? "linear-gradient(90deg,#5fce6b,#3DB54A)" : "linear-gradient(90deg,#ff6a3d,#D10005)" }} />
+                      <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-[#1d2129]">{pct}%</span>
+                    </div>
+                    {s.claimed ? (
+                      <span className="shrink-0 rounded-lg bg-[#eef7ee] px-4 py-2 text-[13px] font-bold text-[#3DB54A]">{tx.claimed}</span>
+                    ) : claimable ? (
+                      <button onClick={() => claimStep(s)} className="shrink-0 rounded-lg bg-[#3DB54A] px-4 py-2 text-[13px] font-bold text-white active:scale-95">{tx.claim}</button>
+                    ) : (
+                      <button onClick={() => challenge(s)} className="shrink-0 rounded-lg bg-[#D10005] px-4 py-2 text-[13px] font-bold text-white active:scale-95">{tx.challenge}</button>
+                    )}
+                  </div>
+
+                  {/* Reward + details toggle */}
+                  <div className="mt-3 flex items-center justify-between border-t border-black/5 pt-2.5">
+                    <span className="flex items-center gap-1.5 text-[13px] font-bold text-[#1d2129]">{tx.reward}<GemIcon size={16} /><span className="tabular-nums">{s.reward}</span></span>
+                    <button onClick={() => setOpen((o) => ({ ...o, [s.id]: !o[s.id] }))} className="flex items-center gap-1 text-[12px] font-bold text-[#8a9099]">
+                      {isOpen ? tx.hideDetails : tx.showDetails}
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className={`transition-transform ${isOpen ? "rotate-180" : ""}`}><path d="M6 9l6 6 6-6" stroke="#8a9099" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    </button>
+                  </div>
+                  {isOpen && <p className="mt-2 text-[11px] font-medium leading-relaxed text-[#5b616b]">{copy.detail}</p>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <SiteFooter t={t} />
+      </div>
+
+      {/* Claim toast */}
+      {toast && (
+        <div className="pointer-events-none absolute bottom-4 left-1/2 z-[70] -translate-x-1/2 whitespace-nowrap rounded-full bg-[#1d2129] px-4 py-2.5 text-[13px] font-semibold text-white shadow-lg" style={{ animation: "heroBubbleIn .2s ease-out both" }}>
+          {toast}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Store catalog lives in ./store-page (PointPackage imported above) ── */
 
 function StorePage({
@@ -4810,6 +5175,9 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   // back returns to wherever it was opened from.
   const [coinHistoryReturn, setCoinHistoryReturn] = useState<Screen>("oripa");
   const openCoinHistory = () => { setCoinHistoryReturn((p) => (screen === "coinHistory" ? p : screen)); setScreen("coinHistory"); };
+  // Quest (pack-purchase chain) is reached from the My Page "Quests" menu row;
+  // back returns to My Page.
+  const openQuest = () => setScreen("quest");
   // Draw screen (gacha pack detail) opens when a lobby pack's Draw / View is
   // tapped; back returns to the lobby.
   const [drawItem, setDrawItem] = useState<OripaItem | null>(null);
@@ -4879,6 +5247,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             lang={lang}
             coins={coins}
             displayName={displayName}
+            onOpenQuest={openQuest}
             onOpenPrizeHistory={() => setScreen("prizeHistory")}
             onOpenMyLoot={openMyLoot}
             onOpenPurchaseHistory={() => setScreen("purchaseHistory")}
@@ -4982,6 +5351,16 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             lang={lang}
             coins={coins}
             onBack={() => setScreen(coinHistoryReturn)}
+            onHome={goHome}
+            onOpenStore={openStore}
+          />
+        )}
+        {screen === "quest" && (
+          <QuestScreen
+            lang={lang}
+            coins={coins}
+            setCoins={setCoins}
+            onBack={() => setScreen("mypage")}
             onHome={goHome}
             onOpenStore={openStore}
           />
