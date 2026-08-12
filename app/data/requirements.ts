@@ -225,9 +225,9 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
         ],
       },
       {
-        title: "Email verification modal",
+        title: "Email verification page",
         items: [
-          "Shows verify mascot, expiry countdown (60s), and resend wait (10s after resend).",
+          "Full-page screen (not a modal) with logo header, verify mascot, expiry countdown (60s), and resend wait (10s after resend).",
           { text: "Open Email App", sub: [
             "Simulates checking (900ms) then completes signup — unless email is seon.stepup@gmail.com, which opens SEON phone step-up.",
             "Expired state offers resend.",
@@ -744,16 +744,17 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
       {
         title: "Personal Information",
         items: [
-          "Email, date of birth (picker), phone with Verify OTP, country (Japan / USA).",
-          "Japan: postal code lookup (mocked), prefecture, city/street, street number, optional apartment.",
-          "USA: apartment (optional), city/street/number, state, 5-digit zip.",
+          "Email and country are read-only (no country dropdown).",
+          "Date of birth (picker), optional phone with Verify OTP.",
+          "Japan: postal code lookup (mocked), prefecture, Address, optional Address line 2.",
+          "USA: Address, optional Address line 2, state, 5-digit zip.",
         ],
         validation: [
-          "Email must match a basic email pattern.",
-          "Phone must be exactly 10 digits (digits only).",
-          "Japan postal code must be NNN-NNNN; street number digits only.",
+          "Email must match a basic email pattern (not editable).",
+          "Phone is optional; when entered must be exactly 10 digits (digits only).",
+          "Japan postal code must be NNN-NNNN.",
           "USA zip must be exactly 5 digits.",
-          "Save requires valid email, DOB, phone and a complete address for the selected country.",
+          "Save requires valid email, DOB and a complete address for the selected country (phone not required).",
         ],
       },
       {
