@@ -49,6 +49,7 @@ import {
 
 import { StorePage as StorePageView, type PointPackage } from "./store-page";
 import { PurchaseFlow, CashierLegalContext, type SavedCard } from "./cashier";
+import { QuickPurchaseFlow, type QuickPurchasePending, type QuickSavedCard, type IntlCurrencyInfo } from "./quick-purchase";
 import { ProfilePage } from "./profile-page";
 import {
   KycOverlay,
@@ -1268,7 +1269,7 @@ function DrawPromoBanner({ t, item, className = "", showCountdown = true }: { t:
   );
 }
 
-function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", onOpenDraw }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; onOpenDraw?: (item: OripaItem) => void }) {
+function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", onOpenDraw, onAttemptPaidDraw, pendingRunDraw, onPendingRunDrawConsumed }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; onOpenDraw?: (item: OripaItem) => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** After Quick Purchase success, host requests this count to run. */ pendingRunDraw?: { count: number; token: number } | null; onPendingRunDrawConsumed?: () => void }) {
   const t = STR[lang];
   // Opens a stored legal document (T&Cs, etc.) in the shared overlay.
   const openLegal = useContext(LegalNavContext);
@@ -1320,11 +1321,10 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
 
   function draw(count: number) {
     if (soldOut) return;
-    if (coins < DRAW_PRICE * count) { pushToast(t.drawInsufficient); return; }
     // Insufficient stock: asking for more than what's left prompts the
     // "draw remaining" popup instead of the normal confirmation.
     if (insufficientStock && count > STOCK_LEFT) { setStockReqCount(count); setStockPopup(true); return; }
-    // Open the confirmation popup; the actual draw is triggered from there.
+    // Open the confirmation popup; coin check / Quick Purchase happens on confirm.
     setConfirmCount(count);
   }
 
@@ -1336,6 +1336,17 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
     setResultsRun((r) => r + 1);
   }
 
+  // Host can resume a draw after Quick Purchase credits coins.
+  const consumedDrawToken = useRef<number | null>(null);
+  useEffect(() => {
+    if (!pendingRunDraw) return;
+    if (consumedDrawToken.current === pendingRunDraw.token) return;
+    consumedDrawToken.current = pendingRunDraw.token;
+    runDraw(pendingRunDraw.count);
+    onPendingRunDrawConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only react to host resume token
+  }, [pendingRunDraw]);
+
   function confirmDraw() {
     const count = confirmCount;
     if (count == null) return;
@@ -1343,6 +1354,14 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
     if (expired) { setConfirmCount(null); setSoldOutPopup(true); return; }
     // Simulated connection error: show the error popup; Retry re-runs the draw.
     if (connError) { setConfirmCount(null); setRetryCount(count); setConnErrorPopup(true); return; }
+    // Paid draw: debit via host (or open Quick Purchase if short).
+    if (onAttemptPaidDraw) {
+      setConfirmCount(null);
+      if (!onAttemptPaidDraw(count)) return;
+      runDraw(count);
+      return;
+    }
+    if (coins < DRAW_PRICE * count) { pushToast(t.drawInsufficient); return; }
     runDraw(count);
   }
 
@@ -1354,10 +1373,16 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
   const setQty = (n: number) => setCustomQty(() => Math.min(MAX_CUSTOM_DRAW, Math.max(1, n)));
 
   function confirmCustomDraw() {
-    if (coins < DRAW_PRICE * customQty) { pushToast(t.drawInsufficient); return; }
     if (expired) { setCustomOpen(false); setSoldOutPopup(true); return; }
     if (connError) { setCustomOpen(false); setRetryCount(customQty); setConnErrorPopup(true); return; }
     if (insufficientStock && customQty > STOCK_LEFT) { setCustomOpen(false); setStockReqCount(customQty); setStockPopup(true); return; }
+    if (onAttemptPaidDraw) {
+      setCustomOpen(false);
+      if (!onAttemptPaidDraw(customQty)) return;
+      runDraw(customQty);
+      return;
+    }
+    if (coins < DRAW_PRICE * customQty) { pushToast(t.drawInsufficient); return; }
     runDraw(customQty);
   }
 
@@ -1698,7 +1723,13 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
             <h3 className="mt-4 text-[22px] font-extrabold text-[#1d2129]">{t.connErrorTitle}</h3>
             <p className="mx-auto mt-2 max-w-[280px] text-[13px] leading-relaxed text-[#6b7075]">{t.connErrorBody}</p>
             <button
-              onClick={() => { setConnErrorPopup(false); runDraw(retryCount); }}
+              onClick={() => {
+                setConnErrorPopup(false);
+                if (onAttemptPaidDraw) {
+                  if (!onAttemptPaidDraw(retryCount)) return;
+                }
+                runDraw(retryCount);
+              }}
               className="mt-5 w-full rounded-[14px] bg-[#D10005] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]"
             >
               {t.connErrorRetry}
@@ -1743,7 +1774,13 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
               <span className="text-[16px] font-extrabold text-[#D10005]">{(DRAW_PRICE * STOCK_LEFT).toLocaleString()}</span>
             </div>
             <button
-              onClick={() => { setStockPopup(false); runDraw(STOCK_LEFT); }}
+              onClick={() => {
+                setStockPopup(false);
+                if (onAttemptPaidDraw) {
+                  if (!onAttemptPaidDraw(STOCK_LEFT)) return;
+                }
+                runDraw(STOCK_LEFT);
+              }}
               className="mt-4 w-full rounded-[14px] bg-[#D10005] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]"
             >
               {t.stockDrawRemaining(STOCK_LEFT)}
@@ -4966,6 +5003,11 @@ function StorePage({
   onOpenStore,
   onRequireKyc,
   onDrawItem,
+  purchasedIds,
+  onPackagePurchased,
+  savedCards,
+  onSaveCard,
+  onDeleteCard,
 }: {
   lang: Lang;
   coins: number;
@@ -4975,16 +5017,14 @@ function StorePage({
   onOpenStore?: () => void;
   onRequireKyc?: () => boolean;
   onDrawItem?: (item: OripaItem) => void;
+  purchasedIds?: string[];
+  onPackagePurchased?: (pkgId: string) => void;
+  savedCards: SavedCard[];
+  onSaveCard: (card: SavedCard) => void;
+  onDeleteCard: (idx: number) => void;
 }) {
   const t = STR[lang];
   const openLegal = useContext(LegalNavContext);
-  const [savedCards, setSavedCards] = useState<SavedCard[]>([
-    { last4: "1111", expiry: "08/29", brand: "Visa", name: "Taro Yamada" },
-    // Demo-only: always declines with insufficient funds after 3DS.
-    { last4: "9999", expiry: "11/28", brand: "Visa", name: "Taro Yamada" },
-    // Demo-only: always declines with bank decline after 3DS.
-    { last4: "8888", expiry: "09/27", brand: "Mastercard", name: "Taro Yamada" },
-  ]);
   const enableCurrencyCheckout = (() => {
     try {
       const auth = JSON.parse(sessionStorage.getItem("authData") || "{}");
@@ -5000,6 +5040,8 @@ function StorePage({
         coins={coins}
         setCoins={setCoins}
         onBack={onBack}
+        purchasedIds={purchasedIds}
+        onPackagePurchased={onPackagePurchased}
         chrome={{
           header: <AppHeader coins={coins} t={t} onHome={onHome ?? onBack} onOpenStore={onOpenStore} />,
           footer: <SiteFooter t={t} />,
@@ -5011,8 +5053,8 @@ function StorePage({
               onClose={onClose}
               onSelectPackage={onSelectPackage}
               savedCards={savedCards}
-              onSaveCard={(card) => setSavedCards((prev) => [card, ...prev])}
-              onDeleteCard={(idx) => setSavedCards((prev) => prev.filter((_, i) => i !== idx))}
+              onSaveCard={onSaveCard}
+              onDeleteCard={onDeleteCard}
               onRequireKyc={onRequireKyc}
               onDrawItem={onDrawItem}
               enableCurrencyCheckout={enableCurrencyCheckout}
@@ -5024,7 +5066,7 @@ function StorePage({
   );
 }
 
-export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "happy", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off" }: {
+export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off" }: {
   lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario;
 }) {
   const t = STR[lang];
@@ -5057,6 +5099,43 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   }, []);
   // Prize History adjusts `coins` when exchanging prizes / paying shipping fees.
   const [coins, setCoins] = useState(10000);
+  // Shared across Store cashier + Quick Purchase so LAST USED stays in sync.
+  const [purchasedIds, setPurchasedIds] = useState<string[]>([]);
+  const [savedCards, setSavedCards] = useState<QuickSavedCard[]>([
+    { last4: "1111", expiry: "08/29", brand: "Visa", name: "Taro Yamada" },
+    // Demo-only cards that always decline in Store cashier (not Quick Purchase).
+    { last4: "9999", expiry: "11/28", brand: "Visa", name: "Taro Yamada" },
+    { last4: "8888", expiry: "09/27", brand: "Mastercard", name: "Taro Yamada" },
+  ]);
+  const promoteSavedCard = (card: QuickSavedCard) => {
+    setSavedCards((prev) => {
+      const rest = prev.filter((c) => !(c.last4 === card.last4 && c.brand === card.brand && c.expiry === card.expiry));
+      return [card, ...rest];
+    });
+  };
+  // Quick Purchase sheet when a paid draw costs more than the wallet balance.
+  const [quickPurchase, setQuickPurchase] = useState<QuickPurchasePending | null>(null);
+  const [pendingRunDraw, setPendingRunDraw] = useState<{ count: number; token: number } | null>(null);
+  const attemptDraw = (count: number, billCount?: number) => {
+    const billed = billCount ?? count;
+    const cost = billed * DRAW_PRICE;
+    if (cost > coins) {
+      setQuickPurchase({ drawCount: count, billCount: billed, cost });
+      return false;
+    }
+    setCoins((c) => c - cost);
+    return true;
+  };
+  // john.inr@gmail.com → Quick Purchase / cashier show INR + JPY currency picker.
+  const intlLocalCurrency: IntlCurrencyInfo | null = (() => {
+    try {
+      const auth = JSON.parse(sessionStorage.getItem("authData") || "{}");
+      if (String(auth.email || "").toLowerCase() === DEMO_INR_EMAIL) {
+        return { code: "INR", symbol: "₹", rateFromJpy: 0.6103 };
+      }
+    } catch {}
+    return null;
+  })();
   // Shared display name between My Account and My Profile.
   const [displayName, setDisplayName] = useState(() => {
     try {
@@ -5178,6 +5257,8 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   const openStore = () => { setStoreReturn((p) => (screen === "store" ? p : screen)); setScreen("store"); };
   const returnFromKyc = (_context: KycEntryContext, completed: boolean) => {
     setKyc((current) => ({ ...current, activeScreen: null }));
+    // Resume in-place quick purchase sheet instead of bouncing to the store.
+    if (_context === "purchase" && quickPurchase) return;
     // Happy path only: clear pending purchase resume and open a clean Store.
     // Review / attention / cancel / exit keep using onExit and are unchanged.
     if (completed) {
@@ -5255,6 +5336,9 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onResultsChange={onDrawResultsChange}
             shippingAddresses={shippingAddresses}
             onShippingAddressesChange={setShippingAddresses}
+            onAttemptPaidDraw={attemptDraw}
+            pendingRunDraw={pendingRunDraw}
+            onPendingRunDrawConsumed={() => setPendingRunDraw(null)}
           />
         )}
         {screen === "notifications" && <NotificationsScreen lang={lang} coins={coins} empty={noHistory} only={notifOnly} onBack={() => setScreen(prevScreen)} onHome={goHome} onOpenStore={openStore} />}
@@ -5360,6 +5444,11 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onOpenStore={openStore}
             onRequireKyc={() => requestKyc("purchase")}
             onDrawItem={openDraw}
+            purchasedIds={purchasedIds}
+            onPackagePurchased={(pkgId) => setPurchasedIds((prev) => (prev.includes(pkgId) ? prev : [...prev, pkgId]))}
+            savedCards={savedCards}
+            onSaveCard={promoteSavedCard}
+            onDeleteCard={(idx) => setSavedCards((prev) => prev.filter((_, i) => i !== idx))}
           />
         )}
         {screen === "coinHistory" && (
@@ -5382,6 +5471,29 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
           />
         )}
         </div>
+        {quickPurchase && (
+          <QuickPurchaseFlow
+            lang={lang}
+            neededCoins={Math.max(0, quickPurchase.cost - coins)}
+            purchasedIds={purchasedIds}
+            savedCards={savedCards}
+            onSaveCard={promoteSavedCard}
+            localCurrency={intlLocalCurrency}
+            onClose={() => setQuickPurchase(null)}
+            onPaid={(pkg) => {
+              setCoins((c) => c + pkg.coins);
+              setPurchasedIds((prev) => [...prev, pkg.id]);
+            }}
+            onDraw={() => {
+              const pending = quickPurchase;
+              setQuickPurchase(null);
+              // Coins were credited on payment success; debit the pending draw cost now.
+              setCoins((c) => Math.max(0, c - pending.cost));
+              setPendingRunDraw({ count: pending.drawCount, token: Date.now() });
+            }}
+            onRequireKyc={() => requestKyc("purchase")}
+          />
+        )}
         {legalDoc && <LegalOverlay lang={lang} doc={legalDoc} onClose={() => setLegalDoc(null)} />}
         {lineLoginToast && (
           <div className="absolute bottom-4 left-1/2 z-[70] flex -translate-x-1/2 items-center gap-2 rounded-full bg-[#1d2129] px-4 py-2.5 text-[13px] font-semibold text-white shadow-lg">

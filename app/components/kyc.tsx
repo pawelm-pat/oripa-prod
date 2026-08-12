@@ -35,7 +35,7 @@ export const DEFAULT_KYC_DETAILS: KycDetails = {
   apartment: "", country: "Japan",
 };
 
-export function createDefaultKycState(scenario: KycScenario = "happy"): KycState {
+export function createDefaultKycState(scenario: KycScenario = "none"): KycState {
   return {
     entryContext: "profile", poiStatus: "notStarted", poaStatus: "notStarted",
     activeScreen: null, scenario, details: DEFAULT_KYC_DETAILS,
