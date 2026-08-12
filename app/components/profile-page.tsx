@@ -772,11 +772,11 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   );
 }
 
-function Field({ label, value, onChange, onBlur, half = false, required = false, type = "text", placeholder, valid: validProp, error, onClear }: {
-  label: string; value: string; onChange: (val: string) => void; onBlur?: () => void; half?: boolean; required?: boolean; type?: string; placeholder: string; valid?: boolean; error?: string; onClear?: () => void;
+function Field({ label, value, onChange, onBlur, half = false, required = false, type = "text", placeholder, valid: validProp, error, onClear, readOnly = false }: {
+  label: string; value: string; onChange: (val: string) => void; onBlur?: () => void; half?: boolean; required?: boolean; type?: string; placeholder: string; valid?: boolean; error?: string; onClear?: () => void; readOnly?: boolean;
 }) {
   const filled = validProp !== undefined ? validProp : value.trim().length > 0;
-  const hasError = !!error;
+  const hasError = !!error && !readOnly;
   return (
     <div className={half ? "flex-1 min-w-0" : "w-full"}>
       <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">
@@ -786,18 +786,21 @@ function Field({ label, value, onChange, onBlur, half = false, required = false,
         <input
           type={type}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => { if (!readOnly) onChange(e.target.value); }}
           onBlur={onBlur}
           placeholder={placeholder}
+          readOnly={readOnly}
           className="w-full rounded-lg border py-2.5 text-[13px] text-[#1d2129] placeholder:text-[#bbbec4] outline-none transition"
           style={{
             paddingLeft: "10px",
             paddingRight: filled || hasError ? "32px" : "10px",
             borderColor: hasError ? "#D10005" : filled ? "#d1d5db" : "#e5e8ec",
-            background: hasError ? "rgba(230,0,18,0.04)" : "white",
+            background: readOnly ? "#f5f6f8" : hasError ? "rgba(230,0,18,0.04)" : "white",
+            color: readOnly ? "#5c626b" : "#1d2129",
+            cursor: readOnly ? "default" : undefined,
           }}
         />
-        {filled && !hasError && <span className="absolute right-2"><GreenCheck /></span>}
+        {filled && !hasError && !readOnly && <span className="absolute right-2"><GreenCheck /></span>}
         {hasError && onClear && (
           <button onClick={onClear} className="absolute right-2 flex h-5 w-5 items-center justify-center rounded-full" style={{ background: "#D10005" }}>
             <svg width="10" height="10" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="white" strokeWidth="1.8" strokeLinecap="round" /></svg>
@@ -1055,17 +1058,16 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
       const authStr = sessionStorage.getItem("authData");
       if (authStr) {
         const auth = JSON.parse(authStr);
-        return { ...empty, email: auth.email || "", dob: auth.dob || "", phone: auth.phone || "" };
+        const country: ShippingCountry = auth.country === "US" || auth.country === "usa" ? "usa" : "japan";
+        return { ...empty, email: auth.email || "", dob: auth.dob || "", phone: auth.phone || "", country };
       }
     } catch {}
     return empty;
   });
   const [infoSaved, setInfoSaved] = useState(false);
-  const [emailTouched, setEmailTouched] = useState(false);
   const [phoneTouched, setPhoneTouched] = useState(false);
   const [postalTouched, setPostalTouched] = useState(false);
   const [zipTouched, setZipTouched] = useState(false);
-  const [streetNumTouched, setStreetNumTouched] = useState(false);
   const [searching, setSearching] = useState(false);
   const [candidates, setCandidates] = useState<{ prefecture: string; city: string; streetNumber: string }[]>([]);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1091,16 +1093,14 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
   const phoneValid = form.phone.length === 10;
   const postalValid = /^\d{3}-\d{4}$/.test(form.postalCode);
   const zipValid = /^\d{5}$/.test(form.zipCode);
-  const streetNumValid = /^\d+$/.test(form.streetNumber.trim()) && form.streetNumber.trim().length > 0;
-  const emailError = emailTouched && form.email.length > 0 && !emailValid ? "Please enter a valid email address" : "";
   const phoneError = phoneTouched && form.phone.length > 0 && !phoneValid ? "Phone number must be 10 digits" : "";
   const postalError = postalTouched && form.postalCode.length > 0 && !postalValid ? "NNN-NNNN" : "";
   const zipError = zipTouched && form.zipCode.length > 0 && !zipValid ? "5 digits required" : "";
-  const streetNumError = streetNumTouched && form.streetNumber.length > 0 && !streetNumValid ? (lang === "ja" ? "数字のみ入力してください" : "Numbers only") : "";
   const addressValid = form.country === "japan"
-    ? postalValid && !!form.prefecture && form.city.trim().length > 0 && streetNumValid
+    ? postalValid && !!form.prefecture && form.city.trim().length > 0
     : form.cityStreetNumber.trim().length > 0 && !!form.state && zipValid;
-  const canSave = !!(emailValid && form.dob && phoneValid && addressValid);
+  const canSave = !!(emailValid && form.dob && addressValid && (form.phone.length === 0 || phoneValid));
+  const countryLabel = form.country === "usa" ? t.shippingUSA : t.shippingJapan;
   const [showDobPicker, setShowDobPicker] = useState(false);
   const [paymentMethodType, setPaymentMethodType] = useState("");
   const [paymentCardNumber, setPaymentCardNumber] = useState("");
@@ -1151,7 +1151,6 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
 
   function chooseProfileCandidate(c: { prefecture: string; city: string; streetNumber: string }) {
     persistForm((f) => ({ ...f, prefecture: c.prefecture, city: c.city, streetNumber: c.streetNumber }));
-    setStreetNumTouched(true);
     if (searchTimer.current) clearTimeout(searchTimer.current);
     setCandidates([]);
     setSearching(false);
@@ -1173,16 +1172,6 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
       setSearching(false);
       setCandidates([]);
     }
-  }
-
-  function onCountryChange(country: ShippingCountry) {
-    persistForm((f) => ({ ...f, country, postalCode: "", prefecture: "", city: "", streetNumber: "", cityStreetNumber: "", state: "", zipCode: "" }));
-    setPostalTouched(false);
-    setZipTouched(false);
-    setStreetNumTouched(false);
-    if (searchTimer.current) clearTimeout(searchTimer.current);
-    setSearching(false);
-    setCandidates([]);
   }
 
   const formatDob = (iso: string) => {
@@ -1245,7 +1234,7 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
       content: (
         <div className="px-4 pb-4">
           <div>
-            <Field label={t.profileEmail} value={form.email} onChange={(v) => setField("email", v)} onBlur={() => setEmailTouched(true)} required type="email" placeholder={t.profilePlaceholder} valid={form.email.length > 0 && emailValid} error={emailError} onClear={() => { setField("email", ""); setEmailTouched(false); }} />
+            <Field label={t.profileEmail} value={form.email} onChange={() => {}} required type="email" placeholder={t.profilePlaceholder} valid={form.email.length > 0 && emailValid} readOnly />
           </div>
           <div className="mt-2">
             <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{t.profileDob}</label>
@@ -1265,7 +1254,7 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
             </button>
           </div>
           <div className="mt-2">
-            <Field label={t.profilePhone} value={form.phone} onChange={(v) => { setField("phone", v.replace(/\D/g, "").slice(0, 10)); }} onBlur={() => setPhoneTouched(true)} required type="tel" placeholder={t.profilePlaceholder} valid={phoneValid && phoneVerified} error={phoneError} />
+            <Field label={t.profilePhone} value={form.phone} onChange={(v) => { setField("phone", v.replace(/\D/g, "").slice(0, 10)); }} onBlur={() => setPhoneTouched(true)} type="tel" placeholder={t.profilePlaceholder} valid={phoneValid && phoneVerified} error={phoneError} />
             {!phoneVerified && (
               <div className="mt-1 flex justify-end">
                 <button
@@ -1280,22 +1269,9 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
             )}
           </div>
 
-          {/* Country selector */}
+          {/* Country (read-only) */}
           <div className="mt-2">
-            <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{t.shippingCountry}<span className="ml-0.5 text-[#D10005]">*</span></label>
-            <div className="relative flex items-center">
-              <select
-                value={form.country}
-                onChange={(e) => onCountryChange(e.target.value as ShippingCountry)}
-                className="w-full appearance-none rounded-lg border border-[#e5e8ec] bg-white py-2.5 pl-2.5 pr-8 text-[13px] text-[#1d2129] outline-none"
-              >
-                <option value="japan">{t.shippingJapan}</option>
-                <option value="usa">{t.shippingUSA}</option>
-              </select>
-              <span className="pointer-events-none absolute right-2 text-[#8a9099]">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>
-              </span>
-            </div>
+            <Field label={t.shippingCountry} value={countryLabel} onChange={() => {}} required placeholder="" readOnly />
           </div>
 
           {/* Japan address fields */}
@@ -1337,13 +1313,10 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
                 </div>
               )}
               <div className="mt-2">
-                <Field label={t.profileCity} value={form.city} onChange={(v) => setField("city", v)} required placeholder={lang === "ja" ? "市区町村・番地" : "City, Street"} />
+                <Field label={t.profileAddress} value={form.city} onChange={(v) => setField("city", v)} required placeholder={lang === "ja" ? "住所" : "Address"} />
               </div>
               <div className="mt-2">
-                <Field label={t.shippingStreetNumber} value={form.streetNumber} onChange={(v) => setField("streetNumber", v.replace(/\D/g, ""))} onBlur={() => setStreetNumTouched(true)} required type="text" placeholder={lang === "ja" ? "例: 1234" : "e.g. 1234"} valid={streetNumValid} error={streetNumError} />
-              </div>
-              <div className="mt-2">
-                <Field label={t.shippingApartment} value={form.apartment} onChange={(v) => setField("apartment", v)} placeholder={lang === "ja" ? "例: 〇〇マンション 101号室（任意）" : "e.g. Apt 101 (optional)"} />
+                <Field label={t.profileAddressLine2} value={form.streetNumber} onChange={(v) => setField("streetNumber", v)} placeholder={lang === "ja" ? "住所2行目（任意）" : "Address line 2 (optional)"} />
               </div>
             </>
           )}
@@ -1352,10 +1325,10 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
           {form.country === "usa" && (
             <>
               <div className="mt-2">
-                <Field label={t.shippingApartment} value={form.apartment} onChange={(v) => setField("apartment", v)} placeholder="Apt, Suite, Room No. (optional)" />
+                <Field label={t.profileAddress} value={form.cityStreetNumber} onChange={(v) => setField("cityStreetNumber", v)} required placeholder="e.g. 123 Main St, Springfield" />
               </div>
               <div className="mt-2">
-                <Field label={t.shippingCityStreetNumber} value={form.cityStreetNumber} onChange={(v) => setField("cityStreetNumber", v)} required placeholder="e.g. 123 Main St, Springfield" />
+                <Field label={t.profileAddressLine2} value={form.streetNumber} onChange={(v) => setField("streetNumber", v)} placeholder="Address line 2 (optional)" />
               </div>
               <div className="mt-2">
                 <USStateSelect value={form.state} onChange={(v) => setField("state", v)} label={t.shippingState} />

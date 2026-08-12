@@ -1167,7 +1167,7 @@ export function PhoneOtpPage({ lang, phone, onBack, onSuccess, onLogin }: {
   );
 }
 
-export function EmailVerificationModal({ lang, email, onExit, onVerified }: {
+export function EmailVerificationModal({ lang, email, onExit: _onExit, onVerified }: {
   lang: Lang; email: string; onExit: () => void; onVerified: () => void;
 }) {
   const t = STR[lang];
@@ -1206,57 +1206,62 @@ export function EmailVerificationModal({ lang, email, onExit, onVerified }: {
   }
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center px-5" style={{ background: "rgba(0,0,0,0.5)" }}>
-      <div className="relative w-full max-w-[370px] rounded-xl bg-white px-5 py-6 shadow-2xl">
-        <button type="button" onClick={onExit} className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full text-[24px] text-[#8a9099] hover:bg-[#f5f6f8]" aria-label={t.authGoogleCancel as string}>×</button>
-        {state === "sent" && (
-          <>
-            <img src="/verify-mascot.png" alt="" className="mx-auto h-[175px] w-[175px] object-contain" />
-            <h2 className="mt-4 text-center text-[22px] font-extrabold text-[#111]">{t.authVerifyTitle}</h2>
-            <p className="mt-3 text-center text-[13px] leading-[1.2] text-[#111]">
-              {t.authVerifyBody(email || "HELLO@EMAIL.COM")}
-            </p>
-            <button type="button" onClick={simulateEmailOpen} className="mt-4 w-full rounded-lg py-2.5 text-[16px] font-bold text-white" style={{ background: "#D10005" }}>
-              {t.authOpenEmailApp}
-            </button>
+    <div className="absolute inset-0 z-50 flex flex-col bg-[#f5f6f8]">
+      <div className="flex h-16 shrink-0 items-center border-b border-[#e5e8ec] bg-white px-4">
+        <img src="/oripa-logo.png" alt="OripaLot" className="h-10 w-auto object-contain" />
+      </div>
 
-            <div className="mt-3 text-center text-[11px] leading-[1.25] text-[#111]">
-              <p>{t.authVerifyNote as string}</p>
-              {(t.authVerifyBullets as string[]).map(item => <p key={item}>• {item}</p>)}
-            </div>
-
-            <div className="mt-3 border-t border-[#d7d7d7] pt-3 text-center text-[9px] font-semibold text-[#3f3f3f]">
-              <span>{t.authResendPrompt as string} </span>
-              <button
-                type="button"
-                onClick={resendEmail}
-                disabled={resendWait > 0}
-                className="underline disabled:opacity-50"
-              >
-                {resendWait > 0 ? t.authEmailResendWait(resendWait) : t.authResendAction}
+      <div className="no-scrollbar relative flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-4 py-5">
+        <div className="rounded-2xl border border-[#e5e8ec] bg-white px-5 py-6">
+          {state === "sent" && (
+            <>
+              <img src="/verify-mascot.png" alt="" className="mx-auto h-[175px] w-[175px] object-contain" />
+              <h2 className="mt-4 text-center text-[22px] font-extrabold text-[#111]">{t.authVerifyTitle}</h2>
+              <p className="mt-3 text-center text-[13px] leading-[1.2] text-[#111]">
+                {t.authVerifyBody(email || "HELLO@EMAIL.COM")}
+              </p>
+              <button type="button" onClick={simulateEmailOpen} className="mt-4 w-full rounded-lg py-2.5 text-[16px] font-bold text-white" style={{ background: "#D10005" }}>
+                {t.authOpenEmailApp}
               </button>
+
+              <div className="mt-3 text-center text-[11px] leading-[1.25] text-[#111]">
+                <p>{t.authVerifyNote as string}</p>
+                {(t.authVerifyBullets as string[]).map(item => <p key={item}>• {item}</p>)}
+              </div>
+
+              <div className="mt-3 border-t border-[#d7d7d7] pt-3 text-center text-[9px] font-semibold text-[#3f3f3f]">
+                <span>{t.authResendPrompt as string} </span>
+                <button
+                  type="button"
+                  onClick={resendEmail}
+                  disabled={resendWait > 0}
+                  className="underline disabled:opacity-50"
+                >
+                  {resendWait > 0 ? t.authEmailResendWait(resendWait) : t.authResendAction}
+                </button>
+              </div>
+            </>
+          )}
+
+          {state === "checking" && (
+            <div className="flex flex-col items-center py-8">
+              <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#e5e8ec] border-t-[#D10005]" />
+              <p className="mt-4 text-center text-[13px] font-semibold text-[#1d2129]">{t.authEmailChecking as string}</p>
             </div>
-          </>
-        )}
+          )}
 
-        {state === "checking" && (
-          <div className="flex flex-col items-center py-8">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#e5e8ec] border-t-[#D10005]" />
-            <p className="mt-4 text-center text-[13px] font-semibold text-[#1d2129]">{t.authEmailChecking as string}</p>
-          </div>
-        )}
+          {state === "expired" && (
+            <>
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#fde8e8] text-[28px] font-bold text-[#D10005]">!</div>
+              <h2 className="mt-4 text-center text-[18px] font-extrabold text-[#1d2129]">{t.authEmailExpired as string}</h2>
+              <button type="button" onClick={resendEmail} className="mt-5 w-full rounded-xl py-3 text-[14px] font-bold text-white" style={{ background: "#D10005" }}>
+                {t.authResendEmail}
+              </button>
+            </>
+          )}
+        </div>
 
-        {state === "expired" && (
-          <>
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#fde8e8] text-[28px] font-bold text-[#D10005]">!</div>
-            <h2 className="mt-4 text-center text-[18px] font-extrabold text-[#1d2129]">{t.authEmailExpired as string}</h2>
-            <button type="button" onClick={resendEmail} className="mt-5 w-full rounded-xl py-3 text-[14px] font-bold text-white" style={{ background: "#D10005" }}>
-              {t.authResendEmail}
-            </button>
-          </>
-        )}
-
-        {toast && <div className="absolute inset-x-4 -top-14 rounded-xl bg-[#1d2129] px-4 py-3 text-center text-[12px] font-semibold text-white">{toast}</div>}
+        {toast && <div className="absolute inset-x-4 top-2 rounded-xl bg-[#1d2129] px-4 py-3 text-center text-[12px] font-semibold text-white">{toast}</div>}
       </div>
     </div>
   );
