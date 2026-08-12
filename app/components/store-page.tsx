@@ -44,7 +44,7 @@ const STORE_V3_HERO_PACKAGES: StoreV3HeroPackage[] = [
   { id: "v3hero2", coins: 100000, freePoints: 500, jpy: 100000, originalJpy: 10000, discount: 90, tag: "MEGA SALE", art: "/coin-chest.png", gradient: "linear-gradient(135deg,#1d4ed8,#1e3a8a)" },
 ];
 
-const STORE_V3_PLAIN_PACKAGES: PointPackage[] = [500, 1000, 5000, 10000, 20000, 50000, 100000].map((c) => ({
+export const STORE_V3_PLAIN_PACKAGES: PointPackage[] = [500, 1000, 5000, 10000, 20000, 50000, 100000].map((c) => ({
   id: `v3plain${c}`,
   coins: c,
   freePoints: 500,
@@ -69,6 +69,7 @@ export type StorePageChrome = {
     pkg: PointPackage;
     onComplete: (coinsEarned: number) => void;
     onClose: () => void;
+    onSelectPackage: (pkg: PointPackage) => void;
   }) => ReactNode;
 };
 
@@ -263,6 +264,7 @@ export function StorePage({
         pkg: selectedPkg,
         onComplete: handleComplete,
         onClose: () => setSelectedPkg(null),
+        onSelectPackage: selectPackage,
       })}
     </div>
   );

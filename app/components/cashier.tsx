@@ -11,6 +11,7 @@ import type { LegalDocKey } from "../data/legal";
 import { PREFECTURES_EN, PREFECTURES_JA, US_STATES } from "../data/prizes";
 import { RECOMMENDED_ORIPA, LIST_ORIPA } from "../data/lobby";
 import type { PointPackage } from "./store-page";
+import { STORE_V3_PLAIN_PACKAGES } from "./store-page";
 
 export const CashierLegalContext = createContext<(doc: LegalDocKey) => void>(() => {});
 
@@ -138,7 +139,12 @@ export type BillingAddress = {
   zip: string;
 };
 export type SavedCard = { last4: string; expiry: string; brand: string; name: string; billingAddress?: BillingAddress };
-type PurchaseStep = "checkout" | "auth3ds" | "success";
+type PurchaseStep = "checkout" | "auth3ds" | "success" | "failed";
+type FailureReason = "insufficientFunds" | "bankDecline";
+
+/** Demo-only: these card endings always decline after 3DS. */
+const DECLINED_CARD_LAST4_INSUFFICIENT_FUNDS = "9999";
+const DECLINED_CARD_LAST4_BANK_DECLINE = "8888";
 
 export function PurchaseFlow({
   pkg,
@@ -151,6 +157,7 @@ export function PurchaseFlow({
   onDeleteCard,
   onRequireKyc,
   enableCurrencyCheckout = false,
+  onSelectPackage,
 }: {
   pkg: PointPackage;
   lang: Lang;
@@ -163,6 +170,7 @@ export function PurchaseFlow({
   onRequireKyc?: () => boolean;
   /** INR/JPY currency selector (demo: john.inr@gmail.com). */
   enableCurrencyCheckout?: boolean;
+  onSelectPackage?: (pkg: PointPackage) => void;
 }) {
   const t = STR[lang];
   const openLegal = useContext(CashierLegalContext);
@@ -171,6 +179,7 @@ export function PurchaseFlow({
     go();
   };
   const [step, setStep] = useState<PurchaseStep>("checkout");
+  const [failureReason, setFailureReason] = useState<FailureReason | null>(null);
   const [payMethod, setPayMethod] = useState<"card" | "applePay" | "googlePay" | "payPay" | "link">("card");
   const [checkoutCurrency, setCheckoutCurrency] = useState<"INR" | "JPY">(
     enableCurrencyCheckout ? "INR" : "JPY",
@@ -266,6 +275,25 @@ export function PurchaseFlow({
   const authCodeDigits = authCode.replace(/\D/g, "");
   const authCodeValid = authCodeDigits.length >= 4;
   const isNewCard = payMethod === "card" && (!savedCards || savedCards.length === 0 || selectedCardIdx === "new");
+  // Which card's last 4 digits are about to be charged — used to trigger the demo
+  // decline scenario below (saved card or digits typed into the new-card form).
+  const activeCardLast4 = payMethod !== "card" ? null : (typeof selectedCardIdx === "number" ? (savedCards?.[selectedCardIdx]?.last4 ?? null) : (rawCardNum.slice(-4) || null));
+  const pendingFailureReason: FailureReason | null =
+    activeCardLast4 === DECLINED_CARD_LAST4_INSUFFICIENT_FUNDS ? "insufficientFunds" :
+    activeCardLast4 === DECLINED_CARD_LAST4_BANK_DECLINE ? "bankDecline" :
+    null;
+  // Lower-priced packages to suggest after an insufficient-funds decline: the (up
+  // to) two packages priced just below the one that failed.
+  const lowerPricedPackages = [...STORE_V3_PLAIN_PACKAGES]
+    .filter((p) => p.jpy < pkg.jpy)
+    .sort((a, b) => b.jpy - a.jpy)
+    .slice(0, 2);
+  // Alternate payment methods to suggest after a bank decline: any two methods
+  // other than the one that just failed.
+  const alternatePaymentMethods: ("card" | "applePay" | "googlePay")[] =
+    payMethod === "applePay" ? ["card", "googlePay"] :
+    payMethod === "googlePay" ? ["card", "applePay"] :
+    ["applePay", "googlePay"];
   const isJapan = country === "Japan";
   const billingZipValid = isJapan ? /^\d{3}-\d{4}$/.test(billingZip) : /^\d{5}$/.test(billingZip.trim());
   const billingFilled = billingFirstName.trim().length > 0 && billingLastName.trim().length > 0 && billingAddress1.trim().length > 0 && billingCity.trim().length > 0 && billingState.length > 0 && billingZipValid;
@@ -382,7 +410,14 @@ export function PurchaseFlow({
             <button
               type="button"
               disabled={!authCodeValid}
-              onClick={() => setStep("success")}
+              onClick={() => {
+                if (pendingFailureReason) {
+                  setFailureReason(pendingFailureReason);
+                  setStep("failed");
+                } else {
+                  setStep("success");
+                }
+              }}
               className="mt-4 w-full rounded-lg py-3 text-[15px] font-bold text-white disabled:cursor-not-allowed"
               style={{ background: authCodeValid ? "#2355c5" : "#c9ced6" }}
             >
@@ -392,6 +427,118 @@ export function PurchaseFlow({
               {t.auth3dsResend}
             </button>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === "failed") {
+    return (
+      <div className="absolute inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.55)" }}>
+        <div className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-white px-5 pb-5 pt-6">
+          <button onClick={onClose} className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-[14px] font-bold text-[#5c626b] hover:bg-black/5">✕</button>
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full" style={{ background: "#fdecea" }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#c0392b" strokeWidth="2" /><path d="M15 9l-6 6M9 9l6 6" stroke="#c0392b" strokeWidth="2" strokeLinecap="round" /></svg>
+          </div>
+          <h2 className="mt-3 text-center text-[17px] font-extrabold text-[#1d2129]">{t.failedTitle}</h2>
+          <p className="mt-2 text-center text-[13px] leading-relaxed text-[#5c626b]">
+            {failureReason === "bankDecline" ? t.failedBankDecline : t.failedInsufficientFunds}
+          </p>
+          {failureReason === "insufficientFunds" && lowerPricedPackages.length > 0 && (
+            <div className="mt-4">
+              <p className="mb-2 text-center text-[11px] font-bold uppercase tracking-wide text-[#8a9099]">{t.failedTryLower}</p>
+              <div className="flex flex-col gap-2">
+                {lowerPricedPackages.map((lp) => (
+                  <button
+                    key={lp.id}
+                    type="button"
+                    onClick={() => {
+                      onSelectPackage?.(lp);
+                      setAuthCode("");
+                      setFailureReason(null);
+                      setStep("checkout");
+                    }}
+                    className="flex items-center gap-2.5 rounded-xl border border-[#e5e8ec] px-3 py-2.5 text-left active:scale-[0.99] hover:border-[#c0392b]"
+                  >
+                    <StoreCoinIcon />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[15px] font-extrabold text-[#1d2129]">{t.storeCoins(lp.coins)}</p>
+                      <div className="mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5" style={{ background: "#fef3c7" }}>
+                        <span className="text-[11px] font-semibold text-[#92400e]">+</span>
+                        <PointsLogoIcon size={12} />
+                        <span className="text-[11px] font-semibold text-[#92400e]">{t.storeFreePoints(lp.freePoints)}</span>
+                      </div>
+                    </div>
+                    <span className="shrink-0 rounded-lg px-4 py-2 text-[13px] font-bold text-white" style={{ background: "#B40206" }}>¥{lp.jpy.toLocaleString()}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {failureReason === "bankDecline" && (
+            <div className="mt-4">
+              <p className="mb-2 text-center text-[11px] font-bold uppercase tracking-wide text-[#8a9099]">{t.failedTryAlternateMethod}</p>
+              <div className="flex flex-col gap-2">
+                {alternatePaymentMethods.map((method) => {
+                  const retry = () => {
+                    setAuthCode("");
+                    setFailureReason(null);
+                    if (method === "card") {
+                      setPayMethod("card");
+                      setStep("checkout");
+                      return;
+                    }
+                    beginPayment(() => { setPayMethod(method); setStep("success"); });
+                  };
+                  if (method === "card") {
+                    return (
+                      <button
+                        key={method}
+                        type="button"
+                        onClick={retry}
+                        className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#e2e5ea] bg-white text-[15px] font-bold text-[#1d2129] active:scale-[0.98]"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="#1d2129" strokeWidth="2" /><path d="M3 10h18" stroke="#1d2129" strokeWidth="2" /></svg>
+                        {t.checkoutCard}
+                      </button>
+                    );
+                  }
+                  if (method === "applePay") {
+                    return (
+                      <button
+                        key={method}
+                        type="button"
+                        onClick={retry}
+                        className="flex h-12 w-full items-center justify-center gap-1.5 rounded-xl text-[16px] font-medium text-white active:scale-[0.98]"
+                        style={{ background: "#000" }}
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" /></svg>
+                        {t.checkoutApplePay}
+                      </button>
+                    );
+                  }
+                  return (
+                    <button
+                      key={method}
+                      type="button"
+                      onClick={retry}
+                      className="flex h-12 w-full items-center justify-center overflow-hidden rounded-xl active:scale-[0.98]"
+                      style={{ background: "#1f1f1f" }}
+                      aria-label="Google Pay"
+                    >
+                      <img src="/gpay-btn.png" alt="Google Pay" className="h-[36px] w-auto max-w-[90%] object-contain" />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          <button
+            onClick={onClose}
+            className="mt-4 w-full rounded-xl border border-black/15 py-2.5 text-[13px] font-bold text-[#1d2129]"
+          >
+            {t.failedClose}
+          </button>
         </div>
       </div>
     );

@@ -4978,7 +4978,13 @@ function StorePage({
 }) {
   const t = STR[lang];
   const openLegal = useContext(LegalNavContext);
-  const [savedCards, setSavedCards] = useState<SavedCard[]>([]);
+  const [savedCards, setSavedCards] = useState<SavedCard[]>([
+    { last4: "1111", expiry: "08/29", brand: "Visa", name: "Taro Yamada" },
+    // Demo-only: always declines with insufficient funds after 3DS.
+    { last4: "9999", expiry: "11/28", brand: "Visa", name: "Taro Yamada" },
+    // Demo-only: always declines with bank decline after 3DS.
+    { last4: "8888", expiry: "09/27", brand: "Mastercard", name: "Taro Yamada" },
+  ]);
   const enableCurrencyCheckout = (() => {
     try {
       const auth = JSON.parse(sessionStorage.getItem("authData") || "{}");
@@ -4997,12 +5003,13 @@ function StorePage({
         chrome={{
           header: <AppHeader coins={coins} t={t} onHome={onHome ?? onBack} onOpenStore={onOpenStore} />,
           footer: <SiteFooter t={t} />,
-          checkout: ({ pkg, onComplete, onClose }) => (
+          checkout: ({ pkg, onComplete, onClose, onSelectPackage }) => (
             <PurchaseFlow
               pkg={pkg}
               lang={lang}
               onComplete={onComplete}
               onClose={onClose}
+              onSelectPackage={onSelectPackage}
               savedCards={savedCards}
               onSaveCard={(card) => setSavedCards((prev) => [card, ...prev])}
               onDeleteCard={(idx) => setSavedCards((prev) => prev.filter((_, i) => i !== idx))}

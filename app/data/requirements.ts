@@ -548,7 +548,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
 
   store: {
     label: "Store",
-    summary: "Purchase Coins catalog + Cashier V1 mock checkout (express wallets, card, 3DS, success).",
+    summary: "Purchase Coins catalog + Cashier V1 mock checkout (express wallets, card, 3DS, success, demo declines on •••• 9999 / •••• 8888).",
     groups: [
       {
         title: "Header & top navigation",
@@ -580,6 +580,18 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
           { text: "Add Card Details", sub: ["Card number, expiry, CVC, cardholder name + billing address (JP/US). Billing collapses to a summary once filled; pencil re-opens edit. Sticky Add Card and Pay."] },
           { text: "My Cards", sub: ["List with select + delete confirm + toast; sticky Pay Now."] },
           { text: "3-D Secure", sub: ["Mock SMBC Visa modal; auth code must be ≥ 4 digits; resend is non-functional."] },
+          { text: "Demo decline card •••• 9999", sub: [
+            "Pre-seeded Visa (and any newly added card ending in 9999) declines after 3DS with insufficient funds.",
+            "Failure modal: 'Transaction Failed' + insufficient-funds copy.",
+            "Suggests up to 2 plain coin packs priced just below the failed package (omit section if none; show 1 if only one).",
+            "Tapping a suggested pack re-opens Cashier checkout for that pack.",
+          ] },
+          { text: "Demo decline card •••• 8888", sub: [
+            "Pre-seeded Mastercard (and any newly added card ending in 8888) declines after 3DS with bank decline.",
+            "Failure modal: 'Transaction Failed' + bank-decline copy.",
+            "Suggests 2 alternate methods: card→Apple/Google Pay; Apple Pay→card/Google Pay; Google Pay→card/Apple Pay; other→card/Apple Pay.",
+            "Tapping Apple/Google Pay completes the usual express success flow; tapping Card returns to checkout.",
+          ] },
           { text: "Success", sub: ["Purchase breakdown + payment method; Play Now carousel can open a draw; Close credits coins and returns to Store."] },
           { text: "KYC gate", sub: ["On pay (wallet / card / add-card / My Cards Pay Now), matching the POC. If incomplete (and scenario ≠ none), KYC opens and payment is blocked. Return from purchase KYC lands back on Store."] },
         ],
