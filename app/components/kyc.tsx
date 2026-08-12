@@ -1,6 +1,6 @@
 "use client";
 
-import { type Dispatch, type SetStateAction } from "react";
+import { type Dispatch, type ReactNode, type SetStateAction } from "react";
 
 export type KycEntryContext = "purchase" | "prizeHistory" | "profile";
 export type KycStatus = "notStarted" | "inProgress" | "approved" | "needsAttention";
@@ -191,23 +191,89 @@ function KycResultIllustration({ complete = false, accent = "slate" }: { complet
   return <svg aria-hidden="true" width="118" height="118" viewBox="0 0 118 118" fill="none"><path d="M23 8h46l25 25v70H23V8Z" stroke={stroke} strokeWidth="2.2" strokeLinejoin="round" /><path d="M69 8v25h25M38 56h30M38 69h25M38 82h20" stroke={stroke} strokeWidth="2" strokeLinecap="round" />{complete && <><rect x="36" y="29" width="23" height="21" rx="3" stroke={stroke} strokeWidth="2" /><circle cx="47.5" cy="36.5" r="3.2" stroke={stroke} strokeWidth="1.7" /><path d="M41 46c1-3.3 3.2-4.8 6.5-4.8S53 42.7 54 46" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" /></>}<circle cx="84" cy="84" r="28" fill="white" stroke={stroke} strokeWidth="2.3" />{complete ? <path d="m71 84 9 9 18-21" stroke={stroke} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /> : <><path d="M84 69v17h12" stroke={stroke} strokeWidth="2.5" strokeLinecap="round" /><circle cx="84" cy="84" r="20" stroke={stroke} strokeWidth="1.4" /></>}</svg>;
 }
 
-function StatusPill({ label, tone }: { label: string; tone: "success" | "danger" }) {
-  return <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold text-white ${tone === "success" ? "bg-[#22C55E]" : "bg-[#E60012]"}`}>{label}</span>;
+function TimerIcon({ muted = false }: { muted?: boolean }) {
+  const stroke = muted ? "#9AA0A6" : "#20252B";
+  return <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="13" r="8" stroke={stroke} strokeWidth="1.8" /><path d="M12 9.5v4l2.5 1.5M9 3.5h6" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 }
 
-function KycStepTimeline({ mode, c }: { mode: "review" | "complete" | "attention" | "poaReview" | "poaAttention"; c: KycCopy }) {
-  if (mode === "complete") {
-    return <div className="my-4 space-y-3">
-      <div className="flex items-center gap-3"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#22C55E] text-[13px] font-black text-white">✓</span><span className="flex-1 text-[13px] font-semibold text-[#20252B]">{c.identity}</span><StatusPill label={c.approved} tone="success" /></div>
-      <div className="flex items-center gap-3"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#E60012] text-[13px] font-black text-white">!</span><span className="flex-1 text-[13px] font-semibold text-[#20252B]">{c.poa}</span><StatusPill label={c.actionRequired} tone="danger" /></div>
+function WaitingIcon() {
+  return <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.2" stroke="#B0B5BB" strokeWidth="1.7" /><path d="M12 8v5M12 16.2h.01" stroke="#B0B5BB" strokeWidth="1.8" strokeLinecap="round" /></svg>;
+}
+
+function StatusPill({ label, tone }: { label: string; tone: "success" | "danger" | "review" | "muted" }) {
+  const toneClass =
+    tone === "success" ? "bg-[#22C55E] text-white" :
+    tone === "danger" ? "bg-[#E60012] text-white" :
+    tone === "review" ? "bg-[#F5C518] text-[#1d2129]" :
+    "bg-[#E5E7EB] text-[#4B5563]";
+  return <span className={`max-w-[118px] shrink-0 rounded-full px-2.5 py-1 text-center text-[10px] font-bold leading-tight ${toneClass}`}>{label}</span>;
+}
+
+function StatusCheckIcon() {
+  return <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#22C55E] text-[13px] font-black text-white">✓</span>;
+}
+
+function StatusAlertIcon() {
+  return <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#E60012] text-[13px] font-black text-white">!</span>;
+}
+
+function StatusIconWrap({ children }: { children: ReactNode }) {
+  return <span className="flex h-7 w-7 shrink-0 items-center justify-center">{children}</span>;
+}
+
+function KycStatusRow({ icon, label, pill, muted = false }: { icon: ReactNode; label: string; pill: ReactNode; muted?: boolean }) {
+  return <div className="flex items-center gap-3 border-b border-[#E8EAED] py-3 last:border-b-0"><span className="shrink-0">{icon}</span><span className={`flex-1 text-[13px] font-semibold ${muted ? "text-[#9AA0A6]" : "text-[#20252B]"}`}>{label}</span>{pill}</div>;
+}
+
+function KycStepTimeline({ mode, c }: { mode: "review" | "complete" | "done" | "attention" | "poaReview" | "poaAttention"; c: KycCopy }) {
+  if (mode === "done") {
+    return <div className="my-1">
+      <KycStatusRow icon={<StatusCheckIcon />} label={c.identity} pill={<StatusPill label={c.approved} tone="success" />} />
+      <KycStatusRow icon={<StatusCheckIcon />} label={c.poa} pill={<StatusPill label={c.approved} tone="success" />} />
     </div>;
   }
-  const firstStatus = mode === "review" ? c.reviewing : mode === "attention" ? c.actionRequired : c.approved;
-  const firstTone = mode === "attention" ? "text-[#E60012]" : "text-[#334155]";
-  const firstIcon = mode === "poaReview" || mode === "poaAttention" ? "✓" : mode === "attention" ? "!" : <i className="h-2.5 w-2.5 rounded-full bg-[#111827]" />;
-  const secondNeedsAction = mode === "poaAttention";
-  const secondStatus = mode === "poaReview" ? c.reviewing : secondNeedsAction ? c.actionRequired : c.availableAfterIdentity;
-  return <div className="relative my-5"><div className="absolute left-[13px] top-7 h-[58px] w-px bg-[#D8DCE1]" /><div className="relative flex items-center gap-3 border-b border-[#E1E4E8] py-3"><span className={`z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white ${mode === "attention" ? "border border-[#FFB3B6] text-[#E60012]" : "border border-[#C9CDD2] text-[#111827]"}`}>{firstIcon}</span><span className="flex-1 text-[12px] font-bold text-[#20252B]">{c.identity}</span><span className={`max-w-[92px] text-right text-[10px] font-semibold ${firstTone}`}>{firstStatus}</span></div><div className="relative flex items-center gap-3 py-3"><span className={`z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white ${secondNeedsAction ? "border border-[#FFB3B6]" : "border border-[#D4D7DB]"}`}>{secondNeedsAction ? <span className="font-black text-[#E60012]">!</span> : mode === "attention" ? <DocumentIcon kind="lock" /> : mode === "poaReview" ? <i className="h-2.5 w-2.5 rounded-full bg-[#111827]" /> : null}</span><span className="flex-1 text-[12px] font-bold text-[#20252B]">{c.poa}</span><span className={`max-w-[105px] text-right text-[10px] font-semibold leading-tight ${secondNeedsAction ? "text-[#E60012]" : mode === "poaReview" ? "text-[#334155]" : "text-[#6B7280]"}`}>{secondStatus}</span></div></div>;
+  if (mode === "complete") {
+    return <div className="my-1">
+      <KycStatusRow icon={<StatusCheckIcon />} label={c.identity} pill={<StatusPill label={c.approved} tone="success" />} />
+      <KycStatusRow icon={<StatusAlertIcon />} label={c.poa} pill={<StatusPill label={c.actionRequired} tone="danger" />} />
+    </div>;
+  }
+  if (mode === "review") {
+    return <div className="my-1">
+      <KycStatusRow icon={<StatusIconWrap><TimerIcon /></StatusIconWrap>} label={c.identity} pill={<StatusPill label={c.reviewing} tone="review" />} />
+      <KycStatusRow icon={<StatusIconWrap><WaitingIcon /></StatusIconWrap>} label={c.poa} pill={<StatusPill label={c.availableAfterIdentity} tone="muted" />} muted />
+    </div>;
+  }
+  if (mode === "poaReview") {
+    return <div className="my-1">
+      <KycStatusRow icon={<StatusCheckIcon />} label={c.identity} pill={<StatusPill label={c.approved} tone="success" />} />
+      <KycStatusRow icon={<StatusIconWrap><TimerIcon /></StatusIconWrap>} label={c.poa} pill={<StatusPill label={c.reviewing} tone="review" />} />
+    </div>;
+  }
+  if (mode === "poaAttention") {
+    return <div className="my-1">
+      <KycStatusRow icon={<StatusCheckIcon />} label={c.identity} pill={<StatusPill label={c.approved} tone="success" />} />
+      <KycStatusRow icon={<StatusAlertIcon />} label={c.poa} pill={<StatusPill label={c.actionRequired} tone="danger" />} />
+    </div>;
+  }
+  // attention (identity)
+  return <div className="my-1">
+    <KycStatusRow icon={<StatusAlertIcon />} label={c.identity} pill={<StatusPill label={c.actionRequired} tone="danger" />} />
+    <KycStatusRow icon={<StatusIconWrap><WaitingIcon /></StatusIconWrap>} label={c.poa} pill={<StatusPill label={c.availableAfterIdentity} tone="muted" />} muted />
+  </div>;
+}
+
+function KycSupportFooter({ lang, secure }: { lang: "en" | "ja"; secure: string }) {
+  const supportContact = lang === "ja" ? "サポートに連絡" : "Contact support";
+  const supportHelp = lang === "ja" ? "お困りですか？" : "Need help?";
+  return <>
+    <p className="mt-3 text-center text-[11px] text-[#5F6670]">{supportHelp}{" "}<span className="underline underline-offset-2">{supportContact}</span></p>
+    <p className="mt-3 flex items-start justify-center gap-1.5 text-center text-[9px] leading-relaxed text-[#9AA0A6]"><span className="mt-[1px] shrink-0"><SecureLockIcon /></span><span>{secure}</span></p>
+  </>;
+}
+
+function KycModalHeader({ title, body }: { title: string; body?: string }) {
+  return <div className="pr-8"><div className="flex items-center gap-2"><IdentityHeaderIcon /><h2 className="text-[18px] font-black leading-tight text-[#1d2129]">{title}</h2></div>{body ? <p className="mt-2 text-[12px] leading-relaxed text-[#69717a]">{body}</p> : null}</div>;
 }
 
 function KycDetailsFields({ lang, c, details, onChange }: { lang: "en" | "ja"; c: KycCopy; details: KycDetails; onChange: (details: KycDetails) => void }) {
@@ -271,21 +337,25 @@ export function KycOverlay({ lang, state, setState, onExit, onContextReturn }: {
 
   if (screen === "beforeStart") return <div className="absolute inset-0 z-[120] flex items-center justify-center bg-black/55 px-4"><div className={`${card} px-6`}><XButton label={c.close} onClick={onExit} /><OripalotLogo /><h2 className="mt-4 text-[21px] font-black text-[#1d2129]">{c.beforeTitle}</h2><p className="mt-1 text-[11px] text-[#69717a]">{c.beforeBody}</p><h3 className="mt-4 text-[11px] font-black text-[#1d2129]">{c.identityDocs}</h3><div className="mt-2 space-y-2.5">{[[c.passport,"passport"],[c.myNumber,"card"],[c.driver,"license"]].map(([label,kind]) => <div key={label} className="flex items-center gap-3 text-[12px] text-[#252A30]"><span className="flex w-7 justify-center"><DocumentIcon kind={kind as "passport" | "card" | "license"} /></span><span>{label}</span></div>)}</div><div className="my-3 border-t border-[#E1E3E6]" /><h3 className="text-[11px] font-black text-[#1d2129]">{c.poaDocs}</h3><div className="mt-2 space-y-2.5"><div className="flex items-center gap-3 text-[11px] text-[#252A30]"><span className="flex w-7 justify-center"><DocumentIcon kind="card" /></span><span>{c.myNumber} / {c.driver}</span></div><div className="flex items-center gap-3 text-[11px] text-[#252A30]"><span className="flex w-7 justify-center"><DocumentIcon kind="paper" /></span><span>{c.utility}, {c.bank} / {c.jyuminhyo}</span></div></div><div className="my-3 border-t border-[#E1E3E6]" /><p className="text-[10px] leading-relaxed text-[#69717a]">{c.issued}</p><div className="my-3 border-t border-[#E1E3E6]" /><p className="flex items-center gap-3 text-[10px] leading-relaxed text-[#69717a]"><DocumentIcon kind="lock" />{c.secure}</p><button onClick={() => update({ activeScreen: state.poiStatus === "approved" ? "providerPoaIntro" : "providerIdIntro" })} className={`${redButton} mt-4`}>{c.start}</button></div></div>;
 
-  if (screen === "identityProgress") return <div className="absolute inset-0 z-[120] flex items-center justify-center bg-[#F4F5F7] px-5"><div className={`${card} px-6`}><XButton label={c.close} onClick={onExit} /><OripalotLogo /><h2 className="mt-5 text-[20px] font-black text-[#1d2129]">{c.progressTitle}</h2><p className="mt-2 text-[11px] leading-relaxed text-[#4F5660]">{c.progressBody}</p><div className="mx-auto my-5 flex justify-center"><KycResultIllustration /></div><KycStepTimeline mode="review" c={c} /><button onClick={onExit} className={redButton}>{c.understood}</button><p className="mt-4 text-center text-[10px] text-[#5F6670]">{c.support}</p></div></div>;
+  if (screen === "identityProgress") {
+    return <div className="absolute inset-0 z-[120] flex items-center justify-center bg-black/55 px-5"><div className={`${card} px-5 pt-6`}><XButton label={c.close} onClick={onExit} solid /><KycModalHeader title={c.progressTitle} /><div className="mx-auto mt-5 flex justify-center"><KycResultIllustration /></div><p className="mt-4 text-center text-[12px] leading-relaxed text-[#1d2129]">{c.progressBody}</p><KycStepTimeline mode="review" c={c} /><button onClick={onExit} className={redButton}>{c.understood}</button><KycSupportFooter lang={lang} secure={c.secure} /></div></div>;
+  }
 
-  if (screen === "poaProgress") return <div className="absolute inset-0 z-[120] flex items-center justify-center bg-[#F4F5F7] px-5"><div className={`${card} px-6`}><XButton label={c.close} onClick={onExit} /><OripalotLogo /><h2 className="mt-5 text-[20px] font-black text-[#1d2129]">{c.poaProgressTitle}</h2><p className="mt-2 text-[11px] leading-relaxed text-[#4F5660]">{c.poaProgressBody}</p><div className="mx-auto my-5 flex justify-center"><KycResultIllustration /></div><KycStepTimeline mode="poaReview" c={c} /><button onClick={onExit} className={redButton}>{c.understood}</button><p className="mt-4 text-center text-[10px] text-[#5F6670]">{c.support}</p></div></div>;
+  if (screen === "poaProgress") {
+    return <div className="absolute inset-0 z-[120] flex items-center justify-center bg-black/55 px-5"><div className={`${card} px-5 pt-6`}><XButton label={c.close} onClick={onExit} solid /><KycModalHeader title={c.poaProgressTitle} /><div className="mx-auto mt-5 flex justify-center"><KycResultIllustration /></div><p className="mt-4 text-center text-[12px] leading-relaxed text-[#1d2129]">{c.poaProgressBody}</p><KycStepTimeline mode="poaReview" c={c} /><button onClick={onExit} className={redButton}>{c.understood}</button><KycSupportFooter lang={lang} secure={c.secure} /></div></div>;
+  }
 
   if (screen === "identityComplete") {
-    const supportContact = lang === "ja" ? "サポートに連絡" : "Contact support";
-    const supportHelp = lang === "ja" ? "お困りですか？" : "Need help?";
-    return <div className="absolute inset-0 z-[120] flex items-center justify-center bg-black/55 px-5"><div className={`${card} px-5 pt-6`}><XButton label={c.close} onClick={onExit} solid /><div className="flex items-center gap-2 pr-8"><IdentityHeaderIcon /><h2 className="text-[18px] font-black leading-tight text-[#1d2129]">{c.identityCompleteTitle}</h2></div><div className="mx-auto mt-5 flex justify-center"><KycResultIllustration complete accent="red" /></div><p className="mt-4 text-center text-[12px] leading-relaxed text-[#1d2129]">{c.identityCompleteBody}</p><KycStepTimeline mode="complete" c={c} /><button onClick={() => update({ activeScreen: "providerPoaIntro" })} className={redButton}>{c.continueToPoa}</button><p className="mt-3 text-center text-[11px] text-[#5F6670]">{supportHelp}{" "}<span className="underline underline-offset-2">{supportContact}</span></p><p className="mt-3 flex items-start justify-center gap-1.5 text-center text-[9px] leading-relaxed text-[#9AA0A6]"><span className="mt-[1px] shrink-0"><SecureLockIcon /></span><span>{c.secure}</span></p></div></div>;
+    return <div className="absolute inset-0 z-[120] flex items-center justify-center bg-black/55 px-5"><div className={`${card} px-5 pt-6`}><XButton label={c.close} onClick={onExit} solid /><KycModalHeader title={c.identityCompleteTitle} /><div className="mx-auto mt-5 flex justify-center"><KycResultIllustration complete accent="red" /></div><p className="mt-4 text-center text-[12px] leading-relaxed text-[#1d2129]">{c.identityCompleteBody}</p><KycStepTimeline mode="complete" c={c} /><button onClick={() => update({ activeScreen: "providerPoaIntro" })} className={redButton}>{c.continueToPoa}</button><KycSupportFooter lang={lang} secure={c.secure} /></div></div>;
   }
 
   if (screen === "identityAttention") return <div className="absolute inset-0 z-[120] flex items-center justify-center bg-[#F4F5F7] px-5"><div className={`${card} px-6`}><XButton label={c.close} onClick={onExit} /><OripalotLogo /><h2 className="mt-5 text-[19px] font-black text-[#1d2129]">{c.identityAttentionTitle}</h2><p className="mt-2 text-[11px] text-[#4F5660]">{c.identityAttentionBody}</p><KycStepTimeline mode="attention" c={c} /><div className="rounded-xl border border-[#FFCFD1] bg-[#FFF4F4] p-4"><div className="flex items-center gap-3 text-[#D9000D]"><span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#E60012] font-black">!</span><h3 className="text-[13px] font-black">{c.documentErrorTitle}</h3></div><ul className="mt-3 space-y-2 pl-10 text-[11px] text-[#20252B]">{c.documentErrorBullets.map(item => <li key={item} className="list-disc">{item}</li>)}</ul></div><button onClick={() => update({ poiStatus: "notStarted", poaStatus: "notStarted", activeScreen: "providerIdIntro" })} className={`${redButton} mt-5`}>{c.retry}</button><p className="mt-4 text-center text-[10px] text-[#5F6670]">{c.support}</p></div></div>;
 
-  if (screen === "poaAttention") return <div className="absolute inset-0 z-[120] flex items-center justify-center bg-[#F4F5F7] px-5"><div className={`${card} px-6`}><XButton label={c.close} onClick={onExit} /><OripalotLogo /><h2 className="mt-5 text-[19px] font-black text-[#1d2129]">{c.poaAttentionTitle}</h2><p className="mt-2 text-[11px] text-[#4F5660]">{c.poaAttentionBody}</p><KycStepTimeline mode="poaAttention" c={c} /><div className="rounded-xl border border-[#FFCFD1] bg-[#FFF4F4] p-4"><div className="flex items-start gap-3 text-[#D9000D]"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-[#E60012] font-black">!</span><div><h3 className="text-[13px] font-black">{c.poaErrorTitle}</h3><p className="mt-2 text-[11px] leading-relaxed text-[#303640]">{c.poaErrorSubtitle}</p></div></div><div className="my-3 border-t border-[#F2C8CA]" /><ul className="space-y-2 pl-10 text-[11px] text-[#20252B]">{c.poaErrorBullets.map(item => <li key={item} className="list-disc">{item}</li>)}</ul></div><button type="button" disabled className="mt-5 w-full cursor-not-allowed rounded-lg bg-[#FFD9DB] py-3 text-[14px] font-extrabold text-[#FF7C82]">{c.resubmit}</button><p className="mt-3 text-center text-[10px] text-[#E60012]">{c.nextUpload}</p><p className="mt-4 text-center text-[10px] text-[#5F6670]">{c.support}</p></div></div>;
+  if (screen === "poaAttention") {
+    return <div className="absolute inset-0 z-[120] flex items-center justify-center bg-black/55 px-5"><div className={`${card} px-5 pt-6`}><XButton label={c.close} onClick={onExit} solid /><KycModalHeader title={c.poaAttentionTitle} body={c.poaAttentionBody} /><KycStepTimeline mode="poaAttention" c={c} /><div className="mt-2 rounded-xl border border-[#FFCFD1] bg-[#FFF4F4] p-4"><div className="flex items-start gap-3 text-[#D9000D]"><StatusAlertIcon /><div><h3 className="text-[13px] font-black">{c.poaErrorTitle}</h3><p className="mt-2 text-[11px] leading-relaxed text-[#303640]">{c.poaErrorSubtitle}</p></div></div><div className="my-3 border-t border-[#F2C8CA]" /><ul className="space-y-2 pl-10 text-[11px] text-[#20252B]">{c.poaErrorBullets.map(item => <li key={item} className="list-disc">{item}</li>)}</ul></div><button type="button" disabled className="mt-5 w-full cursor-not-allowed rounded-lg bg-[#FFB4B8] py-3 text-[14px] font-extrabold text-white">{c.resubmit}</button><p className="mt-3 text-center text-[10px] text-[#E60012]">{c.nextUpload}</p><KycSupportFooter lang={lang} secure={c.secure} /></div></div>;
+  }
 
-  return <div className="absolute inset-0 z-[120] flex items-center justify-center bg-[#F4F5F7] px-5"><div className={`${card} px-6`}><XButton label={c.close} onClick={onExit} /><OripalotLogo /><h2 className="mt-5 text-center text-[21px] font-black text-[#1d2129]">{c.completeTitle}</h2><p className="mt-2 text-center text-[12px] text-[#4F5660]">{c.completeBody}</p><div className="mx-auto my-5 flex justify-center"><KycResultIllustration complete /></div><p className="text-center text-[12px] text-[#303640]">{c.accountId}: <strong>839473754</strong></p><div className="relative my-5"><div className="absolute left-[13px] top-7 h-[58px] w-px bg-[#D8DCE1]" /><div className="relative flex items-center gap-3 border-b border-[#E1E4E8] py-3"><span className="z-10 flex h-7 w-7 items-center justify-center rounded-full border border-[#C9CDD2] bg-white text-[14px] font-black">✓</span><span className="flex-1 text-[12px] font-bold text-[#20252B]">{c.identity}</span><span className="text-[10px] font-semibold text-[#4B5563]">{c.approved}</span></div><div className="relative flex items-center gap-3 py-3"><span className="z-10 flex h-7 w-7 items-center justify-center rounded-full border border-[#C9CDD2] bg-white text-[14px] font-black">✓</span><span className="flex-1 text-[12px] font-bold text-[#20252B]">{c.poa}</span><span className="text-[10px] font-semibold text-[#4B5563]">{c.approved}</span></div></div><button onClick={() => { update({ activeScreen: null }); onContextReturn(state.entryContext, true); }} className={redButton}>{completeCta}</button><p className="mt-4 text-center text-[10px] text-[#5F6670]">{c.support}</p></div></div>;
+  return <div className="absolute inset-0 z-[120] flex items-center justify-center bg-black/55 px-5"><div className={`${card} px-5 pt-6`}><XButton label={c.close} onClick={onExit} solid /><KycModalHeader title={c.completeTitle} body={c.completeBody} /><div className="mx-auto mt-5 flex justify-center"><KycResultIllustration complete accent="red" /></div><KycStepTimeline mode="done" c={c} /><button onClick={() => { update({ activeScreen: null }); onContextReturn(state.entryContext, true); }} className={`${redButton} mt-2`}>{completeCta}</button><KycSupportFooter lang={lang} secure={c.secure} /></div></div>;
 }
 
 export function KycScenarioControl({ value, onChange, onReset }: { value: KycScenario; onChange: (value: KycScenario) => void; onReset: () => void }) {
