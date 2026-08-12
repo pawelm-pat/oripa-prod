@@ -123,7 +123,7 @@ export function GoogleAuthSheet({ lang, signUp, onClose, onSuccess }: {
 }) {
   const t = STR[lang];
   const [step, setStep] = useState<GoogleAuthStep>("picker");
-  const [selectedAccount, setSelectedAccount] = useState<0 | 1 | 2 | null>(null);
+  const [selectedAccount, setSelectedAccount] = useState<0 | 1 | 2 | 3 | null>(null);
   const [country, setCountry] = useState<AuthCountryCode>("JP");
   const [invite, setInvite] = useState("");
   const [consentAccepted, setConsentAccepted] = useState(false);
@@ -131,6 +131,7 @@ export function GoogleAuthSheet({ lang, signUp, onClose, onSuccess }: {
   const accounts = [
     { name: t.authGoogleAccount1Name as string, email: t.authGoogleAccount1Email as string, initials: (t.authGoogleAccount1Name as string).charAt(0), color: "#4285F4" },
     { name: t.authGoogleAccount2Name as string, email: t.authGoogleAccount2Email as string, initials: (t.authGoogleAccount2Name as string).charAt(0), color: "#8e24aa" },
+    { name: t.authGoogleAccount3Name as string, email: t.authGoogleAccount3Email as string, initials: (t.authGoogleAccount3Name as string).charAt(0), color: "#0f9d58" },
     { name: t.authGoogleOtherAccountName as string, email: signUp ? "" : DEMO_EXISTING_EMAIL, initials: "G", color: "#5f6368" },
   ];
   const selectedLoginEmail = accounts[selectedAccount ?? 0].email;
@@ -310,10 +311,10 @@ export function GoogleAuthSheet({ lang, signUp, onClose, onSuccess }: {
               <p className="mt-3 text-[15px] text-[#3c4043]">{t.authGooglePickerSubtitle as string}</p>
 
               <div className="mt-8 border-b border-[#dadce0]">
-                {accounts.slice(0, 2).map((acc, idx) => (
+                {accounts.slice(0, 3).map((acc, idx) => (
                   <button
                     key={idx}
-                    onClick={() => { setSelectedAccount(idx as 0 | 1); setStep("permissions"); }}
+                    onClick={() => { setSelectedAccount(idx as 0 | 1 | 2); setStep("permissions"); }}
                     className="flex w-full items-center gap-3.5 border-t border-[#dadce0] py-4 text-left hover:bg-[#f8f9fa]"
                   >
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[13px] font-bold text-white" style={{ background: acc.color }}>
@@ -326,7 +327,7 @@ export function GoogleAuthSheet({ lang, signUp, onClose, onSuccess }: {
                   </button>
                 ))}
 
-                <button type="button" onClick={() => { setSelectedAccount(2); setStep("permissions"); }} className="flex w-full items-center gap-3.5 border-t border-[#dadce0] py-4 text-left hover:bg-[#f8f9fa]">
+                <button type="button" onClick={() => { setSelectedAccount(3); setStep("permissions"); }} className="flex w-full items-center gap-3.5 border-t border-[#dadce0] py-4 text-left hover:bg-[#f8f9fa]">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#5f6368] text-[#5f6368]">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                       <circle cx="12" cy="8" r="3.5" /><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" />
@@ -687,11 +688,13 @@ const AUTH_COUNTRIES = [
 type AuthCountryCode = (typeof AUTH_COUNTRIES)[number]["code"];
 export const DEMO_EXISTING_EMAIL = "existing.user@gmail.com";
 const DEMO_EXISTING_PHONE = "9012345678";
+export const DEMO_INR_EMAIL = "john.inr@gmail.com";
 const DEMO_GOOGLE_ACCOUNT_EMAILS = new Set([
   "john.doe@gmail.com",
   "john.work@gmail.com",
   "taro.yamada@gmail.com",
   "taro.work@gmail.com",
+  DEMO_INR_EMAIL,
 ]);
 export const DEMO_LINE_ACCOUNT_EMAIL = "line.user@gmail.com";
 export const DEMO_SEON_STEP_UP_EMAIL = "seon.stepup@gmail.com";

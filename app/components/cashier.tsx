@@ -150,6 +150,7 @@ export function PurchaseFlow({
   onSaveCard,
   onDeleteCard,
   onRequireKyc,
+  enableCurrencyCheckout = false,
 }: {
   pkg: PointPackage;
   lang: Lang;
@@ -160,6 +161,8 @@ export function PurchaseFlow({
   onSaveCard?: (card: SavedCard) => void;
   onDeleteCard?: (idx: number) => void;
   onRequireKyc?: () => boolean;
+  /** INR/JPY currency selector (demo: john.inr@gmail.com). */
+  enableCurrencyCheckout?: boolean;
 }) {
   const t = STR[lang];
   const openLegal = useContext(CashierLegalContext);
@@ -169,6 +172,9 @@ export function PurchaseFlow({
   };
   const [step, setStep] = useState<PurchaseStep>("checkout");
   const [payMethod, setPayMethod] = useState<"card" | "applePay" | "googlePay" | "payPay" | "link">("card");
+  const [checkoutCurrency, setCheckoutCurrency] = useState<"INR" | "JPY">(
+    enableCurrencyCheckout ? "INR" : "JPY",
+  );
   const [selectedCardIdx, setSelectedCardIdx] = useState<number | "new">((savedCards && savedCards.length > 0) ? 0 : "new");
   const [cardNum, setCardNum] = useState("");
   const [expiry, setExpiry] = useState("");
@@ -282,6 +288,26 @@ export function PurchaseFlow({
   }
   const selectCls = "w-full appearance-none rounded-lg border border-[#e2e5ea] bg-white px-3 py-2.5 text-[14px] text-[#1d2129] focus:outline-none focus:border-[#7b88ff]";
   const chevronSvg = <svg className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="#5c626b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+
+  const useInr = enableCurrencyCheckout && checkoutCurrency === "INR";
+  const inrWalletsOnly = enableCurrencyCheckout && checkoutCurrency === "INR";
+  const INR_PER_JPY = 0.6103;
+  const INR_PER_JPY_LABEL = "0.6103";
+  const inrAmount = Math.round(pkg.jpy * INR_PER_JPY);
+  const formatInr = (n: number) => n.toLocaleString("en-IN");
+  const priceLabel = useInr
+    ? `${formatInr(inrAmount)} INR`
+    : `${pkg.jpy.toLocaleString()} JPY`;
+  const priceSymbolAmount = useInr
+    ? `₹${formatInr(inrAmount)}`
+    : `¥${pkg.jpy.toLocaleString()}`;
+  const originalPriceLabel = pkg.originalJpy
+    ? useInr
+      ? `${formatInr(Math.round(pkg.originalJpy * INR_PER_JPY))} INR`
+      : `${pkg.originalJpy.toLocaleString()} JPY`
+    : null;
+  const currencySelectGreen = "#16a34a";
+
   const renderBillingForm = () => (
     <div className="flex flex-col gap-2">
       <div className="grid grid-cols-2 gap-2">
@@ -580,7 +606,7 @@ export function PurchaseFlow({
             className="w-full rounded-xl py-3.5 text-[16px] font-bold text-white"
             style={{ background: "#c0392b" }}
           >
-            Pay Now ¥{pkg.jpy.toLocaleString()}
+            Pay Now {priceSymbolAmount}
           </button>
         </div>
         {/* Delete confirmation modal */}
@@ -795,7 +821,12 @@ export function PurchaseFlow({
       </button>
     );
 
-    const v1ExpressGrid = expressStacked ? (
+    const v1ExpressGrid = inrWalletsOnly ? (
+      <div className="grid grid-cols-2 gap-2.5">
+        {applePayBtn}
+        {googlePayBtn}
+      </div>
+    ) : expressStacked ? (
       <div className="flex flex-col gap-2.5">
         {applePayBtn}
       </div>
@@ -843,8 +874,8 @@ export function PurchaseFlow({
             </>
           )}
           <div className="flex shrink-0 flex-col items-end gap-0.5">
-            {pkg.originalJpy && <span className="text-[11px] text-[#8a9099] line-through">{pkg.originalJpy.toLocaleString()} JPY</span>}
-            <span className="text-[15px] font-extrabold text-[#1d2129]">{pkg.jpy.toLocaleString()} JPY</span>
+            {originalPriceLabel && <span className="text-[11px] text-[#8a9099] line-through">{originalPriceLabel}</span>}
+            <span className="text-[15px] font-extrabold text-[#1d2129]">{priceLabel}</span>
           </div>
         </div>
       </div>
@@ -966,7 +997,7 @@ export function PurchaseFlow({
               style={{ background: v1NewCardReady ? v1Cta : "#c9ced6" }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="10" rx="2" stroke="white" strokeWidth="2" /><path d="M8 11V8a4 4 0 118 0v3" stroke="white" strokeWidth="2" strokeLinecap="round" /></svg>
-              {t.checkoutAddCardAndPay(pkg.jpy.toLocaleString())}
+              {t.checkoutAddCardAndPay(priceSymbolAmount)}
             </button>
           </div>
           {v1Toast}
@@ -987,6 +1018,67 @@ export function PurchaseFlow({
 
         <div className={`min-h-0 flex-1 overflow-y-auto px-4 pt-4 ${hasCards ? "pb-36" : "pb-24"}`}>
           {v1PackageSummary}
+
+          {enableCurrencyCheckout && (
+            <div className="mb-4">
+              <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutChooseCurrency}</p>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { code: "INR" as const, amount: `₹${formatInr(inrAmount)}` },
+                  { code: "JPY" as const, amount: `¥${pkg.jpy.toLocaleString()}` },
+                ]).map(({ code, amount }) => {
+                  const selected = checkoutCurrency === code;
+                  return (
+                    <button
+                      key={code}
+                      type="button"
+                      onClick={() => {
+                        setCheckoutCurrency(code);
+                        if (code === "INR" && (payMethod === "link" || payMethod === "payPay")) {
+                          setPayMethod("card");
+                        }
+                      }}
+                      className="flex items-center gap-2 rounded-xl border px-3 py-3 text-left active:scale-[0.99]"
+                      style={{
+                        borderColor: selected ? currencySelectGreen : "#e2e5ea",
+                        background: selected ? "#f0fdf4" : "white",
+                      }}
+                    >
+                      <span
+                        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2"
+                        style={{ borderColor: selected ? currencySelectGreen : "#c9ced6" }}
+                      >
+                        {selected && (
+                          <span className="h-2.5 w-2.5 rounded-full" style={{ background: currencySelectGreen }} />
+                        )}
+                      </span>
+                      <span className="min-w-0 truncate text-[14px] leading-none">
+                        <span className="font-semibold text-[#8a9099]">
+                          {code === "INR" ? t.checkoutCurrencyInr : t.checkoutCurrencyJpy}
+                        </span>{" "}
+                        <span className="font-bold text-[#1d2129]">{amount}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div
+                className="mt-2 flex items-center gap-1.5 overflow-hidden rounded-lg px-2.5 py-2"
+                style={{ background: "#fff4e5" }}
+              >
+                <svg className="shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path d="M12 3.5L22 20.5H2L12 3.5Z" stroke="#b45309" strokeWidth="1.8" strokeLinejoin="round" />
+                  <path d="M12 10v5" stroke="#b45309" strokeWidth="1.8" strokeLinecap="round" />
+                  <circle cx="12" cy="17.5" r="1" fill="#b45309" />
+                </svg>
+                <p className="min-w-0 truncate whitespace-nowrap text-[11px] font-medium leading-none text-[#b45309]">
+                  {checkoutCurrency === "INR"
+                    ? t.checkoutInrRateBankFeeWarning(INR_PER_JPY_LABEL)
+                    : t.checkoutExRateAndBankFeeMayApply}
+                </p>
+              </div>
+            </div>
+          )}
 
           <p className="mb-2.5 text-[12px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutPaymentMethods}</p>
           {v1ExpressGrid}
@@ -1077,7 +1169,7 @@ export function PurchaseFlow({
               style={{ background: v1MainPayDisabled ? "#c9ced6" : v1Cta }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="10" rx="2" stroke="white" strokeWidth="2" /><path d="M8 11V8a4 4 0 118 0v3" stroke="white" strokeWidth="2" strokeLinecap="round" /></svg>
-              {t.checkoutPayNowBtn} ¥{pkg.jpy.toLocaleString()}
+              {t.checkoutPayNowBtn} {priceSymbolAmount}
             </button>
           )}
           <div className="flex w-full items-center justify-center gap-x-4 text-center text-[11px] text-[#8a9099]">
