@@ -13,7 +13,7 @@ export default function Page() {
   const [lang, setLang] = useState<Lang>("en");
   // Drives the per-screen review comments panel.
   const [screen, setScreen] = useState<Screen>("landing");
-  const [kycScenario, setKycScenario] = useState<KycScenario>("happy");
+  const [kycScenario, setKycScenario] = useState<KycScenario>("none");
   const [kycResetToken, setKycResetToken] = useState(0);
   // Demo control: whether the member still has free shipping quota left.
   // Drives the My Loot shipping badge (free vs. paid ¥500) and hint copy.

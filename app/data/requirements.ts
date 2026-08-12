@@ -342,7 +342,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
 
   drawDetail: {
     label: "Draw (pack detail)",
-    summary: "Gacha pack detail opened from the lobby: banner, remaining/period, prize line-up by tier, and a sticky draw CTA.",
+    summary: "Gacha pack detail opened from the lobby: banner, remaining/period, prize line-up by tier, sticky draw CTA, and Quick Purchase when the wallet is short.",
     groups: [
       APP_HEADER_GROUP,
       {
@@ -381,11 +381,26 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
       {
         title: "Draw CTA (sticky)",
         items: [
-          { text: "Draw ×1 / Draw ×10", sub: ["Checks the coin balance and confirms the action via a toast."] },
+          { text: "Draw ×1 / Draw ×10 / Custom", sub: ["Opens a confirmation sheet; confirming debits coins and shows results."] },
           "When stock is 0 the CTA shows a 'Sold out' state.",
+          { text: "Insufficient coins", sub: ["Opens Quick Purchase (offers → pay → 3DS → success → Draw) instead of navigating to Store."] },
         ],
-        validation: ["Blocks the draw and prompts to top up if the balance is below the draw cost."],
-        tbc: ["Draw outcome, reveal animation, coin deduction and adding won cards to Winning History are TBC."],
+        validation: [
+          "Draw cost = count × 1,000 coins; coins are debited on confirm when the balance covers it.",
+          "If cost > balance, Quick Purchase opens with neededCoins = cost − balance.",
+        ],
+      },
+      {
+        title: "Quick Purchase",
+        items: [
+          "Featured covering packs (up to 2) via specials/heroes then plain packs; cheapest covering first.",
+          { text: "View More Packages", sub: ["Expands to the full store catalog."] },
+          "Pay: saved cards (max 3, index 0 = LAST USED), add new card + JP/US billing, Apple Pay / Google Pay (skip 3DS).",
+          "john.inr@gmail.com: must pick INR vs JPY before paying.",
+          "Card: mock 3DS; any auth code with ≥4 digits succeeds (no decline path here).",
+          "Success Draw: closes sheet, debits pending draw cost, runs the pending draw.",
+          "KYC gate on pay; after purchase KYC, resume the sheet in place (do not bounce to Store).",
+        ],
       },
       FOOTER_GROUP,
       LEGAL_OVERLAY_GROUP,
@@ -593,7 +608,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
             "Tapping Apple/Google Pay completes the usual express success flow; tapping Card returns to checkout.",
           ] },
           { text: "Success", sub: ["Purchase breakdown + payment method; Play Now carousel can open a draw; Close credits coins and returns to Store."] },
-          { text: "KYC gate", sub: ["On pay (wallet / card / add-card / My Cards Pay Now), matching the POC. If incomplete (and scenario ≠ none), KYC opens and payment is blocked. Return from purchase KYC lands back on Store."] },
+          { text: "KYC gate", sub: ["On pay (wallet / card / add-card / My Cards Pay Now), matching the POC. If incomplete (and scenario ≠ none), KYC opens and payment is blocked. Return from purchase KYC lands back on Store — unless Quick Purchase is pending, in which case the sheet resumes in place."] },
         ],
         validation: [
           "Card number: 14–16 digits (spaces allowed while typing).",

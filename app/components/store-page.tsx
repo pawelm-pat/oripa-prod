@@ -27,7 +27,7 @@ export const SPECIAL_OFFERS: PointPackage[] = [
   { id: "so2", coins: 5000, freePoints: 500, jpy: 5000, inrApprox: 3066.44, originalJpy: 10000, firstTimeOffer: true, discount: 90 },
 ];
 
-type StoreV3HeroPackage = {
+export type StoreV3HeroPackage = {
   id: string;
   coins: number;
   freePoints: number;
@@ -39,7 +39,7 @@ type StoreV3HeroPackage = {
   gradient: string;
 };
 
-const STORE_V3_HERO_PACKAGES: StoreV3HeroPackage[] = [
+export const STORE_V3_HERO_PACKAGES: StoreV3HeroPackage[] = [
   { id: "v3hero1", coins: 100000, freePoints: 500, jpy: 100000, originalJpy: 10000, discount: 88, tag: "FIRST-TIME OFFER", art: "/coin-bag.png", gradient: "linear-gradient(135deg,#c50008,#8b0000)" },
   { id: "v3hero2", coins: 100000, freePoints: 500, jpy: 100000, originalJpy: 10000, discount: 90, tag: "MEGA SALE", art: "/coin-chest.png", gradient: "linear-gradient(135deg,#1d4ed8,#1e3a8a)" },
 ];
@@ -80,6 +80,7 @@ export function StorePage({
   onBack,
   chrome,
   purchasedIds: purchasedIdsProp,
+  onPackagePurchased,
 }: {
   lang: Lang;
   coins: number;
@@ -88,6 +89,8 @@ export function StorePage({
   chrome: StorePageChrome;
   /** Optional controlled purchased ids (defaults to session-local). */
   purchasedIds?: string[];
+  /** Fired when a package is purchased (for controlled purchasedIds). */
+  onPackagePurchased?: (pkgId: string) => void;
 }) {
   const t = STR[lang];
   const [selectedPkg, setSelectedPkg] = useState<PointPackage | null>(null);
@@ -105,8 +108,11 @@ export function StorePage({
     } else {
       setCoins((c) => c + coinsEarned);
     }
-    if (pkgId && purchasedIdsProp === undefined) {
-      setLocalPurchasedIds((prev) => (prev.includes(pkgId) ? prev : [...prev, pkgId]));
+    if (pkgId) {
+      if (purchasedIdsProp === undefined) {
+        setLocalPurchasedIds((prev) => (prev.includes(pkgId) ? prev : [...prev, pkgId]));
+      }
+      onPackagePurchased?.(pkgId);
     }
     setSelectedPkg(null);
   }
