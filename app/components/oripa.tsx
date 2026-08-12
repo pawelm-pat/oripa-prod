@@ -21,7 +21,7 @@ import type {
   WonPrize,
 } from "../lib/types";
 import { STR, type Dict, locTitle } from "../lib/i18n";
-import { AuthHeader, SignupPage, LoginPage, LineAuthIcon } from "./auth";
+import { AuthHeader, SignupPage, LoginPage, LineAuthIcon, DEMO_INR_EMAIL } from "./auth";
 import { HOME_SECTIONS, ALL_ORIPA } from "../data/lobby";
 import { NOTIF_YOU, NOTIF_NOTICE, NOTIF_UNREAD_TOTAL } from "../data/notifications";
 import { LEGAL, type LegalDocKey } from "../data/legal";
@@ -4979,6 +4979,14 @@ function StorePage({
   const t = STR[lang];
   const openLegal = useContext(LegalNavContext);
   const [savedCards, setSavedCards] = useState<SavedCard[]>([]);
+  const enableCurrencyCheckout = (() => {
+    try {
+      const auth = JSON.parse(sessionStorage.getItem("authData") || "{}");
+      return String(auth.email || "").toLowerCase() === DEMO_INR_EMAIL;
+    } catch {
+      return false;
+    }
+  })();
   return (
     <CashierLegalContext.Provider value={openLegal}>
       <StorePageView
@@ -5000,6 +5008,7 @@ function StorePage({
               onDeleteCard={(idx) => setSavedCards((prev) => prev.filter((_, i) => i !== idx))}
               onRequireKyc={onRequireKyc}
               onDrawItem={onDrawItem}
+              enableCurrencyCheckout={enableCurrencyCheckout}
             />
           ),
         }}

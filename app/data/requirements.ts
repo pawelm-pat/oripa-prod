@@ -265,7 +265,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
         title: "Social login",
         items: [
           { text: "LINE", sub: ["Connecting → Returning redirect flow (~1.7s), then lobby + 'Login successful!' toast (10s)."] },
-          { text: "Google", sub: ["Account picker → permissions → processing → lobby."] },
+          { text: "Google", sub: ["Account picker (incl. john.inr@gmail.com) → permissions → processing → lobby."] },
         ],
         tbc: ["Real OAuth is mocked."],
       },
@@ -274,7 +274,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
         items: [
           "Accordion section with Email and Password.",
           { text: "Login", sub: [
-            "john.doe@gmail.com / other DEMO_GOOGLE emails → Social Linked Account modal (use Google or set password).",
+            "john.doe@gmail.com / other DEMO_GOOGLE emails (incl. john.inr@gmail.com) → Social Linked Account modal (use Google or set password).",
             "line.user@gmail.com → Password Setup email modal → Change Password → Password Updated.",
             "Otherwise → lobby.",
           ] },
@@ -569,7 +569,13 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
         title: "Cashier V1 — checkout & payment",
         items: [
           "Selecting a package opens Cashier V1 with a package summary (coins, free points, price; offer tags / strikethrough when present).",
-          { text: "Express wallets (2×2)", sub: ["Apple Pay, Google Pay, Link, PayPay — skip 3DS and go straight to success (after KYC check)."] },
+          { text: "Currency selector (john.inr@gmail.com only)", sub: [
+            "INR / JPY toggle above payment methods; INR selected by default.",
+            "INR: package + pay amounts use the package exchange rate (1 JPY = 0.6103 INR); show rate + bank-fee warning; wallets limited to Apple Pay + Google Pay (+ cards).",
+            "JPY: show exchange-rate + bank-fee warning; full wallet grid (Apple Pay, Google Pay, Link, PayPay) + cards.",
+            "Player can pay in either currency.",
+          ] },
+          { text: "Express wallets (2×2)", sub: ["Apple Pay, Google Pay, Link, PayPay — skip 3DS and go straight to success (after KYC check). INR currency mode hides Link and PayPay."] },
           { text: "Pay with Card", sub: ["No cards: Add new card row with accepted-brand badges → dedicated Add Card Details page. With cards: up to 3 saved cards (+ selected beyond top 3), Last Used badge on newest, Manage Cards, Add new card."] },
           { text: "Add Card Details", sub: ["Card number, expiry, CVC, cardholder name + billing address (JP/US). Billing collapses to a summary once filled; pencil re-opens edit. Sticky Add Card and Pay."] },
           { text: "My Cards", sub: ["List with select + delete confirm + toast; sticky Pay Now."] },
@@ -592,6 +598,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
           "Apple Pay / Google Pay / PayPay / Link are simulated.",
           "Only Coins (not Points) are credited on success; Purchase History and Coin History are not updated.",
           "Saved cards are session-only.",
+          "INR exchange rate is a fixed demo rate (0.6103), not a live FX feed.",
         ],
       },
       FOOTER_REF_GROUP,
