@@ -84,7 +84,15 @@ export default function Page() {
                   ["Insufficient Stock Left", "stock"],
                 ]}
               />
-              <ToggleControl label="Multi-currency" value={multiCurrency} onChange={setMultiCurrency} />
+              <SelectControl
+                label="Multi-currency"
+                value={multiCurrency ? "both" : "coins"}
+                onChange={(v) => setMultiCurrency(v === "both")}
+                options={[
+                  ["Both currencies", "both"],
+                  ["Coins only", "coins"],
+                ]}
+              />
             </>
           )}
         </div>
