@@ -1408,8 +1408,10 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
           <div className={soldOut ? "grayscale" : ""}>
             <DrawPromoBanner t={t} item={item} className="rounded-2xl ring-1 ring-[#ffcf5a]/40" showCountdown={!soldOut} />
           </div>
-          {/* sales period */}
-          <p className="mt-2 text-center text-[11.5px] font-semibold text-[#8a9099]">{t.periodLabel("2026/01/01")}</p>
+          {/* Sales period — important-information bar (black box, per design). */}
+          <div className="mt-2 rounded-md bg-[#1d2129] px-3 py-2">
+            <p className="text-[12px] font-bold text-white">{t.periodLabel("2026/01/01")}</p>
+          </div>
         </div>
 
         {/* Tags */}
@@ -1420,35 +1422,44 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
           <TagPill variant="darkOutline">{t.tagSsr}</TagPill>
         </div>
 
-        {/* Cost + remaining */}
+        {/* Cost + remaining — two columns split by a dashed divider: price per
+            draw on the left, stock/countdown on the right (per design). */}
         <div className="mx-3 mt-2 rounded-2xl bg-white px-4 py-3 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1.5">
-              <CoinIcon size={20} />
-              <span className="text-[16px] font-extrabold text-[#1d2129] underline decoration-[#D10005] decoration-2 underline-offset-2">{DRAW_PRICE.toLocaleString()}</span>
-              <span className="text-[11px] font-bold text-[#8a9099]">{t.perDraw}</span>
-            </span>
-            {item.gem && (
-              <span className="flex items-center gap-1.5">
-                <GemIcon size={20} />
-                <span className="text-[16px] font-extrabold text-[#1d2129] underline decoration-[#D10005] decoration-2 underline-offset-2">{DRAW_PRICE.toLocaleString()}</span>
-                <span className="text-[11px] font-bold text-[#8a9099]">{t.perDraw}</span>
+          <div className="flex items-stretch gap-4">
+            {/* Left: price per draw (coin + optional free point), red-underlined */}
+            <div className="flex shrink-0 flex-col justify-center gap-2.5">
+              <span className="flex items-center gap-2">
+                <CoinIcon size={22} />
+                <span className="text-[18px] font-extrabold leading-none text-[#1d2129] underline decoration-[#D10005] decoration-2 underline-offset-[3px]">{DRAW_PRICE.toLocaleString()}<span className="text-[11px] font-bold text-[#8a9099]">{t.perDraw}</span></span>
               </span>
-            )}
+              {item.gem && (
+                <span className="flex items-center gap-2">
+                  <GemIcon size={22} />
+                  <span className="text-[18px] font-extrabold leading-none text-[#1d2129] underline decoration-[#D10005] decoration-2 underline-offset-[3px]">{DRAW_PRICE.toLocaleString()}<span className="text-[11px] font-bold text-[#8a9099]">{t.perDraw}</span></span>
+                </span>
+              )}
+            </div>
+
+            {/* Dashed vertical divider */}
+            <div className="w-px shrink-0 self-stretch border-l border-dashed border-black/25" />
+
+            {/* Right: remaining count, progress bar, remaining time */}
+            <div className="flex min-w-0 flex-1 flex-col justify-center">
+              <div className="flex items-baseline justify-between">
+                <span className={`text-[13px] font-bold ${soldOut ? "text-[#D10005]" : "text-[#1d2129]"}`}>{t.remainingLabel}</span>
+                <span className="leading-none"><span className={`text-[20px] font-extrabold ${soldOut ? "text-[#D10005]" : "text-[#1d2129]"}`}>{remainingShown}</span><span className="text-[12px] font-bold text-[#8a9099]">/{item.total}</span></span>
+              </div>
+              <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-black/[0.08]"><span className="block h-full rounded-full bg-[#D10005]" style={{ width: `${pct}%` }} /></div>
+              {soldOut ? (
+                <p className="mt-2 text-center text-[15px] font-extrabold text-[#D10005]">{t.soldOutLabel}</p>
+              ) : (
+                <p className="mt-2 flex items-center justify-between text-[#D10005]">
+                  <span className="text-[12px] font-bold">{t.remainingTimeLabel}</span>
+                  <span className="text-[14px] font-extrabold">{t.minUnit(item.endsIn)}</span>
+                </p>
+              )}
+            </div>
           </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className={`text-[13px] font-bold ${soldOut ? "text-[#D10005]" : "text-[#1d2129]"}`}>{t.remainingLabel}</span>
-            <span className="leading-none"><span className={`text-[20px] font-extrabold ${soldOut ? "text-[#D10005]" : "text-[#1d2129]"}`}>{remainingShown}</span><span className="text-[12px] font-bold text-[#8a9099]">/{item.total}</span></span>
-          </div>
-          <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-black/[0.08]"><span className="block h-full rounded-full bg-[#D10005]" style={{ width: `${pct}%` }} /></div>
-          {soldOut ? (
-            <p className="mt-2 text-center text-[15px] font-extrabold text-[#D10005]">{t.soldOutLabel}</p>
-          ) : (
-            <p className="mt-2 flex items-center justify-between text-[#D10005]">
-              <span className="text-[12px] font-bold">{t.remainingTimeLabel}</span>
-              <span className="text-[14px] font-extrabold">{t.minUnit(item.endsIn)}</span>
-            </p>
-          )}
         </div>
 
         {/* Caution — collapsible accordion */}
@@ -1458,7 +1469,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
             aria-expanded={cautionOpen}
             className="flex w-full items-center gap-2 px-3 py-2.5 text-left"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M12 3l10 18H2z" fill="#e0a52a" /><path d="M12 9v5M12 17.5v.5" stroke="#5a3d00" strokeWidth="2" strokeLinecap="round" /></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M12 3l10 18H2z" fill="#1d2129" /><path d="M12 9v5M12 17.5v.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" /></svg>
             <span className="flex-1 text-[12.5px] font-bold text-[#8a6d16]">{t.drawCautionTitle}</span>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className={`shrink-0 text-[#8a6d16] transition-transform ${cautionOpen ? "rotate-180" : ""}`}><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
