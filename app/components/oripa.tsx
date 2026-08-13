@@ -1393,7 +1393,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
                 <CoinIcon size={22} />
                 <span className="text-[18px] font-extrabold leading-none text-[#1d2129] underline decoration-[#D10005] decoration-2 underline-offset-[3px]">{DRAW_PRICE.toLocaleString()}<span className="text-[11px] font-bold text-[#8a9099]">{t.perDraw}</span></span>
               </span>
-              {item.gem && (
+              {multiCurrency && (
                 <span className="flex items-center gap-2">
                   <GemIcon size={22} />
                   <span className="text-[18px] font-extrabold leading-none text-[#1d2129] underline decoration-[#D10005] decoration-2 underline-offset-[3px]">{DRAW_PRICE.toLocaleString()}<span className="text-[11px] font-bold text-[#8a9099]">{t.perDraw}</span></span>
