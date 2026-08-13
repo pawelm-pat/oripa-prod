@@ -984,9 +984,9 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
             return (
               <div key={s.id}>
                 {/* Curved divider into the red section. The curve is a red shape on
-                    transparency, so the wrapper carries the grey search surface up
-                    to the oval — the feed below keeps its own lighter background. */}
-                <div className="bg-[#D9D9D9]">
+                    transparency, so the wrapper carries the nav surface up to the
+                    oval — the feed below keeps its own background. */}
+                <div className="bg-[#FEFEFE]">
                   <img src="/home-divider-top.png" alt="" className="-mb-px block w-full" />
                 </div>
                 <section className="bg-[#D10005] px-3.5 pb-6 pt-4">
@@ -1024,7 +1024,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
       : (
         <div>
           {/* Top 2 oripas are recommended for the category: red section + dividers */}
-          <div className="bg-[#D9D9D9]">
+          <div className="bg-[#FEFEFE]">
             <img src="/home-divider-top.png" alt="" className="-mb-px block w-full" />
           </div>
           <section className="bg-[#D10005] px-3.5 pb-6 pt-4">
@@ -1042,10 +1042,10 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
     <div ref={rootRef} className="bg-[#eef0f3]">
       {/* Sticky lobby nav: the category bar stays pinned; the search bar
           collapses on scroll-down and expands again on scroll-up. */}
-      <div ref={searchBoxRef} className="sticky top-0 z-30 bg-[#D9D9D9]">
+      <div ref={searchBoxRef} className="sticky top-0 z-30 bg-[#FEFEFE]">
       {/* Category bar — icon over label; ALL is a black D-tab pinned to the
           left edge, the active category is red with an underline. */}
-      <div className="no-scrollbar flex items-stretch overflow-x-auto border-b border-black/10 bg-white">
+      <div className="no-scrollbar flex items-stretch overflow-x-auto border-b border-black/10 bg-[#FEFEFE]">
         {catList.map((c) => {
           const on = cat === c.key;
           if (c.key === "all") {
@@ -1054,7 +1054,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
                 key={c.key}
                 onClick={() => selectCat(c.key)}
                 aria-pressed={on}
-                className="sticky left-0 z-[3] flex shrink-0 items-stretch bg-white pr-2.5"
+                className="sticky left-0 z-[3] flex shrink-0 items-stretch bg-[#FEFEFE] pr-2.5"
               >
                 <span className="flex flex-col items-center justify-center gap-1 rounded-r-[28px] bg-[#141414] px-4 py-2 text-white shadow-[3px_0_12px_rgba(0,0,0,0.18)]">
                   {catIcon("all", "#fff")}
@@ -1081,13 +1081,13 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
       {/* Search bar — collapses to zero height when hidden so nothing peeks
           above the category bar; expands again on scroll-up. */}
       <div
-        className="overflow-hidden bg-[#D9D9D9] transition-[max-height] duration-300 ease-out will-change-[max-height]"
+        className="overflow-hidden bg-[#FEFEFE] transition-[max-height] duration-300 ease-out will-change-[max-height]"
         style={{ maxHeight: searchHidden ? 0 : 80 }}
       >
         {/* Inner bar slides as a rigid unit (synced with the wrapper clip) so it
             never appears squished/half-rendered while revealing. */}
         <div
-          className="bg-[#D9D9D9] px-3 py-2.5 transition-transform duration-300 ease-out will-change-transform"
+          className="bg-[#FEFEFE] px-3 py-2.5 transition-transform duration-300 ease-out will-change-transform"
           style={{ transform: searchHidden ? "translateY(-100%)" : "translateY(0)" }}
         >
           <div className="relative">
@@ -1121,7 +1121,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
       {/* Applied-filters bar — shows which filters are active as removable chips
           plus a Clear all action. Hidden while the filter dropdown is open. */}
       {!searchActive && filterCount > 0 && (
-        <div className="flex items-center gap-2 bg-[#D9D9D9] px-3 py-2">
+        <div className="flex items-center gap-2 bg-[#FEFEFE] px-3 py-2">
           <div className="no-scrollbar flex flex-1 items-center gap-1.5 overflow-x-auto">
             {activeFilterKeys.map((k) => (
               <button
