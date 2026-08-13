@@ -1193,6 +1193,9 @@ function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, scrollRef, qu
    banner, remaining/period, and the prize line-up by tier (1st = UR / holo,
    2nd = SR / gold, 3rd = N / silver), with a sticky draw CTA. */
 const DRAW_PRICE = 1000; // coins per single draw (mirrors the lobby card price)
+// Free-point balance shown as the "before" value in the draw-confirmation
+// popup (mirrors the static free-point figure shown across the app).
+const DRAW_FREE_POINTS = 10000;
 const MAX_CUSTOM_DRAW = 100; // cap for the custom-draw quantity stepper
 
 // Beveled tier plate ("1等 / 2등 / 3등") — gold for 1st/2nd, silver for 3rd,
@@ -1539,23 +1542,37 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
               <h3 className="text-center text-[18px] font-bold text-[#1d2129]">{locTitle(item, lang)}</h3>
               <p className="mt-1.5 text-center text-[12px] leading-relaxed text-[#8a9099]">{t.drawConfirmDesc}</p>
 
-              {/* Cost row */}
-              <div className="mt-3.5 flex items-center justify-center gap-3 rounded-xl border border-black/10 bg-white py-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-                <span className="flex items-center gap-1.5">
-                  <CoinIcon size={26} />
-                  <span className="text-[20px] font-extrabold text-[#1d2129]">{(DRAW_PRICE * confirmCount).toLocaleString()}</span>
-                </span>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M9 6l6 6-6 6" stroke="#9aa1ab" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                <span className="flex items-center gap-1.5">
-                  <GemIcon size={26} />
-                  <span className="text-[20px] font-extrabold text-[#D10005]">0</span>
-                </span>
-              </div>
+              {/* Balance change — coins (primary, red box) and free points
+                  (secondary, grey box), each shown as current → after-draw. */}
+              {(() => {
+                const cost = DRAW_PRICE * confirmCount;
+                const coinsAfter = coins - cost;
+                const pointsAfter = DRAW_FREE_POINTS - cost;
+                const arrow = (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M9 6l6 6-6 6" stroke="#9aa1ab" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                );
+                return (
+                  <div className="mt-3.5 space-y-2">
+                    {/* Coins */}
+                    <div className="flex items-center justify-center gap-3 rounded-xl border-2 border-[#D10005] bg-white py-3">
+                      <span className="flex items-center gap-1.5"><CoinIcon size={26} /><span className="text-[20px] font-extrabold text-[#1d2129]">{coins.toLocaleString()}</span></span>
+                      {arrow}
+                      <span className="flex items-center gap-1.5"><CoinIcon size={26} /><span className="text-[20px] font-extrabold" style={{ color: coinsAfter < 0 ? "#ef8a8a" : "#D10005" }}>{coinsAfter.toLocaleString()}</span></span>
+                    </div>
+                    {/* Free points */}
+                    <div className="flex items-center justify-center gap-3 rounded-xl bg-[#f2f3f5] py-3">
+                      <span className="flex items-center gap-1.5"><GemIcon size={26} /><span className="text-[20px] font-extrabold text-[#8a9099]">{DRAW_FREE_POINTS.toLocaleString()}</span></span>
+                      {arrow}
+                      <span className="flex items-center gap-1.5"><GemIcon size={26} /><span className="text-[20px] font-extrabold" style={{ color: pointsAfter < 0 ? "#ef8a8a" : "#e0706e" }}>{pointsAfter.toLocaleString()}</span></span>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Confirm CTA */}
               <button
                 onClick={confirmDraw}
-                className="mt-3 w-full rounded-[10px] bg-[#D10005] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]"
+                className="mt-3.5 w-full rounded-[10px] bg-[#D10005] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]"
               >
                 {confirmCount === 1 ? t.drawDraw1 : t.drawDrawTen}
               </button>
@@ -1563,21 +1580,21 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
               {/* Dashed divider */}
               <div className="my-3.5 border-t border-dashed border-black/20" />
 
+              {/* Cancel */}
+              <button
+                onClick={() => setConfirmCount(null)}
+                className="w-full rounded-[10px] border border-black/25 bg-white py-3 text-[14px] font-bold text-[#3a3f47] active:scale-[0.98]"
+              >
+                {t.cancel}
+              </button>
+
               {/* Terms */}
-              <p className="text-center text-[12px] font-semibold text-[#1d2129]">
+              <p className="mt-3 text-center text-[12px] font-semibold text-[#1d2129]">
                 {t.drawConfirmTerms}{" "}
                 <button onClick={() => openLegal("terms")} className="font-bold text-[#D10005] underline decoration-[#D10005] underline-offset-2">
                   {t.drawConfirmTermsLink}
                 </button>
               </p>
-
-              {/* Cancel */}
-              <button
-                onClick={() => setConfirmCount(null)}
-                className="mt-3 w-full rounded-[10px] border border-black/15 bg-white py-3 text-[14px] font-bold text-[#3a3f47] active:scale-[0.98]"
-              >
-                {t.cancel}
-              </button>
             </div>
           </div>
         </div>
