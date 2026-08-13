@@ -1035,7 +1035,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
   }
 
   return (
-    <div ref={rootRef} className="bg-[#eef0f3]">
+    <div ref={rootRef} className="bg-white">
       {/* Sticky lobby nav: the category bar stays pinned; the search bar
           collapses on scroll-down and expands again on scroll-up. */}
       <div ref={searchBoxRef} className="sticky top-0 z-30 bg-white">
@@ -1678,21 +1678,21 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
               {/* Dashed divider */}
               <div className="my-3.5 border-t border-dashed border-black/20" />
 
-              {/* Terms */}
-              <p className="text-center text-[12px] font-semibold text-[#1d2129]">
+              {/* Cancel — secondary (2px grey outline), fixed 39px / 8px radius */}
+              <button
+                onClick={() => setCustomOpen(false)}
+                className="flex h-[39px] w-full items-center justify-center rounded-lg border-2 border-[#82878f] bg-white text-[15px] font-bold text-[#6b7078] active:scale-[0.98]"
+              >
+                {t.cancel}
+              </button>
+
+              {/* Terms — at the very bottom */}
+              <p className="mt-3 text-center text-[12px] font-semibold text-[#1d2129]">
                 {t.drawConfirmTerms}{" "}
                 <button onClick={() => openLegal("terms")} className="font-bold text-[#D10005] underline decoration-[#D10005] underline-offset-2">
                   {t.drawConfirmTermsLink}
                 </button>
               </p>
-
-              {/* Cancel — secondary (2px grey outline), fixed 39px / 8px radius */}
-              <button
-                onClick={() => setCustomOpen(false)}
-                className="mt-3 flex h-[39px] w-full items-center justify-center rounded-lg border-2 border-[#82878f] bg-white text-[15px] font-bold text-[#6b7078] active:scale-[0.98]"
-              >
-                {t.cancel}
-              </button>
             </div>
           </div>
         </div>
