@@ -1472,7 +1472,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
             const link = (
               <button
                 onClick={() => openLegal("terms")}
-                className="font-bold text-[#D10005] underline decoration-[#D10005] underline-offset-2"
+                className="font-bold text-[#0F0F0F] underline decoration-[#0F0F0F] underline-offset-2"
               >
                 {word}
               </button>
