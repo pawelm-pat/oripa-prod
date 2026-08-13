@@ -1534,13 +1534,13 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
       {!soldOut && (
         <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2.5 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
           <div className="flex gap-2">
-            <button onClick={() => draw(1)} className="flex-1 rounded-[10px] border-2 border-[#D10005] bg-white py-3 text-[13px] font-extrabold text-[#1d2129] active:scale-[0.98]">
+            <button onClick={() => draw(1)} className="flex h-[40px] flex-1 items-center justify-center rounded-md border-2 border-[#D10005] bg-white text-[13px] font-extrabold text-[#1d2129] active:scale-[0.98]">
               {t.drawDraw1}
             </button>
-            <button onClick={() => draw(10)} className="flex-1 rounded-[10px] bg-[#D10005] py-3 text-[13px] font-extrabold text-white active:scale-[0.98]">
+            <button onClick={() => draw(10)} className="flex h-[40px] flex-1 items-center justify-center rounded-md bg-[#D10005] text-[13px] font-extrabold text-white active:scale-[0.98]">
               {t.drawDrawTen}
             </button>
-            <button onClick={openCustom} className="flex-1 whitespace-nowrap rounded-[10px] bg-[#D10005] py-3 text-[13px] font-extrabold text-white active:scale-[0.98]">
+            <button onClick={openCustom} className="flex h-[40px] flex-1 items-center justify-center whitespace-nowrap rounded-md bg-[#D10005] text-[13px] font-extrabold text-white active:scale-[0.98]">
               {t.drawDrawCustom}
             </button>
           </div>
