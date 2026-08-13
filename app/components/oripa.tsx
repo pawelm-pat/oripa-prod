@@ -1522,7 +1522,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
         >
           <style>{`@keyframes drawConfirmIn{0%{opacity:0;transform:translateY(12px) scale(.94)}100%{opacity:1;transform:none}}`}</style>
           <div
-            className="no-scrollbar flex max-h-full w-full max-w-[380px] flex-col overflow-y-auto rounded-2xl bg-white shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+            className="no-scrollbar flex max-h-full w-full max-w-[380px] flex-col overflow-y-auto bg-white shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
             style={{ animation: "drawConfirmIn 260ms cubic-bezier(0.22,0.61,0.36,1) both" }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1530,7 +1530,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
               src="/draw-banner-modal.png"
               alt={t.drawPackSubtitle}
               draggable={false}
-              className="block w-full select-none rounded-t-2xl"
+              className="block w-full select-none"
               style={{ WebkitUserDrag: "none" } as React.CSSProperties}
             />
 
@@ -1608,7 +1608,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
           aria-modal="true"
         >
           <div
-            className="no-scrollbar flex max-h-full w-full max-w-[380px] flex-col overflow-y-auto rounded-2xl bg-white shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+            className="no-scrollbar flex max-h-full w-full max-w-[380px] flex-col overflow-y-auto bg-white shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
             style={{ animation: "drawConfirmIn 260ms cubic-bezier(0.22,0.61,0.36,1) both" }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1616,7 +1616,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
               src="/draw-banner-modal.png"
               alt={t.drawPackSubtitle}
               draggable={false}
-              className="block w-full select-none rounded-t-2xl"
+              className="block w-full select-none"
               style={{ WebkitUserDrag: "none" } as React.CSSProperties}
             />
 
@@ -1630,9 +1630,9 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
                   onClick={() => setQty(customQty - 1)}
                   disabled={customQty <= 1}
                   aria-label="decrease"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#c9ced6] text-white active:scale-95 disabled:opacity-40"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#8f959d] text-white active:scale-95 disabled:opacity-40"
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M5 12h14" /></svg>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round"><path d="M5 12h14" /></svg>
                 </button>
                 <div className="flex min-w-[150px] items-center justify-center rounded-2xl border border-black/10 bg-white px-6 py-1.5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
                   <span className="text-[38px] font-black leading-none text-[#1d2129]">{customQty}</span>
@@ -1643,15 +1643,15 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
                   aria-label="increase"
                   className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#D10005] text-white active:scale-95 disabled:opacity-40"
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
                 </button>
               </div>
 
               {/* Quick-add */}
               <div className="mt-3 flex items-center justify-center gap-2">
-                <button onClick={() => setQty(customQty + 5)} className="rounded-[8px] border border-black/25 px-4 py-2 text-[13px] font-bold text-[#1d2129] active:scale-95">{t.drawCustomAdd(5)}</button>
-                <button onClick={() => setQty(customQty + 10)} className="rounded-[8px] border border-black/25 px-4 py-2 text-[13px] font-bold text-[#1d2129] active:scale-95">{t.drawCustomAdd(10)}</button>
-                <button onClick={() => setQty(MAX_CUSTOM_DRAW)} className="rounded-[8px] border border-black/25 px-4 py-2 text-[13px] font-bold text-[#1d2129] active:scale-95">{t.drawCustomMax}</button>
+                <button onClick={() => setQty(customQty + 5)} className="rounded-[10px] border-2 border-black bg-white px-4 py-2 text-[13px] font-bold text-black active:scale-95">{t.drawCustomAdd(5)}</button>
+                <button onClick={() => setQty(customQty + 10)} className="rounded-[10px] border-2 border-black bg-white px-4 py-2 text-[13px] font-bold text-black active:scale-95">{t.drawCustomAdd(10)}</button>
+                <button onClick={() => setQty(MAX_CUSTOM_DRAW)} className="rounded-[10px] border-2 border-black bg-white px-4 py-2 text-[13px] font-bold text-black active:scale-95">{t.drawCustomMax}</button>
               </div>
 
               {/* Cost row */}
@@ -2337,11 +2337,11 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
         >
           <style>{`@keyframes drawConfirmIn{0%{opacity:0;transform:translateY(12px) scale(.94)}100%{opacity:1;transform:none}}`}</style>
           <div
-            className="no-scrollbar flex max-h-full w-full max-w-[380px] flex-col overflow-y-auto rounded-2xl bg-white shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+            className="no-scrollbar flex max-h-full w-full max-w-[380px] flex-col overflow-y-auto bg-white shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
             style={{ animation: "drawConfirmIn 260ms cubic-bezier(0.22,0.61,0.36,1) both", fontFamily: "var(--font-noto-sans-jp), system-ui, sans-serif" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <img src="/oripa-banner-adkakutei.png" alt="" draggable={false} className="h-[168px] w-full rounded-t-2xl object-cover object-center" style={{ WebkitUserDrag: "none" } as React.CSSProperties} />
+            <img src="/oripa-banner-adkakutei.png" alt="" draggable={false} className="h-[168px] w-full object-cover object-center" style={{ WebkitUserDrag: "none" } as React.CSSProperties} />
 
             <div className="px-4 pb-4 pt-3.5">
               <h3 className="text-center text-[19px] font-extrabold tracking-tight text-[#D10005]">{t.drawLimitTitle}</h3>
