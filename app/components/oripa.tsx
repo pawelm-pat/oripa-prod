@@ -983,8 +983,12 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
           if (s.variant === "red") {
             return (
               <div key={s.id}>
-                {/* Curved divider transitioning white -> red (above the section) */}
-                <img src="/home-divider-top.png" alt="" className="-mb-px block w-full" />
+                {/* Curved divider into the red section. The curve is a red shape on
+                    transparency, so the wrapper carries the grey search surface up
+                    to the oval — the feed below keeps its own lighter background. */}
+                <div className="bg-[#D9D9D9]">
+                  <img src="/home-divider-top.png" alt="" className="-mb-px block w-full" />
+                </div>
                 <section className="bg-[#D10005] px-3.5 pb-6 pt-4">
                   <div className="mb-3 flex items-center justify-between">
                     <h3 className="text-[15px] font-extrabold text-white">{title}</h3>
@@ -1020,7 +1024,9 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
       : (
         <div>
           {/* Top 2 oripas are recommended for the category: red section + dividers */}
-          <img src="/home-divider-top.png" alt="" className="-mb-px block w-full" />
+          <div className="bg-[#D9D9D9]">
+            <img src="/home-divider-top.png" alt="" className="-mb-px block w-full" />
+          </div>
           <section className="bg-[#D10005] px-3.5 pb-6 pt-4">
             <h3 className="mb-3 text-[15px] font-extrabold text-white">{recTitle}</h3>
             <div className="flex flex-col gap-3">{featured.map(full)}</div>
@@ -1032,15 +1038,11 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
       );
   }
 
-  // Lobby surface: the design token is #0F0F0F at 15%, resolved against white
-  // (= #DBDBDB) and applied opaque — the sticky nav has the feed scrolling under
-  // it, and a translucent fill on these nested layers would both bleed content
-  // through and darken the tone on every stack.
   return (
-    <div ref={rootRef} className="bg-[#DBDBDB]">
+    <div ref={rootRef} className="bg-[#eef0f3]">
       {/* Sticky lobby nav: the category bar stays pinned; the search bar
           collapses on scroll-down and expands again on scroll-up. */}
-      <div ref={searchBoxRef} className="sticky top-0 z-30 bg-[#DBDBDB]">
+      <div ref={searchBoxRef} className="sticky top-0 z-30 bg-[#D9D9D9]">
       {/* Category bar — icon over label; ALL is a black D-tab pinned to the
           left edge, the active category is red with an underline. */}
       <div className="no-scrollbar flex items-stretch overflow-x-auto border-b border-black/10 bg-white">
@@ -1079,13 +1081,13 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
       {/* Search bar — collapses to zero height when hidden so nothing peeks
           above the category bar; expands again on scroll-up. */}
       <div
-        className="overflow-hidden bg-[#DBDBDB] transition-[max-height] duration-300 ease-out will-change-[max-height]"
+        className="overflow-hidden bg-[#D9D9D9] transition-[max-height] duration-300 ease-out will-change-[max-height]"
         style={{ maxHeight: searchHidden ? 0 : 80 }}
       >
         {/* Inner bar slides as a rigid unit (synced with the wrapper clip) so it
             never appears squished/half-rendered while revealing. */}
         <div
-          className="bg-[#DBDBDB] px-3 py-2.5 transition-transform duration-300 ease-out will-change-transform"
+          className="bg-[#D9D9D9] px-3 py-2.5 transition-transform duration-300 ease-out will-change-transform"
           style={{ transform: searchHidden ? "translateY(-100%)" : "translateY(0)" }}
         >
           <div className="relative">
@@ -1119,7 +1121,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
       {/* Applied-filters bar — shows which filters are active as removable chips
           plus a Clear all action. Hidden while the filter dropdown is open. */}
       {!searchActive && filterCount > 0 && (
-        <div className="flex items-center gap-2 bg-[#DBDBDB] px-3 py-2">
+        <div className="flex items-center gap-2 bg-[#D9D9D9] px-3 py-2">
           <div className="no-scrollbar flex flex-1 items-center gap-1.5 overflow-x-auto">
             {activeFilterKeys.map((k) => (
               <button
