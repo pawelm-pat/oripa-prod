@@ -7,7 +7,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Lang } from "../lib/types";
 import { STR } from "../lib/i18n";
-import { PREFECTURES_EN, PREFECTURES_JA, US_STATES } from "../data/prizes";
 import {
   SPECIAL_OFFERS,
   STORE_V3_HERO_PACKAGES,
@@ -42,94 +41,6 @@ function CardBrandIcon({ brand, large = false }: { brand: string; large?: boolea
   );
   if (b === "amex") return <span className={`inline-block rounded bg-[#006fcf] px-1.5 py-0.5 text-center font-black text-white ${large ? "text-[11px]" : "text-[10px]"}`}>AMEX</span>;
   return <svg width={large ? 42 : 36} height={large ? 28 : 24} viewBox="0 0 36 24" fill="none"><rect width="36" height="24" rx="3" fill="#1d2129" /><rect x="2" y="8" width="32" height="4" fill="#8a9099" /><rect x="2" y="16" width="8" height="4" rx="1" fill="#8a9099" /></svg>;
-}
-
-function AcceptedCardBadge({ brand }: { brand: "visa" | "mastercard" | "amex" | "discover" | "unionpay" | "diners" | "jcb" }) {
-  const tile = "flex h-5 w-8 shrink-0 items-center justify-center overflow-hidden rounded-[3px] border border-[#e2e5ea]";
-  if (brand === "visa") {
-    return (
-      <span className={`${tile} bg-[#1a1f71]`}>
-        <span className="text-[8px] font-black italic tracking-wide text-white">VISA</span>
-      </span>
-    );
-  }
-  if (brand === "mastercard") {
-    return (
-      <span className={`${tile} bg-white`}>
-        <span className="relative flex h-3.5 w-5 items-center">
-          <span className="absolute left-0 h-3.5 w-3.5 rounded-full bg-[#eb001b]" />
-          <span className="absolute left-1.5 h-3.5 w-3.5 rounded-full bg-[#f79e1b] opacity-90" />
-        </span>
-      </span>
-    );
-  }
-  if (brand === "amex") {
-    return (
-      <span className={`${tile} bg-[#006fcf]`}>
-        <span className="px-0.5 text-center text-[5px] font-black leading-[1.05] tracking-tight text-white">AMERICAN<br />EXPRESS</span>
-      </span>
-    );
-  }
-  if (brand === "discover") {
-    return (
-      <span className={`${tile} bg-[#1d2129]`}>
-        <span className="text-[6px] font-black tracking-wide text-white">
-          DISC<span className="text-[#f76f20]">O</span>VER
-        </span>
-      </span>
-    );
-  }
-  if (brand === "unionpay") {
-    return (
-      <span className={`${tile} bg-[#1d2129]`}>
-        <svg width="28" height="16" viewBox="0 0 28 16" aria-hidden>
-          <rect x="2" y="2" width="8" height="12" rx="1" fill="#e21836" />
-          <rect x="10" y="2" width="8" height="12" rx="1" fill="#00447c" />
-          <rect x="18" y="2" width="8" height="12" rx="1" fill="#007b84" />
-          <text x="14" y="10.5" textAnchor="middle" fill="white" fontSize="4.5" fontWeight="800" fontFamily="Arial, sans-serif">UnionPay</text>
-        </svg>
-      </span>
-    );
-  }
-  if (brand === "diners") {
-    return (
-      <span className={`${tile} bg-white`}>
-        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden>
-          <circle cx="12" cy="12" r="10" fill="#0079BE" />
-          <circle cx="12" cy="12" r="7.5" fill="white" />
-          <path d="M8 12a4 4 0 018 0 4 4 0 01-8 0z" fill="#0079BE" />
-          <rect x="10.2" y="8" width="1.4" height="8" fill="white" />
-          <rect x="12.4" y="8" width="1.4" height="8" fill="white" />
-        </svg>
-      </span>
-    );
-  }
-  return (
-    <span className={`${tile} bg-[#1d2129]`}>
-      <svg width="22" height="14" viewBox="0 0 36 22" aria-hidden>
-        <rect x="1" y="1" width="10" height="20" rx="1.5" fill="#0E4C96" />
-        <rect x="13" y="1" width="10" height="20" rx="1.5" fill="#E60028" />
-        <rect x="25" y="1" width="10" height="20" rx="1.5" fill="#00873F" />
-        <text x="6" y="14" textAnchor="middle" fill="white" fontSize="7" fontWeight="800" fontFamily="Arial, sans-serif">J</text>
-        <text x="18" y="14" textAnchor="middle" fill="white" fontSize="7" fontWeight="800" fontFamily="Arial, sans-serif">C</text>
-        <text x="30" y="14" textAnchor="middle" fill="white" fontSize="7" fontWeight="800" fontFamily="Arial, sans-serif">B</text>
-      </svg>
-    </span>
-  );
-}
-
-function AcceptedCardsRow({ label, flush = false }: { label: string; flush?: boolean }) {
-  const brands: Array<"visa" | "mastercard" | "amex" | "discover" | "unionpay" | "diners" | "jcb"> = [
-    "visa", "mastercard", "amex", "discover", "unionpay", "diners", "jcb",
-  ];
-  return (
-    <div className={flush ? "" : "pl-8"}>
-      <p className="mb-1 text-[11px] font-medium text-[#5c626b]">{label}</p>
-      <div className="flex flex-nowrap items-center gap-1">
-        {brands.map((b) => <AcceptedCardBadge key={b} brand={b} />)}
-      </div>
-    </div>
-  );
 }
 
 /* ── Quick purchase (insufficient coins → offer sheet) ───────────────── */
@@ -256,31 +167,18 @@ export function QuickPurchaseFlow({
   const [step, setStep] = useState<"offers" | "pay" | "auth3ds" | "success">("offers");
   const [pkg, setPkg] = useState<QuickOffer | null>(null);
   const [showMorePkgs, setShowMorePkgs] = useState(false);
-  const [selectedCardIdx, setSelectedCardIdx] = useState<number | "new">(savedCards.length > 0 ? 0 : "new");
+  const [selectedCardIdx, setSelectedCardIdx] = useState(0);
   const [cardMenuOpen, setCardMenuOpen] = useState(false);
-  const [addOpen, setAddOpen] = useState(false);
   const [payMethod, setPayMethod] = useState<"card" | "applePay" | "googlePay">("card");
-  const [intlCurrency, setIntlCurrency] = useState<string | null>(null);
-  const [cardNum, setCardNum] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvc, setCvc] = useState("");
+  const [intlCurrency, setIntlCurrency] = useState<string | null>(isIntl ? intlLocal.code : null);
   const [authCode, setAuthCode] = useState("");
-  const [cardName, setCardName] = useState("");
-  const [billingFirstName, setBillingFirstName] = useState("");
-  const [billingLastName, setBillingLastName] = useState("");
-  const [billingAddress1, setBillingAddress1] = useState("");
-  const [billingAddress2, setBillingAddress2] = useState("");
-  const [billingCity, setBillingCity] = useState("");
-  const [billingState, setBillingState] = useState("");
-  const [billingZip, setBillingZip] = useState("");
-  const [country, setCountry] = useState("Japan");
   const [credited, setCredited] = useState(false);
   const [paidCard, setPaidCard] = useState<QuickSavedCard | null>(null);
 
   // Keep selection valid when shared card list changes (e.g. after Store purchase).
   useEffect(() => {
-    if (typeof selectedCardIdx === "number" && selectedCardIdx >= savedCards.length) {
-      setSelectedCardIdx(savedCards.length > 0 ? 0 : "new");
+    if (selectedCardIdx >= savedCards.length) {
+      setSelectedCardIdx(0);
     }
   }, [savedCards.length, selectedCardIdx]);
 
@@ -292,114 +190,38 @@ export function QuickPurchaseFlow({
   }, [featuredOffers, allStoreOffers]);
   const hasMorePackages = scrollOffers.length > 2;
 
-  const rawCardNum = cardNum.replace(/\s/g, "");
-  const cardNumValid = rawCardNum.length >= 14 && rawCardNum.length <= 16;
-  const expiryValid = (() => {
-    const m = expiry.match(/^(\d{2})\/(\d{2})$/);
-    if (!m) return false;
-    const mm = parseInt(m[1], 10);
-    const yy = parseInt(m[2], 10);
-    if (mm < 1 || mm > 12) return false;
-    const now = new Date();
-    const nowY = now.getFullYear() % 100;
-    const nowM = now.getMonth() + 1;
-    return yy > nowY || (yy === nowY && mm >= nowM);
-  })();
-  const isJapan = country === "Japan";
-  const billingZipValid = isJapan ? /^\d{3}-\d{4}$/.test(billingZip) : /^\d{5}$/.test(billingZip.trim());
-  const billingFilled =
-    billingFirstName.trim().length > 0 &&
-    billingLastName.trim().length > 0 &&
-    billingAddress1.trim().length > 0 &&
-    billingCity.trim().length > 0 &&
-    billingState.length > 0 &&
-    billingZipValid;
-  const isNewCard = addOpen || selectedCardIdx === "new" || savedCards.length === 0;
-  const newCardCvvValid = cvc.replace(/\D/g, "").length >= 3;
   const authCodeDigits = authCode.replace(/\D/g, "");
   const authCodeValid = authCodeDigits.length >= 4;
   const intlDisabled = isIntl && !intlCurrency;
-  const payDisabled = !pkg || intlDisabled || (isNewCard
-    ? (!cardNumValid || !expiryValid || !newCardCvvValid || cardName.trim().length < 2 || !billingFilled)
-    : false);
-
   const dropdownCards = savedCards.slice(0, 3);
-  const selectedCard = typeof selectedCardIdx === "number" ? savedCards[selectedCardIdx] : null;
+  const selectedCard = savedCards[selectedCardIdx] ?? null;
+  const payDisabled = !pkg || intlDisabled || !selectedCard;
 
   const sheetMaxH =
     step === "success" ? "78%"
     : step === "pay" && cardMenuOpen ? "84%"
-    : step === "pay" && addOpen ? "88%"
     : step === "offers" && showMorePkgs ? "86%"
     : step === "pay" ? "84%"
     : "72%";
 
-  function handleCardNumChange(value: string) {
-    const digits = value.replace(/\D/g, "").slice(0, 16);
-    setCardNum(digits.replace(/(\d{4})(?=\d)/g, "$1 "));
-  }
-  function handleExpiryChange(value: string) {
-    const raw = value.replace(/\D/g, "").slice(0, 4);
-    setExpiry(raw.length > 2 ? `${raw.slice(0, 2)}/${raw.slice(2)}` : raw);
-  }
-  function handleCardNameChange(value: string) {
-    setCardName(value.replace(/\d/g, "").slice(0, 30));
-  }
-  function handleBillingZipChange(v: string) {
-    if (isJapan) {
-      const digits = v.replace(/\D/g, "").slice(0, 7);
-      setBillingZip(digits.length > 3 ? `${digits.slice(0, 3)}-${digits.slice(3)}` : digits);
-    } else {
-      setBillingZip(v.replace(/\D/g, "").slice(0, 5));
-    }
-  }
-
   function selectOffer(offer: QuickOffer) {
     setPkg(offer);
     setShowMorePkgs(false);
-    setAddOpen(savedCards.length === 0);
-    setSelectedCardIdx(savedCards.length > 0 ? 0 : "new");
+    setSelectedCardIdx(0);
     setPayMethod("card");
     setAuthCode("");
-    setIntlCurrency(null);
+    setIntlCurrency(isIntl ? intlLocal.code : null);
     setCardMenuOpen(false);
     setStep("pay");
   }
 
   function beginPay() {
-    if (!pkg || payDisabled) return;
+    if (!pkg || payDisabled || !selectedCard) return;
     if (onRequireKyc && !onRequireKyc()) return;
-    let used: QuickSavedCard | null = selectedCard;
-    if (isNewCard) {
-      const digits = rawCardNum;
-      const brand = digits.startsWith("4") ? "Visa" : digits.startsWith("5") ? "Mastercard" : digits.startsWith("3") ? "Amex" : "Card";
-      const last4 = digits.slice(-4);
-      const card: QuickSavedCard = {
-        last4,
-        expiry,
-        brand,
-        name: cardName.trim(),
-        billingAddress: {
-          firstName: billingFirstName.trim(),
-          lastName: billingLastName.trim(),
-          address1: billingAddress1.trim(),
-          address2: billingAddress2.trim(),
-          country,
-          city: billingCity.trim(),
-          state: billingState,
-          zip: billingZip,
-        },
-      };
-      onSaveCard(card);
-      setSelectedCardIdx(0);
-      used = card;
-    } else if (selectedCard) {
-      // Promote to front — same LAST USED ordering as Store cashier.
-      onSaveCard(selectedCard);
-      setSelectedCardIdx(0);
-      used = selectedCard;
-    }
-    setPaidCard(used);
+    // Promote to front — same LAST USED ordering as Store cashier.
+    onSaveCard(selectedCard);
+    setSelectedCardIdx(0);
+    setPaidCard(selectedCard);
     setPayMethod("card");
     setCardMenuOpen(false);
     setAuthCode("");
@@ -440,17 +262,10 @@ export function QuickPurchaseFlow({
     }
     if (paidCard) return { label: `${paidCard.brand} •••• ${paidCard.last4}`, icon: <CardBrandIcon brand={paidCard.brand} large /> };
     if (selectedCard) return { label: `${selectedCard.brand} •••• ${selectedCard.last4}`, icon: <CardBrandIcon brand={selectedCard.brand} large /> };
-    const digits = rawCardNum;
-    const brand = digits.startsWith("4") ? "Visa" : digits.startsWith("5") ? "Mastercard" : "Card";
-    const last4 = digits.slice(-4);
-    return { label: last4.length === 4 ? `${brand} •••• ${last4}` : t.checkoutCard, icon: <CardBrandIcon brand={brand} large /> };
+    return { label: t.checkoutCard, icon: <CardBrandIcon brand="Card" large /> };
   })();
 
   const inputCls = "w-full rounded-lg border border-[#e2e5ea] bg-white px-3 py-2.5 text-[14px] text-[#1d2129] placeholder:text-[#b0b6bf] focus:outline-none focus:border-[#7b88ff]";
-  const selectCls = "w-full appearance-none rounded-lg border border-[#e2e5ea] bg-white px-3 py-2.5 text-[14px] text-[#1d2129] focus:outline-none focus:border-[#7b88ff]";
-  const chevronSvg = <svg className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="#5c626b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-  const statePlaceholder = isJapan ? (lang === "ja" ? "都道府県" : "Prefecture") : t.checkoutBillingStatePh;
-  const zipPlaceholder = isJapan ? "NNN-NNNN" : t.checkoutBillingZipPh;
 
   function renderOfferCard(offer: QuickOffer, opts?: { compact?: boolean; onPick?: () => void }) {
     const isSpecial = !!offer.isSpecial || !!offer.tag;
@@ -718,7 +533,7 @@ export function QuickPurchaseFlow({
 
               <p className="mb-2 text-[12px] font-semibold text-[#5c626b]">{t.selectPaymentMethod}</p>
 
-              {!addOpen && savedCards.length > 0 && (
+              {savedCards.length > 0 && (
                 <div className="relative">
                   <button
                     type="button"
@@ -785,111 +600,6 @@ export function QuickPurchaseFlow({
                   <img src="/gpay-btn.png" alt="Google Pay" className="h-[36px] w-auto max-w-[90%] object-contain" />
                 </button>
               </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setAddOpen((o) => !o);
-                  setCardMenuOpen(false);
-                  if (!addOpen) setSelectedCardIdx("new");
-                  else if (savedCards.length > 0) setSelectedCardIdx(0);
-                }}
-                className="mt-2.5 flex w-full items-center gap-3 rounded-xl border border-[#e2e5ea] bg-[#fafafa] px-3 py-3 active:scale-[0.99]"
-                style={{ borderColor: addOpen ? "#16a34a" : "#e2e5ea", background: addOpen ? "#f0fdf4" : "#fafafa" }}
-              >
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1d2129] text-[16px] font-bold leading-none text-white">+</span>
-                <span className="flex-1 text-left text-[14px] font-semibold text-[#1d2129]">{t.checkoutAddNewCardShort}</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ transform: addOpen ? "rotate(90deg)" : undefined }}>
-                  <path d="M9 5l7 7-7 7" stroke="#8a9099" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-
-              {addOpen && (
-                <div className="mt-3 space-y-3 rounded-xl border border-[#e2e5ea] bg-white p-3">
-                  <AcceptedCardsRow label={t.checkoutAcceptedCards} flush />
-                  <div className="space-y-2">
-                    <div className="relative">
-                      <input
-                        value={cardNum}
-                        onChange={(e) => handleCardNumChange(e.target.value)}
-                        placeholder={t.checkoutCardNumberLabel}
-                        inputMode="numeric"
-                        autoComplete="cc-number"
-                        maxLength={19}
-                        className={`${inputCls} pr-10 ${cardNum && !cardNumValid ? "text-red-500" : ""}`}
-                      />
-                      <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" width="22" height="16" viewBox="0 0 36 24" fill="none"><rect width="36" height="24" rx="3" fill="#c9ced6" /><rect x="2" y="8" width="32" height="4" fill="#8a9099" /><rect x="2" y="16" width="8" height="4" rx="1" fill="#8a9099" /></svg>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <input
-                        value={expiry}
-                        onChange={(e) => handleExpiryChange(e.target.value)}
-                        placeholder={t.checkoutExpiryPh}
-                        maxLength={5}
-                        className={`${inputCls} ${expiry && !expiryValid ? "text-red-500" : ""}`}
-                      />
-                      <input
-                        value={cvc}
-                        onChange={(e) => setCvc(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                        placeholder="CVV"
-                        inputMode="numeric"
-                        className={inputCls}
-                      />
-                    </div>
-                    <input
-                      value={cardName}
-                      onChange={(e) => handleCardNameChange(e.target.value)}
-                      placeholder={t.checkoutNameOnCardPh}
-                      maxLength={30}
-                      className={inputCls}
-                    />
-                    <p className="px-0.5 text-[11px] text-[#8a9099]">{t.checkoutNameOnCardHint}</p>
-                  </div>
-
-                  <div className="border-t border-[#e2e5ea] pt-3">
-                    <p className="mb-2 text-[14px] font-semibold text-[#1d2129]">{t.checkoutBillingAddress}</p>
-                    <div className="flex flex-col gap-2">
-                      <div className="grid grid-cols-2 gap-2">
-                        <input value={billingFirstName} onChange={(e) => setBillingFirstName(e.target.value)} placeholder={t.checkoutBillingFirstNamePh} className={inputCls} />
-                        <input value={billingLastName} onChange={(e) => setBillingLastName(e.target.value)} placeholder={t.checkoutBillingLastNamePh} className={inputCls} />
-                      </div>
-                      <input value={billingAddress1} onChange={(e) => setBillingAddress1(e.target.value)} placeholder={t.checkoutBillingAddress1Ph} className={inputCls} />
-                      <p className="flex items-start gap-1 text-[11px] text-[#5c626b]">
-                        {t.checkoutBillingPOBoxNote}
-                        <svg className="mt-0.5 shrink-0" width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#8a9099" strokeWidth="2"/><path d="M12 16v-4M12 8h.01" stroke="#8a9099" strokeWidth="2" strokeLinecap="round"/></svg>
-                      </p>
-                      <input value={billingAddress2} onChange={(e) => setBillingAddress2(e.target.value)} placeholder={t.checkoutBillingAddress2Ph} className={inputCls} />
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="relative">
-                          <select
-                            value={country}
-                            onChange={(e) => { setCountry(e.target.value); setBillingState(""); setBillingZip(""); }}
-                            className={selectCls}
-                          >
-                            <option>Japan</option>
-                            <option>United States</option>
-                          </select>
-                          {chevronSvg}
-                        </div>
-                        <input value={billingCity} onChange={(e) => setBillingCity(e.target.value)} placeholder={t.checkoutBillingCityPh} className={inputCls} />
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="relative">
-                          <select value={billingState} onChange={(e) => setBillingState(e.target.value)} className={selectCls}>
-                            <option value="">{statePlaceholder}</option>
-                            {isJapan
-                              ? PREFECTURES_JA.map((ja, i) => <option key={ja} value={ja}>{lang === "ja" ? ja : PREFECTURES_EN[i]}</option>)
-                              : US_STATES.map((s) => <option key={s}>{s}</option>)
-                            }
-                          </select>
-                          {chevronSvg}
-                        </div>
-                        <input value={billingZip} onChange={(e) => handleBillingZipChange(e.target.value)} placeholder={zipPlaceholder} className={inputCls} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               <button
                 type="button"
