@@ -1396,14 +1396,18 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
             Fiery radial burst + ray sweep, gold 3D headline, "new-only"
             ribbon, tagline, mascot and a countdown chip. */}
         <div className="px-3 pt-3">
-          {/* When sold out the creative is desaturated and the countdown chip
-              is hidden (the pack is no longer time-limited). */}
+          {/* Design creative (fiery burst headline + mascot + baked-in sales
+              period bar). Sold-out packs are desaturated. The remaining-time
+              detail is shown in the price/remaining section below, so no
+              separate period box is rendered here. */}
           <div className={soldOut ? "grayscale" : ""}>
-            <DrawPromoBanner t={t} item={item} className="rounded-2xl ring-1 ring-[#ffcf5a]/40" showCountdown={!soldOut} />
-          </div>
-          {/* Sales period — important-information bar (black box, per design). */}
-          <div className="mt-2 rounded-md bg-[#1d2129] px-3 py-2">
-            <p className="text-[12px] font-bold text-white">{t.periodLabel("2026/01/01")}</p>
+            <img
+              src="/draw-banner.png"
+              alt={t.drawPackSubtitle}
+              draggable={false}
+              className="block w-full select-none rounded-2xl ring-1 ring-[#ffcf5a]/40"
+              style={{ WebkitUserDrag: "none" } as React.CSSProperties}
+            />
           </div>
         </div>
 
