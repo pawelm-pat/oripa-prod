@@ -20,7 +20,7 @@ export const LIST_ORIPA: OripaItem[] = [
 // `cats: []` means the section only appears in the "All" feed.
 
 export const HOME_SECTIONS: HomeSection[] = [
-  { id: "rec", titleKey: "secRecommended", icon: "star", variant: "red", cats: [], items: RECOMMENDED_ORIPA },
+  { id: "rec", titleKey: "secRecommended", variant: "red", cats: [], items: RECOMMENDED_ORIPA },
 
   // New
   { id: "new", titleKey: "secNew", icon: "new", variant: "light", cats: ["new"], items: [

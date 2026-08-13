@@ -193,7 +193,6 @@ function BalancePill({ coins, t, onOpenStore }: { coins: number; t: Dict; onOpen
 
 function sectionIcon(icon: SectionIconKey, red: boolean) {
   const c = red ? "#fff" : "#1d2129";
-  if (icon === "star") return <svg width="18" height="18" viewBox="0 0 24 24" fill={c}><path d="M12 2l1.6 5.4L19 9l-5.4 1.6L12 16l-1.6-5.4L5 9l5.4-1.6z" /></svg>;
   if (icon === "cards") return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinejoin="round"><rect x="4.5" y="5" width="9" height="13" rx="1.4" transform="rotate(-10 9 11.5)" /><rect x="10" y="5" width="9" height="13" rx="1.4" transform="rotate(8 14.5 11.5)" /></svg>;
   return catIcon(icon, c);
 }
@@ -226,7 +225,6 @@ function OripaCard({ item, t, onView, onDraw }: { item: OripaItem; t: Dict; onVi
       onClick={expired ? onView : undefined}
     >
       <div className="flex flex-wrap items-center gap-1.5 px-2.5 pt-2.5">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D10005" strokeWidth="1.8" strokeLinejoin="round" className="shrink-0"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" /></svg>
         <TagPill variant="redOutline">{t.tagPopular}</TagPill>
         <TagPill variant="redFill">{t.tagPokemon}</TagPill>
         <TagPill variant="darkOutline">{t.tagLv5}</TagPill>
@@ -989,7 +987,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
                 <img src="/home-divider-top.png" alt="" className="-mb-px block w-full" />
                 <section className="bg-[#D10005] px-3.5 pb-6 pt-4">
                   <div className="mb-3 flex items-center justify-between">
-                    <h3 className="flex items-center gap-1.5 text-[15px] font-extrabold text-white">{sectionIcon(s.icon, true)}{title}</h3>
+                    <h3 className="text-[15px] font-extrabold text-white">{title}</h3>
                     {seeAllCat && <button onClick={() => setCat(seeAllCat)} className="text-[12px] font-bold text-white/90">{L.seeAll} →</button>}
                   </div>
                   <div className="flex flex-col gap-3">{s.items.map(full)}</div>
@@ -1003,7 +1001,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
           return (
             <div key={s.id} className={`px-3.5 py-3.5 first:border-t-0 ${afterRed ? "" : "border-t border-black/10"}`}>
               <div className="mb-2.5 flex items-center justify-between">
-                <h3 className="flex items-center gap-1.5 text-[15px] font-extrabold text-[#1d2129]">{sectionIcon(s.icon, false)}{title}</h3>
+                <h3 className="flex items-center gap-1.5 text-[15px] font-extrabold text-[#1d2129]">{s.icon ? sectionIcon(s.icon, false) : null}{title}</h3>
                 {seeAllCat && <button onClick={() => setCat(seeAllCat)} className="text-[12px] font-bold text-[#D10005]">{L.seeAll} →</button>}
               </div>
               <div className="flex flex-col gap-3">{s.items.map(full)}</div>
@@ -1024,7 +1022,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
           {/* Top 2 oripas are recommended for the category: red section + dividers */}
           <img src="/home-divider-top.png" alt="" className="-mb-px block w-full" />
           <section className="bg-[#D10005] px-3.5 pb-6 pt-4">
-            <h3 className="mb-3 flex items-center gap-1.5 text-[15px] font-extrabold text-white">{sectionIcon("star", true)}{recTitle}</h3>
+            <h3 className="mb-3 text-[15px] font-extrabold text-white">{recTitle}</h3>
             <div className="flex flex-col gap-3">{featured.map(full)}</div>
           </section>
           <img src="/home-divider-bottom.png" alt="" className="-mt-px block w-full" />
@@ -1035,7 +1033,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
   }
 
   return (
-    <div ref={rootRef} className="bg-white">
+    <div ref={rootRef} className="bg-[#D9D9D9]">
       {/* Sticky lobby nav: the category bar stays pinned; the search bar
           collapses on scroll-down and expands again on scroll-up. */}
       <div ref={searchBoxRef} className="sticky top-0 z-30 bg-white">

@@ -89,12 +89,12 @@ export type OripaItem = {
 // simulated connection error, or insufficient remaining stock.
 export type DrawScenario = "off" | "expired" | "connError" | "stock";
 
-export type SectionIconKey = "star" | "new" | "popular" | "pokemon" | "limited" | "cards";
+export type SectionIconKey = "new" | "popular" | "pokemon" | "limited" | "cards";
 
 export type HomeSection = {
   id: string;
   titleKey: string;
-  icon: SectionIconKey;
+  icon?: SectionIconKey;
   variant: "red" | "light";
   cats: string[];
   items: OripaItem[];
