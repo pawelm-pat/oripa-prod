@@ -1567,10 +1567,10 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
                 );
               })()}
 
-              {/* Confirm CTA */}
+              {/* Confirm CTA — primary (red) per design */}
               <button
                 onClick={confirmDraw}
-                className="mt-3.5 w-full rounded-[10px] bg-[#D10005] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]"
+                className="mt-3.5 w-full rounded-lg bg-[#D10005] py-3.5 text-[16px] font-extrabold text-white active:scale-[0.98]"
               >
                 {confirmCount === 1 ? t.drawDraw1 : t.drawDrawTen}
               </button>
@@ -1578,10 +1578,10 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
               {/* Dashed divider */}
               <div className="my-3.5 border-t border-dashed border-black/20" />
 
-              {/* Cancel */}
+              {/* Cancel — secondary (grey outline) per design */}
               <button
                 onClick={() => setConfirmCount(null)}
-                className="w-full rounded-[10px] border border-black/25 bg-white py-3 text-[14px] font-bold text-[#3a3f47] active:scale-[0.98]"
+                className="w-full rounded-lg border-[1.5px] border-[#82878f] bg-white py-3 text-[15px] font-bold text-[#6b7078] active:scale-[0.98]"
               >
                 {t.cancel}
               </button>
@@ -1667,10 +1667,10 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
                 </span>
               </div>
 
-              {/* Confirm CTA */}
+              {/* Confirm CTA — primary (red) per design; shows selected count in front */}
               <button
                 onClick={confirmCustomDraw}
-                className="mt-3 w-full rounded-[10px] bg-[#D10005] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]"
+                className="mt-3 w-full rounded-lg bg-[#D10005] py-3.5 text-[16px] font-extrabold text-white active:scale-[0.98]"
               >
                 {t.drawCustomCta(customQty)}
               </button>
@@ -1686,10 +1686,10 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
                 </button>
               </p>
 
-              {/* Cancel */}
+              {/* Cancel — secondary (grey outline) per design */}
               <button
                 onClick={() => setCustomOpen(false)}
-                className="mt-3 w-full rounded-[10px] border border-black/15 bg-white py-3 text-[14px] font-bold text-[#3a3f47] active:scale-[0.98]"
+                className="mt-3 w-full rounded-lg border-[1.5px] border-[#82878f] bg-white py-3 text-[15px] font-bold text-[#6b7078] active:scale-[0.98]"
               >
                 {t.cancel}
               </button>
