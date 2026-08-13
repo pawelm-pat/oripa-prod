@@ -1226,42 +1226,6 @@ function DrawTierCard({ rarity, lang, large = false }: { rarity: Rarity; lang: L
   );
 }
 
-// Gold 3D "アド確定 / Advantage guaranteed" headline treatment.
-const drawGoldText: React.CSSProperties = {
-  color: "#ffe27a",
-  WebkitTextStroke: "1.4px #5f2c00",
-  textShadow: "0 2px 0 #7a3b00, 0 3px 6px rgba(0,0,0,0.55)",
-};
-
-// Reusable promotional banner (fiery burst, gold headline, mascot, countdown).
-// Shared by the draw detail screen and the draw-confirmation popup.
-function DrawPromoBanner({ t, item, className = "", showCountdown = true }: { t: (typeof STR)[Lang]; item: OripaItem; className?: string; showCountdown?: boolean }) {
-  return (
-    <div
-      className={`relative h-[190px] overflow-hidden ${className}`}
-      style={{ background: "radial-gradient(circle at 40% 34%, #ffe07a 0%, #ff9e2b 26%, #ec5a10 52%, #a5210a 78%, #5c0f04 100%)" }}
-    >
-      <div className="pointer-events-none absolute inset-0 opacity-40" style={{ background: "repeating-conic-gradient(from 0deg at 42% 40%, rgba(255,255,255,0.55) 0deg 2deg, transparent 2deg 11deg)" }} />
-      <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(90deg, rgba(90,15,4,0.35) 0%, transparent 40%, transparent 62%, rgba(90,15,4,0.25) 100%)" }} />
-      <img src="/hero/hero.png" alt="" draggable={false} className="pointer-events-none absolute -bottom-2 right-[-6%] h-[104%] w-auto object-contain drop-shadow-[0_4px_10px_rgba(0,0,0,0.4)]" style={{ WebkitUserDrag: "none" } as React.CSSProperties} />
-      <div className="relative z-10 flex h-full flex-col justify-center px-3.5 py-3">
-        <span className="mb-1 inline-flex w-fit items-center rounded-[4px] bg-[#e0102a] px-2 py-0.5 text-[10px] font-black tracking-wide text-white shadow-[0_1px_3px_rgba(0,0,0,0.4)] ring-1 ring-white/40">
-          {t.drawNewOnly}
-        </span>
-        <h1 className="text-[30px] font-black leading-[0.95]" style={drawGoldText}>{t.drawGuaranteed}</h1>
-        <p className="mt-1 text-[15px] font-black leading-tight" style={drawGoldText}>{t.drawPackSubtitle}</p>
-        <p className="mt-1.5 w-fit rounded bg-black/35 px-1.5 py-0.5 text-[10.5px] font-bold text-white ring-1 ring-white/15">{t.drawBannerTagline}</p>
-      </div>
-      {showCountdown && (
-        <span className="absolute right-2 top-2 z-10 inline-flex items-center gap-1 rounded-full bg-[#d10005] px-2.5 py-1 text-[11px] font-extrabold text-white shadow-[0_2px_6px_rgba(0,0,0,0.45)] ring-1 ring-white/30">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" strokeLinecap="round" /></svg>
-          {t.minUnit(item.endsIn)}
-        </span>
-      )}
-    </div>
-  );
-}
-
 function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", onOpenDraw, onAttemptPaidDraw, pendingRunDraw, onPendingRunDrawConsumed }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; onOpenDraw?: (item: OripaItem) => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** After Quick Purchase success, host requests this count to run. */ pendingRunDraw?: { count: number; token: number } | null; onPendingRunDrawConsumed?: () => void }) {
   const t = STR[lang];
   // Opens a stored legal document (T&Cs, etc.) in the shared overlay.
@@ -1562,7 +1526,13 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
             style={{ animation: "drawConfirmIn 260ms cubic-bezier(0.22,0.61,0.36,1) both" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <DrawPromoBanner t={t} item={item} className="rounded-t-2xl" showCountdown={false} />
+            <img
+              src="/draw-banner-modal.png"
+              alt={t.drawPackSubtitle}
+              draggable={false}
+              className="block w-full select-none rounded-t-2xl"
+              style={{ WebkitUserDrag: "none" } as React.CSSProperties}
+            />
 
             <div className="px-4 pb-4 pt-3.5">
               <h3 className="text-center text-[18px] font-bold text-[#1d2129]">{locTitle(item, lang)}</h3>
@@ -1640,7 +1610,13 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
             style={{ animation: "drawConfirmIn 260ms cubic-bezier(0.22,0.61,0.36,1) both" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <DrawPromoBanner t={t} item={item} className="rounded-t-2xl" showCountdown={false} />
+            <img
+              src="/draw-banner-modal.png"
+              alt={t.drawPackSubtitle}
+              draggable={false}
+              className="block w-full select-none rounded-t-2xl"
+              style={{ WebkitUserDrag: "none" } as React.CSSProperties}
+            />
 
             <div className="px-4 pb-4 pt-3.5">
               <h3 className="text-center text-[18px] font-bold text-[#1d2129]">{locTitle(item, lang)}</h3>
