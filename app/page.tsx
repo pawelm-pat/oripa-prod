@@ -37,6 +37,9 @@ export default function Page() {
   //   connError-> Connection Error popup (Retry succeeds, Cancel returns)
   //   stock    -> only 8 left; drawing more prompts "draw remaining 8"
   const [drawScenario, setDrawScenario] = useState<DrawScenario>("off");
+  // Demo control (draw confirm popup): whether the pack accepts both currencies.
+  // Yes -> confirm popup shows coins (top) + free points (below); No -> coins only.
+  const [multiCurrency, setMultiCurrency] = useState(true);
 
   function changeKycScenario(value: KycScenario) {
     try { sessionStorage.removeItem(KYC_SESSION_KEY); } catch {}
@@ -69,17 +72,20 @@ export default function Page() {
           )}
           {/* Draw screen only: pick a draw scenario to simulate. */}
           {screen === "drawDetail" && !drawResultsOpen && (
-            <SelectControl
-              label="Draw scenario"
-              value={drawScenario}
-              onChange={setDrawScenario}
-              options={[
-                ["Happy path", "off"],
-                ["Draw expired", "expired"],
-                ["Connection Error", "connError"],
-                ["Insufficient Stock Left", "stock"],
-              ]}
-            />
+            <>
+              <SelectControl
+                label="Draw scenario"
+                value={drawScenario}
+                onChange={setDrawScenario}
+                options={[
+                  ["Happy path", "off"],
+                  ["Draw expired", "expired"],
+                  ["Connection Error", "connError"],
+                  ["Insufficient Stock Left", "stock"],
+                ]}
+              />
+              <ToggleControl label="Multi-currency" value={multiCurrency} onChange={setMultiCurrency} />
+            </>
           )}
         </div>
         <div className="rounded-[2.6rem] border border-white/12 bg-[#1b1c22] p-3 shadow-[0_35px_90px_rgba(0,0,0,0.55)]">
@@ -97,6 +103,7 @@ export default function Page() {
                 addressProvided={addressProvided}
                 dailyLimitReached={dailyLimit}
                 drawScenario={drawScenario}
+                multiCurrency={multiCurrency}
               />
             </div>
           </div>
@@ -116,6 +123,7 @@ export default function Page() {
           addressProvided={addressProvided}
           dailyLimitReached={dailyLimit}
           drawScenario={drawScenario}
+          multiCurrency={multiCurrency}
         />
       </div>
 

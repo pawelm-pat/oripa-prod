@@ -1226,7 +1226,7 @@ function DrawTierCard({ rarity, lang, large = false }: { rarity: Rarity; lang: L
   );
 }
 
-function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", onOpenDraw, onAttemptPaidDraw, pendingRunDraw, onPendingRunDrawConsumed }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; onOpenDraw?: (item: OripaItem) => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** After Quick Purchase success, host requests this count to run. */ pendingRunDraw?: { count: number; token: number } | null; onPendingRunDrawConsumed?: () => void }) {
+function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, onOpenDraw, onAttemptPaidDraw, pendingRunDraw, onPendingRunDrawConsumed }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; onOpenDraw?: (item: OripaItem) => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** After Quick Purchase success, host requests this count to run. */ pendingRunDraw?: { count: number; token: number } | null; onPendingRunDrawConsumed?: () => void }) {
   const t = STR[lang];
   // Opens a stored legal document (T&Cs, etc.) in the shared overlay.
   const openLegal = useContext(LegalNavContext);
@@ -1555,12 +1555,14 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
                       {arrow}
                       <span className="flex items-center gap-1.5"><CoinIcon size={26} /><span className="text-[20px] font-extrabold" style={{ color: coinsAfter < 0 ? "#ef8a8a" : "#D10005" }}>{coinsAfter.toLocaleString()}</span></span>
                     </div>
-                    {/* Free points */}
-                    <div className="flex items-center justify-center gap-3 rounded-xl bg-[#f2f3f5] py-3">
-                      <span className="flex items-center gap-1.5"><GemIcon size={26} /><span className="text-[20px] font-extrabold text-[#8a9099]">{DRAW_FREE_POINTS.toLocaleString()}</span></span>
-                      {arrow}
-                      <span className="flex items-center gap-1.5"><GemIcon size={26} /><span className="text-[20px] font-extrabold" style={{ color: pointsAfter < 0 ? "#ef8a8a" : "#e0706e" }}>{pointsAfter.toLocaleString()}</span></span>
-                    </div>
+                    {/* Free points — only when the pack accepts both currencies. */}
+                    {multiCurrency && (
+                      <div className="flex items-center justify-center gap-3 rounded-xl bg-[#f2f3f5] py-3">
+                        <span className="flex items-center gap-1.5"><GemIcon size={26} /><span className="text-[20px] font-extrabold text-[#8a9099]">{DRAW_FREE_POINTS.toLocaleString()}</span></span>
+                        {arrow}
+                        <span className="flex items-center gap-1.5"><GemIcon size={26} /><span className="text-[20px] font-extrabold" style={{ color: pointsAfter < 0 ? "#ef8a8a" : "#e0706e" }}>{pointsAfter.toLocaleString()}</span></span>
+                      </div>
+                    )}
                   </div>
                 );
               })()}
@@ -5096,8 +5098,8 @@ function StorePage({
   );
 }
 
-export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off" }: {
-  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario;
+export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off", multiCurrency = true }: {
+  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean;
 }) {
   const t = STR[lang];
   const [screen, setScreen] = useState<Screen>("landing");
@@ -5363,6 +5365,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             freeShipAvailable={freeShipAvailable}
             dailyLimitReached={dailyLimitReached}
             drawScenario={drawScenario}
+            multiCurrency={multiCurrency}
             onResultsChange={onDrawResultsChange}
             shippingAddresses={shippingAddresses}
             onShippingAddressesChange={setShippingAddresses}
