@@ -1405,7 +1405,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
               src="/draw-banner.png"
               alt={t.drawPackSubtitle}
               draggable={false}
-              className="block w-full select-none rounded-2xl ring-1 ring-[#ffcf5a]/40"
+              className="block w-full select-none"
               style={{ WebkitUserDrag: "none" } as React.CSSProperties}
             />
           </div>
