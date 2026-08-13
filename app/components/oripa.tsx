@@ -1466,9 +1466,31 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
             <span className="flex-1 text-[12.5px] font-bold text-[#0F0F0F]">{t.drawCautionTitle}</span>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className={`shrink-0 text-[#0F0F0F] transition-transform ${cautionOpen ? "rotate-180" : ""}`}><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
-          {cautionOpen && (
-            <p className="border-t border-[#0F0F0F]/20 px-3 py-2.5 text-[11px] leading-relaxed text-[#0F0F0F]">{t.drawCaution}</p>
-          )}
+          {cautionOpen && (() => {
+            const word = t.drawCautionTermsWord;
+            const idx = t.drawCaution.indexOf(word);
+            const link = (
+              <button
+                onClick={() => openLegal("terms")}
+                className="font-bold text-[#D10005] underline decoration-[#D10005] underline-offset-2"
+              >
+                {word}
+              </button>
+            );
+            return (
+              <p className="border-t border-[#0F0F0F]/20 px-3 py-2.5 text-[11px] leading-relaxed text-[#0F0F0F]">
+                {idx < 0 ? (
+                  t.drawCaution
+                ) : (
+                  <>
+                    {t.drawCaution.slice(0, idx)}
+                    {link}
+                    {t.drawCaution.slice(idx + word.length)}
+                  </>
+                )}
+              </p>
+            );
+          })()}
         </div>
 
         {/* Prize line-up */}

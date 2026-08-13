@@ -250,6 +250,7 @@ const EN = {
   drawSalesUntil: (d: string) => `On sale until ${d}`,
   drawCautionTitle: "Notes & terms of use",
   drawCaution: "Please review the terms and prize details before drawing. Prize contents and odds are shown below.",
+  drawCautionTermsWord: "terms",
   drawPrizeNotes: [
     {
       title: "About damaged cards / cases",
@@ -1300,6 +1301,7 @@ const JA: Dict = {
   drawSalesUntil: (d) => `${d} まで販売`,
   drawCautionTitle: "注意事項・ご利用条件",
   drawCaution: "ガチャを引く前に利用規約と景品詳細をご確認ください。景品内容・確率は下記の通りです。",
+  drawCautionTermsWord: "利用規約",
   drawPrizeNotes: [
     {
       title: "傷ありカード/ケースについて",
