@@ -1,6 +1,6 @@
 "use client";
 
-import { type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { type Dispatch, type ReactNode, type SetStateAction, useEffect, useMemo, useState } from "react";
 
 export type KycEntryContext = "purchase" | "prizeHistory" | "profile";
 export type KycStatus = "notStarted" | "inProgress" | "approved" | "needsAttention";
@@ -63,6 +63,8 @@ type KycCopy = {
   uploadId: string; uploadPoa: string; uploadHint: string; usePhoto: string; useFile: string;
   selfieTitle: string; selfieBody: string; takeSelfie: string;
   submittedTitle: string; submittedBody: string; done: string; providerPrivacy: string;
+  searchAddressPh: string; enterAddressManually: string; searchDifferentAddress: string;
+  nameLatinError: string; addressLabel: string; addressLine2Label: string;
 };
 
 const COPY: Record<"en" | "ja", KycCopy> = {
@@ -105,6 +107,10 @@ const COPY: Record<"en" | "ja", KycCopy> = {
     selfieTitle: "Take a selfie", selfieBody: "Center your face in the oval and make sure the room is well lit.",
     takeSelfie: "Take selfie", submittedTitle: "Thank you!", submittedBody: "Your verification data has been successfully submitted.",
     done: "Continue", providerPrivacy: "Veriff uses automation to verify your identity. Read more about personal data processing and cookie usage in Veriff’s Privacy Notice.",
+    searchAddressPh: "Search your address", enterAddressManually: "Enter address manually",
+    searchDifferentAddress: "Search a different address",
+    nameLatinError: "Please enter in alphabet (A–Z).",
+    addressLabel: "Address", addressLine2Label: "Address line 2 (optional)",
   },
   ja: {
     close: "閉じる", requiredTitle: "本人確認が必要です", requiredBody: "この操作を続けるには、アカウントの本人確認を完了してください。",
@@ -146,6 +152,10 @@ const COPY: Record<"en" | "ja", KycCopy> = {
     selfieTitle: "自撮り写真を撮影", selfieBody: "顔を楕円の中央に合わせ、明るい場所で撮影してください。",
     takeSelfie: "撮影する", submittedTitle: "ありがとうございます！", submittedBody: "確認データが正常に送信されました。",
     done: "続ける", providerPrivacy: "Veriffは本人確認に自動処理を使用します。個人データ処理、Cookieの使用、Veriffのプライバシーポリシーをご確認ください。",
+    searchAddressPh: "住所を検索", enterAddressManually: "住所を手入力する",
+    searchDifferentAddress: "別の住所を検索",
+    nameLatinError: "アルファベット（A–Z）で入力してください。",
+    addressLabel: "住所", addressLine2Label: "住所2行目（任意）",
   },
 };
 
@@ -276,15 +286,105 @@ function KycModalHeader({ title, body }: { title: string; body?: string }) {
   return <div className="pr-8"><div className="flex items-center gap-2"><IdentityHeaderIcon /><h2 className="text-[18px] font-black leading-tight text-[#1d2129]">{title}</h2></div>{body ? <p className="mt-2 text-[12px] leading-relaxed text-[#69717a]">{body}</p> : null}</div>;
 }
 
-function KycDetailsFields({ lang, c, details, onChange }: { lang: "en" | "ja"; c: KycCopy; details: KycDetails; onChange: (details: KycDetails) => void }) {
+const LATIN_NAME_RE = /^[A-Za-z\s'.\-]+$/;
+
+function isLatinName(value: string) {
+  return LATIN_NAME_RE.test(value);
+}
+
+const MOCK_ADDRESS_SUGGESTIONS = [
+  { postalCode: "100-0005", prefecture: "Tokyo", city: "Chiyoda-ku" },
+  { postalCode: "150-0002", prefecture: "Tokyo", city: "Shibuya" },
+  { postalCode: "106-0032", prefecture: "Tokyo", city: "Minato-ku" },
+  { postalCode: "530-0001", prefecture: "Osaka", city: "Kita-ku" },
+  { postalCode: "604-8091", prefecture: "Kyoto", city: "Nakagyo-ku" },
+  { postalCode: "460-0008", prefecture: "Aichi", city: "Naka-ku" },
+  { postalCode: "810-0001", prefecture: "Fukuoka", city: "Chuo-ku" },
+  { postalCode: "980-0021", prefecture: "Miyagi", city: "Aoba-ku" },
+];
+
+function SearchIcon() {
+  return <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.8" /><path d="M16 16.5 21 21.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>;
+}
+
+function KycDetailsFields({ c, details, onChange }: { c: KycCopy; details: KycDetails; onChange: (details: KycDetails) => void }) {
+  const [addressMode, setAddressMode] = useState<"search" | "fields">("search");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQuery(searchQuery.trim()), 280);
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
+
+  const suggestions = useMemo(() => {
+    if (!debouncedQuery) return [];
+    const q = debouncedQuery.toLowerCase();
+    const matched = MOCK_ADDRESS_SUGGESTIONS.filter((item) =>
+      `${item.postalCode} ${item.prefecture} ${item.city}`.toLowerCase().includes(q)
+    );
+    return (matched.length > 0 ? matched : MOCK_ADDRESS_SUGGESTIONS).slice(0, 5);
+  }, [debouncedQuery]);
+
   const inputClass = "w-full rounded-md border border-[#C8CFDA] px-3 py-2.5 text-[11px] outline-none focus:border-[#E60012]";
+  const errorInputClass = "w-full rounded-md border border-[#D10005] px-3 py-2.5 text-[11px] outline-none focus:border-[#D10005]";
   const readOnlyClass = "w-full cursor-default rounded-md border border-[#D8DCE3] bg-[#F3F4F6] px-3 py-2.5 text-[11px] text-[#6B7280] outline-none";
   const labelClass = "mb-1 block text-[9px] font-bold text-[#303640]";
+  const linkClass = "text-[11px] font-semibold text-[#1d2129] underline underline-offset-2";
   const required = <span className="text-[#E60012]">*</span>;
   const field = (key: keyof KycDetails, span = false, type = "text") => <label key={key} className={span ? "col-span-2" : ""}><span className={labelClass}>{c.fields[key]} {required}</span><input type={type} value={details[key]} onChange={(event) => onChange({ ...details, [key]: event.target.value })} className={inputClass} /></label>;
+  const nameField = (key: "lastName" | "firstName") => {
+    const invalid = details[key].length > 0 && !isLatinName(details[key]);
+    return <label key={key}><span className={labelClass}>{c.fields[key]} {required}</span><input value={details[key]} onChange={(event) => onChange({ ...details, [key]: event.target.value })} aria-invalid={invalid} className={invalid ? errorInputClass : inputClass} />{invalid ? <span className="mt-1 block text-[10px] text-[#D10005]">{c.nameLatinError}</span> : null}</label>;
+  };
   const cityStreet = [details.city, details.street].filter(Boolean).join(", ");
   const streetApartment = [details.streetNumber, details.apartment].filter(Boolean).join(" / ");
-  return <div className="mt-4 grid grid-cols-2 gap-x-2.5 gap-y-3">{field("lastName")}{field("firstName")}{field("lastNameKana")}{field("firstNameKana")}<label className="col-span-2"><span className={labelClass}>{c.fields.email} {required}</span><input type="email" value={details.email} readOnly className={readOnlyClass} /></label>{field("dob", true, "date")}<div className="col-span-2 border-t border-[#E3E5E8]" />{field("postalCode")}{field("prefecture")}<label className="col-span-2"><span className={labelClass}>{lang === "ja" ? "住所" : "Address"} {required}</span><input value={cityStreet} onChange={(event) => onChange({ ...details, city: event.target.value, street: "" })} className={inputClass} /></label><label className="col-span-2"><span className={labelClass}>{lang === "ja" ? "住所2行目（任意）" : "Address line 2 (optional)"}</span><input value={streetApartment} onChange={(event) => onChange({ ...details, streetNumber: event.target.value, apartment: "" })} className={inputClass} /></label><div className="col-span-2"><span className={labelClass}>{c.fields.country} {required}</span><div aria-readonly="true" className="w-full cursor-default rounded-md border border-[#D8DCE3] bg-[#F3F4F6] px-3 py-2.5 text-[11px] text-[#6B7280]">Japan</div></div></div>;
+
+  function chooseSuggestion(item: (typeof MOCK_ADDRESS_SUGGESTIONS)[number]) {
+    onChange({ ...details, postalCode: item.postalCode, prefecture: item.prefecture, city: item.city, street: "" });
+    setSearchQuery("");
+    setAddressMode("fields");
+  }
+
+  function enterManually() {
+    if (searchQuery.trim()) onChange({ ...details, city: searchQuery.trim(), street: "" });
+    setAddressMode("fields");
+  }
+
+  return <div className="mt-4 grid grid-cols-2 gap-x-2.5 gap-y-3">
+    {nameField("lastName")}{nameField("firstName")}
+    {field("lastNameKana")}{field("firstNameKana")}
+    <label className="col-span-2"><span className={labelClass}>{c.fields.email} {required}</span><input type="email" value={details.email} readOnly className={readOnlyClass} /></label>
+    {field("dob", true, "date")}
+    <div className="col-span-2 border-t border-[#E3E5E8]" />
+    <div className="col-span-2"><span className={labelClass}>{c.fields.country} {required}</span><div aria-readonly="true" className="w-full cursor-default rounded-md border border-[#D8DCE3] bg-[#F3F4F6] px-3 py-2.5 text-[11px] text-[#6B7280]">Japan</div></div>
+    {addressMode === "search" ? (
+      <div className="col-span-2">
+        <div className="relative">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#6B7280]"><SearchIcon /></span>
+          <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder={c.searchAddressPh} className={`${inputClass} pl-8`} />
+        </div>
+        {suggestions.length > 0 && (
+          <ul className="mt-1 overflow-hidden rounded-md border border-[#C8CFDA] bg-white">
+            {suggestions.map((item) => (
+              <li key={`${item.postalCode}-${item.city}`} className="border-b border-[#EEF0F3] last:border-b-0">
+                <button type="button" onClick={() => chooseSuggestion(item)} className="w-full px-3 py-2 text-left text-[11px] text-[#1d2129]">
+                  {item.postalCode} {item.prefecture} {item.city}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <button type="button" onClick={enterManually} className={`${linkClass} mt-2`}>{c.enterAddressManually}</button>
+      </div>
+    ) : (
+      <>
+        {field("postalCode")}{field("prefecture")}
+        <label className="col-span-2"><span className={labelClass}>{c.addressLabel} {required}</span><input value={cityStreet} onChange={(event) => onChange({ ...details, city: event.target.value, street: "" })} className={inputClass} /></label>
+        <label className="col-span-2"><span className={labelClass}>{c.addressLine2Label}</span><input value={streetApartment} onChange={(event) => onChange({ ...details, streetNumber: event.target.value, apartment: "" })} className={inputClass} /></label>
+        <button type="button" onClick={() => { setSearchQuery(""); setAddressMode("search"); }} className={`${linkClass} col-span-2 justify-self-start`}>{c.searchDifferentAddress}</button>
+      </>
+    )}
+  </div>;
 }
 
 export function KycOverlay({ lang, state, setState, onExit, onContextReturn }: {
@@ -331,7 +431,8 @@ export function KycOverlay({ lang, state, setState, onExit, onContextReturn }: {
     return <div className="absolute inset-0 z-[120] flex flex-col bg-white px-6 text-center"><div className="pt-5"><VeriffLogo /></div><div className="flex flex-1 flex-col items-center justify-center"><div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#24DCC4] text-[28px] font-black text-white">✓</div><h2 className="mt-5 text-[22px] font-black text-[#24282D]">{c.submittedTitle}</h2><p className="mt-2 max-w-[260px] text-[12px] leading-relaxed text-[#4F5660]">{c.submittedBody}</p></div><button onClick={isPoa ? finishPoaSubmission : finishIdSubmission} className="mb-10 w-full rounded-md bg-[#003B3B] py-3.5 text-[13px] font-bold text-white">{c.done}</button></div>;
   }
 
-  if (screen === "details") return <div className="absolute inset-0 z-[120] overflow-y-auto bg-black/55 px-4 py-5"><div className={`${card} mx-auto px-6`}><XButton label={c.close} onClick={onExit} /><OripalotLogo /><h2 className="mt-4 text-[20px] font-black text-[#1d2129]">{c.detailsTitle}</h2><p className="mt-1 text-[11px] text-[#3157A4]">{c.detailsBody}</p><h3 className="mt-3 text-[12px] font-black text-[#1D2129]">{lang === "ja" ? "個人情報" : "Personal Information"}</h3><KycDetailsFields lang={lang} c={c} details={state.details} onChange={(details) => update({ details })} /><button onClick={() => update({ activeScreen: "beforeStart" })} className={`${redButton} mt-4`}>{c.continue}</button><p className="mt-2 text-center text-[9px] text-[#3157A4]">♙ {lang === "ja" ? "安全な暗号化で情報を保護します。" : "We use secure encryption to protect your information."}</p></div></div>;
+  const namesValid = isLatinName(state.details.lastName) && isLatinName(state.details.firstName);
+  if (screen === "details") return <div className="absolute inset-0 z-[120] overflow-y-auto bg-black/55 px-4 py-5"><div className={`${card} mx-auto px-6`}><XButton label={c.close} onClick={onExit} /><OripalotLogo /><h2 className="mt-4 text-[20px] font-black text-[#1d2129]">{c.detailsTitle}</h2><p className="mt-1 text-[11px] text-[#3157A4]">{c.detailsBody}</p><h3 className="mt-3 text-[12px] font-black text-[#1D2129]">{lang === "ja" ? "個人情報" : "Personal Information"}</h3><KycDetailsFields c={c} details={state.details} onChange={(details) => update({ details })} /><button type="button" disabled={!namesValid} onClick={() => namesValid && update({ activeScreen: "beforeStart" })} className={`${redButton} mt-4 disabled:cursor-not-allowed disabled:bg-[#FFB4B8]`}>{c.continue}</button><p className="mt-2 text-center text-[9px] text-[#3157A4]">♙ {lang === "ja" ? "安全な暗号化で情報を保護します。" : "We use secure encryption to protect your information."}</p></div></div>;
 
   if (screen === "required") return <div className="absolute inset-0 z-[120] flex items-center justify-center bg-black/55 px-5"><div className={card}><XButton label={c.close} onClick={onExit} /><OripalotLogo /><div className="mx-auto mt-5 flex justify-center"><VerificationBadge /></div><h2 className="mt-3 text-center text-[19px] font-black text-[#1d2129]">{c.requiredTitle}</h2><p className="mt-2 text-center text-[12px] leading-relaxed text-[#69717a]">{c.requiredBody}</p><button onClick={() => update({ activeScreen: "details" })} className={`${redButton} mt-5`}>{c.start}</button><p className="mt-3 text-center text-[10px] text-[#8a9099] underline">{c.support}</p></div></div>;
 
