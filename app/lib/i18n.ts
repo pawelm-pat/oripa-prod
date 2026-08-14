@@ -243,6 +243,11 @@ const EN = {
   btnDraw: "Draw",
   btnFree: "Free draw",
   btnView: "View",
+  // Lobby card CTA variants (see DrawCta)
+  btnDraw1: "1 Draw",
+  btnFree10: "Free 10 draws",
+  btnFreeTrial: "Free Trial",
+  btnLineLink: "LINE Account Link Required, Link for 1 Draw!",
   drawGuaranteed: "Advantage guaranteed",
   drawNewOnly: "New members only",
   drawPackSubtitle: "Start Dash Pack",
@@ -1294,6 +1299,11 @@ const JA: Dict = {
   btnDraw: "ガチャを引く",
   btnFree: "無料ガチャ",
   btnView: "内容を見る",
+  // Lobby card CTA variants (see DrawCta)
+  btnDraw1: "1回ガチャ",
+  btnFree10: "無料10回ガチャ",
+  btnFreeTrial: "無料お試し",
+  btnLineLink: "LINE連携が必要です。連携して1回無料ガチャ！",
   drawGuaranteed: "アド確定",
   drawNewOnly: "新規登録限定",
   drawPackSubtitle: "スタートダッシュパック",

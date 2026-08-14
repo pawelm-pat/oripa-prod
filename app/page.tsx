@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { DrawScenario, Lang, Screen } from "./lib/types";
+import type { DrawCta, DrawScenario, Lang, Screen } from "./lib/types";
 import { LangToggle, PhoneApp, UpdatePrompt, VersionBadge } from "./components/oripa";
 import { CommentsPanel } from "./components/comments";
 import { DevPanels } from "./components/devpanels";
@@ -40,6 +40,8 @@ export default function Page() {
   // Demo control (draw confirm popup): whether the pack accepts both currencies.
   // Yes -> confirm popup shows coins (top) + free points (below); No -> coins only.
   const [multiCurrency, setMultiCurrency] = useState(true);
+  // Demo control (lobby only): which CTA row the oripa cards show.
+  const [drawCta, setDrawCta] = useState<DrawCta>("all");
 
   function changeKycScenario(value: KycScenario) {
     try { sessionStorage.removeItem(KYC_SESSION_KEY); } catch {}
@@ -95,6 +97,21 @@ export default function Page() {
               />
             </>
           )}
+          {/* Lobby only: pick which CTA row the oripa cards render. */}
+          {(screen === "oripa" || screen === "landing") && (
+            <SelectControl
+              label="Draw CTA"
+              value={drawCta}
+              onChange={setDrawCta}
+              options={[
+                ["All Draws", "all"],
+                ["1 Draw", "one"],
+                ["Free draw", "free"],
+                ["Free draw pending", "freePending"],
+                ["Free trial", "trial"],
+              ]}
+            />
+          )}
         </div>
         <div className="rounded-[2.6rem] border border-white/12 bg-[#1b1c22] p-3 shadow-[0_35px_90px_rgba(0,0,0,0.55)]">
           <div className="rounded-[2.1rem] border border-white/8 bg-black p-2">
@@ -112,6 +129,7 @@ export default function Page() {
                 dailyLimitReached={dailyLimit}
                 drawScenario={drawScenario}
                 multiCurrency={multiCurrency}
+                drawCta={drawCta}
               />
             </div>
           </div>
@@ -132,6 +150,7 @@ export default function Page() {
           dailyLimitReached={dailyLimit}
           drawScenario={drawScenario}
           multiCurrency={multiCurrency}
+          drawCta={drawCta}
         />
       </div>
 

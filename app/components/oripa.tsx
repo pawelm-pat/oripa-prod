@@ -6,6 +6,7 @@ import { APP_VERSION } from "../version";
 import type {
   Category,
   Lang,
+  DrawCta,
   DrawScenario,
   OripaItem,
   Rarity,
@@ -207,7 +208,12 @@ function TagPill({ children, variant }: { children: React.ReactNode; variant: "r
   return <span className={`whitespace-nowrap rounded-full px-2 py-[1px] text-[10px] font-bold ${cls}`}>{children}</span>;
 }
 
-function OripaCard({ item, t, onView, onDraw }: { item: OripaItem; t: Dict; onView?: () => void; onDraw?: (count: number, free?: boolean) => void }) {
+// Shared CTA shapes for the lobby card action row (see DrawCta variants).
+const ctaBase = "flex min-h-[38px] items-center justify-center rounded-lg px-2 text-center text-[12px] font-bold leading-tight";
+const ctaPrimary = `${ctaBase} bg-[#D10005] text-white`;
+const ctaOutline = `${ctaBase} border-[1.5px] border-[#D10005] bg-white text-[#1d2129]`;
+
+function OripaCard({ item, t, onView, onDraw, drawCta = "all" }: { item: OripaItem; t: Dict; onView?: () => void; onDraw?: (count: number, free?: boolean) => void; drawCta?: DrawCta }) {
   const pct = Math.round((item.remaining / item.total) * 100);
   // Expired / sold-out packs: greyed artwork, an "期限切れ / Expired" label in
   // place of the stock+countdown, and no Draw CTAs (the card still opens the
@@ -266,9 +272,32 @@ function OripaCard({ item, t, onView, onDraw }: { item: OripaItem; t: Dict; onVi
       </div>
       {!expired && (
         <div className="flex gap-2 px-3 pb-3">
-          <button onClick={onView} className="flex-1 rounded-lg py-2 text-[12px] font-bold text-white" style={{ background: "#D10005" }}>{t.btnDraw}</button>
-          {item.free && <button onClick={() => onDraw?.(1, true)} className="flex-1 rounded-lg border border-[#D10005] py-2 text-[12px] font-bold text-[#D10005]">{t.btnFree}</button>}
-          <button onClick={onView} className="flex-1 rounded-lg border border-black/40 py-2 text-[12px] font-bold text-[#1d2129]">{t.btnView}</button>
+          {drawCta === "all" && (
+            <>
+              <button onClick={onView} className={`flex-1 ${ctaPrimary}`}>{t.btnDraw}</button>
+              {item.free && <button onClick={() => onDraw?.(1, true)} className="flex-1 rounded-lg border border-[#D10005] py-2 text-[12px] font-bold text-[#D10005]">{t.btnFree}</button>}
+              <button onClick={onView} className="flex-1 rounded-lg border border-black/40 py-2 text-[12px] font-bold text-[#1d2129]">{t.btnView}</button>
+            </>
+          )}
+          {drawCta === "one" && (
+            <button onClick={onView} className={`flex-1 ${ctaPrimary}`}>{t.btnDraw1}</button>
+          )}
+          {drawCta === "free" && (
+            <button onClick={() => onDraw?.(1, true)} className={`flex-1 ${ctaOutline}`}>{t.btnFree}</button>
+          )}
+          {drawCta === "freePending" && (
+            <button onClick={onView} className={`flex-1 ${ctaBase} bg-[#01B901] text-white`}>{t.btnLineLink}</button>
+          )}
+          {drawCta === "trial" && (
+            <>
+              {/* "Free Trial" tag straddles the top edge of the free-draws CTA */}
+              <div className="relative flex-1">
+                <span className="absolute -top-2 left-1/2 z-[1] -translate-x-1/2 whitespace-nowrap rounded-md bg-[#0F0F0F] px-2.5 py-0.5 text-[10px] font-bold text-white">{t.btnFreeTrial}</span>
+                <button onClick={() => onDraw?.(10, true)} className={`w-full ${ctaOutline}`}>{t.btnFree10}</button>
+              </div>
+              <button onClick={onView} className={`flex-1 ${ctaPrimary}`}>{t.btnDraw1}</button>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -741,7 +770,7 @@ function PriceRangeFilter({ label, min, max, onMin, onMax }: { label: string; mi
 
 // V2 lobby feed. `onView` (tap on any card) is inert in the logged-in lobby
 // and routes to Sign-up on the logged-out landing.
-function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll, onView, onOpenDraw }: { t: Dict; lang: Lang; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void; onView?: () => void; onOpenDraw?: (item: OripaItem) => void }) {
+function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll, onView, onOpenDraw, drawCta = "all" }: { t: Dict; lang: Lang; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void; onView?: () => void; onOpenDraw?: (item: OripaItem) => void; drawCta?: DrawCta }) {
   const L = LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"];
   const [cat, setCat] = useState("all");
   const [searchActive, setSearchActive] = useState(false);
@@ -941,7 +970,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
   const canOpen = !!(onOpenDraw || onView);
   const openCard = (it: OripaItem) => (onOpenDraw ? onOpenDraw(it) : onView?.());
   const full = (it: OripaItem) => (
-    <OripaCard key={it.id} item={it} t={t} onView={canOpen ? () => openCard(it) : undefined} onDraw={canOpen ? () => openCard(it) : undefined} />
+    <OripaCard key={it.id} item={it} t={t} drawCta={drawCta} onView={canOpen ? () => openCard(it) : undefined} onDraw={canOpen ? () => openCard(it) : undefined} />
   );
   const tagPill = ([key, label]: [string, string]) => {
     const on = !!draftFilters[key];
@@ -1162,7 +1191,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
   );
 }
 
-function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, scrollRef, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll }: { lang: Lang; coins: number; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem) => void; scrollRef?: { current: number }; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void }) {
+function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, scrollRef, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll, drawCta = "all" }: { lang: Lang; coins: number; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem) => void; scrollRef?: { current: number }; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void; drawCta?: DrawCta }) {
   const t = STR[lang];
   // Preserve the lobby's scroll position across navigation (e.g. opening a draw
   // and coming back) so the user lands where they were, not at the top. The
@@ -1184,7 +1213,7 @@ function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, scrollRef, qu
       >
         <HomeHero lang={lang} />
 
-        <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={onApply} onToggleApplied={onToggleApplied} onClearAll={onClearAll} onOpenDraw={onOpenDraw} />
+        <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={onApply} onToggleApplied={onToggleApplied} onClearAll={onClearAll} onOpenDraw={onOpenDraw} drawCta={drawCta} />
 
         <SiteFooter t={t} />
       </div>
@@ -2507,7 +2536,7 @@ function BottomNav({ screen, t, onNavigate }: { screen: Screen; t: Dict; onNavig
 /* ── LandingPage ──────────────────────────────────────────────────────── */
 // Logged-out lobby (V1 homepage): auth header + search + banner placeholder +
 // category-filtered card sections. Card taps prompt sign-up.
-function LandingPage({ lang, onSignUp, onLogin }: { lang: Lang; onSignUp: () => void; onLogin: () => void }) {
+function LandingPage({ lang, onSignUp, onLogin, drawCta = "all" }: { lang: Lang; onSignUp: () => void; onLogin: () => void; drawCta?: DrawCta }) {
   const t = STR[lang];
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<Record<string, boolean>>({});
@@ -2525,7 +2554,7 @@ function LandingPage({ lang, onSignUp, onLogin }: { lang: Lang; onSignUp: () => 
       <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
         <div className="px-3 pb-4 pt-3"><PromoCarousel /></div>
 
-        <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={applyLobby} onToggleApplied={toggleApplied} onClearAll={clearAll} onView={onSignUp} />
+        <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={applyLobby} onToggleApplied={toggleApplied} onClearAll={clearAll} onView={onSignUp} drawCta={drawCta} />
 
         <SiteFooter t={t} />
       </div>
@@ -5097,8 +5126,8 @@ function StorePage({
   );
 }
 
-export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off", multiCurrency = true }: {
-  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean;
+export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, drawCta = "all" }: {
+  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; drawCta?: DrawCta;
 }) {
   const t = STR[lang];
   const [screen, setScreen] = useState<Screen>("landing");
@@ -5333,7 +5362,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             body-only fade/slide-in (headers are excluded per-screen). */}
         <div key={screen} className="h-full">
         {/* Logged-out lobby — V1 homepage layout */}
-        {screen === "landing" && <LandingPage lang={lang} onSignUp={() => setScreen("signup")} onLogin={() => setScreen("login")} />}
+        {screen === "landing" && <LandingPage lang={lang} onSignUp={() => setScreen("signup")} onLogin={() => setScreen("login")} drawCta={drawCta} />}
         {screen === "signup" && (
           <SignupPage
             lang={lang}
@@ -5350,7 +5379,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
           />
         )}
         {/* Logged-in lobby — V2 format */}
-        {screen === "oripa" && <OripaHome lang={lang} coins={coins} onHome={goHome} onOpenStore={openStore} onOpenDraw={openDraw} scrollRef={homeScroll} query={lobbyQuery} filters={lobbyFilters} priceMin={lobbyPriceMin} priceMax={lobbyPriceMax} onApply={applyLobby} onToggleApplied={toggleLobbyFilter} onClearAll={clearLobbyFilters} />}
+        {screen === "oripa" && <OripaHome lang={lang} coins={coins} onHome={goHome} onOpenStore={openStore} onOpenDraw={openDraw} scrollRef={homeScroll} query={lobbyQuery} filters={lobbyFilters} priceMin={lobbyPriceMin} priceMax={lobbyPriceMax} onApply={applyLobby} onToggleApplied={toggleLobbyFilter} onClearAll={clearLobbyFilters} drawCta={drawCta} />}
         {screen === "drawDetail" && drawItem && (
           <DrawDetail
             key={drawItem.id}
