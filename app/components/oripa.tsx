@@ -1283,6 +1283,10 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
   // Custom-draw popup: quantity stepper (min 1, up to MAX_CUSTOM_DRAW).
   const [customOpen, setCustomOpen] = useState(false);
   const [customQty, setCustomQty] = useState(1);
+  // Dismissing a draw popup keeps it mounted for the length of the exit
+  // animation. Confirming a draw skips this so the roll isn't held up.
+  const [sheetClosing, setSheetClosing] = useState(false);
+  const sheetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Draw results (list mode) — shown full-screen after a draw is confirmed.
   const [results, setResults] = useState<WonPrize[] | null>(null);
   const [resultsRun, setResultsRun] = useState(0);
@@ -1294,6 +1298,16 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
     toastTimer.current = setTimeout(() => setToast(null), 2600);
   }
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
+  useEffect(() => () => { if (sheetTimer.current) clearTimeout(sheetTimer.current); }, []);
+
+  function closeSheet() {
+    const done = () => { setSheetClosing(false); setConfirmCount(null); setCustomOpen(false); };
+    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) { done(); return; }
+    setSheetClosing(true);
+    if (sheetTimer.current) clearTimeout(sheetTimer.current);
+    sheetTimer.current = setTimeout(done, 180);
+  }
+
   // Surface whether the draw-results overlay is open so the harness can show
   // the Free-shipping toggle only on the results screen (not draw selection).
   useEffect(() => { onResultsChange?.(results !== null); }, [results, onResultsChange]);
@@ -1305,6 +1319,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
     // "draw remaining" popup instead of the normal confirmation.
     if (insufficientStock && count > STOCK_LEFT) { setStockReqCount(count); setStockPopup(true); return; }
     // Open the confirmation popup; coin check / Quick Purchase happens on confirm.
+    setSheetClosing(false);
     setConfirmFree(free);
     setConfirmCount(count);
   }
@@ -1350,6 +1365,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
 
   function openCustom() {
     if (soldOut) return;
+    setSheetClosing(false);
     setCustomQty(1);
     setCustomOpen(true);
   }
@@ -1421,6 +1437,10 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
   return (
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
       <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
+
+      {/* Warm the confirmation banner while the pack page is open so the popup
+          never animates in around an empty banner slot. */}
+      <link rel="preload" as="image" href="/draw-banner-modal.png" />
 
       {/* Title row */}
       <div className="shrink-0 flex items-center gap-2 border-b border-black/10 bg-white px-3 py-2.5">
@@ -1612,27 +1632,29 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
       {/* Draw-confirmation popup */}
       {confirmCount != null && (
         <div
-          className="absolute inset-0 z-[60] flex items-center justify-center p-4"
+          className={`absolute inset-0 z-[60] flex items-center justify-center p-4 ${sheetClosing ? "animate-popup-backdrop-out" : "animate-popup-backdrop"}`}
           style={{ background: "rgba(20,8,4,0.62)" }}
-          onClick={() => setConfirmCount(null)}
+          onClick={closeSheet}
           role="dialog"
           aria-modal="true"
         >
-          <style>{`@keyframes drawConfirmIn{0%{opacity:0;transform:translateY(12px) scale(.94)}100%{opacity:1;transform:none}}`}</style>
           <div
-            className="no-scrollbar flex max-h-full w-full max-w-[380px] flex-col overflow-y-auto bg-white shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
-            style={{ animation: "drawConfirmIn 260ms cubic-bezier(0.22,0.61,0.36,1) both" }}
+            className={`no-scrollbar flex max-h-full w-full max-w-[380px] flex-col overflow-y-auto bg-white shadow-[0_18px_50px_rgba(0,0,0,0.5)] ${sheetClosing ? "animate-sheet-out" : "animate-sheet-in"}`}
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Intrinsic size reserves the banner's space so the panel doesn't
+                resize under the entry animation while the art decodes. */}
             <img
               src="/draw-banner-modal.png"
               alt={t.drawPackSubtitle}
+              width={748}
+              height={561}
               draggable={false}
-              className="block w-full select-none"
+              className="block h-auto w-full select-none"
               style={{ WebkitUserDrag: "none" } as React.CSSProperties}
             />
 
-            <div className="px-4 pb-4 pt-3.5">
+            <div className="animate-sheet-body px-4 pb-4 pt-3.5">
               <h3 className="text-center text-[18px] font-bold text-[#1d2129]">{locTitle(item, lang)}</h3>
               <p className="mt-1.5 text-center text-[12px] leading-relaxed text-[#8a9099]">{confirmFree ? t.drawConfirmDescFree : t.drawConfirmDesc}</p>
 
@@ -1651,7 +1673,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
 
               {/* Cancel — secondary (2px grey outline), fixed 39px / 8px radius */}
               <button
-                onClick={() => setConfirmCount(null)}
+                onClick={closeSheet}
                 className="flex h-[39px] w-full items-center justify-center rounded-lg border-2 border-[#82878f] bg-white text-[15px] font-bold text-[#6b7078] active:scale-[0.98]"
               >
                 {t.cancel}
@@ -1672,26 +1694,27 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
       {/* Custom-draw popup — quantity stepper + quick-add + dynamic cost/CTA */}
       {customOpen && (
         <div
-          className="absolute inset-0 z-[60] flex items-center justify-center p-4"
+          className={`absolute inset-0 z-[60] flex items-center justify-center p-4 ${sheetClosing ? "animate-popup-backdrop-out" : "animate-popup-backdrop"}`}
           style={{ background: "rgba(20,8,4,0.62)" }}
-          onClick={() => setCustomOpen(false)}
+          onClick={closeSheet}
           role="dialog"
           aria-modal="true"
         >
           <div
-            className="no-scrollbar flex max-h-full w-full max-w-[380px] flex-col overflow-y-auto bg-white shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
-            style={{ animation: "drawConfirmIn 260ms cubic-bezier(0.22,0.61,0.36,1) both" }}
+            className={`no-scrollbar flex max-h-full w-full max-w-[380px] flex-col overflow-y-auto bg-white shadow-[0_18px_50px_rgba(0,0,0,0.5)] ${sheetClosing ? "animate-sheet-out" : "animate-sheet-in"}`}
             onClick={(e) => e.stopPropagation()}
           >
             <img
               src="/draw-banner-modal.png"
               alt={t.drawPackSubtitle}
+              width={748}
+              height={561}
               draggable={false}
-              className="block w-full select-none"
+              className="block h-auto w-full select-none"
               style={{ WebkitUserDrag: "none" } as React.CSSProperties}
             />
 
-            <div className="px-4 pb-4 pt-3.5">
+            <div className="animate-sheet-body px-4 pb-4 pt-3.5">
               <h3 className="text-center text-[18px] font-bold text-[#1d2129]">{locTitle(item, lang)}</h3>
               <p className="mt-1.5 text-center text-[12px] leading-relaxed text-[#8a9099]">{t.drawConfirmDesc}</p>
 
@@ -1741,7 +1764,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
 
               {/* Cancel — secondary (2px grey outline), fixed 39px / 8px radius */}
               <button
-                onClick={() => setCustomOpen(false)}
+                onClick={closeSheet}
                 className="flex h-[39px] w-full items-center justify-center rounded-lg border-2 border-[#82878f] bg-white text-[15px] font-bold text-[#6b7078] active:scale-[0.98]"
               >
                 {t.cancel}
@@ -2234,7 +2257,7 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
   }
 
   return (
-    <div className="absolute inset-0 z-50 flex h-full flex-col bg-[#eef0f3]">
+    <div className="animate-screen-in absolute inset-0 z-50 flex h-full flex-col bg-[#eef0f3]">
       <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
 
       {/* Top action: Draw again */}
