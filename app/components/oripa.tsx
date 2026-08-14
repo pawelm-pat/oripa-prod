@@ -1217,15 +1217,10 @@ function DrawTierLabel({ tier, alt }: { tier: 1 | 2 | 3; alt: string }) {
   );
 }
 
-function DrawTierCard({ rarity, lang, large = false }: { rarity: Rarity; lang: Lang; large?: boolean }) {
-  const meta = RARITY_META[rarity];
+function DrawTierCard({ rarity, large = false }: { rarity: Rarity; large?: boolean }) {
   return (
-    <div className="flex flex-col items-center gap-1.5">
+    <div className="flex flex-col items-center">
       <PrizeArt rarity={rarity} size={large ? 138 : 92} />
-      <div className="flex items-center gap-1 rounded-full bg-[#FFF6E3] px-2.5 py-0.5 ring-1 ring-[#f0d9a8]">
-        <CoinIcon size={large ? 15 : 12} />
-        <span className={`font-extrabold text-[#B5740A] ${large ? "text-[13px]" : "text-[11px]"}`}>{meta.coin.toLocaleString()}</span>
-      </div>
     </div>
   );
 }
@@ -1469,18 +1464,18 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
         <div className="px-3 pb-5">
           <DrawTierLabel tier={1} alt={t.drawTier1} />
           <div className="grid grid-cols-2 gap-3">
-            <DrawTierCard rarity="UR" lang={lang} large />
-            <DrawTierCard rarity="UR" lang={lang} large />
+            <DrawTierCard rarity="UR" large />
+            <DrawTierCard rarity="UR" large />
           </div>
 
           <DrawTierLabel tier={2} alt={t.drawTier2} />
           <div className="grid grid-cols-3 gap-2.5">
-            {Array.from({ length: 6 }).map((_, i) => <DrawTierCard key={`sr${i}`} rarity="SR" lang={lang} />)}
+            {Array.from({ length: 6 }).map((_, i) => <DrawTierCard key={`sr${i}`} rarity="SR" />)}
           </div>
 
           <DrawTierLabel tier={3} alt={t.drawTier3} />
           <div className="grid grid-cols-3 gap-2.5">
-            {Array.from({ length: 6 }).map((_, i) => <DrawTierCard key={`n${i}`} rarity="N" lang={lang} />)}
+            {Array.from({ length: 6 }).map((_, i) => <DrawTierCard key={`n${i}`} rarity="N" />)}
           </div>
 
           {/* Prize handling notes (damaged cards, graded cards, unopened items, images) */}
