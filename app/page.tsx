@@ -50,9 +50,11 @@ export default function Page() {
     setDrawEntry(entry);
     setDrawCta(entry === "free" ? "free" : "all");
   }, []);
+  // Free trial belongs to the paid group: that variant pairs the free 10 draws
+  // with a second "1 Draw" CTA.
   const drawCtaOptions: readonly (readonly [string, DrawCta])[] = drawEntry === "free"
-    ? [["Free draw", "free"], ["Free trial", "trial"], ["LINE verification", "freePending"]]
-    : [["Multiple draws", "all"], ["1 Draw", "one"], ["LINE verification", "freePending"]];
+    ? [["Free draw", "free"], ["LINE verification", "freePending"]]
+    : [["Multiple draws", "all"], ["1 Draw", "one"], ["Free trial", "trial"], ["LINE verification", "freePending"]];
 
   function changeKycScenario(value: KycScenario) {
     try { sessionStorage.removeItem(KYC_SESSION_KEY); } catch {}
