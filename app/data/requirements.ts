@@ -587,10 +587,10 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
           { text: "Currency selector (john.inr@gmail.com only)", sub: [
             "INR / JPY toggle above payment methods; INR selected by default.",
             "INR: package + pay amounts use the package exchange rate (1 JPY = 0.6103 INR); show rate + bank-fee warning; wallets limited to Apple Pay + Google Pay (+ cards).",
-            "JPY: show exchange-rate + bank-fee warning; full wallet grid (Apple Pay, Google Pay, Link, PayPay) + cards.",
+            "JPY: show exchange-rate + bank-fee warning; full wallet grid (Google Pay, Apple Pay, PayPay, Rakuten Pay, MelPay, FamiPay) + cards.",
             "Player can pay in either currency.",
           ] },
-          { text: "Express wallets (2×2)", sub: ["Apple Pay, Google Pay, Link, PayPay — skip 3DS and go straight to success (after KYC check). INR currency mode hides Link and PayPay."] },
+          { text: "Express wallets (2×3)", sub: ["Google Pay and Apple Pay as black CTAs; PayPay, Rakuten Pay, MelPay, FamiPay as white bordered buttons. All skip 3DS and go straight to success (after KYC check). INR currency mode hides the four JP wallets."] },
           { text: "Pay with Card", sub: ["No cards: Add new card row with accepted-brand badges → dedicated Add Card Details page. With cards: up to 3 saved cards (+ selected beyond top 3), Last Used badge on newest, Manage Cards, Add new card."] },
           { text: "Add Card Details", sub: ["Card number, expiry, CVC, cardholder name + billing address (JP/US). Billing collapses to a summary once filled; pencil re-opens edit. Sticky Add Card and Pay."] },
           { text: "My Cards", sub: ["List with select + delete confirm + toast; sticky Pay Now."] },
@@ -622,7 +622,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
         tbc: [
           "Payment is mocked; no real payment provider.",
           "3-D Secure code is not validated against a real OTP.",
-          "Apple Pay / Google Pay / PayPay / Link are simulated.",
+          "Apple Pay / Google Pay / PayPay / Rakuten Pay / MelPay / FamiPay are simulated.",
           "Only Coins (not Points) are credited on success; Purchase History and Coin History are not updated.",
           "Saved cards are session-only.",
           "INR exchange rate is a fixed demo rate (0.6103), not a live FX feed.",
