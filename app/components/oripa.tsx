@@ -270,7 +270,6 @@ function OripaCard({ item, t, onView, onDraw }: { item: OripaItem; t: Dict; onVi
         <div className="flex gap-2 px-3 pb-3">
           <button onClick={onView} className="flex-1 rounded-lg py-2 text-[12px] font-bold text-white" style={{ background: "#D10005" }}>{t.btnDraw}</button>
           {item.free && <button onClick={() => onDraw?.(1, true)} className="flex-1 rounded-lg border border-[#D10005] py-2 text-[12px] font-bold text-[#D10005]">{t.btnFree}</button>}
-          <button onClick={onView} className="flex-1 rounded-lg border border-black/40 py-2 text-[12px] font-bold text-[#1d2129]">{t.btnView}</button>
         </div>
       )}
     </div>
@@ -1526,7 +1525,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
               </>
             )}
             {drawCta === "one" && (
-              <button onClick={() => draw(1)} className={`flex-1 ${ctaPrimary}`}>{t.btnDraw1}</button>
+              <button onClick={() => draw(1)} className={`flex-1 ${ctaPrimary}`}>{t.drawDraw1}</button>
             )}
             {drawCta === "free" && (
               <button onClick={() => draw(1)} className={`flex-1 ${ctaOutline}`}>{t.btnFree}</button>
@@ -1541,7 +1540,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
                   <span className="absolute -top-2 left-1/2 z-[1] -translate-x-1/2 whitespace-nowrap rounded-md bg-[#0F0F0F] px-2.5 py-0.5 text-[10px] font-bold text-white">{t.btnFreeTrial}</span>
                   <button onClick={() => draw(10)} className={`w-full ${ctaOutline}`}>{t.btnFree10}</button>
                 </div>
-                <button onClick={() => draw(1)} className={`flex-1 ${ctaPrimary}`}>{t.btnDraw1}</button>
+                <button onClick={() => draw(1)} className={`flex-1 ${ctaPrimary}`}>{t.drawDraw1}</button>
               </>
             )}
           </div>

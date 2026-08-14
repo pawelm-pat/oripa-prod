@@ -242,9 +242,8 @@ const EN = {
   btn1Draw: "Draw ×1",
   btnDraw: "Draw",
   btnFree: "Free draw",
-  btnView: "View",
-  // Lobby card CTA variants (see DrawCta)
-  btnDraw1: "1 Draw",
+  // Draw screen CTA variants (see DrawCta); the single-draw button reuses
+  // drawDraw1 so it always reads the same as the multi-draw row.
   btnFree10: "Free 10 draws",
   btnFreeTrial: "Free Trial",
   btnLineLink: "LINE Account Link Required, Link for 1 Draw!",
@@ -1300,9 +1299,7 @@ const JA: Dict = {
   btn1Draw: "1回ガチャ",
   btnDraw: "ガチャを引く",
   btnFree: "無料ガチャ",
-  btnView: "内容を見る",
-  // Lobby card CTA variants (see DrawCta)
-  btnDraw1: "1回ガチャ",
+  // Draw screen CTA variants (see DrawCta)
   btnFree10: "無料10回ガチャ",
   btnFreeTrial: "無料お試し",
   btnLineLink: "LINE連携が必要です。連携して1回無料ガチャ！",
