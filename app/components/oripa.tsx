@@ -420,10 +420,10 @@ function HomeHero({ lang }: { lang: Lang }) {
   );
 }
 
-// 12-point starburst outline for the "New" category icon, computed once so it
-// can inherit the active/inactive colour like the other line icons.
+// Starburst body for the "New" category icon, computed once so it can inherit
+// the active/inactive colour. Filled, with the "!" knocked out in white.
 const NEW_BURST_PATH = (() => {
-  const cx = 12, cy = 12, spikes = 12, R = 9.6, r = 7.1;
+  const cx = 12, cy = 12, spikes = 12, R = 10.7, r = 7.7;
   let d = "";
   for (let k = 0; k < spikes * 2; k++) {
     const rad = k % 2 === 0 ? R : r;
@@ -435,26 +435,50 @@ const NEW_BURST_PATH = (() => {
   return d + "Z";
 })();
 
+// Lobby category icons, all drawn on a 24 grid at the design's 22px size.
 function catIcon(key: string, color: string) {
   switch (key) {
     case "all":
-      return <svg width="23" height="23" viewBox="0 0 24 24" fill={color}><rect x="3" y="3" width="7.5" height="7.5" rx="2.2" /><rect x="13.5" y="3" width="7.5" height="7.5" rx="2.2" /><rect x="3" y="13.5" width="7.5" height="7.5" rx="2.2" /><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2.2" /></svg>;
-    case "new":
+      // Three squares and a circle, outlined (top-right is the circle).
       return (
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round">
-          <path d={NEW_BURST_PATH} />
-          <path d="M12 8v4" />
-          <path d="M12 15h.01" />
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2">
+          <rect x="3.6" y="3.6" width="7.2" height="7.2" />
+          <circle cx="17.4" cy="7.2" r="3.6" />
+          <rect x="3.6" y="13.2" width="7.2" height="7.2" />
+          <rect x="13.2" y="13.2" width="7.2" height="7.2" />
+        </svg>
+      );
+    case "new":
+      // Solid burst with the exclamation mark knocked out.
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24">
+          <path d={NEW_BURST_PATH} fill={color} />
+          <path d="M10.6 6.3h2.8l-.5 6.8h-1.8z" fill="#fff" />
+          <circle cx="12" cy="15.8" r="1.4" fill="#fff" />
         </svg>
       );
     case "popular":
-      return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" /></svg>;
+      // Flame with the inner flame on the right, as in the design.
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+          <g transform="translate(24 0) scale(-1 1)">
+            <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+          </g>
+        </svg>
+      );
     case "pokemon":
-      return <svg width="26" height="26" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#fff" stroke={color} strokeWidth="1.8" /><path d="M3 12A9 9 0 0 1 21 12Z" fill={color} /><circle cx="12" cy="12" r="3.1" fill="#fff" stroke={color} strokeWidth="1.8" /><circle cx="12" cy="12" r="1.25" fill={color} /></svg>;
+      // Solid ball: white lower half with the centre stud punched through.
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9.4" fill={color} />
+          <path d="M5.62 8.24A7.4 7.4 0 1 0 18.38 8.24Z" fill="#fff" />
+          <circle cx="12" cy="12" r="2.35" fill={color} />
+        </svg>
+      );
     case "limited":
-      return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><circle cx="12" cy="12" r="8.6" /><path d="M12 7v5.2l3.3 1.9" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+      return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="M12 6.6v5.6l3.4 2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
     default:
-      return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinejoin="round"><path d="M12 3.2l2.5 5.2 5.7.8-4.1 4 1 5.6-5.1-2.7-5.1 2.7 1-5.6-4.1-4 5.7-.8z" /></svg>;
+      return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinejoin="round" strokeLinecap="round"><path d="M12 4.2l2.4 4.9 5.4.8-3.9 3.8.9 5.3-4.8-2.5-4.8 2.5.9-5.3-3.9-3.8 5.4-.8z" /></svg>;
   }
 }
 
@@ -1053,7 +1077,8 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
           collapses on scroll-down and expands again on scroll-up. */}
       <div ref={searchBoxRef} className="sticky top-0 z-30 bg-[#FEFEFE]">
       {/* Category bar — icon over label; ALL is a black D-tab pinned to the
-          left edge, the active category is red with an underline. */}
+          left edge, the active category is red with an underline. Sizes follow
+          the design: a 55px square tab, 64px-wide items, 22px icons. */}
       <div className="no-scrollbar flex items-stretch overflow-x-auto border-b border-black/10 bg-[#FEFEFE]">
         {catList.map((c) => {
           const on = cat === c.key;
@@ -1063,11 +1088,11 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
                 key={c.key}
                 onClick={() => selectCat(c.key)}
                 aria-pressed={on}
-                className="sticky left-0 z-[3] flex shrink-0 items-stretch bg-[#FEFEFE] pr-2.5"
+                className="sticky left-0 z-[3] flex shrink-0 items-center bg-[#FEFEFE] py-[5px] pr-2.5"
               >
-                <span className="flex flex-col items-center justify-center gap-1 rounded-r-[28px] bg-[#141414] px-4 py-2 text-white shadow-[3px_0_12px_rgba(0,0,0,0.18)]">
+                <span className="flex h-[55px] w-[55px] flex-col items-center justify-center gap-1 rounded-r-full bg-[#141414] text-white shadow-[3px_0_12px_rgba(0,0,0,0.18)]">
                   {catIcon("all", "#fff")}
-                  <span className="text-[11px] font-medium uppercase tracking-wide">{c.label}</span>
+                  <span className="text-[12px] font-medium leading-none">{c.label}</span>
                 </span>
               </button>
             );
@@ -1077,11 +1102,11 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
             <button
               key={c.key}
               onClick={() => selectCat(c.key)}
-              className="relative flex shrink-0 flex-col items-center justify-center gap-1 px-3 py-2.5"
+              className="relative flex w-16 shrink-0 flex-col items-center justify-center gap-1 py-[5px]"
             >
               {catIcon(c.key, color)}
-              <span className="text-[11px] font-medium uppercase tracking-wide" style={{ color }}>{c.label}</span>
-              {on && <span className="absolute inset-x-3 bottom-0 h-[3px] rounded-full bg-[#D10005]" />}
+              <span className="whitespace-nowrap text-[12px] font-medium leading-none" style={{ color }}>{c.label}</span>
+              {on && <span className="absolute inset-x-[9px] bottom-[3px] h-[4px] bg-[#D10005]" />}
             </button>
           );
         })}
