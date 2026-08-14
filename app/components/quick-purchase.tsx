@@ -408,7 +408,7 @@ export function QuickPurchaseFlow({
             <div className="flex items-center gap-1.5">
               {step === "pay" && (
                 <button
-                  onClick={() => { setStep("offers"); setAddOpen(false); setCardMenuOpen(false); }}
+                  onClick={() => { setStep("offers"); setCardMenuOpen(false); }}
                   className="flex h-8 w-8 items-center justify-center rounded-full text-[#B40206] hover:bg-black/5"
                   aria-label={t.backAria}
                 >

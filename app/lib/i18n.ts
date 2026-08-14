@@ -243,6 +243,11 @@ const EN = {
   btnDraw: "Draw",
   btnFree: "Free draw",
   btnView: "View",
+  // Lobby card CTA variants (see DrawCta)
+  btnDraw1: "1 Draw",
+  btnFree10: "Free 10 draws",
+  btnFreeTrial: "Free Trial",
+  btnLineLink: "LINE Account Link Required, Link for 1 Draw!",
   drawGuaranteed: "Advantage guaranteed",
   drawNewOnly: "New members only",
   drawPackSubtitle: "Start Dash Pack",
@@ -250,6 +255,25 @@ const EN = {
   drawSalesUntil: (d: string) => `On sale until ${d}`,
   drawCautionTitle: "Notes & terms of use",
   drawCaution: "Please review the terms and prize details before drawing. Prize contents and odds are shown below.",
+  drawCautionTermsWord: "terms",
+  drawPrizeNotes: [
+    {
+      title: "About damaged cards / cases",
+      body: "Cards drawn from oripa, as well as graded cards (cases), may have scratches or damage.",
+    },
+    {
+      title: "About graded cards (PSA, etc.)",
+      body: "Graded cards (PSA, etc.) are sold based on the grade assigned by the grading company. We are unable to accept claims, returns, or exchanges regarding scratches or foreign matter visible inside the case.",
+    },
+    {
+      title: "Condition of unopened items",
+      body: "Even unopened items may have scratches or dents on the outer packaging, tears in part of the shrink wrap, or sticker marks. We also cannot completely rule out the possibility that a BOX has been re-shrink-wrapped. We recommend recording a video from the unopened state of the delivered package through to opening. Returns or exchanges are only accepted when a counterfeit can be confirmed in the video.",
+    },
+    {
+      title: "Note on product images",
+      body: "Product images are for illustration only and do not guarantee the actual condition of the cards or the draw results. Cards not shown may also be drawn.",
+    },
+  ] as { title: string; body: string }[],
   drawLineup: "Prize line-up",
   drawTier1: "1st Prize",
   drawTier2: "2nd Prize",
@@ -1275,6 +1299,11 @@ const JA: Dict = {
   btnDraw: "ガチャを引く",
   btnFree: "無料ガチャ",
   btnView: "内容を見る",
+  // Lobby card CTA variants (see DrawCta)
+  btnDraw1: "1回ガチャ",
+  btnFree10: "無料10回ガチャ",
+  btnFreeTrial: "無料お試し",
+  btnLineLink: "LINE連携が必要です。連携して1回無料ガチャ！",
   drawGuaranteed: "アド確定",
   drawNewOnly: "新規登録限定",
   drawPackSubtitle: "スタートダッシュパック",
@@ -1282,6 +1311,25 @@ const JA: Dict = {
   drawSalesUntil: (d) => `${d} まで販売`,
   drawCautionTitle: "注意事項・ご利用条件",
   drawCaution: "ガチャを引く前に利用規約と景品詳細をご確認ください。景品内容・確率は下記の通りです。",
+  drawCautionTermsWord: "利用規約",
+  drawPrizeNotes: [
+    {
+      title: "傷ありカード/ケースについて",
+      body: "オリパで排出されたカードや鑑定済みカード(ケース)には傷がある場合がございます。",
+    },
+    {
+      title: "鑑定済みカード(PSA等)について",
+      body: "鑑定済みカード(PSA等)は鑑定機関の定めたグレードを元に販売しております。ケース内部に確認できる傷や異物などに関してのクレームや返品交換は対応いたしかねます。",
+    },
+    {
+      title: "未開封品の状態",
+      body: "未開封品でも外装に傷や凹み、シュリンクの一部に破れ、シール痕などがある場合がございます。また、BOXの再シュリンクの可能性を完全に排除することはできません。届いた梱包物の未開封の状態から開封までの動画撮影を推奨させていただいております。動画内で偽造品と確認できた場合に限り、返品交換の対応致します。",
+    },
+    {
+      title: "商品画像の注意",
+      body: "商品画像はイメージであり、実際のカードの状態や排出状況を保証するものではありません。掲載していないカードも排出される可能性があります。",
+    },
+  ] as { title: string; body: string }[],
   drawLineup: "景品ラインナップ",
   drawTier1: "1等",
   drawTier2: "2等",

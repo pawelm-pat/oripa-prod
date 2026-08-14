@@ -6,6 +6,7 @@ import { APP_VERSION } from "../version";
 import type {
   Category,
   Lang,
+  DrawCta,
   DrawScenario,
   OripaItem,
   Rarity,
@@ -171,11 +172,11 @@ function BalancePill({ coins, t, onOpenStore }: { coins: number; t: Dict; onOpen
           className="flex items-center gap-2 rounded-full border border-black/15 bg-white py-1 pl-3 pr-5 shadow-[0_1px_3px_rgba(0,0,0,0.10)] transition active:scale-[0.97]"
         >
           <span className="flex items-center gap-1 text-[13px] font-medium text-[#1d2129]">
-            <GemIcon size={18} /> 10,000
+            <CoinIcon size={18} /> {coins.toLocaleString()}
           </span>
           <span className="h-4 w-px bg-black/15" />
           <span className="flex items-center gap-1 text-[13px] font-medium text-[#1d2129]">
-            <CoinIcon size={18} /> {coins.toLocaleString()}
+            <GemIcon size={18} /> 10,000
           </span>
         </button>
         <button
@@ -193,7 +194,6 @@ function BalancePill({ coins, t, onOpenStore }: { coins: number; t: Dict; onOpen
 
 function sectionIcon(icon: SectionIconKey, red: boolean) {
   const c = red ? "#fff" : "#1d2129";
-  if (icon === "star") return <svg width="18" height="18" viewBox="0 0 24 24" fill={c}><path d="M12 2l1.6 5.4L19 9l-5.4 1.6L12 16l-1.6-5.4L5 9l5.4-1.6z" /></svg>;
   if (icon === "cards") return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinejoin="round"><rect x="4.5" y="5" width="9" height="13" rx="1.4" transform="rotate(-10 9 11.5)" /><rect x="10" y="5" width="9" height="13" rx="1.4" transform="rotate(8 14.5 11.5)" /></svg>;
   return catIcon(icon, c);
 }
@@ -226,7 +226,6 @@ function OripaCard({ item, t, onView, onDraw }: { item: OripaItem; t: Dict; onVi
       onClick={expired ? onView : undefined}
     >
       <div className="flex flex-wrap items-center gap-1.5 px-2.5 pt-2.5">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D10005" strokeWidth="1.8" strokeLinejoin="round" className="shrink-0"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" /></svg>
         <TagPill variant="redOutline">{t.tagPopular}</TagPill>
         <TagPill variant="redFill">{t.tagPokemon}</TagPill>
         <TagPill variant="darkOutline">{t.tagLv5}</TagPill>
@@ -985,11 +984,15 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
           if (s.variant === "red") {
             return (
               <div key={s.id}>
-                {/* Curved divider transitioning white -> red (above the section) */}
-                <img src="/home-divider-top.png" alt="" className="-mb-px block w-full" />
+                {/* Curved divider into the red section. The curve is a red shape on
+                    transparency, so the wrapper carries the nav surface up to the
+                    oval — the feed below keeps its own background. */}
+                <div className="bg-[#FEFEFE]">
+                  <img src="/home-divider-top.png" alt="" className="-mb-px block w-full" />
+                </div>
                 <section className="bg-[#D10005] px-3.5 pb-6 pt-4">
                   <div className="mb-3 flex items-center justify-between">
-                    <h3 className="flex items-center gap-1.5 text-[15px] font-extrabold text-white">{sectionIcon(s.icon, true)}{title}</h3>
+                    <h3 className="text-[15px] font-extrabold text-white">{title}</h3>
                     {seeAllCat && <button onClick={() => setCat(seeAllCat)} className="text-[12px] font-bold text-white/90">{L.seeAll} →</button>}
                   </div>
                   <div className="flex flex-col gap-3">{s.items.map(full)}</div>
@@ -1003,7 +1006,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
           return (
             <div key={s.id} className={`px-3.5 py-3.5 first:border-t-0 ${afterRed ? "" : "border-t border-black/10"}`}>
               <div className="mb-2.5 flex items-center justify-between">
-                <h3 className="flex items-center gap-1.5 text-[15px] font-extrabold text-[#1d2129]">{sectionIcon(s.icon, false)}{title}</h3>
+                <h3 className="flex items-center gap-1.5 text-[15px] font-extrabold text-[#1d2129]">{s.icon ? sectionIcon(s.icon, false) : null}{title}</h3>
                 {seeAllCat && <button onClick={() => setCat(seeAllCat)} className="text-[12px] font-bold text-[#D10005]">{L.seeAll} →</button>}
               </div>
               <div className="flex flex-col gap-3">{s.items.map(full)}</div>
@@ -1022,9 +1025,11 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
       : (
         <div>
           {/* Top 2 oripas are recommended for the category: red section + dividers */}
-          <img src="/home-divider-top.png" alt="" className="-mb-px block w-full" />
+          <div className="bg-[#FEFEFE]">
+            <img src="/home-divider-top.png" alt="" className="-mb-px block w-full" />
+          </div>
           <section className="bg-[#D10005] px-3.5 pb-6 pt-4">
-            <h3 className="mb-3 flex items-center gap-1.5 text-[15px] font-extrabold text-white">{sectionIcon("star", true)}{recTitle}</h3>
+            <h3 className="mb-3 text-[15px] font-extrabold text-white">{recTitle}</h3>
             <div className="flex flex-col gap-3">{featured.map(full)}</div>
           </section>
           <img src="/home-divider-bottom.png" alt="" className="-mt-px block w-full" />
@@ -1038,10 +1043,10 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
     <div ref={rootRef} className="bg-[#eef0f3]">
       {/* Sticky lobby nav: the category bar stays pinned; the search bar
           collapses on scroll-down and expands again on scroll-up. */}
-      <div ref={searchBoxRef} className="sticky top-0 z-30 bg-white">
+      <div ref={searchBoxRef} className="sticky top-0 z-30 bg-[#FEFEFE]">
       {/* Category bar — icon over label; ALL is a black D-tab pinned to the
           left edge, the active category is red with an underline. */}
-      <div className="no-scrollbar flex items-stretch overflow-x-auto border-b border-black/10 bg-white">
+      <div className="no-scrollbar flex items-stretch overflow-x-auto border-b border-black/10 bg-[#FEFEFE]">
         {catList.map((c) => {
           const on = cat === c.key;
           if (c.key === "all") {
@@ -1050,7 +1055,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
                 key={c.key}
                 onClick={() => selectCat(c.key)}
                 aria-pressed={on}
-                className="sticky left-0 z-[3] flex shrink-0 items-stretch bg-white pr-2.5"
+                className="sticky left-0 z-[3] flex shrink-0 items-stretch bg-[#FEFEFE] pr-2.5"
               >
                 <span className="flex flex-col items-center justify-center gap-1 rounded-r-[28px] bg-[#141414] px-4 py-2 text-white shadow-[3px_0_12px_rgba(0,0,0,0.18)]">
                   {catIcon("all", "#fff")}
@@ -1077,13 +1082,13 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
       {/* Search bar — collapses to zero height when hidden so nothing peeks
           above the category bar; expands again on scroll-up. */}
       <div
-        className="overflow-hidden bg-white transition-[max-height] duration-300 ease-out will-change-[max-height]"
+        className="overflow-hidden bg-[#FEFEFE] transition-[max-height] duration-300 ease-out will-change-[max-height]"
         style={{ maxHeight: searchHidden ? 0 : 80 }}
       >
         {/* Inner bar slides as a rigid unit (synced with the wrapper clip) so it
             never appears squished/half-rendered while revealing. */}
         <div
-          className="border-b border-black/10 bg-white px-3 py-2.5 transition-transform duration-300 ease-out will-change-transform"
+          className="bg-[#FEFEFE] px-3 py-2.5 transition-transform duration-300 ease-out will-change-transform"
           style={{ transform: searchHidden ? "translateY(-100%)" : "translateY(0)" }}
         >
           <div className="relative">
@@ -1117,7 +1122,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
       {/* Applied-filters bar — shows which filters are active as removable chips
           plus a Clear all action. Hidden while the filter dropdown is open. */}
       {!searchActive && filterCount > 0 && (
-        <div className="flex items-center gap-2 border-b border-black/10 bg-white px-3 py-2">
+        <div className="flex items-center gap-2 bg-[#FEFEFE] px-3 py-2">
           <div className="no-scrollbar flex flex-1 items-center gap-1.5 overflow-x-auto">
             {activeFilterKeys.map((k) => (
               <button
@@ -1193,83 +1198,40 @@ function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, scrollRef, qu
    banner, remaining/period, and the prize line-up by tier (1st = UR / holo,
    2nd = SR / gold, 3rd = N / silver), with a sticky draw CTA. */
 const DRAW_PRICE = 1000; // coins per single draw (mirrors the lobby card price)
+// Free-point balance shown as the "before" value in the draw-confirmation
+// popup (mirrors the static free-point figure shown across the app).
+const DRAW_FREE_POINTS = 10000;
 const MAX_CUSTOM_DRAW = 100; // cap for the custom-draw quantity stepper
 
 // Beveled tier plate ("1等 / 2등 / 3등") — gold for 1st/2nd, silver for 3rd,
 // matching the design's metallic name-plates on the dark prize board.
-function DrawTierLabel({ label, variant }: { label: string; variant: "gold" | "silver" }) {
-  const bg = variant === "gold"
-    ? "linear-gradient(180deg,#fff2b0 0%,#ffd45a 42%,#e0952a 72%,#a9640c 100%)"
-    : "linear-gradient(180deg,#ffffff 0%,#e3e9f1 42%,#c1cad7 72%,#8f9aa8 100%)";
-  const color = variant === "gold" ? "#5a3a00" : "#333c48";
+// Shared shapes for the draw screen's sticky CTA row (see DrawCta variants).
+const ctaBase = "flex min-h-[40px] items-center justify-center rounded-md px-2 text-center text-[13px] font-extrabold leading-tight active:scale-[0.98]";
+const ctaPrimary = `${ctaBase} bg-[#D10005] text-white`;
+const ctaOutline = `${ctaBase} border-2 border-[#D10005] bg-white text-[#1d2129]`;
+
+function DrawTierLabel({ tier, alt }: { tier: 1 | 2 | 3; alt: string }) {
   return (
     <div className="my-4 flex justify-center">
-      <span
-        className="inline-flex min-w-[92px] items-center justify-center rounded-md px-7 py-1.5 text-[16px] font-black tracking-[0.12em]"
-        style={{
-          background: bg,
-          color,
-          border: "1.5px solid rgba(255,255,255,0.7)",
-          boxShadow: "0 3px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -2px 4px rgba(0,0,0,0.18)",
-          textShadow: "0 1px 0 rgba(255,255,255,0.5)",
-        }}
-      >
-        {label}
-      </span>
+      <img
+        src={`/prize-tier-${tier}.png`}
+        alt={alt}
+        draggable={false}
+        className="h-[52px] w-auto select-none object-contain drop-shadow-[0_3px_6px_rgba(0,0,0,0.35)]"
+      />
     </div>
   );
 }
 
-function DrawTierCard({ rarity, lang, large = false }: { rarity: Rarity; lang: Lang; large?: boolean }) {
-  const meta = RARITY_META[rarity];
+function DrawTierCard({ rarity, large = false }: { rarity: Rarity; large?: boolean }) {
   return (
-    <div className="flex flex-col items-center gap-1.5">
+    <div className="flex flex-col items-center">
       <PrizeArt rarity={rarity} size={large ? 138 : 92} />
-      <div className="flex items-center gap-1 rounded-full bg-[#FFF6E3] px-2.5 py-0.5 ring-1 ring-[#f0d9a8]">
-        <CoinIcon size={large ? 15 : 12} />
-        <span className={`font-extrabold text-[#B5740A] ${large ? "text-[13px]" : "text-[11px]"}`}>{meta.coin.toLocaleString()}</span>
-      </div>
     </div>
   );
 }
 
-// Gold 3D "アド確定 / Advantage guaranteed" headline treatment.
-const drawGoldText: React.CSSProperties = {
-  color: "#ffe27a",
-  WebkitTextStroke: "1.4px #5f2c00",
-  textShadow: "0 2px 0 #7a3b00, 0 3px 6px rgba(0,0,0,0.55)",
-};
-
-// Reusable promotional banner (fiery burst, gold headline, mascot, countdown).
-// Shared by the draw detail screen and the draw-confirmation popup.
-function DrawPromoBanner({ t, item, className = "", showCountdown = true }: { t: (typeof STR)[Lang]; item: OripaItem; className?: string; showCountdown?: boolean }) {
-  return (
-    <div
-      className={`relative h-[190px] overflow-hidden ${className}`}
-      style={{ background: "radial-gradient(circle at 40% 34%, #ffe07a 0%, #ff9e2b 26%, #ec5a10 52%, #a5210a 78%, #5c0f04 100%)" }}
-    >
-      <div className="pointer-events-none absolute inset-0 opacity-40" style={{ background: "repeating-conic-gradient(from 0deg at 42% 40%, rgba(255,255,255,0.55) 0deg 2deg, transparent 2deg 11deg)" }} />
-      <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(90deg, rgba(90,15,4,0.35) 0%, transparent 40%, transparent 62%, rgba(90,15,4,0.25) 100%)" }} />
-      <img src="/hero/hero.png" alt="" draggable={false} className="pointer-events-none absolute -bottom-2 right-[-6%] h-[104%] w-auto object-contain drop-shadow-[0_4px_10px_rgba(0,0,0,0.4)]" style={{ WebkitUserDrag: "none" } as React.CSSProperties} />
-      <div className="relative z-10 flex h-full flex-col justify-center px-3.5 py-3">
-        <span className="mb-1 inline-flex w-fit items-center rounded-[4px] bg-[#e0102a] px-2 py-0.5 text-[10px] font-black tracking-wide text-white shadow-[0_1px_3px_rgba(0,0,0,0.4)] ring-1 ring-white/40">
-          {t.drawNewOnly}
-        </span>
-        <h1 className="text-[30px] font-black leading-[0.95]" style={drawGoldText}>{t.drawGuaranteed}</h1>
-        <p className="mt-1 text-[15px] font-black leading-tight" style={drawGoldText}>{t.drawPackSubtitle}</p>
-        <p className="mt-1.5 w-fit rounded bg-black/35 px-1.5 py-0.5 text-[10.5px] font-bold text-white ring-1 ring-white/15">{t.drawBannerTagline}</p>
-      </div>
-      {showCountdown && (
-        <span className="absolute right-2 top-2 z-10 inline-flex items-center gap-1 rounded-full bg-[#d10005] px-2.5 py-1 text-[11px] font-extrabold text-white shadow-[0_2px_6px_rgba(0,0,0,0.45)] ring-1 ring-white/30">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" strokeLinecap="round" /></svg>
-          {t.minUnit(item.endsIn)}
-        </span>
-      )}
-    </div>
-  );
-}
-
-function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", onOpenDraw, onAttemptPaidDraw, pendingRunDraw, onPendingRunDrawConsumed }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; onOpenDraw?: (item: OripaItem) => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** After Quick Purchase success, host requests this count to run. */ pendingRunDraw?: { count: number; token: number } | null; onPendingRunDrawConsumed?: () => void }) {
+function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, drawCta = "all", onOpenDraw, onAttemptPaidDraw, pendingRunDraw, onPendingRunDrawConsumed }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; drawCta?: DrawCta; onOpenDraw?: (item: OripaItem) => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** After Quick Purchase success, host requests this count to run. */ pendingRunDraw?: { count: number; token: number } | null; onPendingRunDrawConsumed?: () => void }) {
   const t = STR[lang];
   // Opens a stored legal document (T&Cs, etc.) in the shared overlay.
   const openLegal = useContext(LegalNavContext);
@@ -1403,14 +1365,18 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
             Fiery radial burst + ray sweep, gold 3D headline, "new-only"
             ribbon, tagline, mascot and a countdown chip. */}
         <div className="px-3 pt-3">
-          {/* When sold out the creative is desaturated and the countdown chip
-              is hidden (the pack is no longer time-limited). */}
+          {/* Design creative (fiery burst headline + mascot + baked-in sales
+              period bar). Sold-out packs are desaturated. The remaining-time
+              detail is shown in the price/remaining section below, so no
+              separate period box is rendered here. */}
           <div className={soldOut ? "grayscale" : ""}>
-            <DrawPromoBanner t={t} item={item} className="rounded-2xl ring-1 ring-[#ffcf5a]/40" showCountdown={!soldOut} />
-          </div>
-          {/* Sales period — important-information bar (black box, per design). */}
-          <div className="mt-2 rounded-md bg-[#1d2129] px-3 py-2">
-            <p className="text-[12px] font-bold text-white">{t.periodLabel("2026/01/01")}</p>
+            <img
+              src="/draw-banner.png"
+              alt={t.drawPackSubtitle}
+              draggable={false}
+              className="block w-full select-none"
+              style={{ WebkitUserDrag: "none" } as React.CSSProperties}
+            />
           </div>
         </div>
 
@@ -1432,7 +1398,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
                 <CoinIcon size={22} />
                 <span className="text-[18px] font-extrabold leading-none text-[#1d2129] underline decoration-[#D10005] decoration-2 underline-offset-[3px]">{DRAW_PRICE.toLocaleString()}<span className="text-[11px] font-bold text-[#8a9099]">{t.perDraw}</span></span>
               </span>
-              {item.gem && (
+              {multiCurrency && (
                 <span className="flex items-center gap-2">
                   <GemIcon size={22} />
                   <span className="text-[18px] font-extrabold leading-none text-[#1d2129] underline decoration-[#D10005] decoration-2 underline-offset-[3px]">{DRAW_PRICE.toLocaleString()}<span className="text-[11px] font-bold text-[#8a9099]">{t.perDraw}</span></span>
@@ -1463,37 +1429,69 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
         </div>
 
         {/* Caution — collapsible accordion */}
-        <div className="mx-3 mt-3 overflow-hidden rounded-xl border border-[#f0d68a] bg-[#fffae8]">
+        <div className="mx-3 mt-3 overflow-hidden rounded-xl border border-[#0F0F0F]/25 bg-[#fffae8]">
           <button
             onClick={() => setCautionOpen((v) => !v)}
             aria-expanded={cautionOpen}
             className="flex w-full items-center gap-2 px-3 py-2.5 text-left"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M12 3l10 18H2z" fill="#1d2129" /><path d="M12 9v5M12 17.5v.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" /></svg>
-            <span className="flex-1 text-[12.5px] font-bold text-[#8a6d16]">{t.drawCautionTitle}</span>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className={`shrink-0 text-[#8a6d16] transition-transform ${cautionOpen ? "rotate-180" : ""}`}><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M12 3l10 18H2z" fill="#0F0F0F" /><path d="M12 9v5M12 17.5v.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" /></svg>
+            <span className="flex-1 text-[12.5px] font-bold text-[#0F0F0F]">{t.drawCautionTitle}</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className={`shrink-0 text-[#0F0F0F] transition-transform ${cautionOpen ? "rotate-180" : ""}`}><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
-          {cautionOpen && (
-            <p className="border-t border-[#f0d68a] px-3 py-2.5 text-[11px] leading-relaxed text-[#8a6d16]">{t.drawCaution}</p>
-          )}
+          {cautionOpen && (() => {
+            const word = t.drawCautionTermsWord;
+            const idx = t.drawCaution.indexOf(word);
+            const link = (
+              <button
+                onClick={() => openLegal("terms")}
+                className="font-bold text-[#0F0F0F] underline decoration-[#0F0F0F] underline-offset-2"
+              >
+                {word}
+              </button>
+            );
+            return (
+              <p className="border-t border-[#0F0F0F]/20 px-3 py-2.5 text-[11px] leading-relaxed text-[#0F0F0F]">
+                {idx < 0 ? (
+                  t.drawCaution
+                ) : (
+                  <>
+                    {t.drawCaution.slice(0, idx)}
+                    {link}
+                    {t.drawCaution.slice(idx + word.length)}
+                  </>
+                )}
+              </p>
+            );
+          })()}
         </div>
 
         {/* Prize line-up */}
         <div className="px-3 pb-5">
-          <DrawTierLabel label={t.drawTier1} variant="gold" />
+          <DrawTierLabel tier={1} alt={t.drawTier1} />
           <div className="grid grid-cols-2 gap-3">
-            <DrawTierCard rarity="UR" lang={lang} large />
-            <DrawTierCard rarity="UR" lang={lang} large />
+            <DrawTierCard rarity="UR" large />
+            <DrawTierCard rarity="UR" large />
           </div>
 
-          <DrawTierLabel label={t.drawTier2} variant="gold" />
+          <DrawTierLabel tier={2} alt={t.drawTier2} />
           <div className="grid grid-cols-3 gap-2.5">
-            {Array.from({ length: 6 }).map((_, i) => <DrawTierCard key={`sr${i}`} rarity="SR" lang={lang} />)}
+            {Array.from({ length: 6 }).map((_, i) => <DrawTierCard key={`sr${i}`} rarity="SR" />)}
           </div>
 
-          <DrawTierLabel label={t.drawTier3} variant="silver" />
+          <DrawTierLabel tier={3} alt={t.drawTier3} />
           <div className="grid grid-cols-3 gap-2.5">
-            {Array.from({ length: 6 }).map((_, i) => <DrawTierCard key={`n${i}`} rarity="N" lang={lang} />)}
+            {Array.from({ length: 6 }).map((_, i) => <DrawTierCard key={`n${i}`} rarity="N" />)}
+          </div>
+
+          {/* Prize handling notes (damaged cards, graded cards, unopened items, images) */}
+          <div className="mt-5 space-y-3.5 rounded-xl bg-white px-4 py-4 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+            {t.drawPrizeNotes.map((n, i) => (
+              <div key={i}>
+                <h4 className="text-[13px] font-bold text-[#0F0F0F]">{n.title}</h4>
+                <p className="mt-1 text-[11.5px] leading-relaxed text-[#5b616b]">{n.body}</p>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -1505,15 +1503,38 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
       {!soldOut && (
         <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2.5 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
           <div className="flex gap-2">
-            <button onClick={() => draw(1)} className="flex-1 rounded-[10px] border-2 border-[#D10005] bg-white py-3 text-[13px] font-extrabold text-[#1d2129] active:scale-[0.98]">
-              {t.drawDraw1}
-            </button>
-            <button onClick={() => draw(10)} className="flex-1 rounded-[10px] bg-[#D10005] py-3 text-[13px] font-extrabold text-white active:scale-[0.98]">
-              {t.drawDrawTen}
-            </button>
-            <button onClick={openCustom} className="flex-1 whitespace-nowrap rounded-[10px] bg-[#D10005] py-3 text-[13px] font-extrabold text-white active:scale-[0.98]">
-              {t.drawDrawCustom}
-            </button>
+            {drawCta === "all" && (
+              <>
+                <button onClick={() => draw(1)} className={`flex-1 ${ctaOutline}`}>
+                  {t.drawDraw1}
+                </button>
+                <button onClick={() => draw(10)} className={`flex-1 ${ctaPrimary}`}>
+                  {t.drawDrawTen}
+                </button>
+                <button onClick={openCustom} className={`flex-1 whitespace-nowrap ${ctaPrimary}`}>
+                  {t.drawDrawCustom}
+                </button>
+              </>
+            )}
+            {drawCta === "one" && (
+              <button onClick={() => draw(1)} className={`flex-1 ${ctaPrimary}`}>{t.btnDraw1}</button>
+            )}
+            {drawCta === "free" && (
+              <button onClick={() => draw(1)} className={`flex-1 ${ctaOutline}`}>{t.btnFree}</button>
+            )}
+            {drawCta === "freePending" && (
+              <button onClick={() => draw(1)} className={`flex-1 ${ctaBase} bg-[#01B901] text-white`}>{t.btnLineLink}</button>
+            )}
+            {drawCta === "trial" && (
+              <>
+                {/* "Free Trial" tag straddles the top edge of the free-draws CTA */}
+                <div className="relative flex-1">
+                  <span className="absolute -top-2 left-1/2 z-[1] -translate-x-1/2 whitespace-nowrap rounded-md bg-[#0F0F0F] px-2.5 py-0.5 text-[10px] font-bold text-white">{t.btnFreeTrial}</span>
+                  <button onClick={() => draw(10)} className={`w-full ${ctaOutline}`}>{t.btnFree10}</button>
+                </div>
+                <button onClick={() => draw(1)} className={`flex-1 ${ctaPrimary}`}>{t.btnDraw1}</button>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -1529,33 +1550,55 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
         >
           <style>{`@keyframes drawConfirmIn{0%{opacity:0;transform:translateY(12px) scale(.94)}100%{opacity:1;transform:none}}`}</style>
           <div
-            className="no-scrollbar flex max-h-full w-full max-w-[380px] flex-col overflow-y-auto rounded-2xl bg-white shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+            className="no-scrollbar flex max-h-full w-full max-w-[380px] flex-col overflow-y-auto bg-white shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
             style={{ animation: "drawConfirmIn 260ms cubic-bezier(0.22,0.61,0.36,1) both" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <DrawPromoBanner t={t} item={item} className="rounded-t-2xl" showCountdown={false} />
+            <img
+              src="/draw-banner-modal.png"
+              alt={t.drawPackSubtitle}
+              draggable={false}
+              className="block w-full select-none"
+              style={{ WebkitUserDrag: "none" } as React.CSSProperties}
+            />
 
             <div className="px-4 pb-4 pt-3.5">
               <h3 className="text-center text-[18px] font-bold text-[#1d2129]">{locTitle(item, lang)}</h3>
               <p className="mt-1.5 text-center text-[12px] leading-relaxed text-[#8a9099]">{t.drawConfirmDesc}</p>
 
-              {/* Cost row */}
-              <div className="mt-3.5 flex items-center justify-center gap-3 rounded-xl border border-black/10 bg-white py-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-                <span className="flex items-center gap-1.5">
-                  <CoinIcon size={26} />
-                  <span className="text-[20px] font-extrabold text-[#1d2129]">{(DRAW_PRICE * confirmCount).toLocaleString()}</span>
-                </span>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M9 6l6 6-6 6" stroke="#9aa1ab" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                <span className="flex items-center gap-1.5">
-                  <GemIcon size={26} />
-                  <span className="text-[20px] font-extrabold text-[#D10005]">0</span>
-                </span>
-              </div>
+              {/* Balance change — coins (primary, red box) and free points
+                  (secondary, grey box), each shown as current → after-draw. */}
+              {(() => {
+                const cost = DRAW_PRICE * confirmCount;
+                const coinsAfter = coins - cost;
+                const pointsAfter = DRAW_FREE_POINTS - cost;
+                const arrow = (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M9 6l6 6-6 6" stroke="#9aa1ab" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                );
+                return (
+                  <div className="mt-3.5 space-y-2">
+                    {/* Coins */}
+                    <div className="flex items-center justify-center gap-3 rounded-xl border-2 border-[#D10005] bg-white py-3">
+                      <span className="flex items-center gap-1.5"><CoinIcon size={26} /><span className="text-[20px] font-extrabold text-[#1d2129]">{coins.toLocaleString()}</span></span>
+                      {arrow}
+                      <span className="flex items-center gap-1.5"><CoinIcon size={26} /><span className="text-[20px] font-extrabold" style={{ color: coinsAfter < 0 ? "#ef8a8a" : "#D10005" }}>{coinsAfter.toLocaleString()}</span></span>
+                    </div>
+                    {/* Free points — only when the pack accepts both currencies. */}
+                    {multiCurrency && (
+                      <div className="flex items-center justify-center gap-3 rounded-xl bg-[#f2f3f5] py-3">
+                        <span className="flex items-center gap-1.5"><GemIcon size={26} /><span className="text-[20px] font-extrabold text-[#8a9099]">{DRAW_FREE_POINTS.toLocaleString()}</span></span>
+                        {arrow}
+                        <span className="flex items-center gap-1.5"><GemIcon size={26} /><span className="text-[20px] font-extrabold" style={{ color: pointsAfter < 0 ? "#ef8a8a" : "#e0706e" }}>{pointsAfter.toLocaleString()}</span></span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
-              {/* Confirm CTA */}
+              {/* Confirm CTA — primary (red), fixed 39px / 8px radius per design */}
               <button
                 onClick={confirmDraw}
-                className="mt-3 w-full rounded-[10px] bg-[#D10005] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]"
+                className="mt-3.5 flex h-[39px] w-full items-center justify-center rounded-lg bg-[#D10005] text-[15px] font-extrabold text-white active:scale-[0.98]"
               >
                 {confirmCount === 1 ? t.drawDraw1 : t.drawDrawTen}
               </button>
@@ -1563,21 +1606,21 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
               {/* Dashed divider */}
               <div className="my-3.5 border-t border-dashed border-black/20" />
 
+              {/* Cancel — secondary (2px grey outline), fixed 39px / 8px radius */}
+              <button
+                onClick={() => setConfirmCount(null)}
+                className="flex h-[39px] w-full items-center justify-center rounded-lg border-2 border-[#82878f] bg-white text-[15px] font-bold text-[#6b7078] active:scale-[0.98]"
+              >
+                {t.cancel}
+              </button>
+
               {/* Terms */}
-              <p className="text-center text-[12px] font-semibold text-[#1d2129]">
+              <p className="mt-3 text-center text-[12px] font-semibold text-[#1d2129]">
                 {t.drawConfirmTerms}{" "}
                 <button onClick={() => openLegal("terms")} className="font-bold text-[#D10005] underline decoration-[#D10005] underline-offset-2">
                   {t.drawConfirmTermsLink}
                 </button>
               </p>
-
-              {/* Cancel */}
-              <button
-                onClick={() => setConfirmCount(null)}
-                className="mt-3 w-full rounded-[10px] border border-black/15 bg-white py-3 text-[14px] font-bold text-[#3a3f47] active:scale-[0.98]"
-              >
-                {t.cancel}
-              </button>
             </div>
           </div>
         </div>
@@ -1593,11 +1636,17 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
           aria-modal="true"
         >
           <div
-            className="no-scrollbar flex max-h-full w-full max-w-[380px] flex-col overflow-y-auto rounded-2xl bg-white shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+            className="no-scrollbar flex max-h-full w-full max-w-[380px] flex-col overflow-y-auto bg-white shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
             style={{ animation: "drawConfirmIn 260ms cubic-bezier(0.22,0.61,0.36,1) both" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <DrawPromoBanner t={t} item={item} className="rounded-t-2xl" showCountdown={false} />
+            <img
+              src="/draw-banner-modal.png"
+              alt={t.drawPackSubtitle}
+              draggable={false}
+              className="block w-full select-none"
+              style={{ WebkitUserDrag: "none" } as React.CSSProperties}
+            />
 
             <div className="px-4 pb-4 pt-3.5">
               <h3 className="text-center text-[18px] font-bold text-[#1d2129]">{locTitle(item, lang)}</h3>
@@ -1609,9 +1658,9 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
                   onClick={() => setQty(customQty - 1)}
                   disabled={customQty <= 1}
                   aria-label="decrease"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#c9ced6] text-white active:scale-95 disabled:opacity-40"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#8f959d] text-white active:scale-95 disabled:opacity-40"
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M5 12h14" /></svg>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round"><path d="M5 12h14" /></svg>
                 </button>
                 <div className="flex min-w-[150px] items-center justify-center rounded-2xl border border-black/10 bg-white px-6 py-1.5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
                   <span className="text-[38px] font-black leading-none text-[#1d2129]">{customQty}</span>
@@ -1622,15 +1671,15 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
                   aria-label="increase"
                   className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#D10005] text-white active:scale-95 disabled:opacity-40"
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
                 </button>
               </div>
 
               {/* Quick-add */}
               <div className="mt-3 flex items-center justify-center gap-2">
-                <button onClick={() => setQty(customQty + 5)} className="rounded-[8px] border border-black/25 px-4 py-2 text-[13px] font-bold text-[#1d2129] active:scale-95">{t.drawCustomAdd(5)}</button>
-                <button onClick={() => setQty(customQty + 10)} className="rounded-[8px] border border-black/25 px-4 py-2 text-[13px] font-bold text-[#1d2129] active:scale-95">{t.drawCustomAdd(10)}</button>
-                <button onClick={() => setQty(MAX_CUSTOM_DRAW)} className="rounded-[8px] border border-black/25 px-4 py-2 text-[13px] font-bold text-[#1d2129] active:scale-95">{t.drawCustomMax}</button>
+                <button onClick={() => setQty(customQty + 5)} className="rounded-[10px] border-2 border-black bg-white px-4 py-2 text-[13px] font-bold text-black active:scale-95">{t.drawCustomAdd(5)}</button>
+                <button onClick={() => setQty(customQty + 10)} className="rounded-[10px] border-2 border-black bg-white px-4 py-2 text-[13px] font-bold text-black active:scale-95">{t.drawCustomAdd(10)}</button>
+                <button onClick={() => setQty(MAX_CUSTOM_DRAW)} className="rounded-[10px] border-2 border-black bg-white px-4 py-2 text-[13px] font-bold text-black active:scale-95">{t.drawCustomMax}</button>
               </div>
 
               {/* Cost row */}
@@ -1646,10 +1695,10 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
                 </span>
               </div>
 
-              {/* Confirm CTA */}
+              {/* Confirm CTA — primary (red), fixed 39px / 8px radius; count in front */}
               <button
                 onClick={confirmCustomDraw}
-                className="mt-3 w-full rounded-[10px] bg-[#D10005] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]"
+                className="mt-3 flex h-[39px] w-full items-center justify-center rounded-lg bg-[#D10005] text-[15px] font-extrabold text-white active:scale-[0.98]"
               >
                 {t.drawCustomCta(customQty)}
               </button>
@@ -1657,21 +1706,21 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
               {/* Dashed divider */}
               <div className="my-3.5 border-t border-dashed border-black/20" />
 
-              {/* Terms */}
-              <p className="text-center text-[12px] font-semibold text-[#1d2129]">
+              {/* Cancel — secondary (2px grey outline), fixed 39px / 8px radius */}
+              <button
+                onClick={() => setCustomOpen(false)}
+                className="flex h-[39px] w-full items-center justify-center rounded-lg border-2 border-[#82878f] bg-white text-[15px] font-bold text-[#6b7078] active:scale-[0.98]"
+              >
+                {t.cancel}
+              </button>
+
+              {/* Terms — at the very bottom */}
+              <p className="mt-3 text-center text-[12px] font-semibold text-[#1d2129]">
                 {t.drawConfirmTerms}{" "}
                 <button onClick={() => openLegal("terms")} className="font-bold text-[#D10005] underline decoration-[#D10005] underline-offset-2">
                   {t.drawConfirmTermsLink}
                 </button>
               </p>
-
-              {/* Cancel */}
-              <button
-                onClick={() => setCustomOpen(false)}
-                className="mt-3 w-full rounded-[10px] border border-black/15 bg-white py-3 text-[14px] font-bold text-[#3a3f47] active:scale-[0.98]"
-              >
-                {t.cancel}
-              </button>
             </div>
           </div>
         </div>
@@ -2316,11 +2365,11 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
         >
           <style>{`@keyframes drawConfirmIn{0%{opacity:0;transform:translateY(12px) scale(.94)}100%{opacity:1;transform:none}}`}</style>
           <div
-            className="no-scrollbar flex max-h-full w-full max-w-[380px] flex-col overflow-y-auto rounded-2xl bg-white shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+            className="no-scrollbar flex max-h-full w-full max-w-[380px] flex-col overflow-y-auto bg-white shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
             style={{ animation: "drawConfirmIn 260ms cubic-bezier(0.22,0.61,0.36,1) both", fontFamily: "var(--font-noto-sans-jp), system-ui, sans-serif" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <img src="/oripa-banner-adkakutei.png" alt="" draggable={false} className="h-[168px] w-full rounded-t-2xl object-cover object-center" style={{ WebkitUserDrag: "none" } as React.CSSProperties} />
+            <img src="/oripa-banner-adkakutei.png" alt="" draggable={false} className="h-[168px] w-full object-cover object-center" style={{ WebkitUserDrag: "none" } as React.CSSProperties} />
 
             <div className="px-4 pb-4 pt-3.5">
               <h3 className="text-center text-[19px] font-extrabold tracking-tight text-[#D10005]">{t.drawLimitTitle}</h3>
@@ -5077,8 +5126,8 @@ function StorePage({
   );
 }
 
-export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off" }: {
-  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario;
+export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, drawCta = "all" }: {
+  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; drawCta?: DrawCta;
 }) {
   const t = STR[lang];
   const [screen, setScreen] = useState<Screen>("landing");
@@ -5344,6 +5393,8 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             freeShipAvailable={freeShipAvailable}
             dailyLimitReached={dailyLimitReached}
             drawScenario={drawScenario}
+            multiCurrency={multiCurrency}
+            drawCta={drawCta}
             onResultsChange={onDrawResultsChange}
             shippingAddresses={shippingAddresses}
             onShippingAddressesChange={setShippingAddresses}

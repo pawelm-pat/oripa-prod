@@ -89,12 +89,20 @@ export type OripaItem = {
 // simulated connection error, or insufficient remaining stock.
 export type DrawScenario = "off" | "expired" | "connError" | "stock";
 
-export type SectionIconKey = "star" | "new" | "popular" | "pokemon" | "limited" | "cards";
+// Which CTA row the draw screen renders (dev harness demo control).
+//   all         -> current behaviour: Draw ×1 / Draw ×10 / Custom draw
+//   one         -> single full-width "1 Draw"
+//   free        -> single outlined "Free draw"
+//   freePending -> green "LINE account link required" prompt
+//   trial       -> "Free 10 draws" (with Free Trial badge) alongside "1 Draw"
+export type DrawCta = "all" | "one" | "free" | "freePending" | "trial";
+
+export type SectionIconKey = "new" | "popular" | "pokemon" | "limited" | "cards";
 
 export type HomeSection = {
   id: string;
   titleKey: string;
-  icon: SectionIconKey;
+  icon?: SectionIconKey;
   variant: "red" | "light";
   cats: string[];
   items: OripaItem[];
