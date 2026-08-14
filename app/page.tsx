@@ -40,7 +40,7 @@ export default function Page() {
   // Demo control (draw confirm popup): whether the pack accepts both currencies.
   // Yes -> confirm popup shows coins (top) + free points (below); No -> coins only.
   const [multiCurrency, setMultiCurrency] = useState(true);
-  // Demo control (lobby only): which CTA row the oripa cards show.
+  // Demo control (draw screen only): which CTA row the draw screen shows.
   const [drawCta, setDrawCta] = useState<DrawCta>("all");
 
   function changeKycScenario(value: KycScenario) {
@@ -95,22 +95,19 @@ export default function Page() {
                   ["Coins only", "coins"],
                 ]}
               />
+              <SelectControl
+                label="Draw CTA"
+                value={drawCta}
+                onChange={setDrawCta}
+                options={[
+                  ["All Draws", "all"],
+                  ["1 Draw", "one"],
+                  ["Free draw", "free"],
+                  ["Free draw pending", "freePending"],
+                  ["Free trial", "trial"],
+                ]}
+              />
             </>
-          )}
-          {/* Lobby only: pick which CTA row the oripa cards render. */}
-          {(screen === "oripa" || screen === "landing") && (
-            <SelectControl
-              label="Draw CTA"
-              value={drawCta}
-              onChange={setDrawCta}
-              options={[
-                ["All Draws", "all"],
-                ["1 Draw", "one"],
-                ["Free draw", "free"],
-                ["Free draw pending", "freePending"],
-                ["Free trial", "trial"],
-              ]}
-            />
           )}
         </div>
         <div className="rounded-[2.6rem] border border-white/12 bg-[#1b1c22] p-3 shadow-[0_35px_90px_rgba(0,0,0,0.55)]">

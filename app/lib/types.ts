@@ -89,8 +89,8 @@ export type OripaItem = {
 // simulated connection error, or insufficient remaining stock.
 export type DrawScenario = "off" | "expired" | "connError" | "stock";
 
-// Which CTA row the lobby oripa cards render (dev harness demo control).
-//   all         -> current behaviour: Draw / Free draw (if any) / View
+// Which CTA row the draw screen renders (dev harness demo control).
+//   all         -> current behaviour: Draw ×1 / Draw ×10 / Custom draw
 //   one         -> single full-width "1 Draw"
 //   free        -> single outlined "Free draw"
 //   freePending -> green "LINE account link required" prompt
