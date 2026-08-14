@@ -1419,7 +1419,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
 
             {/* Right: remaining count, progress bar, remaining time */}
             <div className="flex min-w-0 flex-1 flex-col justify-center">
-              <div className="flex items-baseline justify-between">
+              <div className="flex items-baseline justify-center gap-1">
                 <span className={`text-[13px] font-bold ${soldOut ? "text-[#D10005]" : "text-[#1d2129]"}`}>{t.remainingLabel}</span>
                 <span className="leading-none"><span className={`text-[20px] font-extrabold ${soldOut ? "text-[#D10005]" : "text-[#1d2129]"}`}>{remainingShown}</span><span className="text-[12px] font-bold text-[#8a9099]">/{item.total}</span></span>
               </div>
@@ -1427,7 +1427,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
               {soldOut ? (
                 <p className="mt-2 text-center text-[15px] font-extrabold text-[#D10005]">{t.soldOutLabel}</p>
               ) : (
-                <p className="mt-2 flex items-center justify-between text-[#D10005]">
+                <p className="mt-2 flex items-baseline justify-center gap-1 text-[#D10005]">
                   <span className="text-[12px] font-bold">{t.remainingTimeLabel}</span>
                   <span className="text-[14px] font-extrabold">{t.minUnit(item.endsIn)}</span>
                 </p>
