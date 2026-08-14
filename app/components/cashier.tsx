@@ -4,7 +4,7 @@
  * Cashier V1 — exact port of HeorhiiPovstianyi_repo PurchaseFlow cashierVariant="v1".
  */
 
-import { useEffect, useState, createContext, useContext } from "react";
+import { useEffect, useMemo, useState, createContext, useContext } from "react";
 import type { Lang, OripaItem } from "../lib/types";
 import { STR } from "../lib/i18n";
 import type { LegalDocKey } from "../data/legal";
@@ -200,6 +200,16 @@ export type BillingAddress = {
   zip: string;
 };
 export type SavedCard = { last4: string; expiry: string; brand: string; name: string; billingAddress?: BillingAddress };
+
+const BILLING_ADDRESS_SUGGESTIONS = [
+  { address1: "1-1 Marunouchi", country: "Japan", city: "Chiyoda-ku", state: "東京都", zip: "100-0005" },
+  { address1: "2-21-1 Shibuya", country: "Japan", city: "Shibuya", state: "東京都", zip: "150-0002" },
+  { address1: "3-1-1 Minami-Aoyama", country: "Japan", city: "Minato-ku", state: "東京都", zip: "107-0062" },
+  { address1: "1-1 Umeda", country: "Japan", city: "Kita-ku", state: "大阪府", zip: "530-0001" },
+  { address1: "Karasuma-dori", country: "Japan", city: "Nakagyo-ku", state: "京都府", zip: "604-8091" },
+  { address1: "1 Market St", country: "United States", city: "San Francisco", state: "California", zip: "94105" },
+  { address1: "350 Fifth Ave", country: "United States", city: "New York", state: "New York", zip: "10118" },
+];
 type PurchaseStep = "checkout" | "auth3ds" | "success" | "failed";
 type FailureReason = "insufficientFunds" | "bankDecline";
 
@@ -263,6 +273,9 @@ export function PurchaseFlow({
   const [billingState, setBillingState] = useState("");
   const [billingZip, setBillingZip] = useState("");
   const [billingEditMode, setBillingEditMode] = useState(false);
+  const [billingAddressMode, setBillingAddressMode] = useState<"search" | "fields">("search");
+  const [billingSearchQuery, setBillingSearchQuery] = useState("");
+  const [billingSearchDebounced, setBillingSearchDebounced] = useState("");
   const [activeOripaIdx, setActiveOripaIdx] = useState(0);
   // V1 cashier: main checkout vs dedicated Add Card Details page
   const [v1Page, setV1Page] = useState<"main" | "addCard">("main");
@@ -284,15 +297,26 @@ export function PurchaseFlow({
         setBillingCity(lastAddr.city);
         setBillingState(lastAddr.state);
         setBillingZip(lastAddr.zip);
-        setBillingEditMode(false);
       } else {
         setBillingFirstName(""); setBillingLastName(""); setBillingAddress1("");
         setBillingAddress2(""); setBillingCity(""); setBillingState(""); setBillingZip("");
-        // Keep the form open while the user fills it — don't auto-collapse on first complete field.
-        setBillingEditMode(true);
       }
+      setBillingEditMode(true);
+      setBillingAddressMode("search");
+      setBillingSearchQuery("");
     }
   }, [selectedCardIdx]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setBillingSearchDebounced(billingSearchQuery.trim()), 280);
+    return () => window.clearTimeout(timer);
+  }, [billingSearchQuery]);
+  const billingSuggestions = useMemo(() => {
+    if (billingSearchDebounced.length < 2) return [];
+    const q = billingSearchDebounced.toLowerCase();
+    return BILLING_ADDRESS_SUGGESTIONS.filter((item) =>
+      `${item.zip} ${item.state} ${item.city} ${item.address1} ${item.country}`.toLowerCase().includes(q)
+    ).slice(0, 5);
+  }, [billingSearchDebounced]);
   useEffect(() => {
     setPayMethod("card");
   }, []);
@@ -904,6 +928,9 @@ export function PurchaseFlow({
     function openV1AddCard() {
       setSelectedCardIdx("new");
       setPayMethod("card");
+      setBillingAddressMode("search");
+      setBillingSearchQuery("");
+      setBillingEditMode(true);
       setV1Page("addCard");
     }
 
@@ -919,56 +946,114 @@ export function PurchaseFlow({
             <input value={billingLastName} onChange={(e) => setBillingLastName(e.target.value)} placeholder={t.checkoutBillingLastNamePh} className={`${inputCls} bg-[#f5f6f8]`} />
           </div>
         </div>
-        <div>
-          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutAddressLine1Label}</p>
-          <input value={billingAddress1} onChange={(e) => setBillingAddress1(e.target.value)} placeholder={t.checkoutBillingAddress1StreetPh} className={`${inputCls} bg-[#f5f6f8]`} />
-        </div>
-        <div>
-          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">
-            {t.checkoutAddressLine2Label} <span className="font-medium normal-case tracking-normal text-[#b0b6bf]">{t.checkoutOptional}</span>
-          </p>
-          <input value={billingAddress2} onChange={(e) => setBillingAddress2(e.target.value)} placeholder={t.checkoutBillingAddress2AptPh} className={`${inputCls} bg-[#f5f6f8]`} />
-        </div>
-        <div className="grid grid-cols-2 gap-2">
+        {billingAddressMode === "search" ? (
           <div>
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutCountryFieldLabel}</p>
             <div className="relative">
-              <select value={country} onChange={(e) => handleBillingCountryChange(e.target.value)} className={`${selectCls} bg-[#f5f6f8]`}>
-                <option>Japan</option>
-                <option>United States</option>
-              </select>
-              {chevronSvg}
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#b0b6bf]">
+                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.8" /><path d="M16 16.5 21 21.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+              </span>
+              <input
+                value={billingSearchQuery}
+                onChange={(e) => setBillingSearchQuery(e.target.value)}
+                placeholder={t.checkoutFindAddressPh}
+                className={`${inputCls} bg-[#f5f6f8] pl-8`}
+              />
             </div>
+            {billingSuggestions.length > 0 && (
+              <ul className="mt-1 overflow-hidden rounded-lg border border-[#e2e5ea] bg-white">
+                {billingSuggestions.map((item) => (
+                  <li key={`${item.zip}-${item.address1}`} className="border-b border-[#e2e5ea] last:border-b-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCountry(item.country);
+                        setBillingAddress1(item.address1);
+                        setBillingCity(item.city);
+                        setBillingState(item.state);
+                        setBillingZip(item.zip);
+                        setBillingSearchQuery("");
+                        setBillingAddressMode("fields");
+                      }}
+                      className="w-full px-3 py-2.5 text-left text-[14px] text-[#1d2129]"
+                    >
+                      {item.zip} {item.state} {item.city}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                if (billingSearchQuery.trim()) setBillingAddress1(billingSearchQuery.trim());
+                setBillingAddressMode("fields");
+              }}
+              className="mt-2 text-[12px] font-medium text-[#5c626b] underline underline-offset-2"
+            >
+              {t.enterManually}
+            </button>
           </div>
-          <div>
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutBillingStateRegionPh}</p>
-            <div className="relative">
-              <select
-                value={billingState}
-                onChange={(e) => setBillingState(e.target.value)}
-                className={`${selectCls} bg-[#f5f6f8]`}
-                style={{ color: billingState ? "#1d2129" : "#b0b6bf" }}
-              >
-                <option value="">{statePlaceholder}</option>
-                {isJapan
-                  ? PREFECTURES_JA.map((ja, i) => <option key={ja} value={ja} style={{ color: "#1d2129" }}>{lang === "ja" ? ja : PREFECTURES_EN[i]}</option>)
-                  : US_STATES.map(s => <option key={s} style={{ color: "#1d2129" }}>{s}</option>)
-                }
-              </select>
-              {chevronSvg}
+        ) : (
+          <>
+            <div>
+              <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutAddressLine1Label}</p>
+              <input value={billingAddress1} onChange={(e) => setBillingAddress1(e.target.value)} placeholder={t.checkoutBillingAddress1StreetPh} className={`${inputCls} bg-[#f5f6f8]`} />
             </div>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutCityLabel}</p>
-            <input value={billingCity} onChange={(e) => setBillingCity(e.target.value)} placeholder={t.checkoutBillingCityPh.replace("*", "")} className={`${inputCls} bg-[#f5f6f8]`} />
-          </div>
-          <div>
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutZipPostalLabel}</p>
-            <input value={billingZip} onChange={(e) => handleBillingZipChange(e.target.value)} placeholder={zipPlaceholder} className={`${inputCls} bg-[#f5f6f8]`} />
-          </div>
-        </div>
+            <div>
+              <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">
+                {t.checkoutAddressLine2Label} <span className="font-medium normal-case tracking-normal text-[#b0b6bf]">{t.checkoutOptional}</span>
+              </p>
+              <input value={billingAddress2} onChange={(e) => setBillingAddress2(e.target.value)} placeholder={t.checkoutBillingAddress2AptPh} className={`${inputCls} bg-[#f5f6f8]`} />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutCountryFieldLabel}</p>
+                <div className="relative">
+                  <select value={country} onChange={(e) => handleBillingCountryChange(e.target.value)} className={`${selectCls} bg-[#f5f6f8]`}>
+                    <option>Japan</option>
+                    <option>United States</option>
+                  </select>
+                  {chevronSvg}
+                </div>
+              </div>
+              <div>
+                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutBillingStateRegionPh}</p>
+                <div className="relative">
+                  <select
+                    value={billingState}
+                    onChange={(e) => setBillingState(e.target.value)}
+                    className={`${selectCls} bg-[#f5f6f8]`}
+                    style={{ color: billingState ? "#1d2129" : "#b0b6bf" }}
+                  >
+                    <option value="">{statePlaceholder}</option>
+                    {isJapan
+                      ? PREFECTURES_JA.map((ja, i) => <option key={ja} value={ja} style={{ color: "#1d2129" }}>{lang === "ja" ? ja : PREFECTURES_EN[i]}</option>)
+                      : US_STATES.map(s => <option key={s} style={{ color: "#1d2129" }}>{s}</option>)
+                    }
+                  </select>
+                  {chevronSvg}
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutCityLabel}</p>
+                <input value={billingCity} onChange={(e) => setBillingCity(e.target.value)} placeholder={t.checkoutBillingCityPh.replace("*", "")} className={`${inputCls} bg-[#f5f6f8]`} />
+              </div>
+              <div>
+                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutZipPostalLabel}</p>
+                <input value={billingZip} onChange={(e) => handleBillingZipChange(e.target.value)} placeholder={zipPlaceholder} className={`${inputCls} bg-[#f5f6f8]`} />
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => { setBillingSearchQuery(""); setBillingAddressMode("search"); }}
+              className="self-start text-[12px] font-medium text-[#5c626b] underline underline-offset-2"
+            >
+              {t.checkoutSearchDifferentAddress}
+            </button>
+          </>
+        )}
       </div>
     );
 
