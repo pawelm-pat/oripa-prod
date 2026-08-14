@@ -1372,7 +1372,15 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
         {/* ── Promotional banner ─────────────────────────────────────────
             Fiery radial burst + ray sweep, gold 3D headline, "new-only"
             ribbon, tagline, mascot and a countdown chip. */}
-        <div className="px-3 pt-3">
+        {/* Tags — sit above the banner, as on the lobby card */}
+        <div className="flex flex-wrap items-center gap-1.5 px-3.5 pb-1.5 pt-2.5">
+          <TagPill variant="redOutline">{t.tagPopular}</TagPill>
+          <TagPill variant="redFill">{t.tagPokemon}</TagPill>
+          <TagPill variant="darkOutline">{t.tagLv5}</TagPill>
+          <TagPill variant="darkOutline">{t.tagSsr}</TagPill>
+        </div>
+
+        <div className="px-3">
           {/* Design creative (fiery burst headline + mascot + baked-in sales
               period bar). Sold-out packs are desaturated. The remaining-time
               detail is shown in the price/remaining section below, so no
@@ -1386,14 +1394,6 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
               style={{ WebkitUserDrag: "none" } as React.CSSProperties}
             />
           </div>
-        </div>
-
-        {/* Tags */}
-        <div className="flex flex-wrap items-center gap-1.5 px-3.5 pb-1 pt-1">
-          <TagPill variant="redOutline">{t.tagPopular}</TagPill>
-          <TagPill variant="redFill">{t.tagPokemon}</TagPill>
-          <TagPill variant="darkOutline">{t.tagLv5}</TagPill>
-          <TagPill variant="darkOutline">{t.tagSsr}</TagPill>
         </div>
 
         {/* Cost + remaining — two columns split by a dashed divider: price per
