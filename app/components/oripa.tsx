@@ -1391,12 +1391,21 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
           const after = balance - cost;
           const body = (
             <>
-              <span className="flex items-center gap-1.5"><Icon size={26} /><span className={`text-[20px] font-extrabold ${selected ? "text-[#1d2129]" : "text-[#8a9099]"}`}>{balance.toLocaleString()}</span></span>
+              <span className="flex items-center gap-2"><Icon size={30} /><span className={`text-[20px] font-extrabold leading-none ${selected ? "text-[#1d2129]" : "text-[#8a9099]"}`}>{balance.toLocaleString()}</span></span>
               {arrow}
-              <span className="flex items-center gap-1.5"><Icon size={26} /><span className="text-[20px] font-extrabold" style={{ color: selected ? (after < 0 ? "#ef8a8a" : "#D10005") : "#b8bdc4" }}>{(selected ? after : balance).toLocaleString()}</span></span>
+              <span className="flex items-center gap-2"><Icon size={30} /><span className="text-[20px] font-extrabold leading-none" style={{ color: selected ? "#D10005" : "#b8bdc4" }}>{(selected ? after : balance).toLocaleString()}</span></span>
             </>
           );
-          const shell = `flex w-full items-center justify-center gap-3 rounded-xl border-2 py-3 ${selected ? "border-[#D10005] bg-white" : "border-transparent bg-[#f2f3f5]"}`;
+          // 352×38 with an 8px radius in the design; the CTAs below use the same
+          // 39px/8px box. With a single currency there is nothing to choose, so
+          // the row gets a neutral border instead of the red "selected" one.
+          const shell = `flex h-[39px] w-full items-center justify-center gap-3 rounded-lg border-2 ${
+            !multiCurrency
+              ? "border-[#e8eaee] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
+              : selected
+                ? "border-[#D10005] bg-white"
+                : "border-transparent bg-[#f2f3f5]"
+          }`;
           return multiCurrency ? (
             <button key={key} type="button" role="radio" aria-checked={selected} onClick={() => setPayWith(key)} className={shell}>
               {body}
