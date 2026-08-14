@@ -420,66 +420,32 @@ function HomeHero({ lang }: { lang: Lang }) {
   );
 }
 
-// Starburst body for the "New" category icon, computed once so it can inherit
-// the active/inactive colour. Filled, with the "!" knocked out in white.
-const NEW_BURST_PATH = (() => {
-  const cx = 12, cy = 12, spikes = 12, R = 10.7, r = 7.7;
-  let d = "";
-  for (let k = 0; k < spikes * 2; k++) {
-    const rad = k % 2 === 0 ? R : r;
-    const a = ((-90 + k * (180 / spikes)) * Math.PI) / 180;
-    const x = +(cx + rad * Math.cos(a)).toFixed(2);
-    const y = +(cy + rad * Math.sin(a)).toFixed(2);
-    d += (k === 0 ? "M" : "L") + x + " " + y + " ";
-  }
-  return d + "Z";
-})();
+// Category art from the design set. Each file is a single-colour glyph with its
+// counters knocked out to transparency, so one asset can be tinted for both the
+// resting (black) and active (red) states by using it as a mask.
+const CAT_ICON_SRC: Record<string, string> = {
+  new: "/cat/new.png",
+  popular: "/cat/hot.png",
+  pokemon: "/cat/pokemon.png",
+  limited: "/cat/time.png",
+  other: "/cat/more.png",
+};
 
-// Lobby category icons, all drawn on a 24 grid at the design's 22px size.
 function catIcon(key: string, color: string) {
-  switch (key) {
-    case "all":
-      // Three squares and a circle, outlined (top-right is the circle).
-      return (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2">
-          <rect x="3.6" y="3.6" width="7.2" height="7.2" />
-          <circle cx="17.4" cy="7.2" r="3.6" />
-          <rect x="3.6" y="13.2" width="7.2" height="7.2" />
-          <rect x="13.2" y="13.2" width="7.2" height="7.2" />
-        </svg>
-      );
-    case "new":
-      // Solid burst with the exclamation mark knocked out.
-      return (
-        <svg width="22" height="22" viewBox="0 0 24 24">
-          <path d={NEW_BURST_PATH} fill={color} />
-          <path d="M10.6 6.3h2.8l-.5 6.8h-1.8z" fill="#fff" />
-          <circle cx="12" cy="15.8" r="1.4" fill="#fff" />
-        </svg>
-      );
-    case "popular":
-      // Flame with the inner flame on the right, as in the design.
-      return (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-          <g transform="translate(24 0) scale(-1 1)">
-            <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
-          </g>
-        </svg>
-      );
-    case "pokemon":
-      // Solid ball: white lower half with the centre stud punched through.
-      return (
-        <svg width="22" height="22" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="9.4" fill={color} />
-          <path d="M5.62 8.24A7.4 7.4 0 1 0 18.38 8.24Z" fill="#fff" />
-          <circle cx="12" cy="12" r="2.35" fill={color} />
-        </svg>
-      );
-    case "limited":
-      return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="M12 6.6v5.6l3.4 2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-    default:
-      return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinejoin="round" strokeLinecap="round"><path d="M12 4.2l2.4 4.9 5.4.8-3.9 3.8.9 5.3-4.8-2.5-4.8 2.5.9-5.3-3.9-3.8 5.4-.8z" /></svg>;
+  // "All" only ever appears on the black tab, and has no exported asset.
+  if (key === "all") {
+    return (
+      <svg width="21.6" height="21.6" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2">
+        <rect x="3.6" y="3.6" width="7.2" height="7.2" />
+        <circle cx="17.4" cy="7.2" r="3.6" />
+        <rect x="3.6" y="13.2" width="7.2" height="7.2" />
+        <rect x="13.2" y="13.2" width="7.2" height="7.2" />
+      </svg>
+    );
   }
+  const src = CAT_ICON_SRC[key] ?? CAT_ICON_SRC.other;
+  const mask = { maskImage: `url(${src})`, WebkitMaskImage: `url(${src})`, maskSize: "contain", WebkitMaskSize: "contain", maskRepeat: "no-repeat", WebkitMaskRepeat: "no-repeat", maskPosition: "center", WebkitMaskPosition: "center" };
+  return <span aria-hidden className="block h-[21.6px] w-[21.6px] shrink-0" style={{ backgroundColor: color, ...mask } as React.CSSProperties} />;
 }
 
 // Legal document reader (Terms of Use, Privacy Policy, SCTA notation).
@@ -1073,12 +1039,16 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
 
   return (
     <div ref={rootRef} className="bg-[#eef0f3]">
+      {/* Warm the pack artwork behind every card so opening a draw doesn't wait
+          on the banner. Low priority keeps it behind the lobby's own images. */}
+      <link rel="preload" as="image" href="/draw-banner.webp" fetchPriority="low" />
+
       {/* Sticky lobby nav: the category bar stays pinned; the search bar
           collapses on scroll-down and expands again on scroll-up. */}
       <div ref={searchBoxRef} className="sticky top-0 z-30 bg-[#FEFEFE]">
       {/* Category bar — icon over label; ALL is a black D-tab pinned to the
           left edge, the active category is red with an underline. Sizes follow
-          the design: a 55px square tab, 64px-wide items, 22px icons. */}
+          the design: a 55px square tab, 64px-wide items, 21.6px icons. */}
       <div className="no-scrollbar flex items-stretch overflow-x-auto border-b border-black/10 bg-[#FEFEFE]">
         {catList.map((c) => {
           const on = cat === c.key;
@@ -1088,25 +1058,27 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
                 key={c.key}
                 onClick={() => selectCat(c.key)}
                 aria-pressed={on}
-                className="sticky left-0 z-[3] flex shrink-0 items-center bg-[#FEFEFE] py-[5px] pr-2.5"
+                className="sticky left-0 z-[3] flex shrink-0 items-center bg-[#FEFEFE] py-[5px] pl-[9px]"
               >
-                <span className="flex h-[55px] w-[55px] flex-col items-center justify-center gap-1 rounded-r-full bg-[#141414] text-white shadow-[3px_0_12px_rgba(0,0,0,0.18)]">
+                {/* Content sits a touch left of centre, as in the design — the
+                    rounded right edge otherwise pulls it visually right. */}
+                <span className="flex h-[55px] w-[55px] flex-col items-center justify-center gap-[2px] rounded-r-full bg-[#141414] pr-[5px] text-white shadow-[3px_0_12px_rgba(0,0,0,0.18)]">
                   {catIcon("all", "#fff")}
                   <span className="text-[12px] font-medium leading-none">{c.label}</span>
                 </span>
               </button>
             );
           }
-          const color = on ? "#D10005" : "#1d2129";
+          const color = on ? "#D10005" : "#0F0F0F";
           return (
             <button
               key={c.key}
               onClick={() => selectCat(c.key)}
-              className="relative flex w-16 shrink-0 flex-col items-center justify-center gap-1 py-[5px]"
+              className="relative flex w-[63.6px] shrink-0 flex-col items-center gap-[3px] pt-[12px]"
             >
               {catIcon(c.key, color)}
               <span className="whitespace-nowrap text-[12px] font-medium leading-none" style={{ color }}>{c.label}</span>
-              {on && <span className="absolute inset-x-[9px] bottom-[3px] h-[4px] bg-[#D10005]" />}
+              {on && <span className="absolute inset-x-[9px] bottom-[8px] h-[4px] bg-[#D10005]" />}
             </button>
           );
         })}
@@ -1242,6 +1214,31 @@ const MAX_CUSTOM_DRAW = 100; // cap for the custom-draw quantity stepper
 const ctaBase = "flex min-h-[40px] items-center justify-center rounded-md px-2 text-center text-[13px] font-extrabold leading-tight active:scale-[0.98]";
 const ctaPrimary = `${ctaBase} bg-[#D10005] text-white`;
 const ctaOutline = `${ctaBase} border-2 border-[#D10005] bg-white text-[#1d2129]`;
+
+// Pack artwork (draw screen and confirmation popups). The intrinsic size is
+// declared so the space is reserved on the very first paint — otherwise the
+// content below snaps down when the file lands — and the image fades in once
+// decoded, including when it comes straight from cache.
+function PackBanner({ src, alt, width, height, priority = false }: { src: string; alt: string; width: number; height: number; priority?: boolean }) {
+  const [ready, setReady] = useState(false);
+  return (
+    <span className="relative block w-full overflow-hidden bg-[#20222a]" style={{ aspectRatio: `${width} / ${height}` }}>
+      {!ready && <span className="animate-pulse absolute inset-0 bg-gradient-to-br from-[#2b2e38] via-[#20222a] to-[#2b2e38]" />}
+      <img
+        ref={(el) => { if (el?.complete) setReady(true); }}
+        src={src}
+        alt={alt}
+        width={width}
+        height={height}
+        draggable={false}
+        fetchPriority={priority ? "high" : undefined}
+        onLoad={() => setReady(true)}
+        className={`absolute inset-0 h-full w-full select-none transition-opacity duration-300 ease-out ${ready ? "opacity-100" : "opacity-0"}`}
+        style={{ WebkitUserDrag: "none" } as React.CSSProperties}
+      />
+    </span>
+  );
+}
 
 function DrawTierLabel({ tier, alt }: { tier: 1 | 2 | 3; alt: string }) {
   return (
@@ -1465,7 +1462,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
 
       {/* Warm the confirmation banner while the pack page is open so the popup
           never animates in around an empty banner slot. */}
-      <link rel="preload" as="image" href="/draw-banner-modal.png" />
+      <link rel="preload" as="image" href="/draw-banner-modal.webp" />
 
       {/* Title row */}
       <div className="shrink-0 flex items-center gap-2 border-b border-black/10 bg-white px-3 py-2.5">
@@ -1493,13 +1490,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
               detail is shown in the price/remaining section below, so no
               separate period box is rendered here. */}
           <div className={soldOut ? "grayscale" : ""}>
-            <img
-              src="/draw-banner.png"
-              alt={t.drawPackSubtitle}
-              draggable={false}
-              className="block w-full select-none"
-              style={{ WebkitUserDrag: "none" } as React.CSSProperties}
-            />
+            <PackBanner src="/draw-banner.webp" alt={t.drawPackSubtitle} width={748} height={613} priority />
           </div>
         </div>
 
@@ -1644,7 +1635,14 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
               <>
                 {/* "Free Trial" tag straddles the top edge of the free-draws CTA */}
                 <div className="relative flex-1">
-                  <span className="absolute -top-2 left-1/2 z-[1] -translate-x-1/2 whitespace-nowrap rounded-md bg-[#0F0F0F] px-2.5 py-0.5 text-[10px] font-bold text-white">{t.btnFreeTrial}</span>
+                  <img
+                    src="/cta/free-trial-tag.png"
+                    alt={t.btnFreeTrial}
+                    width={222}
+                    height={32}
+                    draggable={false}
+                    className="absolute -top-2 left-1/2 z-[1] h-4 w-[111px] max-w-none -translate-x-1/2 select-none"
+                  />
                   <button onClick={() => draw(10, true)} className={`w-full ${ctaOutline}`}>{t.btnFree10}</button>
                 </div>
                 <button onClick={() => draw(1)} className={`flex-1 ${ctaPrimary}`}>{t.drawDraw1}</button>
@@ -1669,15 +1667,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
           >
             {/* Intrinsic size reserves the banner's space so the panel doesn't
                 resize under the entry animation while the art decodes. */}
-            <img
-              src="/draw-banner-modal.png"
-              alt={t.drawPackSubtitle}
-              width={748}
-              height={561}
-              draggable={false}
-              className="block h-auto w-full select-none"
-              style={{ WebkitUserDrag: "none" } as React.CSSProperties}
-            />
+            <PackBanner src="/draw-banner-modal.webp" alt={t.drawPackSubtitle} width={748} height={561} priority />
 
             <div className="animate-sheet-body px-4 pb-4 pt-3.5">
               <h3 className="text-center text-[18px] font-bold text-[#1d2129]">{locTitle(item, lang)}</h3>
@@ -1729,15 +1719,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
             className={`no-scrollbar flex max-h-full w-full max-w-[380px] flex-col overflow-y-auto bg-white shadow-[0_18px_50px_rgba(0,0,0,0.5)] ${sheetClosing ? "animate-sheet-out" : "animate-sheet-in"}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <img
-              src="/draw-banner-modal.png"
-              alt={t.drawPackSubtitle}
-              width={748}
-              height={561}
-              draggable={false}
-              className="block h-auto w-full select-none"
-              style={{ WebkitUserDrag: "none" } as React.CSSProperties}
-            />
+            <PackBanner src="/draw-banner-modal.webp" alt={t.drawPackSubtitle} width={748} height={561} priority />
 
             <div className="animate-sheet-body px-4 pb-4 pt-3.5">
               <h3 className="text-center text-[18px] font-bold text-[#1d2129]">{locTitle(item, lang)}</h3>
