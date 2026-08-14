@@ -27,6 +27,67 @@ function StoreCoinIcon({ size = 32 }: { size?: number }) {
   return <img src="/coin.png" alt="" width={size} height={size} className="shrink-0 object-contain" />;
 }
 
+type ExpressWallet = "applePay" | "googlePay" | "payPay" | "rakutenPay" | "melPay" | "famiPay";
+type PayMethod = "card" | ExpressWallet;
+const JP_EXPRESS_WALLETS: ExpressWallet[] = ["payPay", "rakutenPay", "melPay", "famiPay"];
+
+function GoogleGMark({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
+      <path fill="#4285F4" d="M23.5 12.27c0-.82-.07-1.64-.23-2.43H12v4.6h6.46a5.52 5.52 0 01-2.4 3.63v3h3.88c2.27-2.09 3.56-5.17 3.56-8.8z" />
+      <path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.95-2.93l-3.88-3c-1.08.73-2.47 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.27v3.09A12 12 0 0012 24z" />
+      <path fill="#FBBC05" d="M5.27 14.27A7.2 7.2 0 014.9 12c0-.79.13-1.55.36-2.27V6.64H1.27A12 12 0 000 12c0 1.94.46 3.77 1.27 5.36l4-3.09z" />
+      <path fill="#EA4335" d="M12 4.75c1.76 0 3.34.6 4.58 1.79l3.43-3.43C17.95 1.19 15.23 0 12 0A12 12 0 001.27 6.64l4 3.09C6.22 6.86 8.87 4.75 12 4.75z" />
+    </svg>
+  );
+}
+
+function ApplePayMark({ size = 18, fill = "white" }: { size?: number; fill?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} aria-hidden>
+      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+    </svg>
+  );
+}
+
+function PayPayMark() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
+      <rect width="24" height="24" rx="6" fill="#FF0033" />
+      <text x="12" y="16.5" textAnchor="middle" fill="white" fontSize="13" fontWeight="800" fontFamily="Arial, sans-serif">P</text>
+    </svg>
+  );
+}
+
+function RakutenPayMark() {
+  return (
+    <svg width="22" height="18" viewBox="0 0 28 22" aria-hidden>
+      <rect width="28" height="22" rx="4" fill="#BF0000" />
+      <text x="14" y="15.5" textAnchor="middle" fill="white" fontSize="8" fontWeight="800" fontFamily="Arial, sans-serif">R Pay</text>
+    </svg>
+  );
+}
+
+function MelPayMark() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
+      <rect width="24" height="24" rx="5" fill="#E60012" />
+      <path d="M5 17V8.2l3.6 5.1L12.2 8.2V17h2.4V7H12L8.6 12.2 5.2 7H2.6v10H5z" fill="white" />
+    </svg>
+  );
+}
+
+function FamiPayMark() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
+      <circle cx="9" cy="12" r="8" fill="#00A040" />
+      <circle cx="15" cy="12" r="8" fill="#00A0E9" />
+      <circle cx="12" cy="12" r="5.2" fill="white" />
+      <text x="12" y="15" textAnchor="middle" fill="#00A040" fontSize="8" fontWeight="800" fontFamily="Arial, sans-serif">F</text>
+    </svg>
+  );
+}
+
 function CardBrandIcon({ brand, large = false }: { brand: string; large?: boolean }) {
   const b = brand.toLowerCase();
   if (b === "visa") return <span className={`inline-block min-w-[36px] text-center font-black italic ${large ? "text-[15px]" : "text-[13px]"}`} style={{ color: "#1a1f71" }}>VISA</span>;
@@ -180,7 +241,7 @@ export function PurchaseFlow({
   };
   const [step, setStep] = useState<PurchaseStep>("checkout");
   const [failureReason, setFailureReason] = useState<FailureReason | null>(null);
-  const [payMethod, setPayMethod] = useState<"card" | "applePay" | "googlePay" | "payPay" | "link">("card");
+  const [payMethod, setPayMethod] = useState<PayMethod>("card");
   const [checkoutCurrency, setCheckoutCurrency] = useState<"INR" | "JPY">(
     enableCurrencyCheckout ? "INR" : "JPY",
   );
@@ -549,33 +610,22 @@ export function PurchaseFlow({
     const successHeading = isSubscription ? t.storeSuccessSubscription : t.successTitle;
     const paidMethod = (() => {
       if (payMethod === "applePay") {
-        return {
-          label: t.checkoutApplePay,
-          icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="#1d2129" aria-hidden><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" /></svg>,
-        };
+        return { label: t.checkoutApplePay, icon: <ApplePayMark fill="#1d2129" /> };
       }
       if (payMethod === "googlePay") {
-        return {
-          label: "Google Pay",
-          icon: <img src="/g-pay.png" alt="" className="h-5 w-auto" />,
-        };
+        return { label: "Google Pay", icon: <GoogleGMark /> };
       }
       if (payMethod === "payPay") {
-        return {
-          label: "PayPay",
-          icon: (
-            <svg width="48" height="16" viewBox="0 0 64 22" fill="none" aria-hidden>
-              <rect width="64" height="22" rx="4" fill="#FF0033" />
-              <text x="7" y="15.5" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="13" fill="white">PayPay</text>
-            </svg>
-          ),
-        };
+        return { label: "PayPay", icon: <PayPayMark /> };
       }
-      if (payMethod === "link") {
-        return {
-          label: "Link",
-          icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden><circle cx="12" cy="12" r="10" fill="#1d2129" /><path d="M8 12l3 3 5-6" stroke="#00d64f" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>,
-        };
+      if (payMethod === "rakutenPay") {
+        return { label: "Rakuten Pay", icon: <RakutenPayMark /> };
+      }
+      if (payMethod === "melPay") {
+        return { label: "MelPay", icon: <MelPayMark /> };
+      }
+      if (payMethod === "famiPay") {
+        return { label: "FamiPay", icon: <FamiPayMark /> };
       }
       if (typeof selectedCardIdx === "number" && savedCards?.[selectedCardIdx]) {
         const c = savedCards[selectedCardIdx];
@@ -816,7 +866,6 @@ export function PurchaseFlow({
   {
     const cards = savedCards ?? [];
     const hasCards = cards.length > 0;
-    const expressStacked = false;
     const visibleCardIndexes = (() => {
       const idxs = cards.slice(0, 3).map((_, i) => i);
       if (typeof selectedCardIdx === "number" && selectedCardIdx >= 3 && selectedCardIdx < cards.length && !idxs.includes(selectedCardIdx)) {
@@ -923,71 +972,59 @@ export function PurchaseFlow({
       </div>
     );
 
-    const applePayBtn = (
-      <button
-        type="button"
-        onClick={() => beginPayment(() => { setPayMethod("applePay"); setStep("success"); })}
-        className={`flex items-center justify-center gap-1.5 rounded-xl text-[16px] font-medium text-white active:scale-[0.98] ${expressStacked ? "h-14 w-full" : "h-12"}`}
-        style={{ background: "#000" }}
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" /></svg>
+    const payWithWallet = (method: ExpressWallet) => beginPayment(() => { setPayMethod(method); setStep("success"); });
+    const walletPrimaryCls = "flex h-12 items-center justify-center gap-1.5 rounded-xl text-[15px] font-medium text-white active:scale-[0.98]";
+    const walletSecondaryCls = "flex h-12 items-center justify-center gap-1.5 rounded-xl border border-[#e2e5ea] bg-white px-1.5 text-[12px] font-bold text-[#1d2129] active:scale-[0.98]";
+    const googlePayBtn = (
+      <button type="button" onClick={() => payWithWallet("googlePay")} className={walletPrimaryCls} style={{ background: "#000" }} aria-label="Google Pay">
+        <GoogleGMark />
         Pay
       </button>
     );
-    const googlePayBtn = (
-      <button
-        type="button"
-        onClick={() => beginPayment(() => { setPayMethod("googlePay"); setStep("success"); })}
-        className={`flex items-center justify-center overflow-hidden rounded-xl active:scale-[0.98] ${expressStacked ? "h-14 w-full" : "h-12"}`}
-        style={{ background: "#1f1f1f" }}
-        aria-label="Google Pay"
-      >
-        <img src="/gpay-btn.png" alt="Google Pay" className="h-[36px] w-auto max-w-[90%] object-contain" />
-      </button>
-    );
-    const linkBtn = (
-      <button
-        type="button"
-        onClick={() => beginPayment(() => { setPayMethod("link"); setStep("success"); })}
-        className={`flex items-center justify-center gap-1.5 rounded-xl text-[16px] font-semibold text-[#1d2129] active:scale-[0.98] ${expressStacked ? "h-14 w-full" : "h-12"}`}
-        style={{ background: "#00d64f" }}
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#1d2129" /><path d="M8 12l3 3 5-6" stroke="#00d64f" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-        link
+    const applePayBtn = (
+      <button type="button" onClick={() => payWithWallet("applePay")} className={walletPrimaryCls} style={{ background: "#000" }} aria-label="Apple Pay">
+        <ApplePayMark />
+        Pay
       </button>
     );
     const payPayBtn = (
-      <button
-        type="button"
-        onClick={() => beginPayment(() => { setPayMethod("payPay"); setStep("success"); })}
-        className={`flex items-center justify-center rounded-xl active:scale-[0.98] ${expressStacked ? "h-14 w-full" : "h-12"}`}
-        style={{ background: "#FF0033" }}
-        aria-label="PayPay"
-      >
-        <span className="text-[16px] font-black tracking-tight text-white">PayPay</span>
+      <button type="button" onClick={() => payWithWallet("payPay")} className={walletSecondaryCls} aria-label="PayPay">
+        <PayPayMark />
+        Paypay
+      </button>
+    );
+    const rakutenPayBtn = (
+      <button type="button" onClick={() => payWithWallet("rakutenPay")} className={walletSecondaryCls} aria-label="Rakuten Pay">
+        <RakutenPayMark />
+        Rakuten Pay
+      </button>
+    );
+    const melPayBtn = (
+      <button type="button" onClick={() => payWithWallet("melPay")} className={walletSecondaryCls} aria-label="MelPay">
+        <MelPayMark />
+        MelPay
+      </button>
+    );
+    const famiPayBtn = (
+      <button type="button" onClick={() => payWithWallet("famiPay")} className={walletSecondaryCls} aria-label="FamiPay">
+        <FamiPayMark />
+        FamiPay
       </button>
     );
 
-    const v1ExpressGrid = inrWalletsOnly ? (
+    const v1ExpressGrid = (
       <div className="grid grid-cols-2 gap-2.5">
-        {applePayBtn}
         {googlePayBtn}
-      </div>
-    ) : expressStacked ? (
-      <div className="flex flex-col gap-2.5">
         {applePayBtn}
+        {!inrWalletsOnly && (
+          <>
+            {payPayBtn}
+            {rakutenPayBtn}
+            {melPayBtn}
+            {famiPayBtn}
+          </>
+        )}
       </div>
-    ) : (
-      <>
-        <div className="grid grid-cols-2 gap-2.5">
-          {applePayBtn}
-          {googlePayBtn}
-        </div>
-        <div className="mt-2.5 grid grid-cols-2 gap-2.5">
-          {linkBtn}
-          {payPayBtn}
-        </div>
-      </>
     );
 
     const v1PackageSummary = (
@@ -1181,7 +1218,7 @@ export function PurchaseFlow({
                       type="button"
                       onClick={() => {
                         setCheckoutCurrency(code);
-                        if (code === "INR" && (payMethod === "link" || payMethod === "payPay")) {
+                        if (code === "INR" && JP_EXPRESS_WALLETS.includes(payMethod as ExpressWallet)) {
                           setPayMethod("card");
                         }
                       }}
@@ -1227,8 +1264,10 @@ export function PurchaseFlow({
             </div>
           )}
 
-          <p className="mb-2.5 text-[12px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutPaymentMethods}</p>
-          {v1ExpressGrid}
+          <div className="mb-4 rounded-2xl border border-[#e2e5ea] bg-white p-3">
+            <p className="mb-2.5 text-[12px] font-extrabold uppercase tracking-wide text-[#1d2129]">{t.checkoutPaymentMethods}</p>
+            {v1ExpressGrid}
+          </div>
 
           <div className="mb-2 mt-4 flex items-center justify-between">
             <p className="text-[12px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutPayWithCard}</p>

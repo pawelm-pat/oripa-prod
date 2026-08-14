@@ -52,10 +52,6 @@ export const STORE_V3_PLAIN_PACKAGES: PointPackage[] = [500, 1000, 5000, 10000, 
   inrApprox: c * 0.613,
 }));
 
-function StoreCoinIcon({ size = 32 }: { size?: number }) {
-  return <img src="/coin.png" alt="" width={size} height={size} className="shrink-0 object-contain" />;
-}
-
 function PointsLogoIcon({ size = 16 }: { size?: number }) {
   return (
     <img src="/points_logo.svg" alt="" aria-hidden className="shrink-0 inline-block object-contain" style={{ width: size, height: "auto" }} />
@@ -144,34 +140,39 @@ export function StorePage({
                     key={offer.id}
                     onClick={() => selectPackage(offer)}
                     role="button"
-                    className="relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] active:scale-[0.98]"
-                    style={{ border: highlighted ? "2px solid #B40206" : "1px solid #e5e8ec" }}
+                    className="relative flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] active:scale-[0.98]"
+                    style={{ border: highlighted ? "2px solid #B40206" : "2px solid #e5e8ec" }}
                   >
-                    <div className="flex h-[92px] items-center justify-center bg-[#fbf6ee]">
-                      <img src={idx === 0 ? "/coin-bag.png" : "/coin-chest.png"} alt="" className="h-[76px] w-[76px] object-contain" />
+                    <div className="flex h-[148px] items-end justify-center px-2 pt-3">
+                      <img
+                        src={idx === 0 ? "/coin-bag.png" : "/coin-chest.png"}
+                        alt=""
+                        className={`w-full object-contain object-bottom ${highlighted ? "h-[136px]" : "h-[112px]"}`}
+                      />
                     </div>
-                    <div className="flex flex-col items-center gap-1 px-2.5 py-2.5">
-                      <div className="flex items-center justify-center gap-1">
-                        <StoreCoinIcon size={14} />
-                        <span className="text-[13px] font-extrabold text-[#1d2129]">{t.storeCoins(offer.coins)}</span>
-                      </div>
-                      <div className="flex items-center justify-center gap-1">
+                    <div className="flex flex-1 flex-col items-center px-2.5 pb-3 pt-1">
+                      <span className="text-[16px] font-extrabold leading-tight text-[#1d2129]">{t.storeCoins(offer.coins)}</span>
+                      <div className="mt-1.5 inline-flex items-center justify-center gap-0.5 rounded-full px-2 py-0.5" style={{ background: "#fde9c4" }}>
                         <span className="text-[10px] font-semibold text-[#92400e]">+</span>
-                        <PointsLogoIcon size={11} />
+                        <PointsLogoIcon size={12} />
                         <span className="text-[10px] font-semibold text-[#92400e]">{t.storeFreePoints(offer.freePoints)}</span>
                       </div>
-                      <div className="mt-0.5 flex items-center justify-center gap-1.5">
-                        <span className="rounded px-1.5 py-0.5 text-[8px] font-bold text-white" style={{ background: "#e6a817" }}>{t.storeFirstTimeOffer}</span>
-                        {offer.discount && <span className="rounded px-1.5 py-0.5 text-[8px] font-bold text-white" style={{ background: "#B40206" }}>{t.storeOff(offer.discount)}</span>}
+                      <div className="mt-1.5 flex flex-wrap items-center justify-center gap-1">
+                        <span className="rounded-full px-1.5 py-0.5 text-[8px] font-extrabold text-[#1d2129]" style={{ background: "#f5c518" }}>{t.storeFirstTimeOffer}</span>
+                        {offer.discount && <span className="rounded-full px-1.5 py-0.5 text-[8px] font-extrabold text-white" style={{ background: "#B40206" }}>{t.storeOff(offer.discount)}</span>}
                       </div>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); selectPackage(offer); }}
-                        className="mt-1.5 flex w-full items-center justify-center gap-1 rounded-lg py-1.5 text-[13px] font-black text-white"
-                        style={{ background: "#B40206" }}
-                      >
-                        {offer.originalJpy && <span className="text-[10px] font-semibold line-through text-white/60">¥{offer.originalJpy.toLocaleString()}</span>}
-                        ¥{offer.jpy.toLocaleString()}
-                      </button>
+                      <div className="mt-auto flex w-full flex-col items-center pt-1.5">
+                        <span className="flex h-[14px] items-center text-[11px] font-semibold leading-none text-[#c5c8ce] line-through">
+                          {offer.originalJpy ? `¥${offer.originalJpy.toLocaleString()}` : ""}
+                        </span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); selectPackage(offer); }}
+                          className="mt-1 flex w-full items-center justify-center rounded-lg py-2 text-[14px] font-black text-white"
+                          style={{ background: "#B40206" }}
+                        >
+                          ¥{offer.jpy.toLocaleString()}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
