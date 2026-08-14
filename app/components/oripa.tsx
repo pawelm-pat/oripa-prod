@@ -1270,6 +1270,9 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
   const [cautionOpen, setCautionOpen] = useState(false);
   // Draw-confirmation popup: holds the requested draw count while open.
   const [confirmCount, setConfirmCount] = useState<number | null>(null);
+  // Set when the pending confirmation came from a free-draw CTA: the popup then
+  // costs nothing, so it shows no balances and confirms as a free draw.
+  const [confirmFree, setConfirmFree] = useState(false);
   // Which balance the confirmation popup spends. Only selectable when the pack
   // accepts both currencies; coins-only packs always pay with coins.
   const [payWith, setPayWith] = useState<"coins" | "points">("coins");
@@ -1293,12 +1296,13 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
   useEffect(() => { onResultsChange?.(results !== null); }, [results, onResultsChange]);
   useEffect(() => () => { onResultsChange?.(false); }, [onResultsChange]);
 
-  function draw(count: number) {
+  function draw(count: number, free = false) {
     if (soldOut) return;
     // Insufficient stock: asking for more than what's left prompts the
     // "draw remaining" popup instead of the normal confirmation.
     if (insufficientStock && count > STOCK_LEFT) { setStockReqCount(count); setStockPopup(true); return; }
     // Open the confirmation popup; coin check / Quick Purchase happens on confirm.
+    setConfirmFree(free);
     setConfirmCount(count);
   }
 
@@ -1328,8 +1332,8 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
     if (expired) { setConfirmCount(null); setSoldOutPopup(true); return; }
     // Simulated connection error: show the error popup; Retry re-runs the draw.
     if (connError) { setConfirmCount(null); setRetryCount(count); setConnErrorPopup(true); return; }
-    // Paying with free points leaves the coin balance untouched.
-    if (payCurrency === "points") { runDraw(count); return; }
+    // Free draws and point payments leave the coin balance untouched.
+    if (confirmFree || payCurrency === "points") { runDraw(count); return; }
     // Paid draw: debit via host (or open Quick Purchase if short).
     if (onAttemptPaidDraw) {
       setConfirmCount(null);
@@ -1352,6 +1356,8 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
     if (expired) { setCustomOpen(false); setSoldOutPopup(true); return; }
     if (connError) { setCustomOpen(false); setRetryCount(customQty); setConnErrorPopup(true); return; }
     if (insufficientStock && customQty > STOCK_LEFT) { setCustomOpen(false); setStockReqCount(customQty); setStockPopup(true); return; }
+    // Paying with free points leaves the coin balance untouched.
+    if (payCurrency === "points") { runDraw(customQty); return; }
     if (onAttemptPaidDraw) {
       setCustomOpen(false);
       if (!onAttemptPaidDraw(customQty)) return;
@@ -1360,6 +1366,44 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
     }
     if (coins < DRAW_PRICE * customQty) { pushToast(t.drawInsufficient); return; }
     runDraw(customQty);
+  }
+
+  // Balance change for a draw of `count` — coins and free points shown as
+  // current → after-draw. When the pack accepts both currencies each row is a
+  // radio option (highlighted by its border) and only the chosen balance is
+  // spent; the other stays greyed out and unchanged.
+  function balanceRows(count: number) {
+    const cost = DRAW_PRICE * count;
+    const arrow = (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M9 6l6 6-6 6" stroke="#9aa1ab" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+    );
+    const rows = [
+      { key: "coins" as const, Icon: CoinIcon, balance: coins },
+      { key: "points" as const, Icon: GemIcon, balance: DRAW_FREE_POINTS },
+    ].filter((r) => multiCurrency || r.key === "coins");
+    return (
+      <div className="mt-3.5 space-y-2" role={multiCurrency ? "radiogroup" : undefined} aria-label={multiCurrency ? t.drawPayWith : undefined}>
+        {rows.map(({ key, Icon, balance }) => {
+          const selected = payCurrency === key;
+          const after = balance - cost;
+          const body = (
+            <>
+              <span className="flex items-center gap-1.5"><Icon size={26} /><span className={`text-[20px] font-extrabold ${selected ? "text-[#1d2129]" : "text-[#8a9099]"}`}>{balance.toLocaleString()}</span></span>
+              {arrow}
+              <span className="flex items-center gap-1.5"><Icon size={26} /><span className="text-[20px] font-extrabold" style={{ color: selected ? (after < 0 ? "#ef8a8a" : "#D10005") : "#b8bdc4" }}>{(selected ? after : balance).toLocaleString()}</span></span>
+            </>
+          );
+          const shell = `flex w-full items-center justify-center gap-3 rounded-xl border-2 py-3 ${selected ? "border-[#D10005] bg-white" : "border-transparent bg-[#f2f3f5]"}`;
+          return multiCurrency ? (
+            <button key={key} type="button" role="radio" aria-checked={selected} onClick={() => setPayWith(key)} className={shell}>
+              {body}
+            </button>
+          ) : (
+            <div key={key} className={shell}>{body}</div>
+          );
+        })}
+      </div>
+    );
   }
 
   return (
@@ -1534,17 +1578,17 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
               <button onClick={() => draw(1)} className={`flex-1 ${ctaPrimary}`}>{t.drawDraw1}</button>
             )}
             {drawCta === "free" && (
-              <button onClick={() => draw(1)} className={`flex-1 ${ctaOutline}`}>{t.btnFree}</button>
+              <button onClick={() => draw(1, true)} className={`flex-1 ${ctaOutline}`}>{t.btnFree}</button>
             )}
             {drawCta === "freePending" && (
-              <button onClick={() => draw(1)} className={`flex-1 ${ctaBase} bg-[#01B901] text-white`}>{t.btnLineLink}</button>
+              <button onClick={() => draw(1, true)} className={`flex-1 ${ctaBase} bg-[#01B901] text-white`}>{t.btnLineLink}</button>
             )}
             {drawCta === "trial" && (
               <>
                 {/* "Free Trial" tag straddles the top edge of the free-draws CTA */}
                 <div className="relative flex-1">
                   <span className="absolute -top-2 left-1/2 z-[1] -translate-x-1/2 whitespace-nowrap rounded-md bg-[#0F0F0F] px-2.5 py-0.5 text-[10px] font-bold text-white">{t.btnFreeTrial}</span>
-                  <button onClick={() => draw(10)} className={`w-full ${ctaOutline}`}>{t.btnFree10}</button>
+                  <button onClick={() => draw(10, true)} className={`w-full ${ctaOutline}`}>{t.btnFree10}</button>
                 </div>
                 <button onClick={() => draw(1)} className={`flex-1 ${ctaPrimary}`}>{t.drawDraw1}</button>
               </>
@@ -1578,59 +1622,16 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
 
             <div className="px-4 pb-4 pt-3.5">
               <h3 className="text-center text-[18px] font-bold text-[#1d2129]">{locTitle(item, lang)}</h3>
-              <p className="mt-1.5 text-center text-[12px] leading-relaxed text-[#8a9099]">{t.drawConfirmDesc}</p>
+              <p className="mt-1.5 text-center text-[12px] leading-relaxed text-[#8a9099]">{confirmFree ? t.drawConfirmDescFree : t.drawConfirmDesc}</p>
 
-              {/* Balance change — coins and free points shown as current →
-                  after-draw. When the pack accepts both, each row is a radio
-                  option and only the chosen balance is spent. */}
-              {(() => {
-                const cost = DRAW_PRICE * confirmCount;
-                const arrow = (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M9 6l6 6-6 6" stroke="#9aa1ab" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                );
-                const rows = [
-                  { key: "coins" as const, Icon: CoinIcon, balance: coins },
-                  { key: "points" as const, Icon: GemIcon, balance: DRAW_FREE_POINTS },
-                ].filter((r) => multiCurrency || r.key === "coins");
-                return (
-                  <div className="mt-3.5 space-y-2" role={multiCurrency ? "radiogroup" : undefined} aria-label={multiCurrency ? t.drawPayWith : undefined}>
-                    {rows.map(({ key, Icon, balance }) => {
-                      const selected = payCurrency === key;
-                      const after = balance - cost;
-                      const body = (
-                        <>
-                          {multiCurrency && (
-                            <span
-                              aria-hidden
-                              className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-2 ${selected ? "border-[#D10005]" : "border-[#b8bdc4]"}`}
-                            >
-                              {selected && <span className="h-2 w-2 rounded-full bg-[#D10005]" />}
-                            </span>
-                          )}
-                          <span className="flex items-center gap-1.5"><Icon size={26} /><span className={`text-[20px] font-extrabold ${selected ? "text-[#1d2129]" : "text-[#8a9099]"}`}>{balance.toLocaleString()}</span></span>
-                          {arrow}
-                          <span className="flex items-center gap-1.5"><Icon size={26} /><span className="text-[20px] font-extrabold" style={{ color: selected ? (after < 0 ? "#ef8a8a" : "#D10005") : "#b8bdc4" }}>{(selected ? after : balance).toLocaleString()}</span></span>
-                        </>
-                      );
-                      const shell = `flex w-full items-center justify-center gap-3 rounded-xl border-2 py-3 ${selected ? "border-[#D10005] bg-white" : "border-transparent bg-[#f2f3f5]"}`;
-                      return multiCurrency ? (
-                        <button key={key} type="button" role="radio" aria-checked={selected} onClick={() => setPayWith(key)} className={shell}>
-                          {body}
-                        </button>
-                      ) : (
-                        <div key={key} className={shell}>{body}</div>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
+              {!confirmFree && balanceRows(confirmCount)}
 
               {/* Confirm CTA — primary (red), fixed 39px / 8px radius per design */}
               <button
                 onClick={confirmDraw}
                 className="mt-3.5 flex h-[39px] w-full items-center justify-center rounded-lg bg-[#D10005] text-[15px] font-extrabold text-white active:scale-[0.98]"
               >
-                {confirmCount === 1 ? t.drawDraw1 : t.drawDrawTen}
+                {confirmFree ? (confirmCount === 1 ? t.btnFree : t.btnFree10) : confirmCount === 1 ? t.drawDraw1 : t.drawDrawTen}
               </button>
 
               {/* Dashed divider */}
@@ -1712,18 +1713,8 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
                 <button onClick={() => setQty(MAX_CUSTOM_DRAW)} className="rounded-[10px] border-2 border-black bg-white px-4 py-2 text-[13px] font-bold text-black active:scale-95">{t.drawCustomMax}</button>
               </div>
 
-              {/* Cost row */}
-              <div className="mt-3.5 flex items-center justify-center gap-3 rounded-xl border border-black/10 bg-white py-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-                <span className="flex items-center gap-1.5">
-                  <CoinIcon size={26} />
-                  <span className="text-[20px] font-extrabold text-[#1d2129]">{(DRAW_PRICE * customQty).toLocaleString()}</span>
-                </span>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M9 6l6 6-6 6" stroke="#9aa1ab" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                <span className="flex items-center gap-1.5">
-                  <GemIcon size={26} />
-                  <span className="text-[20px] font-extrabold text-[#D10005]">0</span>
-                </span>
-              </div>
+              {/* Balances — same selectable rows as the fixed-count popup */}
+              {balanceRows(customQty)}
 
               {/* Confirm CTA — primary (red), fixed 39px / 8px radius; count in front */}
               <button
