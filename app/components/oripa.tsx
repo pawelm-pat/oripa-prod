@@ -7,6 +7,7 @@ import type {
   Category,
   Lang,
   DrawCta,
+  DrawEntry,
   DrawScenario,
   OripaItem,
   Rarity,
@@ -742,7 +743,7 @@ function PriceRangeFilter({ label, min, max, onMin, onMax }: { label: string; mi
 
 // V2 lobby feed. `onView` (tap on any card) is inert in the logged-in lobby
 // and routes to Sign-up on the logged-out landing.
-function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll, onView, onOpenDraw }: { t: Dict; lang: Lang; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void; onView?: () => void; onOpenDraw?: (item: OripaItem) => void }) {
+function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll, onView, onOpenDraw }: { t: Dict; lang: Lang; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void; onView?: () => void; onOpenDraw?: (item: OripaItem, entry?: DrawEntry) => void }) {
   const L = LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"];
   const [cat, setCat] = useState("all");
   const [searchActive, setSearchActive] = useState(false);
@@ -940,9 +941,17 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
   // In the logged-in lobby `onOpenDraw` opens the draw screen for the tapped
   // pack; the logged-out lobby falls back to `onView` (sign-up bridge).
   const canOpen = !!(onOpenDraw || onView);
-  const openCard = (it: OripaItem) => (onOpenDraw ? onOpenDraw(it) : onView?.());
+  // The tapped CTA decides the draw screen's entry mode: "Free draw" opens the
+  // free variants, "Draw" / "View" / the banner open the paid ones.
+  const openCard = (it: OripaItem, entry: DrawEntry = "paid") => (onOpenDraw ? onOpenDraw(it, entry) : onView?.());
   const full = (it: OripaItem) => (
-    <OripaCard key={it.id} item={it} t={t} onView={canOpen ? () => openCard(it) : undefined} onDraw={canOpen ? () => openCard(it) : undefined} />
+    <OripaCard
+      key={it.id}
+      item={it}
+      t={t}
+      onView={canOpen ? () => openCard(it) : undefined}
+      onDraw={canOpen ? (_count, free) => openCard(it, free ? "free" : "paid") : undefined}
+    />
   );
   const tagPill = ([key, label]: [string, string]) => {
     const on = !!draftFilters[key];
@@ -1163,7 +1172,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
   );
 }
 
-function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, scrollRef, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll }: { lang: Lang; coins: number; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem) => void; scrollRef?: { current: number }; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void }) {
+function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, scrollRef, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll }: { lang: Lang; coins: number; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem, entry?: DrawEntry) => void; scrollRef?: { current: number }; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void }) {
   const t = STR[lang];
   // Preserve the lobby's scroll position across navigation (e.g. opening a draw
   // and coming back) so the user lands where they were, not at the top. The
@@ -5126,8 +5135,8 @@ function StorePage({
   );
 }
 
-export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, drawCta = "all" }: {
-  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; drawCta?: DrawCta;
+export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, drawCta = "all", onDrawEntryChange }: {
+  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; drawCta?: DrawCta; onDrawEntryChange?: (entry: DrawEntry) => void;
 }) {
   const t = STR[lang];
   const [screen, setScreen] = useState<Screen>("landing");
@@ -5338,7 +5347,9 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   // Draw screen (gacha pack detail) opens when a lobby pack's Draw / View is
   // tapped; back returns to the lobby.
   const [drawItem, setDrawItem] = useState<OripaItem | null>(null);
-  const openDraw = (item: OripaItem) => { setDrawItem(item); setScreen("drawDetail"); };
+  // Report which lobby CTA opened the draw screen so the dev harness can offer
+  // the CTA variants that belong to that entry point.
+  const openDraw = (item: OripaItem, entry: DrawEntry = "paid") => { setDrawItem(item); onDrawEntryChange?.(entry); setScreen("drawDetail"); };
   // Legal document reader (Terms / Privacy / SCTA), rendered at the app root so
   // it overlays correctly no matter where it's triggered (footer, My Account).
   const [legalDoc, setLegalDoc] = useState<LegalDocKey | null>(null);

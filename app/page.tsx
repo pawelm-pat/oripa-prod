@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import type { DrawCta, DrawScenario, Lang, Screen } from "./lib/types";
+import { useCallback, useState } from "react";
+import type { DrawCta, DrawEntry, DrawScenario, Lang, Screen } from "./lib/types";
 import { LangToggle, PhoneApp, UpdatePrompt, VersionBadge } from "./components/oripa";
 import { CommentsPanel } from "./components/comments";
 import { DevPanels } from "./components/devpanels";
@@ -40,8 +40,19 @@ export default function Page() {
   // Demo control (draw confirm popup): whether the pack accepts both currencies.
   // Yes -> confirm popup shows coins (top) + free points (below); No -> coins only.
   const [multiCurrency, setMultiCurrency] = useState(true);
-  // Demo control (draw screen only): which CTA row the draw screen shows.
+  // Demo control (draw screen only): which CTA row the draw screen shows. The
+  // options on offer depend on how the draw was opened — tapping "Draw" gives
+  // the paid variants, "Free draw" the free ones. Entering a draw resets the
+  // choice to that entry's default.
   const [drawCta, setDrawCta] = useState<DrawCta>("all");
+  const [drawEntry, setDrawEntry] = useState<DrawEntry>("paid");
+  const handleDrawEntry = useCallback((entry: DrawEntry) => {
+    setDrawEntry(entry);
+    setDrawCta(entry === "free" ? "free" : "all");
+  }, []);
+  const drawCtaOptions: readonly (readonly [string, DrawCta])[] = drawEntry === "free"
+    ? [["Free draw", "free"], ["Free trial", "trial"], ["LINE verification", "freePending"]]
+    : [["Multiple draws", "all"], ["1 Draw", "one"], ["LINE verification", "freePending"]];
 
   function changeKycScenario(value: KycScenario) {
     try { sessionStorage.removeItem(KYC_SESSION_KEY); } catch {}
@@ -96,16 +107,10 @@ export default function Page() {
                 ]}
               />
               <SelectControl
-                label="Draw CTA"
+                label={drawEntry === "free" ? "Free draw CTA" : "Draw CTA"}
                 value={drawCta}
                 onChange={setDrawCta}
-                options={[
-                  ["All Draws", "all"],
-                  ["1 Draw", "one"],
-                  ["Free draw", "free"],
-                  ["Free draw pending", "freePending"],
-                  ["Free trial", "trial"],
-                ]}
+                options={drawCtaOptions}
               />
             </>
           )}
@@ -127,6 +132,7 @@ export default function Page() {
                 drawScenario={drawScenario}
                 multiCurrency={multiCurrency}
                 drawCta={drawCta}
+                onDrawEntryChange={handleDrawEntry}
               />
             </div>
           </div>
@@ -148,6 +154,7 @@ export default function Page() {
           drawScenario={drawScenario}
           multiCurrency={multiCurrency}
           drawCta={drawCta}
+          onDrawEntryChange={handleDrawEntry}
         />
       </div>
 

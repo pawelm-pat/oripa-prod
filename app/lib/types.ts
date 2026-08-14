@@ -89,12 +89,18 @@ export type OripaItem = {
 // simulated connection error, or insufficient remaining stock.
 export type DrawScenario = "off" | "expired" | "connError" | "stock";
 
+// How the draw screen was opened from the lobby card. This decides which CTA
+// variants are on offer: a paid entry can show the multi-draw row, a single
+// "1 Draw", or the LINE prompt; a free entry can show "Free draw", the free
+// trial pair, or the LINE prompt.
+export type DrawEntry = "paid" | "free";
+
 // Which CTA row the draw screen renders (dev harness demo control).
-//   all         -> current behaviour: Draw ×1 / Draw ×10 / Custom draw
-//   one         -> single full-width "1 Draw"
-//   free        -> single outlined "Free draw"
-//   freePending -> green "LINE account link required" prompt
-//   trial       -> "Free 10 draws" (with Free Trial badge) alongside "1 Draw"
+//   all         -> paid: Draw ×1 / Draw ×10 / Custom draw
+//   one         -> paid: single full-width "1 Draw"
+//   free        -> free: single outlined "Free draw"
+//   trial       -> free: "Free 10 draws" (with Free Trial badge) + "1 Draw"
+//   freePending -> either: green "LINE account link required" prompt
 export type DrawCta = "all" | "one" | "free" | "freePending" | "trial";
 
 export type SectionIconKey = "new" | "popular" | "pokemon" | "limited" | "cards";
