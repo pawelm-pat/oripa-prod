@@ -351,8 +351,11 @@ export function GoogleAuthSheet({ lang, signUp, onClose, onSuccess }: {
 
 type LineAuthStep = "verify" | "processing" | "details";
 
-export function LineAuthSheet({ lang, signUp, onClose, onSuccess, onLogin, loginEmail = DEMO_LINE_ACCOUNT_EMAIL }: {
+export function LineAuthSheet({ lang, signUp, onClose, onSuccess, onLogin, loginEmail = DEMO_LINE_ACCOUNT_EMAIL, showAddFriend = signUp }: {
   lang: Lang; signUp: boolean; onClose: () => void; onSuccess: (details?: SocialAuthDetails) => void; onLogin?: () => void; loginEmail?: string;
+  /** Show the official-account friend toggle. Defaults to the signup flow, but
+   *  account-linking prompts outside signup can opt in. */
+  showAddFriend?: boolean;
 }) {
   const t = STR[lang];
   const [step, setStep] = useState<LineAuthStep>("verify");
@@ -502,7 +505,7 @@ export function LineAuthSheet({ lang, signUp, onClose, onSuccess, onLogin, login
             </p>
           </div>
 
-          {signUp && (
+          {showAddFriend && (
             <div className="px-5 pb-5">
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#e5e8ec] bg-white">

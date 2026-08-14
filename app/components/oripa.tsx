@@ -23,7 +23,7 @@ import type {
   WonPrize,
 } from "../lib/types";
 import { STR, type Dict, locTitle } from "../lib/i18n";
-import { AuthHeader, SignupPage, LoginPage, LineAuthIcon, DEMO_INR_EMAIL } from "./auth";
+import { AuthHeader, SignupPage, LoginPage, LineAuthIcon, LineAuthSheet, DEMO_INR_EMAIL } from "./auth";
 import { HOME_SECTIONS, ALL_ORIPA } from "../data/lobby";
 import { NOTIF_YOU, NOTIF_NOTICE, NOTIF_UNREAD_TOTAL } from "../data/notifications";
 import { LEGAL, type LegalDocKey } from "../data/legal";
@@ -1273,6 +1273,9 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
   // Set when the pending confirmation came from a free-draw CTA: the popup then
   // costs nothing, so it shows no balances and confirms as a free draw.
   const [confirmFree, setConfirmFree] = useState(false);
+  // LINE account-link prompt shown by the "link required" CTA: allowing it
+  // grants the free draw, cancelling returns to this pack.
+  const [lineVerify, setLineVerify] = useState(false);
   // Which balance the confirmation popup spends. Only selectable when the pack
   // accepts both currencies; coins-only packs always pay with coins.
   const [payWith, setPayWith] = useState<"coins" | "points">("coins");
@@ -1581,7 +1584,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
               <button onClick={() => draw(1, true)} className={`flex-1 ${ctaOutline}`}>{t.btnFree}</button>
             )}
             {drawCta === "freePending" && (
-              <button onClick={() => draw(1, true)} className={`flex-1 ${ctaBase} bg-[#01B901] text-white`}>{t.btnLineLink}</button>
+              <button onClick={() => setLineVerify(true)} className={`flex-1 ${ctaBase} bg-[#01B901] text-white`}>{t.btnLineLink}</button>
             )}
             {drawCta === "trial" && (
               <>
@@ -1745,6 +1748,19 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
             </div>
           </div>
         </div>
+      )}
+
+      {/* LINE account-link prompt — the same verification screen as signup.
+          Allowing it rolls the free draw straight into the results; cancelling
+          drops back onto this pack. */}
+      {lineVerify && (
+        <LineAuthSheet
+          lang={lang}
+          signUp={false}
+          showAddFriend
+          onClose={() => setLineVerify(false)}
+          onSuccess={() => { setLineVerify(false); runDraw(1); }}
+        />
       )}
 
       {toast && (
