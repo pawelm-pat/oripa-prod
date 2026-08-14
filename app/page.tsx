@@ -54,7 +54,7 @@ export default function Page() {
   // with a second "1 Draw" CTA.
   const drawCtaOptions: readonly (readonly [string, DrawCta])[] = drawEntry === "free"
     ? [["Free draw", "free"], ["LINE verification", "freePending"]]
-    : [["Multiple draws", "all"], ["Draw ×1", "one"], ["Free trial", "trial"], ["LINE verification", "freePending"]];
+    : [["Multiple draws", "all"], ["1 Draw", "one"], ["Free trial", "trial"], ["LINE verification", "freePending"]];
 
   function changeKycScenario(value: KycScenario) {
     try { sessionStorage.removeItem(KYC_SESSION_KEY); } catch {}

@@ -1270,6 +1270,10 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
   const [cautionOpen, setCautionOpen] = useState(false);
   // Draw-confirmation popup: holds the requested draw count while open.
   const [confirmCount, setConfirmCount] = useState<number | null>(null);
+  // Which balance the confirmation popup spends. Only selectable when the pack
+  // accepts both currencies; coins-only packs always pay with coins.
+  const [payWith, setPayWith] = useState<"coins" | "points">("coins");
+  const payCurrency = multiCurrency ? payWith : "coins";
   // Custom-draw popup: quantity stepper (min 1, up to MAX_CUSTOM_DRAW).
   const [customOpen, setCustomOpen] = useState(false);
   const [customQty, setCustomQty] = useState(1);
@@ -1324,6 +1328,8 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
     if (expired) { setConfirmCount(null); setSoldOutPopup(true); return; }
     // Simulated connection error: show the error popup; Retry re-runs the draw.
     if (connError) { setConfirmCount(null); setRetryCount(count); setConnErrorPopup(true); return; }
+    // Paying with free points leaves the coin balance untouched.
+    if (payCurrency === "points") { runDraw(count); return; }
     // Paid draw: debit via host (or open Quick Purchase if short).
     if (onAttemptPaidDraw) {
       setConfirmCount(null);
@@ -1574,31 +1580,47 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
               <h3 className="text-center text-[18px] font-bold text-[#1d2129]">{locTitle(item, lang)}</h3>
               <p className="mt-1.5 text-center text-[12px] leading-relaxed text-[#8a9099]">{t.drawConfirmDesc}</p>
 
-              {/* Balance change — coins (primary, red box) and free points
-                  (secondary, grey box), each shown as current → after-draw. */}
+              {/* Balance change — coins and free points shown as current →
+                  after-draw. When the pack accepts both, each row is a radio
+                  option and only the chosen balance is spent. */}
               {(() => {
                 const cost = DRAW_PRICE * confirmCount;
-                const coinsAfter = coins - cost;
-                const pointsAfter = DRAW_FREE_POINTS - cost;
                 const arrow = (
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M9 6l6 6-6 6" stroke="#9aa1ab" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
                 );
+                const rows = [
+                  { key: "coins" as const, Icon: CoinIcon, balance: coins },
+                  { key: "points" as const, Icon: GemIcon, balance: DRAW_FREE_POINTS },
+                ].filter((r) => multiCurrency || r.key === "coins");
                 return (
-                  <div className="mt-3.5 space-y-2">
-                    {/* Coins */}
-                    <div className="flex items-center justify-center gap-3 rounded-xl border-2 border-[#D10005] bg-white py-3">
-                      <span className="flex items-center gap-1.5"><CoinIcon size={26} /><span className="text-[20px] font-extrabold text-[#1d2129]">{coins.toLocaleString()}</span></span>
-                      {arrow}
-                      <span className="flex items-center gap-1.5"><CoinIcon size={26} /><span className="text-[20px] font-extrabold" style={{ color: coinsAfter < 0 ? "#ef8a8a" : "#D10005" }}>{coinsAfter.toLocaleString()}</span></span>
-                    </div>
-                    {/* Free points — only when the pack accepts both currencies. */}
-                    {multiCurrency && (
-                      <div className="flex items-center justify-center gap-3 rounded-xl bg-[#f2f3f5] py-3">
-                        <span className="flex items-center gap-1.5"><GemIcon size={26} /><span className="text-[20px] font-extrabold text-[#8a9099]">{DRAW_FREE_POINTS.toLocaleString()}</span></span>
-                        {arrow}
-                        <span className="flex items-center gap-1.5"><GemIcon size={26} /><span className="text-[20px] font-extrabold" style={{ color: pointsAfter < 0 ? "#ef8a8a" : "#e0706e" }}>{pointsAfter.toLocaleString()}</span></span>
-                      </div>
-                    )}
+                  <div className="mt-3.5 space-y-2" role={multiCurrency ? "radiogroup" : undefined} aria-label={multiCurrency ? t.drawPayWith : undefined}>
+                    {rows.map(({ key, Icon, balance }) => {
+                      const selected = payCurrency === key;
+                      const after = balance - cost;
+                      const body = (
+                        <>
+                          {multiCurrency && (
+                            <span
+                              aria-hidden
+                              className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-2 ${selected ? "border-[#D10005]" : "border-[#b8bdc4]"}`}
+                            >
+                              {selected && <span className="h-2 w-2 rounded-full bg-[#D10005]" />}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1.5"><Icon size={26} /><span className={`text-[20px] font-extrabold ${selected ? "text-[#1d2129]" : "text-[#8a9099]"}`}>{balance.toLocaleString()}</span></span>
+                          {arrow}
+                          <span className="flex items-center gap-1.5"><Icon size={26} /><span className="text-[20px] font-extrabold" style={{ color: selected ? (after < 0 ? "#ef8a8a" : "#D10005") : "#b8bdc4" }}>{(selected ? after : balance).toLocaleString()}</span></span>
+                        </>
+                      );
+                      const shell = `flex w-full items-center justify-center gap-3 rounded-xl border-2 py-3 ${selected ? "border-[#D10005] bg-white" : "border-transparent bg-[#f2f3f5]"}`;
+                      return multiCurrency ? (
+                        <button key={key} type="button" role="radio" aria-checked={selected} onClick={() => setPayWith(key)} className={shell}>
+                          {body}
+                        </button>
+                      ) : (
+                        <div key={key} className={shell}>{body}</div>
+                      );
+                    })}
                   </div>
                 );
               })()}
