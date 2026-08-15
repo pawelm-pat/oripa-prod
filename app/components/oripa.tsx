@@ -210,6 +210,11 @@ function TagPill({ children, variant }: { children: React.ReactNode; variant: "r
   return <span className={`whitespace-nowrap rounded-full px-2 py-[1px] text-[10px] font-bold ${cls}`}>{children}</span>;
 }
 
+// Stacked coin and point prices share this icon column: the design draws the
+// point mark narrower than the coin but right-aligns the two, so the prices
+// beside them start at the same edge.
+const CURRENCY_COL = "flex w-6 shrink-0 justify-end";
+
 // The "per draw" suffix beside a price is a design asset rather than text. It
 // sits on the price's baseline at ~95% of its cap height, per the design.
 function PerDrawMark({ height, alt }: { height: number; alt: string }) {
@@ -263,10 +268,8 @@ function OripaCard({ item, t, onView, onDraw }: { item: OripaItem; t: Dict; onVi
       <div className="mt-2.5 bg-[#1d1d1d] px-3 py-1 text-center text-[11px] font-bold text-white">{t.periodLabel("2026/01/01")}</div>
       <div className="flex items-stretch px-3 py-2.5">
         <div className="flex flex-col justify-center gap-1.5 border-r border-dashed border-black/20 pr-3">
-          {/* Design sizes the coin a little larger than the point mark, which is
-              wider than it is tall. */}
-          <span className="flex items-center gap-1.5"><CoinIcon size={24} />{price}</span>
-          {item.gem && <span className="flex items-center gap-1.5"><GemIcon size={20} />{price}</span>}
+          <span className="flex items-center gap-1.5"><span className={CURRENCY_COL}><CoinIcon size={24} /></span>{price}</span>
+          {item.gem && <span className="flex items-center gap-1.5"><span className={CURRENCY_COL}><GemIcon size={20} /></span>{price}</span>}
         </div>
         <div className="flex flex-1 flex-col justify-center gap-1 pl-3">
           {expired ? (
@@ -1520,7 +1523,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
             {/* Left: price per draw (coin + optional free point), red-underlined */}
             <div className="flex shrink-0 flex-col justify-center gap-2.5">
               <span className="flex items-center gap-1.5">
-                <CoinIcon size={24} />
+                <span className={CURRENCY_COL}><CoinIcon size={24} /></span>
                 <span className="flex items-baseline border-b-2 border-[#D10005] pb-[3px]">
                   <span className="text-[18px] font-extrabold leading-none text-[#1d2129]">{DRAW_PRICE.toLocaleString()}</span>
                   <PerDrawMark height={12} alt={t.perDraw} />
@@ -1528,7 +1531,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
               </span>
               {multiCurrency && (
                 <span className="flex items-center gap-1.5">
-                  <GemIcon size={20} />
+                  <span className={CURRENCY_COL}><GemIcon size={20} /></span>
                   <span className="flex items-baseline border-b-2 border-[#D10005] pb-[3px]">
                     <span className="text-[18px] font-extrabold leading-none text-[#1d2129]">{DRAW_PRICE.toLocaleString()}</span>
                     <PerDrawMark height={12} alt={t.perDraw} />
