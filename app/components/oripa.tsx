@@ -210,10 +210,29 @@ function TagPill({ children, variant }: { children: React.ReactNode; variant: "r
   return <span className={`whitespace-nowrap rounded-full px-2 py-[1px] text-[10px] font-bold ${cls}`}>{children}</span>;
 }
 
-// Stacked coin and point prices share this icon column: the design draws the
-// point mark narrower than the coin but right-aligns the two, so the prices
-// beside them start at the same edge.
-const CURRENCY_COL = "flex w-6 shrink-0 justify-end";
+// Stacked coin and point prices, drawn to the design's "Price" node: a 137×83
+// block with 8px side padding holding two 40px rows 3px apart. The point mark is
+// narrower than the coin, so both sit right-aligned in a 36px column and the
+// prices beside them start on the same edge.
+function PriceStack({ t, showPoint }: { t: Dict; showPoint: boolean }) {
+  const row = (icon: React.ReactNode) => (
+    <span className="flex h-10 items-center gap-[8.5px]">
+      <span className="flex w-9 shrink-0 justify-end">{icon}</span>
+      {/* No thousands separator here: the design draws "1000/1回", and a comma's
+          tail would sit in the gap the red rule needs. */}
+      <span className="flex items-baseline border-b-[3px] border-[#D10005] pb-[3px]">
+        <span className="text-[21px] font-extrabold leading-none text-[#1d2129]">{DRAW_PRICE}</span>
+        <PerDrawMark height={14.5} alt={t.perDraw} />
+      </span>
+    </span>
+  );
+  return (
+    <div className="flex shrink-0 flex-col gap-[3px] px-2">
+      {row(<CoinIcon size={36} />)}
+      {showPoint && row(<GemIcon size={30} />)}
+    </div>
+  );
+}
 
 // The "per draw" suffix beside a price is a design asset rather than text. It
 // sits on the price's baseline at ~95% of its cap height, per the design.
@@ -237,14 +256,6 @@ function OripaCard({ item, t, onView, onDraw }: { item: OripaItem; t: Dict; onVi
   // place of the stock+countdown, and no Draw CTAs (the card still opens the
   // greyed-out draw view on tap). See DRAW-5 / DRAW-4 in the product spec.
   const expired = !!item.expired || item.remaining <= 0;
-  // The red rule runs under the price and the mark together, so it's a border on
-  // the wrapper — an underline wouldn't carry across the image.
-  const price = (
-    <span className="flex items-baseline border-b-2 border-[#D10005] pb-[2px]">
-      <span className="text-[15px] font-extrabold leading-none text-[#1d2129]">1,000</span>
-      <PerDrawMark height={10} alt={t.perDraw} />
-    </span>
-  );
   return (
     <div
       className={`overflow-hidden rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.12)] ${expired ? "cursor-pointer" : ""}`}
@@ -267,9 +278,8 @@ function OripaCard({ item, t, onView, onDraw }: { item: OripaItem; t: Dict; onVi
       </div>
       <div className="mt-2.5 bg-[#1d1d1d] px-3 py-1 text-center text-[11px] font-bold text-white">{t.periodLabel("2026/01/01")}</div>
       <div className="flex items-stretch px-3 py-2.5">
-        <div className="flex flex-col justify-center gap-1.5 border-r border-dashed border-black/20 pr-3">
-          <span className="flex items-center gap-1.5"><span className={CURRENCY_COL}><CoinIcon size={24} /></span>{price}</span>
-          {item.gem && <span className="flex items-center gap-1.5"><span className={CURRENCY_COL}><GemIcon size={20} /></span>{price}</span>}
+        <div className="flex items-center border-r border-dashed border-black/20 pr-3">
+          <PriceStack t={t} showPoint={item.gem} />
         </div>
         <div className="flex flex-1 flex-col justify-center gap-1 pl-3">
           {expired ? (
@@ -1521,23 +1531,8 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
         <div className="mx-3 mt-2 rounded-2xl bg-white px-4 py-3 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
           <div className="flex items-stretch gap-4">
             {/* Left: price per draw (coin + optional free point), red-underlined */}
-            <div className="flex shrink-0 flex-col justify-center gap-2.5">
-              <span className="flex items-center gap-1.5">
-                <span className={CURRENCY_COL}><CoinIcon size={24} /></span>
-                <span className="flex items-baseline border-b-2 border-[#D10005] pb-[3px]">
-                  <span className="text-[18px] font-extrabold leading-none text-[#1d2129]">{DRAW_PRICE.toLocaleString()}</span>
-                  <PerDrawMark height={12} alt={t.perDraw} />
-                </span>
-              </span>
-              {multiCurrency && (
-                <span className="flex items-center gap-1.5">
-                  <span className={CURRENCY_COL}><GemIcon size={20} /></span>
-                  <span className="flex items-baseline border-b-2 border-[#D10005] pb-[3px]">
-                    <span className="text-[18px] font-extrabold leading-none text-[#1d2129]">{DRAW_PRICE.toLocaleString()}</span>
-                    <PerDrawMark height={12} alt={t.perDraw} />
-                  </span>
-                </span>
-              )}
+            <div className="flex items-center">
+              <PriceStack t={t} showPoint={multiCurrency} />
             </div>
 
             {/* Dashed vertical divider */}
