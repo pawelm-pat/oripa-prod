@@ -5386,6 +5386,18 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   const toggleLobbyFilter = (k: string) => setLobbyFilters((f) => { const n = { ...f }; if (n[k]) delete n[k]; else n[k] = true; return n; });
   const clearLobbyFilters = () => { setLobbyQuery(""); setLobbyFilters({}); setLobbyPriceMin(0); setLobbyPriceMax(PRICE_MAX); };
   const goHome = () => setScreen("oripa");
+  // Tapping the logo is a fresh start: it drops the selected category, the search
+  // text and any applied filters, and returns to the top of the lobby — what a
+  // user sees right after logging in. Bumping the key remounts the lobby, which
+  // is what clears the category and search state it owns. Back buttons keep using
+  // goHome, which deliberately preserves all of that.
+  const [homeKey, setHomeKey] = useState(0);
+  const resetHome = () => {
+    clearLobbyFilters();
+    homeScroll.current = 0;
+    setHomeKey((k) => k + 1);
+    setScreen("oripa");
+  };
   // PROD: login/sign-up land straight on the lobby (no onboarding flow).
   const enterHome = (method?: "line") => {
     setScreen("oripa");
@@ -5480,7 +5492,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
           />
         )}
         {/* Logged-in lobby — V2 format */}
-        {screen === "oripa" && <OripaHome lang={lang} coins={coins} onHome={goHome} onOpenStore={openStore} onOpenDraw={openDraw} scrollRef={homeScroll} query={lobbyQuery} filters={lobbyFilters} priceMin={lobbyPriceMin} priceMax={lobbyPriceMax} onApply={applyLobby} onToggleApplied={toggleLobbyFilter} onClearAll={clearLobbyFilters} />}
+        {screen === "oripa" && <OripaHome key={homeKey} lang={lang} coins={coins} onHome={resetHome} onOpenStore={openStore} onOpenDraw={openDraw} scrollRef={homeScroll} query={lobbyQuery} filters={lobbyFilters} priceMin={lobbyPriceMin} priceMax={lobbyPriceMax} onApply={applyLobby} onToggleApplied={toggleLobbyFilter} onClearAll={clearLobbyFilters} />}
         {screen === "drawDetail" && drawItem && (
           <DrawDetail
             key={drawItem.id}
@@ -5488,7 +5500,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             item={drawItem}
             coins={coins}
             onBack={goHome}
-            onHome={goHome}
+            onHome={resetHome}
             onOpenStore={openStore}
             onOpenDraw={openDraw}
             freeShipAvailable={freeShipAvailable}
@@ -5504,7 +5516,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onPendingRunDrawConsumed={() => setPendingRunDraw(null)}
           />
         )}
-        {screen === "notifications" && <NotificationsScreen lang={lang} coins={coins} empty={noHistory} only={notifOnly} onBack={() => setScreen(prevScreen)} onHome={goHome} onOpenStore={openStore} />}
+        {screen === "notifications" && <NotificationsScreen lang={lang} coins={coins} empty={noHistory} only={notifOnly} onBack={() => setScreen(prevScreen)} onHome={resetHome} onOpenStore={openStore} />}
         {screen === "mypage" && (
           <MyPage
             lang={lang}
@@ -5517,7 +5529,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onOpenAnnouncements={openAnnouncements}
             onOpenShippingAddress={() => setScreen("shippingAddress")}
             onOpenProfile={() => setScreen("profile")}
-            onHome={goHome}
+            onHome={resetHome}
             onLogout={logout}
             onOpenStore={openStore}
           />
@@ -5539,7 +5551,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             kyc={kyc}
             onStartKyc={() => { requestKyc("profile"); }}
             chrome={{
-              header: <AppHeader coins={coins} t={t} onHome={goHome} onOpenStore={openStore} />,
+              header: <AppHeader coins={coins} t={t} onHome={resetHome} onOpenStore={openStore} />,
             }}
           />
         )}
@@ -5551,7 +5563,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             shippingAddresses={shippingAddresses}
             onShippingAddressesChange={setShippingAddresses}
             onBack={() => setScreen("mypage")}
-            onHome={goHome}
+            onHome={resetHome}
             empty={false}
             onGoGacha={goHome}
             onRequestKyc={() => requestKyc("prizeHistory")}
@@ -5566,7 +5578,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             shippingAddresses={shippingAddresses}
             onShippingAddressesChange={setShippingAddresses}
             onBack={() => setScreen(lootReturn)}
-            onHome={goHome}
+            onHome={resetHome}
             empty={false}
             onGoGacha={goHome}
             lootMode
@@ -5580,7 +5592,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             lang={lang}
             coins={coins}
             onBack={() => setScreen("mypage")}
-            onHome={goHome}
+            onHome={resetHome}
             empty={noHistory}
             onOpenStore={openStore}
           />
@@ -5592,7 +5604,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             addresses={shippingAddresses}
             onAddressesChange={setShippingAddresses}
             onBack={() => setScreen("mypage")}
-            onHome={goHome}
+            onHome={resetHome}
             onOpenStore={openStore}
           />
         )}
@@ -5603,7 +5615,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             coins={coins}
             setCoins={setCoins}
             onBack={() => setScreen(storeReturn)}
-            onHome={goHome}
+            onHome={resetHome}
             onOpenStore={openStore}
             onRequireKyc={() => requestKyc("purchase")}
             onDrawItem={openDraw}
@@ -5619,7 +5631,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             lang={lang}
             coins={coins}
             onBack={() => setScreen(coinHistoryReturn)}
-            onHome={goHome}
+            onHome={resetHome}
             onOpenStore={openStore}
           />
         )}
@@ -5629,7 +5641,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             coins={coins}
             setCoins={setCoins}
             onBack={() => setScreen("mypage")}
-            onHome={goHome}
+            onHome={resetHome}
             onOpenStore={openStore}
           />
         )}
