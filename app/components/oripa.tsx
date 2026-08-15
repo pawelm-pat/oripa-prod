@@ -172,12 +172,15 @@ function BalancePill({ coins, t, onOpenStore }: { coins: number; t: Dict; onOpen
           aria-label={t.coinHistoryTitle}
           className="flex items-center gap-2 rounded-full border border-black/15 bg-white py-1 pl-3 pr-5 shadow-[0_1px_3px_rgba(0,0,0,0.10)] transition active:scale-[0.97]"
         >
+          {/* Design sizes the coin mark 24×25; its 108×111 art hits that height
+              from the width alone. The point mark rides at the same 5:6 ratio to
+              the coin as it does in the price block. */}
           <span className="flex items-center gap-1 text-[13px] font-medium text-[#1d2129]">
-            <CoinIcon size={18} /> {coins.toLocaleString()}
+            <CoinIcon size={24} /> {coins.toLocaleString()}
           </span>
           <span className="h-4 w-px bg-black/15" />
           <span className="flex items-center gap-1 text-[13px] font-medium text-[#1d2129]">
-            <GemIcon size={18} /> 10,000
+            <GemIcon size={20} /> 10,000
           </span>
         </button>
         <button
@@ -993,6 +996,10 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
     <div className="px-3.5 pt-3"><PromoCarousel /></div>
   ) : null;
 
+  // Sparkle mark that leads the recommended heading. The art is white, so it
+  // only belongs on the red section.
+  const sparkle = <img src="/sparkle.png" alt="" aria-hidden width={18} height={18} className="shrink-0" draggable={false} />;
+
   const showResults = hasQuery || filterCount > 0 || priceActive;
   let body: React.ReactNode;
   if (showResults) {
@@ -1020,7 +1027,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
                 </div>
                 <section className="bg-[#D10005] px-3.5 pb-6 pt-4">
                   <div className="mb-3 flex items-center justify-between">
-                    <h3 className="text-[15px] font-extrabold text-white">{title}</h3>
+                    <h3 className="flex items-center gap-1.5 text-[15px] font-extrabold text-white">{sparkle}{title}</h3>
                     {seeAllCat && <button onClick={() => setCat(seeAllCat)} className="text-[12px] font-bold text-white/90">{L.seeAll} →</button>}
                   </div>
                   <div className="flex flex-col gap-3">{s.items.map(full)}</div>
@@ -1057,7 +1064,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
             <img src="/home-divider-top.png" alt="" className="-mb-px block w-full" />
           </div>
           <section className="bg-[#D10005] px-3.5 pb-6 pt-4">
-            <h3 className="mb-3 text-[15px] font-extrabold text-white">{recTitle}</h3>
+            <h3 className="mb-3 flex items-center gap-1.5 text-[15px] font-extrabold text-white">{sparkle}{recTitle}</h3>
             <div className="flex flex-col gap-3">{featured.map(full)}</div>
           </section>
           <img src="/home-divider-bottom.png" alt="" className="-mt-px block w-full" />
