@@ -1038,9 +1038,9 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
       {/* Sticky lobby nav: the category bar stays pinned; the search bar
           collapses on scroll-down and expands again on scroll-up. */}
       <div ref={searchBoxRef} className="sticky top-0 z-30 bg-[#FEFEFE]">
-      {/* Category bar — icon over label; ALL is a black D-tab pinned to the
+      {/* Category bar — icon over label; ALL is a black D-tab flush with the
           left edge, the active category is red with an underline. Sizes follow
-          the design: a 55px square tab, 64px-wide items, 21.6px icons. */}
+          the design: a 73px bar, a 55px square tab, 63.6px item pitch. */}
       <div className="no-scrollbar flex items-stretch overflow-x-auto border-b border-black/10 bg-[#FEFEFE]">
         {catList.map((c) => {
           const on = cat === c.key;
@@ -1050,7 +1050,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
                 key={c.key}
                 onClick={() => selectCat(c.key)}
                 aria-pressed={on}
-                className="sticky left-0 z-[3] flex shrink-0 items-center bg-[#FEFEFE] py-[5px] pl-[9px]"
+                className="sticky left-0 z-[3] flex shrink-0 items-center bg-[#FEFEFE] pb-[12px] pt-[5px]"
               >
                 {/* Content sits a touch left of centre, as in the design — the
                     rounded right edge otherwise pulls it visually right. */}
@@ -1070,7 +1070,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
             >
               {catIcon(c.key, color)}
               <span className="whitespace-nowrap text-[12px] font-medium leading-none" style={{ color }}>{c.label}</span>
-              {on && <span className="absolute inset-x-[9px] bottom-[8px] h-[4px] bg-[#D10005]" />}
+              {on && <span className="absolute inset-x-[9px] bottom-[14px] h-[4.5px] bg-[#D10005]" />}
             </button>
           );
         })}
