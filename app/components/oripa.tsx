@@ -629,6 +629,8 @@ function priceValToPct(v: number): number {
   return 100;
 }
 
+const PRICE_BOX_CLS = "h-[22px] w-[100px] rounded-[4px] border-[1.5px] border-[#cfcfcf] text-center text-[13px] font-bold leading-none text-[#0F0F0F] focus:border-[#D10005] focus:outline-none";
+
 // Dual-handle price slider with keyboard-editable min/max boxes (0–999,999).
 // Built from pointer events (not overlapping native range inputs, which fight
 // the controlled re-render and trap the max handle at the far right). The track
@@ -683,19 +685,21 @@ function PriceRangeFilter({ label, min, max, onMin, onMax }: { label: string; mi
   return (
     <div className="mt-5 select-none">
       <h4 className="mb-2.5 text-[15px] font-extrabold text-[#1d2129]">{label}</h4>
-      <div className="flex items-center gap-3">
+      {/* Min and max sit at the two ends of the row (design: 100×22 boxes with
+          the space between them left empty), not stretched to fill it. */}
+      <div className="flex items-center justify-between">
         <input
           inputMode="numeric"
           value={min.toLocaleString()}
           onChange={(e) => onMin(Math.min(parseNum(e.target.value), max))}
-          className="w-full rounded-lg border border-[#c9ced6] px-3 py-2 text-center text-[14px] font-bold text-[#1d2129] focus:border-[#D10005] focus:outline-none"
+          className={PRICE_BOX_CLS}
           aria-label={`${label} min`}
         />
         <input
           inputMode="numeric"
           value={max.toLocaleString()}
           onChange={(e) => onMax(Math.max(parseNum(e.target.value), min))}
-          className="w-full rounded-lg border border-[#c9ced6] px-3 py-2 text-center text-[14px] font-bold text-[#1d2129] focus:border-[#D10005] focus:outline-none"
+          className={PRICE_BOX_CLS}
           aria-label={`${label} max`}
         />
       </div>
@@ -714,9 +718,9 @@ function PriceRangeFilter({ label, min, max, onMin, onMax }: { label: string; mi
         <span className="pointer-events-none absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#D10005] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.3)]" style={{ left: `${minPct}%` }} />
         <span className="pointer-events-none absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#D10005] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.3)]" style={{ left: `${maxPct}%` }} />
       </div>
-      <div className="mx-2.5 mt-1.5 flex justify-between text-[11px] font-semibold text-[#8a9099]">
+      <div className="mx-2.5 mt-1.5 flex justify-between text-[13px] font-normal text-[#8a9099]">
         {ticks.map(([lbl, val]) => (
-          <button key={lbl} type="button" onClick={() => clickTick(val)} className="-mx-1 cursor-pointer px-1 active:text-[#D10005]">{lbl}</button>
+          <button key={lbl} type="button" onClick={() => clickTick(val)} className="-mx-0.5 cursor-pointer px-0.5 leading-none active:text-[#D10005]">{lbl}</button>
         ))}
       </div>
     </div>
@@ -941,7 +945,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
       <button
         key={key}
         onClick={() => toggleDraft(key)}
-        className={`rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition active:scale-95 ${on ? "border-[#D10005] bg-[#D10005] text-white" : "border-[#a3a8b0] bg-white text-[#4b5058]"}`}
+        className={`flex h-[22px] items-center rounded-full border-[1.5px] px-2 text-[13px] font-medium leading-none transition active:scale-95 ${on ? "border-[#D10005] bg-[#D10005] text-white" : "border-[#6F6F6F] bg-white text-[#6F6F6F]"}`}
       >
         {label}
       </button>
@@ -1148,9 +1152,11 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
             <div className="flex flex-wrap gap-2.5">{L.pokemonTags.map(tagPill)}</div>
             <PriceRangeFilter label={L.cost} min={draftMin} max={draftMax} onMin={setDraftMin} onMax={setDraftMax} />
           </div>
+          {/* CTAs follow the design's button spec: 39px tall, 8px radius, and a
+              2px border on the secondary one. */}
           <div className="flex gap-3 border-t border-black/10 bg-white px-4 py-3">
-            <button onClick={clearEverything} className="flex-1 rounded-[10px] border-[1.6px] border-[#1d2129] bg-white py-3 text-[15px] font-extrabold text-[#1d2129] active:scale-[0.99]">{L.reset}</button>
-            <button onClick={applyFilters} className="flex-1 rounded-[10px] bg-[#D10005] py-3 text-[15px] font-extrabold text-white active:scale-[0.99]">{L.filter}</button>
+            <button onClick={clearEverything} className="h-[39px] grow basis-1/2 rounded-lg border-2 border-[#1d2129] bg-white text-[15px] font-bold leading-none text-[#1d2129] active:scale-[0.99]">{L.reset}</button>
+            <button onClick={applyFilters} className="h-[39px] grow basis-1/2 rounded-lg bg-[#D10005] text-[15px] font-extrabold leading-none text-white active:scale-[0.99]">{L.filter}</button>
           </div>
         </div>
       )}
