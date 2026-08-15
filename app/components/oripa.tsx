@@ -424,6 +424,7 @@ function HomeHero({ lang }: { lang: Lang }) {
 // counters knocked out to transparency, so one asset can be tinted for both the
 // resting (black) and active (red) states by using it as a mask.
 const CAT_ICON_SRC: Record<string, string> = {
+  all: "/cat/all.png",
   new: "/cat/new.png",
   popular: "/cat/hot.png",
   pokemon: "/cat/pokemon.png",
@@ -432,20 +433,11 @@ const CAT_ICON_SRC: Record<string, string> = {
 };
 
 function catIcon(key: string, color: string) {
-  // "All" only ever appears on the black tab, and has no exported asset.
-  if (key === "all") {
-    return (
-      <svg width="21.6" height="21.6" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2">
-        <rect x="3.6" y="3.6" width="7.2" height="7.2" />
-        <circle cx="17.4" cy="7.2" r="3.6" />
-        <rect x="3.6" y="13.2" width="7.2" height="7.2" />
-        <rect x="13.2" y="13.2" width="7.2" height="7.2" />
-      </svg>
-    );
-  }
   const src = CAT_ICON_SRC[key] ?? CAT_ICON_SRC.other;
+  // The "All" glyph is drawn smaller than the rest in the design.
+  const size = key === "all" ? 18.5 : 21.6;
   const mask = { maskImage: `url(${src})`, WebkitMaskImage: `url(${src})`, maskSize: "contain", WebkitMaskSize: "contain", maskRepeat: "no-repeat", WebkitMaskRepeat: "no-repeat", maskPosition: "center", WebkitMaskPosition: "center" };
-  return <span aria-hidden className="block h-[21.6px] w-[21.6px] shrink-0" style={{ backgroundColor: color, ...mask } as React.CSSProperties} />;
+  return <span aria-hidden className="block shrink-0" style={{ width: size, height: size, backgroundColor: color, ...mask } as React.CSSProperties} />;
 }
 
 // Legal document reader (Terms of Use, Privacy Policy, SCTA notation).
@@ -1062,7 +1054,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
               >
                 {/* Content sits a touch left of centre, as in the design — the
                     rounded right edge otherwise pulls it visually right. */}
-                <span className="flex h-[55px] w-[55px] flex-col items-center justify-center gap-[2px] rounded-r-full bg-[#141414] pr-[5px] text-white shadow-[3px_0_12px_rgba(0,0,0,0.18)]">
+                <span className="flex h-[55px] w-[55px] flex-col items-center justify-center gap-[4px] rounded-r-full bg-[#0F0F0F] pr-[5px] text-white shadow-[3px_0_12px_rgba(0,0,0,0.18)]">
                   {catIcon("all", "#fff")}
                   <span className="text-[12px] font-medium leading-none">{c.label}</span>
                 </span>
