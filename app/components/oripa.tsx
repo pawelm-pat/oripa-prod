@@ -504,7 +504,7 @@ function SiteFooter({ t }: { t: Dict }) {
   };
   return (
     <footer className="bg-black px-4 py-7 text-white">
-      <img src="/oripa-logo-footer.png" alt="オリパロット" className="h-8 w-auto" />
+      <img src="/oripa-logo.png" alt="オリパロット" className="h-8 w-auto" />
       <p className="mt-3 text-[11px] text-white">{t.ftCopyright}</p>
       <p className="mt-3 text-[11px] leading-relaxed text-white">{t.ftBlurb}</p>
 

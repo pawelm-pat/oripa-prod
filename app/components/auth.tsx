@@ -17,7 +17,7 @@ export function AuthHeader({ lang, onSignUp, onLogin }: { lang: Lang; onSignUp: 
   const t = STR[lang];
   return (
     <header className="flex shrink-0 items-center justify-between bg-white px-4 py-2.5 shadow-[0_1px_4px_rgba(0,0,0,0.10)]">
-      <img src="/oripa-logo-full.png" alt="オリパロット" className="h-8 w-auto shrink-0" />
+      <img src="/oripa-logo.png" alt="オリパロット" className="h-8 w-auto shrink-0" />
       <div className="flex items-center gap-2">
         <button onClick={onSignUp} className="rounded-lg px-4 py-1.5 text-[13px] font-bold text-white" style={{ background: "#D10005" }}>{t.authSignUp}</button>
         <button onClick={onLogin} className="rounded-lg px-4 py-1.5 text-[13px] font-bold text-white" style={{ background: "#f59e0b" }}>{t.authLogin}</button>
