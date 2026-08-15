@@ -7,7 +7,7 @@ import type {
   Category,
   Lang,
   DrawCta,
-  DrawEntry,
+  DrawRequest,
   DrawScenario,
   OripaItem,
   Rarity,
@@ -253,7 +253,7 @@ function PerDrawMark({ height, alt }: { height: number; alt: string }) {
   );
 }
 
-function OripaCard({ item, t, onView, onDraw }: { item: OripaItem; t: Dict; onView?: () => void; onDraw?: (count: number, free?: boolean) => void }) {
+function OripaCard({ item, t, onView, onRequestDraw }: { item: OripaItem; t: Dict; onView?: () => void; /** A tapped CTA draws in place; only the banner opens the pack page. */ onRequestDraw?: (req: Omit<DrawRequest, "token">) => void }) {
   const pct = Math.round((item.remaining / item.total) * 100);
   // Expired / sold-out packs: greyed artwork, an "期限切れ / Expired" label in
   // place of the stock+countdown, and no Draw CTAs (the card still opens the
@@ -303,10 +303,9 @@ function OripaCard({ item, t, onView, onDraw }: { item: OripaItem; t: Dict; onVi
           )}
         </div>
       </div>
-      {!expired && (
-        <div className="flex gap-2 px-3 pb-3">
-          <button onClick={onView} className="flex-1 rounded-lg py-2 text-[12px] font-bold text-white" style={{ background: "#D10005" }}>{t.btnDraw}</button>
-          {item.free && <button onClick={() => onDraw?.(1, true)} className="flex-1 rounded-lg border border-[#D10005] py-2 text-[12px] font-bold text-[#D10005]">{t.btnFree}</button>}
+      {!expired && onRequestDraw && (
+        <div className="px-3 pb-3">
+          <DrawCtaRow variant={item.cta ?? "all"} t={t} onRequest={onRequestDraw} compact />
         </div>
       )}
     </div>
@@ -765,7 +764,7 @@ function PriceRangeFilter({ label, min, max, onMin, onMax }: { label: string; mi
 
 // V2 lobby feed. `onView` (tap on any card) is inert in the logged-in lobby
 // and routes to Sign-up on the logged-out landing.
-function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll, onView, onOpenDraw }: { t: Dict; lang: Lang; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void; onView?: () => void; onOpenDraw?: (item: OripaItem, entry?: DrawEntry) => void }) {
+function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll, onView, onOpenDraw, onRequestDraw }: { t: Dict; lang: Lang; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void; onView?: () => void; onOpenDraw?: (item: OripaItem) => void; onRequestDraw?: (item: OripaItem, req: Omit<DrawRequest, "token">) => void }) {
   const L = LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"];
   const [cat, setCat] = useState("all");
   const [searchActive, setSearchActive] = useState(false);
@@ -960,19 +959,18 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
     return arr;
   }
 
-  // In the logged-in lobby `onOpenDraw` opens the draw screen for the tapped
-  // pack; the logged-out lobby falls back to `onView` (sign-up bridge).
+  // Tapping a card's artwork opens the pack page; its CTAs draw in place via
+  // `onRequestDraw`. The logged-out lobby has neither, so both bridge to
+  // sign-up through `onView`.
   const canOpen = !!(onOpenDraw || onView);
-  // The tapped CTA decides the draw screen's entry mode: "Free draw" opens the
-  // free variants, "Draw" / "View" / the banner open the paid ones.
-  const openCard = (it: OripaItem, entry: DrawEntry = "paid") => (onOpenDraw ? onOpenDraw(it, entry) : onView?.());
+  const openCard = (it: OripaItem) => (onOpenDraw ? onOpenDraw(it) : onView?.());
   const full = (it: OripaItem) => (
     <OripaCard
       key={it.id}
       item={it}
       t={t}
       onView={canOpen ? () => openCard(it) : undefined}
-      onDraw={canOpen ? (_count, free) => openCard(it, free ? "free" : "paid") : undefined}
+      onRequestDraw={canOpen ? (req) => (onRequestDraw ? onRequestDraw(it, req) : onView?.()) : undefined}
     />
   );
   const tagPill = ([key, label]: [string, string]) => {
@@ -1207,7 +1205,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
   );
 }
 
-function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, scrollRef, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll }: { lang: Lang; coins: number; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem, entry?: DrawEntry) => void; scrollRef?: { current: number }; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void }) {
+function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, onRequestDraw, scrollRef, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll }: { lang: Lang; coins: number; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem) => void; onRequestDraw?: (item: OripaItem, req: Omit<DrawRequest, "token">) => void; scrollRef?: { current: number }; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void }) {
   const t = STR[lang];
   // Preserve the lobby's scroll position across navigation (e.g. opening a draw
   // and coming back) so the user lands where they were, not at the top. The
@@ -1229,7 +1227,7 @@ function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, scrollRef, qu
       >
         <HomeHero lang={lang} />
 
-        <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={onApply} onToggleApplied={onToggleApplied} onClearAll={onClearAll} onOpenDraw={onOpenDraw} />
+        <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={onApply} onToggleApplied={onToggleApplied} onClearAll={onClearAll} onOpenDraw={onOpenDraw} onRequestDraw={onRequestDraw} />
 
         <SiteFooter t={t} />
       </div>
@@ -1249,10 +1247,57 @@ const MAX_CUSTOM_DRAW = 100; // cap for the custom-draw quantity stepper
 
 // Beveled tier plate ("1等 / 2등 / 3등") — gold for 1st/2nd, silver for 3rd,
 // matching the design's metallic name-plates on the dark prize board.
-// Shared shapes for the draw screen's sticky CTA row (see DrawCta variants).
+// Shared shapes for the draw CTA row (see DrawCta variants).
 const ctaBase = "flex min-h-[40px] items-center justify-center rounded-md px-2 text-center text-[13px] font-extrabold leading-tight active:scale-[0.98]";
 const ctaPrimary = `${ctaBase} bg-[#D10005] text-white`;
 const ctaOutline = `${ctaBase} border-2 border-[#D10005] bg-white text-[#1d2129]`;
+
+// The draw CTAs a pack offers. Each pack carries its own variant, so the row a
+// lobby card shows is the row its pack page shows. Tapping one doesn't navigate
+// anywhere — it asks DrawFlow to open the matching popup. The card renders the
+// same row a size down.
+function DrawCtaRow({ variant, t, onRequest, compact = false }: { variant: DrawCta; t: Dict; onRequest: (req: Omit<DrawRequest, "token">) => void; compact?: boolean }) {
+  const base = compact ? "flex min-h-[32px] items-center justify-center rounded-md px-1.5 text-center text-[12px] font-bold leading-tight active:scale-[0.98]" : ctaBase;
+  const primary = compact ? `${base} bg-[#D10005] text-white` : ctaPrimary;
+  const outline = compact ? `${base} border-2 border-[#D10005] bg-white text-[#1d2129]` : ctaOutline;
+  return (
+    <div className="flex gap-2">
+      {variant === "all" && (
+        <>
+          <button onClick={() => onRequest({ kind: "count", count: 1 })} className={`flex-1 ${outline}`}>{t.drawDraw1}</button>
+          <button onClick={() => onRequest({ kind: "count", count: 10 })} className={`flex-1 ${primary}`}>{t.drawDrawTen}</button>
+          <button onClick={() => onRequest({ kind: "custom" })} className={`flex-1 whitespace-nowrap ${primary}`}>{t.drawDrawCustom}</button>
+        </>
+      )}
+      {variant === "one" && (
+        <button onClick={() => onRequest({ kind: "count", count: 1 })} className={`flex-1 ${primary}`}>{t.drawDraw1}</button>
+      )}
+      {variant === "free" && (
+        <button onClick={() => onRequest({ kind: "count", count: 1, free: true })} className={`flex-1 ${outline}`}>{t.btnFree}</button>
+      )}
+      {variant === "freePending" && (
+        <button onClick={() => onRequest({ kind: "line" })} className={`flex-1 ${base} bg-[#01B901] text-white`}>{t.btnLineLink}</button>
+      )}
+      {variant === "trial" && (
+        <>
+          {/* "Free Trial" tag straddles the top edge of the free-draws CTA */}
+          <div className="relative flex-1">
+            <img
+              src="/cta/free-trial-tag.png"
+              alt={t.btnFreeTrial}
+              width={222}
+              height={32}
+              draggable={false}
+              className={`absolute left-1/2 z-[1] max-w-none -translate-x-1/2 select-none ${compact ? "-top-1.5 h-3 w-[83px]" : "-top-2 h-4 w-[111px]"}`}
+            />
+            <button onClick={() => onRequest({ kind: "count", count: 10, free: true })} className={`w-full ${outline}`}>{t.btnFree10}</button>
+          </div>
+          <button onClick={() => onRequest({ kind: "count", count: 1 })} className={`flex-1 ${primary}`}>{t.drawDraw1}</button>
+        </>
+      )}
+    </div>
+  );
+}
 
 // Pack artwork (draw screen and confirmation popups). The intrinsic size is
 // declared so the space is reserved on the very first paint — otherwise the
@@ -1300,21 +1345,26 @@ function DrawTierCard({ rarity, large = false }: { rarity: Rarity; large?: boole
   );
 }
 
-function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, drawCta = "all", onOpenDraw, onAttemptPaidDraw, pendingRunDraw, onPendingRunDrawConsumed }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; drawCta?: DrawCta; onOpenDraw?: (item: OripaItem) => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** After Quick Purchase success, host requests this count to run. */ pendingRunDraw?: { count: number; token: number } | null; onPendingRunDrawConsumed?: () => void }) {
+/* ── Draw flow ────────────────────────────────────────────────────────────
+   Every popup a draw passes through — the confirmation, the custom-quantity
+   sheet, the scenario failures (sold out / connection / stock), the LINE
+   prompt and the results screen — lives here rather than on the pack page,
+   because a lobby card's CTA opens the same flow without leaving the lobby.
+   Hosts mount it as an overlay (the parent must be positioned) and ask for a
+   draw by passing a `request`; it renders nothing while idle. */
+function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, onHome, onOpenStore, onOpenDraw, onAttemptPaidDraw, pendingRunDraw, onPendingRunDrawConsumed }: { lang: Lang; item: OripaItem; coins: number; request: DrawRequest | null; soldOut?: boolean; /** The sold-out popup was dismissed, so the host can latch its greyed state. */ onSoldOut?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem) => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** After Quick Purchase success, host requests this count to run. */ pendingRunDraw?: { count: number; token: number } | null; onPendingRunDrawConsumed?: () => void }) {
   const t = STR[lang];
   // Opens a stored legal document (T&Cs, etc.) in the shared overlay.
   const openLegal = useContext(LegalNavContext);
-  // Draw-screen demo scenarios (dev harness): expired pack, connection error,
-  // or insufficient remaining stock.
+  // Draw demo scenarios (dev harness): expired pack, connection error, or
+  // insufficient remaining stock.
   const expired = drawScenario === "expired";
   const connError = drawScenario === "connError";
   const insufficientStock = drawScenario === "stock";
   // In the insufficient-stock scenario only this many draws remain.
   const STOCK_LEFT = 8;
-  // "Sold Out" popup (shown when an expired pack's draw is confirmed) and the
-  // latched greyed-out state that follows once it's dismissed.
+  // "Sold Out" popup, shown when an expired pack's draw is confirmed.
   const [soldOutPopup, setSoldOutPopup] = useState(false);
-  const [soldOutHit, setSoldOutHit] = useState(false);
   // Connection-error popup (simulated network failure) + the draw count to
   // retry when the user taps Retry.
   const [connErrorPopup, setConnErrorPopup] = useState(false);
@@ -1323,12 +1373,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
   // original vs. remaining cost).
   const [stockPopup, setStockPopup] = useState(false);
   const [stockReqCount, setStockReqCount] = useState(0);
-  // `item.expired` packs are permanently sold out: greyed on open, no CTAs.
-  const soldOut = item.remaining <= 0 || soldOutHit || !!item.expired;
-  const remainingShown = soldOut ? 0 : (insufficientStock ? STOCK_LEFT : item.remaining);
-  const pct = soldOut ? 0 : Math.round((remainingShown / item.total) * 100);
   const [toast, setToast] = useState<string | null>(null);
-  const [cautionOpen, setCautionOpen] = useState(false);
   // Draw-confirmation popup: holds the requested draw count while open.
   const [confirmCount, setConfirmCount] = useState<number | null>(null);
   // Set when the pending confirmation came from a free-draw CTA: the popup then
@@ -1432,6 +1477,17 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
   }
   const setQty = (n: number) => setCustomQty(() => Math.min(MAX_CUSTOM_DRAW, Math.max(1, n)));
 
+  // A tapped CTA (lobby card or pack page) arrives as a request; the token
+  // distinguishes repeat taps of the same CTA. Applied while rendering rather
+  // than in an effect so the popup appears in the same commit as the tap.
+  const [handledToken, setHandledToken] = useState<number | null>(null);
+  if (request && request.token !== handledToken) {
+    setHandledToken(request.token);
+    if (request.kind === "custom") openCustom();
+    else if (request.kind === "line") setLineVerify(true);
+    else draw(request.count ?? 1, request.free);
+  }
+
   function confirmCustomDraw() {
     if (expired) { setCustomOpen(false); setSoldOutPopup(true); return; }
     if (connError) { setCustomOpen(false); setRetryCount(customQty); setConnErrorPopup(true); return; }
@@ -1496,192 +1552,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
   }
 
   return (
-    <div className="relative flex h-full flex-col bg-[#eef0f3]">
-      <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
-
-      {/* Warm the confirmation banner while the pack page is open so the popup
-          never animates in around an empty banner slot. */}
-      <link rel="preload" as="image" href="/draw-banner-modal.webp" />
-
-      {/* Title row */}
-      <div className="shrink-0 flex items-center gap-2 border-b border-black/10 bg-white px-3 py-2.5">
-        <button onClick={onBack} aria-label={t.backAria} className="flex h-8 w-8 items-center justify-center text-[#D10005] hover:bg-black/5">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 12H4M10 6l-6 6 6 6" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
-        </button>
-        <h2 className="truncate text-[17px] font-bold text-[#1d2129]">{locTitle(item, lang)}</h2>
-      </div>
-
-      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto bg-[#eef0f3]">
-        {/* ── Promotional banner ─────────────────────────────────────────
-            Fiery radial burst + ray sweep, gold 3D headline, "new-only"
-            ribbon, tagline, mascot and a countdown chip. */}
-        {/* Tags — sit above the banner, as on the lobby card */}
-        <div className="flex flex-wrap items-center gap-1.5 px-3.5 pb-1.5 pt-2.5">
-          <TagPill variant="redOutline">{t.tagPopular}</TagPill>
-          <TagPill variant="redFill">{t.tagPokemon}</TagPill>
-          <TagPill variant="darkOutline">{t.tagLv5}</TagPill>
-          <TagPill variant="darkOutline">{t.tagSsr}</TagPill>
-        </div>
-
-        <div className="px-3">
-          {/* Design creative (fiery burst headline + mascot + baked-in sales
-              period bar). Sold-out packs are desaturated. The remaining-time
-              detail is shown in the price/remaining section below, so no
-              separate period box is rendered here. */}
-          <div className={soldOut ? "grayscale" : ""}>
-            <PackBanner src="/draw-banner.webp" alt={t.drawPackSubtitle} width={748} height={613} priority />
-          </div>
-        </div>
-
-        {/* Cost + remaining — two columns split by a dashed divider: price per
-            draw on the left, stock/countdown on the right (per design). */}
-        <div className="mx-3 mt-2 rounded-2xl bg-white px-4 py-3 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
-          <div className="flex items-stretch gap-4">
-            {/* Left: price per draw (coin + optional free point), red-underlined */}
-            <div className="flex items-center">
-              <PriceStack t={t} showPoint={multiCurrency} />
-            </div>
-
-            {/* Dashed vertical divider */}
-            <div className="w-px shrink-0 self-stretch border-l border-dashed border-black/25" />
-
-            {/* Right: remaining count, progress bar, remaining time */}
-            <div className="flex min-w-0 flex-1 flex-col justify-center">
-              <div className="flex items-baseline justify-center gap-1">
-                <span className={`text-[13px] font-bold ${soldOut ? "text-[#D10005]" : "text-[#1d2129]"}`}>{t.remainingLabel}</span>
-                <span className="leading-none"><span className={`text-[20px] font-extrabold ${soldOut ? "text-[#D10005]" : "text-[#1d2129]"}`}>{remainingShown}</span><span className="text-[12px] font-bold text-[#8a9099]">/{item.total}</span></span>
-              </div>
-              <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-black/[0.08]"><span className="block h-full rounded-full bg-[#D10005]" style={{ width: `${pct}%` }} /></div>
-              {soldOut ? (
-                <p className="mt-2 text-center text-[15px] font-extrabold text-[#D10005]">{t.soldOutLabel}</p>
-              ) : (
-                <p className="mt-2 flex items-baseline justify-center gap-1 text-[#D10005]">
-                  <span className="text-[12px] font-bold">{t.remainingTimeLabel}</span>
-                  <span className="text-[14px] font-extrabold">{t.minUnit(item.endsIn)}</span>
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Caution — collapsible accordion */}
-        <div className="mx-3 mt-3 overflow-hidden rounded-xl border border-[#0F0F0F]/25 bg-[#fffae8]">
-          <button
-            onClick={() => setCautionOpen((v) => !v)}
-            aria-expanded={cautionOpen}
-            className="flex w-full items-center gap-2 px-3 py-2.5 text-left"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M12 3l10 18H2z" fill="#0F0F0F" /><path d="M12 9v5M12 17.5v.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" /></svg>
-            <span className="flex-1 text-[12.5px] font-bold text-[#0F0F0F]">{t.drawCautionTitle}</span>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className={`shrink-0 text-[#0F0F0F] transition-transform ${cautionOpen ? "rotate-180" : ""}`}><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          </button>
-          {cautionOpen && (() => {
-            const word = t.drawCautionTermsWord;
-            const idx = t.drawCaution.indexOf(word);
-            const link = (
-              <button
-                onClick={() => openLegal("terms")}
-                className="font-bold text-[#0F0F0F] underline decoration-[#0F0F0F] underline-offset-2"
-              >
-                {word}
-              </button>
-            );
-            return (
-              <p className="border-t border-[#0F0F0F]/20 px-3 py-2.5 text-[11px] leading-relaxed text-[#0F0F0F]">
-                {idx < 0 ? (
-                  t.drawCaution
-                ) : (
-                  <>
-                    {t.drawCaution.slice(0, idx)}
-                    {link}
-                    {t.drawCaution.slice(idx + word.length)}
-                  </>
-                )}
-              </p>
-            );
-          })()}
-        </div>
-
-        {/* Prize line-up */}
-        <div className="px-3 pb-5">
-          <DrawTierLabel tier={1} alt={t.drawTier1} />
-          <div className="grid grid-cols-2 gap-3">
-            <DrawTierCard rarity="UR" large />
-            <DrawTierCard rarity="UR" large />
-          </div>
-
-          <DrawTierLabel tier={2} alt={t.drawTier2} />
-          <div className="grid grid-cols-3 gap-2.5">
-            {Array.from({ length: 6 }).map((_, i) => <DrawTierCard key={`sr${i}`} rarity="SR" />)}
-          </div>
-
-          <DrawTierLabel tier={3} alt={t.drawTier3} />
-          <div className="grid grid-cols-3 gap-2.5">
-            {Array.from({ length: 6 }).map((_, i) => <DrawTierCard key={`n${i}`} rarity="N" />)}
-          </div>
-
-          {/* Prize handling notes (damaged cards, graded cards, unopened items, images) */}
-          <div className="mt-5 space-y-3.5 rounded-xl bg-white px-4 py-4 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
-            {t.drawPrizeNotes.map((n, i) => (
-              <div key={i}>
-                <h4 className="text-[13px] font-bold text-[#0F0F0F]">{n.title}</h4>
-                <p className="mt-1 text-[11.5px] leading-relaxed text-[#5b616b]">{n.body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <SiteFooter t={t} />
-      </div>
-
-      {/* Sticky draw CTA — pinned just above the bottom navigation. Hidden
-          entirely once sold out: the only remaining action is the back button. */}
-      {!soldOut && (
-        <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2.5 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
-          <div className="flex gap-2">
-            {drawCta === "all" && (
-              <>
-                <button onClick={() => draw(1)} className={`flex-1 ${ctaOutline}`}>
-                  {t.drawDraw1}
-                </button>
-                <button onClick={() => draw(10)} className={`flex-1 ${ctaPrimary}`}>
-                  {t.drawDrawTen}
-                </button>
-                <button onClick={openCustom} className={`flex-1 whitespace-nowrap ${ctaPrimary}`}>
-                  {t.drawDrawCustom}
-                </button>
-              </>
-            )}
-            {drawCta === "one" && (
-              <button onClick={() => draw(1)} className={`flex-1 ${ctaPrimary}`}>{t.drawDraw1}</button>
-            )}
-            {drawCta === "free" && (
-              <button onClick={() => draw(1, true)} className={`flex-1 ${ctaOutline}`}>{t.btnFree}</button>
-            )}
-            {drawCta === "freePending" && (
-              <button onClick={() => setLineVerify(true)} className={`flex-1 ${ctaBase} bg-[#01B901] text-white`}>{t.btnLineLink}</button>
-            )}
-            {drawCta === "trial" && (
-              <>
-                {/* "Free Trial" tag straddles the top edge of the free-draws CTA */}
-                <div className="relative flex-1">
-                  <img
-                    src="/cta/free-trial-tag.png"
-                    alt={t.btnFreeTrial}
-                    width={222}
-                    height={32}
-                    draggable={false}
-                    className="absolute -top-2 left-1/2 z-[1] h-4 w-[111px] max-w-none -translate-x-1/2 select-none"
-                  />
-                  <button onClick={() => draw(10, true)} className={`w-full ${ctaOutline}`}>{t.btnFree10}</button>
-                </div>
-                <button onClick={() => draw(1)} className={`flex-1 ${ctaPrimary}`}>{t.drawDraw1}</button>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
+    <>
       {/* Draw-confirmation popup */}
       {confirmCount != null && (
         <div
@@ -1844,7 +1715,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
         <div
           className="animate-popup-backdrop absolute inset-0 z-[65] flex items-center justify-center p-4"
           style={{ background: "rgba(20,8,4,0.62)" }}
-          onClick={() => { setSoldOutPopup(false); setSoldOutHit(true); }}
+          onClick={() => { setSoldOutPopup(false); onSoldOut?.(); }}
           role="dialog"
           aria-modal="true"
         >
@@ -1859,7 +1730,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
             <h3 className="mt-4 text-[12px] font-medium text-[#1d2129]">{t.soldOutTitle}</h3>
             <p className="mx-auto mt-2 max-w-[280px] text-[12px] font-medium leading-relaxed text-[#6b7075]">{t.soldOutBody}</p>
             <button
-              onClick={() => { setSoldOutPopup(false); setSoldOutHit(true); }}
+              onClick={() => { setSoldOutPopup(false); onSoldOut?.(); }}
               className="mt-5 w-full rounded-[14px] border-[1.5px] border-[#b5b8bd] bg-white py-3.5 text-[15px] font-bold text-[#6b7075] active:scale-[0.98]"
             >
               {t.drawLimitClose}
@@ -1984,6 +1855,195 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
           onShippingAddressesChange={onShippingAddressesChange}
         />
       )}
+    </>
+  );
+}
+
+// The pack page: artwork, price / stock, prize line-up and the sticky CTA row.
+// Drawing itself is delegated to DrawFlow, the same flow a lobby card opens.
+function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, onOpenDraw, onAttemptPaidDraw, pendingRunDraw, onPendingRunDrawConsumed }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; onOpenDraw?: (item: OripaItem) => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** After Quick Purchase success, host requests this count to run. */ pendingRunDraw?: { count: number; token: number } | null; onPendingRunDrawConsumed?: () => void }) {
+  const t = STR[lang];
+  const openLegal = useContext(LegalNavContext);
+  const [cautionOpen, setCautionOpen] = useState(false);
+  // What the tapped CTA asked the flow to open.
+  const [request, setRequest] = useState<DrawRequest | null>(null);
+  const requestDraw = (req: Omit<DrawRequest, "token">) => setRequest({ ...req, token: Date.now() });
+  // A failed draw on an expired pack latches the greyed-out sold-out state;
+  // `item.expired` packs open that way to begin with.
+  const [soldOutHit, setSoldOutHit] = useState(false);
+  const soldOut = item.remaining <= 0 || soldOutHit || !!item.expired;
+  // Only this many draws remain in the insufficient-stock scenario.
+  const remainingShown = soldOut ? 0 : (drawScenario === "stock" ? 8 : item.remaining);
+  const pct = soldOut ? 0 : Math.round((remainingShown / item.total) * 100);
+
+  return (
+    <div className="relative flex h-full flex-col bg-[#eef0f3]">
+      <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
+
+      {/* Warm the confirmation banner while the pack page is open so the popup
+          never animates in around an empty banner slot. */}
+      <link rel="preload" as="image" href="/draw-banner-modal.webp" />
+
+      {/* Title row */}
+      <div className="shrink-0 flex items-center gap-2 border-b border-black/10 bg-white px-3 py-2.5">
+        <button onClick={onBack} aria-label={t.backAria} className="flex h-8 w-8 items-center justify-center text-[#D10005] hover:bg-black/5">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 12H4M10 6l-6 6 6 6" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </button>
+        <h2 className="truncate text-[17px] font-bold text-[#1d2129]">{locTitle(item, lang)}</h2>
+      </div>
+
+      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto bg-[#eef0f3]">
+        {/* ── Promotional banner ─────────────────────────────────────────
+            Fiery radial burst + ray sweep, gold 3D headline, "new-only"
+            ribbon, tagline, mascot and a countdown chip. */}
+        {/* Tags — sit above the banner, as on the lobby card */}
+        <div className="flex flex-wrap items-center gap-1.5 px-3.5 pb-1.5 pt-2.5">
+          <TagPill variant="redOutline">{t.tagPopular}</TagPill>
+          <TagPill variant="redFill">{t.tagPokemon}</TagPill>
+          <TagPill variant="darkOutline">{t.tagLv5}</TagPill>
+          <TagPill variant="darkOutline">{t.tagSsr}</TagPill>
+        </div>
+
+        <div className="px-3">
+          {/* Design creative (fiery burst headline + mascot + baked-in sales
+              period bar). Sold-out packs are desaturated. The remaining-time
+              detail is shown in the price/remaining section below, so no
+              separate period box is rendered here. */}
+          <div className={soldOut ? "grayscale" : ""}>
+            <PackBanner src="/draw-banner.webp" alt={t.drawPackSubtitle} width={748} height={613} priority />
+          </div>
+        </div>
+
+        {/* Cost + remaining — two columns split by a dashed divider: price per
+            draw on the left, stock/countdown on the right (per design). */}
+        <div className="mx-3 mt-2 rounded-2xl bg-white px-4 py-3 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+          <div className="flex items-stretch gap-4">
+            {/* Left: price per draw (coin + optional free point), red-underlined */}
+            <div className="flex items-center">
+              <PriceStack t={t} showPoint={multiCurrency} />
+            </div>
+
+            {/* Dashed vertical divider */}
+            <div className="w-px shrink-0 self-stretch border-l border-dashed border-black/25" />
+
+            {/* Right: remaining count, progress bar, remaining time */}
+            <div className="flex min-w-0 flex-1 flex-col justify-center">
+              <div className="flex items-baseline justify-center gap-1">
+                <span className={`text-[13px] font-bold ${soldOut ? "text-[#D10005]" : "text-[#1d2129]"}`}>{t.remainingLabel}</span>
+                <span className="leading-none"><span className={`text-[20px] font-extrabold ${soldOut ? "text-[#D10005]" : "text-[#1d2129]"}`}>{remainingShown}</span><span className="text-[12px] font-bold text-[#8a9099]">/{item.total}</span></span>
+              </div>
+              <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-black/[0.08]"><span className="block h-full rounded-full bg-[#D10005]" style={{ width: `${pct}%` }} /></div>
+              {soldOut ? (
+                <p className="mt-2 text-center text-[15px] font-extrabold text-[#D10005]">{t.soldOutLabel}</p>
+              ) : (
+                <p className="mt-2 flex items-baseline justify-center gap-1 text-[#D10005]">
+                  <span className="text-[12px] font-bold">{t.remainingTimeLabel}</span>
+                  <span className="text-[14px] font-extrabold">{t.minUnit(item.endsIn)}</span>
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Caution — collapsible accordion */}
+        <div className="mx-3 mt-3 overflow-hidden rounded-xl border border-[#0F0F0F]/25 bg-[#fffae8]">
+          <button
+            onClick={() => setCautionOpen((v) => !v)}
+            aria-expanded={cautionOpen}
+            className="flex w-full items-center gap-2 px-3 py-2.5 text-left"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M12 3l10 18H2z" fill="#0F0F0F" /><path d="M12 9v5M12 17.5v.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" /></svg>
+            <span className="flex-1 text-[12.5px] font-bold text-[#0F0F0F]">{t.drawCautionTitle}</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className={`shrink-0 text-[#0F0F0F] transition-transform ${cautionOpen ? "rotate-180" : ""}`}><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </button>
+          {cautionOpen && (() => {
+            const word = t.drawCautionTermsWord;
+            const idx = t.drawCaution.indexOf(word);
+            const link = (
+              <button
+                onClick={() => openLegal("terms")}
+                className="font-bold text-[#0F0F0F] underline decoration-[#0F0F0F] underline-offset-2"
+              >
+                {word}
+              </button>
+            );
+            return (
+              <p className="border-t border-[#0F0F0F]/20 px-3 py-2.5 text-[11px] leading-relaxed text-[#0F0F0F]">
+                {idx < 0 ? (
+                  t.drawCaution
+                ) : (
+                  <>
+                    {t.drawCaution.slice(0, idx)}
+                    {link}
+                    {t.drawCaution.slice(idx + word.length)}
+                  </>
+                )}
+              </p>
+            );
+          })()}
+        </div>
+
+        {/* Prize line-up */}
+        <div className="px-3 pb-5">
+          <DrawTierLabel tier={1} alt={t.drawTier1} />
+          <div className="grid grid-cols-2 gap-3">
+            <DrawTierCard rarity="UR" large />
+            <DrawTierCard rarity="UR" large />
+          </div>
+
+          <DrawTierLabel tier={2} alt={t.drawTier2} />
+          <div className="grid grid-cols-3 gap-2.5">
+            {Array.from({ length: 6 }).map((_, i) => <DrawTierCard key={`sr${i}`} rarity="SR" />)}
+          </div>
+
+          <DrawTierLabel tier={3} alt={t.drawTier3} />
+          <div className="grid grid-cols-3 gap-2.5">
+            {Array.from({ length: 6 }).map((_, i) => <DrawTierCard key={`n${i}`} rarity="N" />)}
+          </div>
+
+          {/* Prize handling notes (damaged cards, graded cards, unopened items, images) */}
+          <div className="mt-5 space-y-3.5 rounded-xl bg-white px-4 py-4 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+            {t.drawPrizeNotes.map((n, i) => (
+              <div key={i}>
+                <h4 className="text-[13px] font-bold text-[#0F0F0F]">{n.title}</h4>
+                <p className="mt-1 text-[11.5px] leading-relaxed text-[#5b616b]">{n.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <SiteFooter t={t} />
+      </div>
+
+      {/* Sticky draw CTA — pinned just above the bottom navigation. Hidden
+          entirely once sold out: the only remaining action is the back button. */}
+      {!soldOut && (
+        <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2.5 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
+          <DrawCtaRow variant={item.cta ?? "all"} t={t} onRequest={requestDraw} />
+        </div>
+      )}
+
+      <DrawFlow
+        lang={lang}
+        item={item}
+        coins={coins}
+        request={request}
+        soldOut={soldOut}
+        onSoldOut={() => setSoldOutHit(true)}
+        freeShipAvailable={freeShipAvailable}
+        onResultsChange={onResultsChange}
+        shippingAddresses={shippingAddresses}
+        onShippingAddressesChange={onShippingAddressesChange}
+        dailyLimitReached={dailyLimitReached}
+        drawScenario={drawScenario}
+        multiCurrency={multiCurrency}
+        onHome={onHome}
+        onOpenStore={onOpenStore}
+        onOpenDraw={onOpenDraw}
+        onAttemptPaidDraw={onAttemptPaidDraw}
+        pendingRunDraw={pendingRunDraw}
+        onPendingRunDrawConsumed={onPendingRunDrawConsumed}
+      />
     </div>
   );
 }
@@ -5232,8 +5292,8 @@ function StorePage({
   );
 }
 
-export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, drawCta = "all", onDrawEntryChange }: {
-  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; drawCta?: DrawCta; onDrawEntryChange?: (entry: DrawEntry) => void;
+export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off", multiCurrency = true }: {
+  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean;
 }) {
   const t = STR[lang];
   const [screen, setScreen] = useState<Screen>("landing");
@@ -5392,7 +5452,9 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   };
   const toggleLobbyFilter = (k: string) => setLobbyFilters((f) => { const n = { ...f }; if (n[k]) delete n[k]; else n[k] = true; return n; });
   const clearLobbyFilters = () => { setLobbyQuery(""); setLobbyFilters({}); setLobbyPriceMin(0); setLobbyPriceMax(PRICE_MAX); };
-  const goHome = () => setScreen("oripa");
+  // Returning to the lobby also ends any draw played out over it, so the
+  // results screen can't outlive the tap that leaves it.
+  const goHome = () => { setLobbyDraw(null); setScreen("oripa"); };
   // Tapping the logo is a fresh start: it drops the selected category, the search
   // text and any applied filters, and returns to the top of the lobby — what a
   // user sees right after logging in. Bumping the key remounts the lobby, which
@@ -5403,6 +5465,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
     clearLobbyFilters();
     homeScroll.current = 0;
     setHomeKey((k) => k + 1);
+    setLobbyDraw(null);
     setScreen("oripa");
   };
   // PROD: login/sign-up land straight on the lobby (no onboarding flow).
@@ -5456,9 +5519,12 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   // Draw screen (gacha pack detail) opens when a lobby pack's Draw / View is
   // tapped; back returns to the lobby.
   const [drawItem, setDrawItem] = useState<OripaItem | null>(null);
-  // Report which lobby CTA opened the draw screen so the dev harness can offer
-  // the CTA variants that belong to that entry point.
-  const openDraw = (item: OripaItem, entry: DrawEntry = "paid") => { setDrawItem(item); onDrawEntryChange?.(entry); setScreen("drawDetail"); };
+  const openDraw = (item: OripaItem) => { setDrawItem(item); setScreen("drawDetail"); };
+  // A lobby card's CTA draws without leaving the lobby: the pack and the
+  // requested draw are held here and handed to a DrawFlow mounted over the feed.
+  const [lobbyDraw, setLobbyDraw] = useState<{ item: OripaItem; request: DrawRequest } | null>(null);
+  const requestLobbyDraw = (item: OripaItem, req: Omit<DrawRequest, "token">) =>
+    setLobbyDraw({ item, request: { ...req, token: Date.now() } });
   // Legal document reader (Terms / Privacy / SCTA), rendered at the app root so
   // it overlays correctly no matter where it's triggered (footer, My Account).
   const [legalDoc, setLegalDoc] = useState<LegalDocKey | null>(null);
@@ -5499,7 +5565,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
           />
         )}
         {/* Logged-in lobby — V2 format */}
-        {screen === "oripa" && <OripaHome key={homeKey} lang={lang} coins={coins} onHome={resetHome} onOpenStore={openStore} onOpenDraw={openDraw} scrollRef={homeScroll} query={lobbyQuery} filters={lobbyFilters} priceMin={lobbyPriceMin} priceMax={lobbyPriceMax} onApply={applyLobby} onToggleApplied={toggleLobbyFilter} onClearAll={clearLobbyFilters} />}
+        {screen === "oripa" && <OripaHome key={homeKey} lang={lang} coins={coins} onHome={resetHome} onOpenStore={openStore} onOpenDraw={openDraw} onRequestDraw={requestLobbyDraw} scrollRef={homeScroll} query={lobbyQuery} filters={lobbyFilters} priceMin={lobbyPriceMin} priceMax={lobbyPriceMax} onApply={applyLobby} onToggleApplied={toggleLobbyFilter} onClearAll={clearLobbyFilters} />}
         {screen === "drawDetail" && drawItem && (
           <DrawDetail
             key={drawItem.id}
@@ -5514,7 +5580,6 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             dailyLimitReached={dailyLimitReached}
             drawScenario={drawScenario}
             multiCurrency={multiCurrency}
-            drawCta={drawCta}
             onResultsChange={onDrawResultsChange}
             shippingAddresses={shippingAddresses}
             onShippingAddressesChange={setShippingAddresses}
@@ -5674,6 +5739,30 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
               setPendingRunDraw({ count: pending.drawCount, token: Date.now() });
             }}
             onRequireKyc={() => requestKyc("purchase")}
+          />
+        )}
+        {/* Draws started from a lobby card play out over the feed — the pack
+            page is only reached by tapping a card's artwork. */}
+        {screen === "oripa" && lobbyDraw && (
+          <DrawFlow
+            key={lobbyDraw.item.id}
+            lang={lang}
+            item={lobbyDraw.item}
+            coins={coins}
+            request={lobbyDraw.request}
+            freeShipAvailable={freeShipAvailable}
+            onResultsChange={onDrawResultsChange}
+            shippingAddresses={shippingAddresses}
+            onShippingAddressesChange={setShippingAddresses}
+            dailyLimitReached={dailyLimitReached}
+            drawScenario={drawScenario}
+            multiCurrency={multiCurrency}
+            onHome={resetHome}
+            onOpenStore={openStore}
+            onOpenDraw={openDraw}
+            onAttemptPaidDraw={attemptDraw}
+            pendingRunDraw={pendingRunDraw}
+            onPendingRunDrawConsumed={() => setPendingRunDraw(null)}
           />
         )}
         {legalDoc && <LegalOverlay lang={lang} doc={legalDoc} onClose={() => setLegalDoc(null)} />}

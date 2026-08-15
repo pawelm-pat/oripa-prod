@@ -5,10 +5,14 @@ import type { Category, HomeSection, OripaItem } from "../lib/types";
 
 export const CATEGORIES: Category[] = ["pokemon", "onepiece", "baseball", "football"];
 
+// `cta` picks which draw buttons a pack offers; the examples are spread across
+// the top of the feed so every variant is reachable without scrolling far:
+// r1 the full row, r3 a single draw, n1 a free draw, n2 the free trial pair and
+// ja1 the LINE link prompt.
 export const RECOMMENDED_ORIPA: OripaItem[] = [
-  { id: "r1", gem: true, free: false, remaining: 700, total: 1000, endsIn: 30, image: "/oripa-banner-1.png", title: "Pokémon 151 Special Oripa", titleJa: "ポケモン151スペシャルオリパ" },
+  { id: "r1", gem: true, free: false, remaining: 700, total: 1000, endsIn: 30, cta: "all", image: "/oripa-banner-1.png", title: "Pokémon 151 Special Oripa", titleJa: "ポケモン151スペシャルオリパ" },
   { id: "r2", gem: false, free: true, remaining: 0, total: 1000, endsIn: 12, expired: true, image: "/oripa-banner-2.png", title: "One Piece Premium Oripa", titleJa: "ワンピース プレミアムオリパ" },
-  { id: "r3", gem: false, free: true, remaining: 880, total: 1000, endsIn: 58, image: "/oripa-banner-3.png", title: "Weiss Schwarz Lucky Draw", titleJa: "ヴァイスシュヴァルツ ラッキードロー" },
+  { id: "r3", gem: false, free: true, remaining: 880, total: 1000, endsIn: 58, cta: "one", image: "/oripa-banner-3.png", title: "Weiss Schwarz Lucky Draw", titleJa: "ヴァイスシュヴァルツ ラッキードロー" },
 ];
 
 export const LIST_ORIPA: OripaItem[] = [
@@ -27,11 +31,11 @@ export const HOME_SECTIONS: HomeSection[] = [
     // Expired example — surfaced below the recommended band; card shows the
     // greyed-out "期限切れ / Expired" state and opens the disabled draw view.
     { id: "n0", gem: false, free: false, remaining: 0, total: 1000, endsIn: 0, expired: true, image: "/oripa-banner-1.png", title: "Start Dash Pack", titleJa: "スタートダッシュパック" },
-    { id: "n1", gem: false, free: true, remaining: 940, total: 1000, endsIn: 71, image: "/oripa-banner-2.png", title: "Pokémon VSTAR New Arrival", titleJa: "ポケモン VSTAR 新着オリパ" },
-    { id: "n2", gem: true, free: false, remaining: 610, total: 1000, endsIn: 33, image: "/oripa-list-3.png", title: "Yu-Gi-Oh! Fresh Pack", titleJa: "遊戯王 フレッシュパック" },
+    { id: "n1", gem: false, free: true, remaining: 940, total: 1000, endsIn: 71, cta: "free", image: "/oripa-banner-2.png", title: "Pokémon VSTAR New Arrival", titleJa: "ポケモン VSTAR 新着オリパ" },
+    { id: "n2", gem: true, free: false, remaining: 610, total: 1000, endsIn: 33, cta: "trial", image: "/oripa-list-3.png", title: "Yu-Gi-Oh! Fresh Pack", titleJa: "遊戯王 フレッシュパック" },
   ] },
   { id: "justadded", titleKey: "secJustAdded", icon: "new", variant: "light", cats: ["new"], items: [
-    { id: "ja1", gem: false, free: true, remaining: 990, total: 1000, endsIn: 90, image: "/oripa-list-2.png", title: "Dragon Ball Just Added", titleJa: "ドラゴンボール 新登場オリパ" },
+    { id: "ja1", gem: false, free: true, remaining: 990, total: 1000, endsIn: 90, cta: "freePending", image: "/oripa-list-2.png", title: "Dragon Ball Just Added", titleJa: "ドラゴンボール 新登場オリパ" },
     { id: "ja2", gem: true, free: false, remaining: 870, total: 1000, endsIn: 55, image: "/oripa-banner-3.png", title: "Magic: The Gathering Newcomer", titleJa: "マジック・ザ・ギャザリング 新着" },
   ] },
 
