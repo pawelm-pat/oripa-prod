@@ -731,12 +731,12 @@ function PriceRangeFilter({ label, min, max, onMin, onMax }: { label: string; mi
         className="relative mx-2.5 mt-4 h-5 cursor-pointer"
         style={{ touchAction: "none" }}
       >
-        <div className="pointer-events-none absolute inset-x-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-[#e3e6ea]" />
-        <div className="pointer-events-none absolute top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-[#D10005]" style={{ left: `${minPct}%`, right: `${100 - maxPct}%` }} />
+        <div className="pointer-events-none absolute inset-x-0 top-1/2 h-[6px] -translate-y-1/2 rounded-full bg-[#e3e6ea]" />
+        <div className="pointer-events-none absolute top-1/2 h-[6px] -translate-y-1/2 rounded-full bg-[#D10005]" style={{ left: `${minPct}%`, right: `${100 - maxPct}%` }} />
         <span className="pointer-events-none absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#D10005] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.3)]" style={{ left: `${minPct}%` }} />
         <span className="pointer-events-none absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#D10005] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.3)]" style={{ left: `${maxPct}%` }} />
       </div>
-      <div className="mx-2.5 mt-1.5 flex justify-between text-[13px] font-normal text-[#8a9099]">
+      <div className="mx-2.5 mt-1.5 flex justify-between text-[13px] font-normal text-[#0F0F0F]">
         {ticks.map(([lbl, val]) => (
           <button key={lbl} type="button" onClick={() => clickTick(val)} className="-mx-0.5 cursor-pointer px-0.5 leading-none active:text-[#D10005]">{lbl}</button>
         ))}
