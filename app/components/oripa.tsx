@@ -263,7 +263,9 @@ function OripaCard({ item, t, onView, onDraw }: { item: OripaItem; t: Dict; onVi
       <div className="mt-2.5 bg-[#1d1d1d] px-3 py-1 text-center text-[11px] font-bold text-white">{t.periodLabel("2026/01/01")}</div>
       <div className="flex items-stretch px-3 py-2.5">
         <div className="flex flex-col justify-center gap-1.5 border-r border-dashed border-black/20 pr-3">
-          <span className="flex items-center gap-1.5"><CoinIcon size={20} />{price}</span>
+          {/* Design sizes the coin a little larger than the point mark, which is
+              wider than it is tall. */}
+          <span className="flex items-center gap-1.5"><CoinIcon size={24} />{price}</span>
           {item.gem && <span className="flex items-center gap-1.5"><GemIcon size={20} />{price}</span>}
         </div>
         <div className="flex flex-1 flex-col justify-center gap-1 pl-3">
@@ -1517,16 +1519,16 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
           <div className="flex items-stretch gap-4">
             {/* Left: price per draw (coin + optional free point), red-underlined */}
             <div className="flex shrink-0 flex-col justify-center gap-2.5">
-              <span className="flex items-center gap-2">
-                <CoinIcon size={22} />
+              <span className="flex items-center gap-1.5">
+                <CoinIcon size={24} />
                 <span className="flex items-baseline border-b-2 border-[#D10005] pb-[3px]">
                   <span className="text-[18px] font-extrabold leading-none text-[#1d2129]">{DRAW_PRICE.toLocaleString()}</span>
                   <PerDrawMark height={12} alt={t.perDraw} />
                 </span>
               </span>
               {multiCurrency && (
-                <span className="flex items-center gap-2">
-                  <GemIcon size={22} />
+                <span className="flex items-center gap-1.5">
+                  <GemIcon size={20} />
                   <span className="flex items-baseline border-b-2 border-[#D10005] pb-[3px]">
                     <span className="text-[18px] font-extrabold leading-none text-[#1d2129]">{DRAW_PRICE.toLocaleString()}</span>
                     <PerDrawMark height={12} alt={t.perDraw} />
