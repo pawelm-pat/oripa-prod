@@ -210,16 +210,34 @@ function TagPill({ children, variant }: { children: React.ReactNode; variant: "r
   return <span className={`whitespace-nowrap rounded-full px-2 py-[1px] text-[10px] font-bold ${cls}`}>{children}</span>;
 }
 
+// The "per draw" suffix beside a price is a design asset rather than text. It
+// sits on the price's baseline at ~95% of its cap height, per the design.
+function PerDrawMark({ height, alt }: { height: number; alt: string }) {
+  return (
+    <img
+      src="/per-draw.png"
+      alt={alt}
+      width={57}
+      height={30}
+      draggable={false}
+      className="ml-[1.5px] w-auto shrink-0 select-none"
+      style={{ height, WebkitUserDrag: "none" } as React.CSSProperties}
+    />
+  );
+}
+
 function OripaCard({ item, t, onView, onDraw }: { item: OripaItem; t: Dict; onView?: () => void; onDraw?: (count: number, free?: boolean) => void }) {
   const pct = Math.round((item.remaining / item.total) * 100);
   // Expired / sold-out packs: greyed artwork, an "期限切れ / Expired" label in
   // place of the stock+countdown, and no Draw CTAs (the card still opens the
   // greyed-out draw view on tap). See DRAW-5 / DRAW-4 in the product spec.
   const expired = !!item.expired || item.remaining <= 0;
+  // The red rule runs under the price and the mark together, so it's a border on
+  // the wrapper — an underline wouldn't carry across the image.
   const price = (
-    <span className="flex items-baseline">
-      <span className="text-[15px] font-extrabold text-[#1d2129] underline decoration-[#D10005] decoration-2 underline-offset-2">1,000</span>
-      <span className="text-[11px] font-bold text-[#8a9099]">{t.perDraw}</span>
+    <span className="flex items-baseline border-b-2 border-[#D10005] pb-[2px]">
+      <span className="text-[15px] font-extrabold leading-none text-[#1d2129]">1,000</span>
+      <PerDrawMark height={10} alt={t.perDraw} />
     </span>
   );
   return (
@@ -1501,12 +1519,18 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
             <div className="flex shrink-0 flex-col justify-center gap-2.5">
               <span className="flex items-center gap-2">
                 <CoinIcon size={22} />
-                <span className="text-[18px] font-extrabold leading-none text-[#1d2129] underline decoration-[#D10005] decoration-2 underline-offset-[3px]">{DRAW_PRICE.toLocaleString()}<span className="text-[11px] font-bold text-[#8a9099]">{t.perDraw}</span></span>
+                <span className="flex items-baseline border-b-2 border-[#D10005] pb-[3px]">
+                  <span className="text-[18px] font-extrabold leading-none text-[#1d2129]">{DRAW_PRICE.toLocaleString()}</span>
+                  <PerDrawMark height={12} alt={t.perDraw} />
+                </span>
               </span>
               {multiCurrency && (
                 <span className="flex items-center gap-2">
                   <GemIcon size={22} />
-                  <span className="text-[18px] font-extrabold leading-none text-[#1d2129] underline decoration-[#D10005] decoration-2 underline-offset-[3px]">{DRAW_PRICE.toLocaleString()}<span className="text-[11px] font-bold text-[#8a9099]">{t.perDraw}</span></span>
+                  <span className="flex items-baseline border-b-2 border-[#D10005] pb-[3px]">
+                    <span className="text-[18px] font-extrabold leading-none text-[#1d2129]">{DRAW_PRICE.toLocaleString()}</span>
+                    <PerDrawMark height={12} alt={t.perDraw} />
+                  </span>
                 </span>
               )}
             </div>
