@@ -103,7 +103,7 @@ export type DrawEntry = "paid" | "free";
 //   freePending -> either: green "LINE account link required" prompt
 export type DrawCta = "all" | "one" | "free" | "freePending" | "trial";
 
-export type SectionIconKey = "new" | "popular" | "pokemon" | "limited" | "cards";
+export type SectionIconKey = "new" | "popular" | "pokemon" | "limited" | "other";
 
 export type HomeSection = {
   id: string;

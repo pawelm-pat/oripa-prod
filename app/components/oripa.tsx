@@ -193,10 +193,11 @@ function BalancePill({ coins, t, onOpenStore }: { coins: number; t: Dict; onOpen
   );
 }
 
+// Section headings reuse the category glyphs, so a section always carries the
+// same mark as the category it belongs to.
 function sectionIcon(icon: SectionIconKey, red: boolean) {
-  const c = red ? "#fff" : "#1d2129";
-  if (icon === "cards") return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinejoin="round"><rect x="4.5" y="5" width="9" height="13" rx="1.4" transform="rotate(-10 9 11.5)" /><rect x="10" y="5" width="9" height="13" rx="1.4" transform="rotate(8 14.5 11.5)" /></svg>;
-  return catIcon(icon, c);
+  // Matches the heading text it sits beside rather than the category bar's ink.
+  return catIcon(icon, red ? "#fff" : "#1d2129");
 }
 
 function TagPill({ children, variant }: { children: React.ReactNode; variant: "redOutline" | "redFill" | "darkOutline" }) {

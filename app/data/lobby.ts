@@ -66,11 +66,11 @@ export const HOME_SECTIONS: HomeSection[] = [
   ] },
 
   // Other
-  { id: "oth", titleKey: "secOther", icon: "cards", variant: "light", cats: ["other"], items: [
+  { id: "oth", titleKey: "secOther", icon: "other", variant: "light", cats: ["other"], items: [
     { id: "o1", gem: false, free: true, remaining: 720, total: 1000, endsIn: 51, image: "/oripa-list-1.png", title: "Sports Cards Oripa", titleJa: "スポーツカード オリパ" },
     { id: "o2", gem: false, free: true, remaining: 905, total: 1000, endsIn: 62, image: "/oripa-banner-2.png", title: "Baseball Legends Draw", titleJa: "ベースボール レジェンド ドロー" },
   ] },
-  { id: "list", titleKey: "secList", icon: "cards", variant: "light", cats: ["other"], items: LIST_ORIPA },
+  { id: "list", titleKey: "secList", icon: "other", variant: "light", cats: ["other"], items: LIST_ORIPA },
 ];
 
 export const ALL_ORIPA: OripaItem[] = (() => {
