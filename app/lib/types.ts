@@ -83,6 +83,9 @@ export type OripaItem = {
   // Permanently sold-out / expired pack: the draw screen opens greyed out with
   // no draw CTAs (used for a demo example that doesn't need the harness toggle).
   expired?: boolean;
+  // Sold-out pack: same greyed, no-CTA treatment as `expired`, but the card
+  // surfaces the "完売しました / Sold Out" label instead of "期限切れ / Expired".
+  soldOut?: boolean;
   // Which draw CTAs this pack offers, on the lobby card and on its draw screen.
   // Defaults to the full row (Draw ×1 / Draw ×10 / Custom draw).
   cta?: DrawCta;

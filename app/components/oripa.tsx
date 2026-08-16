@@ -257,14 +257,17 @@ function PerDrawMark({ height, alt }: { height: number; alt: string }) {
 
 function OripaCard({ item, t, onView, onRequestDraw }: { item: OripaItem; t: Dict; onView?: () => void; /** A tapped CTA draws in place; only the banner opens the pack page. */ onRequestDraw?: (req: Omit<DrawRequest, "token">) => void }) {
   const pct = Math.round((item.remaining / item.total) * 100);
-  // Expired / sold-out packs: greyed artwork, an "期限切れ / Expired" label in
-  // place of the stock+countdown, and no Draw CTAs (the card still opens the
-  // greyed-out draw view on tap). See DRAW-5 / DRAW-4 in the product spec.
-  const expired = !!item.expired || item.remaining <= 0;
+  // Expired / sold-out packs: greyed artwork, a status label in place of the
+  // stock+countdown, and no Draw CTAs (the card still opens the greyed-out draw
+  // view on tap). See DRAW-5 / DRAW-4 in the product spec. `soldOut` surfaces
+  // "完売しました / Sold Out"; `expired` surfaces "期限切れ / Expired".
+  const soldOut = !!item.soldOut;
+  const expired = !soldOut && (!!item.expired || item.remaining <= 0);
+  const inactive = soldOut || expired;
   return (
     <div
-      className={`overflow-hidden rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.12)] ${expired ? "cursor-pointer" : ""}`}
-      onClick={expired ? onView : undefined}
+      className={`overflow-hidden rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.12)] ${inactive ? "cursor-pointer" : ""}`}
+      onClick={inactive ? onView : undefined}
     >
       <div className="flex flex-wrap items-center gap-1.5 px-2.5 pt-2.5">
         <TagPill variant="redOutline">{t.tagPopular}</TagPill>
@@ -272,23 +275,30 @@ function OripaCard({ item, t, onView, onRequestDraw }: { item: OripaItem; t: Dic
         <TagPill variant="darkOutline">{t.tagLv5}</TagPill>
         <TagPill variant="darkOutline">{t.tagSsr}</TagPill>
       </div>
-      {/* Banner opens the draw detail, same as the Draw / View CTAs. Expired
-          cards let the whole card handle the tap (parent onClick). */}
+      {/* Banner opens the draw detail, same as the Draw / View CTAs. Inactive
+          (sold-out / expired) cards let the whole card handle the tap (parent
+          onClick). Full-bleed: no side or bottom margins — the artwork runs
+          edge-to-edge and sits flush against the period bar below. */}
       <div
-        className={`mx-2.5 mt-2 flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg bg-[#ededf0] ${!expired && onView ? "cursor-pointer" : ""}`}
-        onClick={!expired && onView ? onView : undefined}
+        className={`mt-2 flex aspect-[4/3] items-center justify-center overflow-hidden bg-[#ededf0] ${!inactive && onView ? "cursor-pointer" : ""}`}
+        onClick={!inactive && onView ? onView : undefined}
       >
-        {/* Figma placeholder until final oripa-draw creative is signed off. */}
-        <img src="/placeholder-oripa.png" alt="" className="h-full w-full object-cover" style={expired ? { filter: "grayscale(1)", opacity: 0.6 } : undefined} />
+        {/* Inactive packs carry the design's desaturated creative; active ones
+            keep the Figma placeholder until the final art is signed off. */}
+        <img src={inactive ? "/card-banner-inactive.webp" : "/placeholder-oripa.png"} alt="" className="h-full w-full object-cover" />
       </div>
-      <div className="mt-2.5 bg-[#1d1d1d] px-3 py-1 text-center text-[11px] font-bold text-white">{t.periodLabel("2026/01/01")}</div>
+      {/* A pack that can no longer be drawn has no sales period to announce. */}
+      {!inactive && <div className="bg-[#1d1d1d] px-3 py-1 text-center text-[11px] font-bold text-white">{t.periodLabel("2026/01/01")}</div>}
       <div className="flex items-stretch px-3 py-2.5">
         <div className="flex items-center border-r border-dashed border-black/20 pr-3">
           <PriceStack t={t} showPoint={item.gem} />
         </div>
         <div className="flex flex-1 flex-col justify-center gap-1 pl-3">
-          {expired ? (
-            <span className="text-center text-[18px] font-extrabold tracking-wide text-[#D10005]">{t.expiredLabel}</span>
+          {inactive ? (
+            // Status label sized to the design's node: Hug 120×24, centred.
+            // 20px with no extra tracking makes the six-character Japanese
+            // label hug exactly 120px, as in the export.
+            <span className="mx-auto flex h-[24px] w-[120px] items-center justify-center text-[20px] font-extrabold leading-none text-[#D10005]">{soldOut ? t.soldOutLabel : t.expiredLabel}</span>
           ) : (
             <>
               <p className="flex items-baseline justify-center gap-0.5 leading-none">
@@ -305,7 +315,7 @@ function OripaCard({ item, t, onView, onRequestDraw }: { item: OripaItem; t: Dic
           )}
         </div>
       </div>
-      {!expired && onRequestDraw && (
+      {!inactive && onRequestDraw && (
         <div className="px-3 pb-3">
           <DrawCtaRow variant={item.cta ?? "all"} t={t} onRequest={onRequestDraw} compact />
         </div>
@@ -1868,7 +1878,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
   // A failed draw on an expired pack latches the greyed-out sold-out state;
   // `item.expired` packs open that way to begin with.
   const [soldOutHit, setSoldOutHit] = useState(false);
-  const soldOut = item.remaining <= 0 || soldOutHit || !!item.expired;
+  const soldOut = item.remaining <= 0 || soldOutHit || !!item.expired || !!item.soldOut;
   // Only this many draws remain in the insufficient-stock scenario.
   const remainingShown = soldOut ? 0 : (drawScenario === "stock" ? 8 : item.remaining);
   const pct = soldOut ? 0 : Math.round((remainingShown / item.total) * 100);
