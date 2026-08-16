@@ -297,8 +297,9 @@ function OripaCard({ item, t, onView, onRequestDraw }: { item: OripaItem; t: Dic
         onClick={!inactive && onView ? onView : undefined}
       >
         {/* Inactive packs carry the design's desaturated creative; active ones
-            keep the Figma placeholder until the final art is signed off. */}
-        <img src={inactive ? "/card-banner-inactive.webp" : "/placeholder-oripa.png"} alt="" className="h-full w-full object-cover" />
+            show their own art, falling back to the placeholder where a pack has
+            none yet. */}
+        <img src={inactive ? "/card-banner-inactive.webp" : (item.image ?? "/placeholder-oripa.png")} alt="" className="h-full w-full object-cover" />
       </div>
       {/* A pack that can no longer be drawn has no sales period to announce. */}
       {!inactive && <div className="bg-[#1d1d1d] px-3 py-1 text-center text-[11px] font-bold text-white">{t.periodLabel("2026/01/01")}</div>}

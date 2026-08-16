@@ -10,7 +10,7 @@ export const CATEGORIES: Category[] = ["pokemon", "onepiece", "baseball", "footb
 // r1 the full row, r3 a single draw, n1 a free draw, n2 the free trial pair and
 // ja1 the LINE link prompt.
 export const RECOMMENDED_ORIPA: OripaItem[] = [
-  { id: "r1", gem: true, free: false, remaining: 700, total: 1000, endsIn: 30, cta: "all", image: "/oripa-banner-1.png", title: "Pokémon 151 Special Oripa", titleJa: "ポケモン151スペシャルオリパ" },
+  { id: "r1", gem: true, free: false, remaining: 700, total: 1000, endsIn: 30, cta: "all", image: "/card-banner-startdash.webp", title: "Pokémon 151 Special Oripa", titleJa: "ポケモン151スペシャルオリパ" },
   { id: "r2", gem: false, free: true, remaining: 0, total: 1000, endsIn: 12, expired: true, image: "/oripa-banner-2.png", title: "One Piece Premium Oripa", titleJa: "ワンピース プレミアムオリパ" },
   { id: "r3", gem: false, free: true, remaining: 880, total: 1000, endsIn: 58, cta: "one", image: "/oripa-banner-3.png", title: "Weiss Schwarz Lucky Draw", titleJa: "ヴァイスシュヴァルツ ラッキードロー" },
 ];
