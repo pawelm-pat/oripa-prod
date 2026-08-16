@@ -183,10 +183,12 @@ function BalancePill({ coins, t, onOpenStore }: { coins: number; t: Dict; onOpen
             <GemIcon size={20} /> 10,000
           </span>
         </button>
+        {/* 24px badge (the mark ships as a 36px export of a 24px node),
+            straddling the pill's right edge. */}
         <button
           onClick={onOpenStore}
           aria-label={t.addCoinsAria}
-          className="absolute right-0 top-1/2 flex h-[22px] w-[22px] -translate-y-1/2 translate-x-1/2 items-center justify-center transition active:scale-[0.95]"
+          className="absolute right-0 top-1/2 flex h-6 w-6 -translate-y-1/2 translate-x-1/2 items-center justify-center transition active:scale-[0.95]"
         >
           <img src="/plus-sign.png" alt="" className="h-full w-full object-contain" draggable={false} />
         </button>
@@ -587,11 +589,10 @@ function AppHeader({ coins, t, onHome, onOpenStore }: { coins: number; t: Dict; 
 
 /* ── Lobby navigation (V2) ───────────────────────────────────────────────
    Competitor-style browse: a category chip bar + "Narrow down" / sort toolbar
-   over a sectioned feed (each lane has a "See all" jump). A bottom sheet holds
-   search + quick filters. All filtering / sorting is client-side (POC data). */
+   over a sectioned feed. A bottom sheet holds search + quick filters. All
+   filtering / sorting is client-side (POC data). */
 const LOBBY_NAV_STR = {
   en: {
-    seeAll: "See all",
     empty: "No packs match your search.",
     narrowDown: "Narrow down",
     searchPlaceholder: "Search for original packs (e.g., Pikachu, Charizard)",
@@ -610,7 +611,6 @@ const LOBBY_NAV_STR = {
     quickOpts: [["popular", "Most popular"], ["newarrivals", "New Arrivals"], ["fewleft", "Only a few left"], ["psa10", "PSA10 confirmed"], ["guarantee60", "High return"], ["pokemon", "Pokémon"], ["onepiece", "One Piece"], ["box", "BOX"]] as [string, string][],
   },
   ja: {
-    seeAll: "すべて見る",
     empty: "一致するオリパがありません。",
     narrowDown: "絞り込み",
     searchPlaceholder: "オリパを検索（例：ピカチュウ、リザードン）",
@@ -1010,7 +1010,6 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
       <div>
         {HOME_SECTIONS.map((s, i) => {
           const title = (t as unknown as Record<string, string>)[s.titleKey];
-          const seeAllCat = s.cats[0];
           // No divider directly after the red recommended block (the promo
           // banners already separate it from the following section).
           const afterRed = i > 0 && HOME_SECTIONS[i - 1].variant === "red";
@@ -1023,10 +1022,9 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
                 <div className="bg-[#FEFEFE]">
                   <img src="/home-divider-top.png" alt="" className="-mb-px block w-full" />
                 </div>
-                <section className="bg-[#D10005] px-3.5 pb-6 pt-4">
+                <section className="bg-[#B40206] px-3.5 pb-6 pt-4">
                   <div className="mb-3 flex items-center justify-between">
                     <h3 className="flex items-center gap-1.5 text-[15px] font-extrabold text-white">{sparkle}{title}</h3>
-                    {seeAllCat && <button onClick={() => setCat(seeAllCat)} className="text-[12px] font-bold text-white/90">{L.seeAll} →</button>}
                   </div>
                   <div className="flex flex-col gap-3">{s.items.map(full)}</div>
                 </section>
@@ -1038,9 +1036,8 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
           }
           return (
             <div key={s.id} className={`px-3.5 py-3.5 first:border-t-0 ${afterRed ? "" : "border-t border-black/10"}`}>
-              <div className="mb-2.5 flex items-center justify-between">
+              <div className="mb-2.5 flex items-center">
                 <h3 className="flex items-center gap-1.5 text-[15px] font-extrabold text-[#1d2129]">{s.icon ? sectionIcon(s.icon, false) : null}{title}</h3>
-                {seeAllCat && <button onClick={() => setCat(seeAllCat)} className="text-[12px] font-bold text-[#D10005]">{L.seeAll} →</button>}
               </div>
               <div className="flex flex-col gap-3">{s.items.map(full)}</div>
             </div>
@@ -1061,7 +1058,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
           <div className="bg-[#FEFEFE]">
             <img src="/home-divider-top.png" alt="" className="-mb-px block w-full" />
           </div>
-          <section className="bg-[#D10005] px-3.5 pb-6 pt-4">
+          <section className="bg-[#B40206] px-3.5 pb-6 pt-4">
             <h3 className="mb-3 flex items-center gap-1.5 text-[15px] font-extrabold text-white">{sparkle}{recTitle}</h3>
             <div className="flex flex-col gap-3">{featured.map(full)}</div>
           </section>
