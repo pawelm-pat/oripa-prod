@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, ReactNode, RefObject, SetStateAction } from "react";
 import { APP_VERSION } from "../version";
 import type {
   Category,
@@ -133,7 +133,8 @@ function BellIcon({ label }: { label: string }) {
   const openNotif = useContext(NotifNavContext);
   return (
     <button onClick={openNotif} aria-label={label} className="relative flex h-8 w-8 items-center justify-center">
-      <img src="/bell-notification.png" alt="" className="h-[22px] w-[22px] object-contain" />
+      {/* 24×24 per design. */}
+      <img src="/bell-notification.png" alt="" className="h-6 w-6 object-contain" />
       {NOTIF_UNREAD_TOTAL > 0 && (
         <span className="absolute -right-0.5 -top-0.5 flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-[#D10005] px-1 text-[9px] font-extrabold leading-none text-white ring-2 ring-white">{NOTIF_UNREAD_TOTAL}</span>
       )}
@@ -1224,6 +1225,56 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
   );
 }
 
+// The lobby feed runs to a dozen screens, so it carries its own scroll
+// indicator down the right edge: the phone mock hides platform scrollbars, and
+// macOS overlay bars fade out anyway, leaving no sign the feed continues.
+function measureThumb(el: HTMLDivElement) {
+  const view = el.clientHeight;
+  const total = el.scrollHeight;
+  if (total <= view + 4) return null;
+  const height = Math.max(36, (view / total) * view);
+  return { top: (el.scrollTop / (total - view)) * (view - height), height };
+}
+
+function FeedScroller({ scrollElRef, onScroll, children }: { scrollElRef?: RefObject<HTMLDivElement | null>; onScroll?: (el: HTMLDivElement) => void; children: ReactNode }) {
+  const ownRef = useRef<HTMLDivElement>(null);
+  const ref = scrollElRef ?? ownRef;
+  const [thumb, setThumb] = useState<{ top: number; height: number } | null>(null);
+
+  // Filters and lazily decoded art change the feed's height under us, so track
+  // the sections themselves rather than trusting a one-off measurement. The
+  // observer also fires once on observe, which is what sizes the thumb first.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setThumb(measureThumb(el)));
+    ro.observe(el);
+    for (const child of Array.from(el.children)) ro.observe(child);
+    return () => ro.disconnect();
+  }, [ref]);
+
+  return (
+    <div className="relative min-h-0 flex-1">
+      <div
+        ref={ref}
+        onScroll={(e) => { onScroll?.(e.currentTarget); setThumb(measureThumb(e.currentTarget)); }}
+        className="animate-screen-in no-scrollbar h-full overflow-y-auto"
+      >
+        {children}
+      </div>
+      {thumb && (
+        <span
+          aria-hidden="true"
+          // Mid grey rather than a tint of the text colour: the thumb has to
+          // stay legible over the white feed and the black footer alike.
+          className="pointer-events-none absolute right-[3px] z-40 w-[4px] rounded-full bg-[#8a9099]"
+          style={{ top: thumb.top, height: thumb.height }}
+        />
+      )}
+    </div>
+  );
+}
+
 function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, onRequestDraw, scrollRef, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll }: { lang: Lang; coins: number; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem) => void; onRequestDraw?: (item: OripaItem, req: Omit<DrawRequest, "token">) => void; scrollRef?: { current: number }; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void }) {
   const t = STR[lang];
   // Preserve the lobby's scroll position across navigation (e.g. opening a draw
@@ -1239,17 +1290,13 @@ function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, onRequestDraw
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
       <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
 
-      <div
-        ref={scrollElRef}
-        onScroll={(e) => { if (scrollRef) scrollRef.current = e.currentTarget.scrollTop; }}
-        className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto"
-      >
+      <FeedScroller scrollElRef={scrollElRef} onScroll={(el) => { if (scrollRef) scrollRef.current = el.scrollTop; }}>
         <HomeHero lang={lang} />
 
         <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={onApply} onToggleApplied={onToggleApplied} onClearAll={onClearAll} onOpenDraw={onOpenDraw} onRequestDraw={onRequestDraw} />
 
         <SiteFooter t={t} />
-      </div>
+      </FeedScroller>
     </div>
   );
 }
@@ -2736,13 +2783,13 @@ function LandingPage({ lang, onSignUp, onLogin }: { lang: Lang; onSignUp: () => 
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
       <AuthHeader lang={lang} onSignUp={onSignUp} onLogin={onLogin} />
 
-      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
+      <FeedScroller>
         <div className="px-3 pb-4 pt-3"><PromoCarousel /></div>
 
         <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={applyLobby} onToggleApplied={toggleApplied} onClearAll={clearAll} onView={onSignUp} />
 
         <SiteFooter t={t} />
-      </div>
+      </FeedScroller>
     </div>
   );
 }
