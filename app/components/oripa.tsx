@@ -239,6 +239,18 @@ function PriceStack({ t, showPoint }: { t: Dict; showPoint: boolean }) {
   );
 }
 
+// Search magnifier, traced from the design's SearchOutlined export: the lens is
+// top-left (outer edge on 1, centre 9) and the handle leaves the rim at 45° and
+// runs to 22, so the glyph fills its box corner to corner.
+function SearchIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <circle cx="9.1" cy="9.1" r="7.1" />
+      <path d="M14.1 14.1 21 21" />
+    </svg>
+  );
+}
+
 // The "per draw" suffix beside a price is a design asset rather than text. It
 // sits on the price's baseline at ~95% of its cap height, per the design.
 function PerDrawMark({ height, alt }: { height: number; alt: string }) {
@@ -1140,7 +1152,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
         >
           <div className="relative">
             <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#1d2129]">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M20.5 20.5l-4-4" /></svg>
+              <SearchIcon />
             </span>
             <input
               ref={inputRef}
@@ -2217,7 +2229,7 @@ function NarrowDownSheet({
         <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-4">
           <div className="relative">
             <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9aa0a8]">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.2-3.2" /></svg>
+              <SearchIcon size={18} />
             </span>
             <input
               type="text"

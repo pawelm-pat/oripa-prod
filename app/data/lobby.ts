@@ -12,11 +12,13 @@ export const CATEGORIES: Category[] = ["pokemon", "onepiece", "baseball", "footb
 export const RECOMMENDED_ORIPA: OripaItem[] = [
   { id: "r1", gem: true, free: false, remaining: 700, total: 1000, endsIn: 30, cta: "all", image: "/oripa-banner-1.png", title: "Pokémon 151 Special Oripa", titleJa: "ポケモン151スペシャルオリパ" },
   { id: "r2", gem: false, free: true, remaining: 0, total: 1000, endsIn: 12, expired: true, image: "/oripa-banner-2.png", title: "One Piece Premium Oripa", titleJa: "ワンピース プレミアムオリパ" },
-  // Sold-out example — card shows the greyed artwork and the "完売しました /
-  // Sold Out" label beside the price (distinct from the "期限切れ / Expired" state).
-  { id: "r4", gem: true, free: false, remaining: 0, total: 1000, endsIn: 0, soldOut: true, image: "/oripa-banner-1.png", title: "Start Dash Pack", titleJa: "スタートダッシュパック" },
   { id: "r3", gem: false, free: true, remaining: 880, total: 1000, endsIn: 58, cta: "one", image: "/oripa-banner-3.png", title: "Weiss Schwarz Lucky Draw", titleJa: "ヴァイスシュヴァルツ ラッキードロー" },
 ];
+
+// Sold-out example — the last card in the home feed. Shows the greyed artwork
+// and the "完売しました / Sold Out" label beside the price, which is a separate
+// state from "期限切れ / Expired".
+export const SOLD_OUT_ORIPA: OripaItem = { id: "r4", gem: true, free: false, remaining: 0, total: 1000, endsIn: 0, soldOut: true, image: "/oripa-banner-1.png", title: "Start Dash Pack", titleJa: "スタートダッシュパック" };
 
 export const LIST_ORIPA: OripaItem[] = [
   { id: "l1", gem: true, free: false, remaining: 700, total: 1000, endsIn: 30, image: "/oripa-list-1.png", title: "Football Stars Oripa", titleJa: "サッカースター オリパ" },
@@ -77,7 +79,7 @@ export const HOME_SECTIONS: HomeSection[] = [
     { id: "o1", gem: false, free: true, remaining: 720, total: 1000, endsIn: 51, image: "/oripa-list-1.png", title: "Sports Cards Oripa", titleJa: "スポーツカード オリパ" },
     { id: "o2", gem: false, free: true, remaining: 905, total: 1000, endsIn: 62, image: "/oripa-banner-2.png", title: "Baseball Legends Draw", titleJa: "ベースボール レジェンド ドロー" },
   ] },
-  { id: "list", titleKey: "secList", icon: "other", variant: "light", cats: ["other"], items: LIST_ORIPA },
+  { id: "list", titleKey: "secList", icon: "other", variant: "light", cats: ["other"], items: [...LIST_ORIPA, SOLD_OUT_ORIPA] },
 ];
 
 export const ALL_ORIPA: OripaItem[] = (() => {
