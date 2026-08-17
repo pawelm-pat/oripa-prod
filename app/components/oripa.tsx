@@ -3243,13 +3243,19 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
   // mascot, message and a go-to-gacha CTA. Used both when the whole screen is
   // empty and when the won list becomes empty at runtime.
   const emptyContent = (
-    <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 py-16">
-      <img src="/refer-mascot.png" alt="" className="mb-5 h-44 w-44 object-contain" />
-      <p className="text-center text-[14px] leading-relaxed text-[#9aa0a8]">{t.winEmptyTitle}</p>
-      <p className="mt-1 max-w-[300px] text-center text-[14px] leading-relaxed text-[#9aa0a8]">{t.winEmptySub}</p>
+    <div className="flex min-h-0 flex-1 flex-col items-center justify-center py-16">
+      <img src="/prize-character-wave.webp" alt="" className="mb-5 h-48 w-48 object-contain" />
+      {/* 14px on half-opacity ink (#0F0F0F80), two centred lines. */}
+      <p className="max-w-[334px] text-center text-[14px] leading-[17px] text-[#0F0F0F80]">
+        {lootMode ? t.lootEmptyTitle : t.winEmptyTitle}
+        <br />
+        {lootMode ? t.lootEmptySub : t.winEmptySub}
+      </p>
+      {/* Primary button per the design: fills its container up to 386px, fixed
+          39px tall with an 8px radius. */}
       <button
         onClick={onGoGacha ?? onHome}
-        className="mt-7 w-full max-w-[360px] rounded-xl bg-[#D10005] py-3.5 text-[15px] font-extrabold tracking-wide text-white shadow-[0_6px_18px_rgba(230,0,18,0.35)] active:scale-[0.99]"
+        className="mt-7 flex h-[39px] w-full max-w-[386px] items-center justify-center rounded-lg bg-[#D10005] text-[16px] font-extrabold leading-none text-white active:scale-[0.99]"
       >
         {t.winEmptyCta}
       </button>

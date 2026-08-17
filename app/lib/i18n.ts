@@ -627,6 +627,9 @@ const EN = {
   winEmptyTitle: "No prizes have been won yet.",
   winEmptySub: "This message will be displayed if you have won a prize of 2nd place or higher.",
   winEmptyCta: "GO TO ORIPA GACHA",
+  // My Loot's own wording for the same empty view.
+  lootEmptyTitle: "No items in your inventory yet!",
+  lootEmptySub: "Draw some Oripa packs and start your collection!",
   purchaseStatusCompleted: "Completed",
   purchaseStatusCancelled: "Cancelled",
   purchaseFreePoints: (n: number) => `+ ${n.toLocaleString()} Points`,
@@ -1690,6 +1693,8 @@ const JA: Dict = {
   winEmptyTitle: "まだ当選商品がありません",
   winEmptySub: "2等以上の商品を獲得した場合に表示されます",
   winEmptyCta: "オリパガチャへ",
+  lootEmptyTitle: "アイテムがまだありません！",
+  lootEmptySub: "オリパを引いてコレクションを始めましょう！",
   purchaseStatusCompleted: "完了",
   purchaseStatusCancelled: "キャンセル",
   purchaseFreePoints: (n: number) => `+ ${n.toLocaleString()} ポイント`,
