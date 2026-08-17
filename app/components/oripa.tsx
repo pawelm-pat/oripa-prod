@@ -2511,8 +2511,8 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
                       </span>
                     </div>
                     <p className="mt-1.5 text-[14px] font-bold leading-tight text-[#0F0F0F]">{locName(p, lang)}</p>
-                    <p className="mt-1 line-clamp-2 text-[10px] font-normal leading-relaxed text-[#0F0F0F80]">{locDesc(p, lang)}</p>
-                    <p className="mt-1 text-[11px] font-semibold text-[#0F0F0F80]">{t.itemsExchangePeriod}{fmtDate(expiresAt(p.wonAt))}</p>
+                    <p className="mt-1 line-clamp-2 text-[10px] font-normal leading-relaxed text-[#0F0F0F]">{locDesc(p, lang)}</p>
+                    <p className="mt-1 text-[11px] font-semibold text-[#0F0F0F]">{t.itemsExchangePeriod}{fmtDate(expiresAt(p.wonAt))}</p>
                     <div className="mt-auto flex items-center justify-center gap-1.5 rounded-xl border border-black/10 bg-white pt-2 pb-2" style={{ marginTop: 8 }}>
                       <CoinIcon size={18} />
                       <span className="text-[18px] font-bold text-[#0F0F0F]">{p.coinValue.toLocaleString()}</span>
@@ -3381,15 +3381,15 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                           <div className="flex items-start justify-between gap-2">
                             <img src={`/prize-tag-${rarityTier(p.rarity)}.png`} alt={t.prizeTier(rarityTier(p.rarity))} className="h-[24px] w-auto shrink-0 object-contain" draggable={false} />
                             {lootMode && (
-                              <span className="flex shrink-0 items-center gap-1 text-[11px] font-bold" style={{ color: isSel ? "#FF7A1A" : "#0F0F0F80" }}>
+                              <span className="flex shrink-0 items-center gap-1 text-[11px] font-bold" style={{ color: isSel ? "#FF7A1A" : "#0F0F0F" }}>
                                 {isSel ? t.itemsSelected : t.itemsNotSelected}
                                 <svg width="15" height="15" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill={isSel ? "#FF7A1A" : "#c9ced6"} /><path d="M6 10l3 3 5-5" stroke="white" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
                               </span>
                             )}
                           </div>
                           <p className="mt-1.5 text-[14px] font-bold leading-tight text-[#0F0F0F]">{locName(p, lang)}</p>
-                          <p className="mt-1 line-clamp-2 text-[10px] font-normal leading-relaxed text-[#0F0F0F80]">{locDesc(p, lang)}</p>
-                          <p className="mt-1 text-[11px] font-semibold text-[#0F0F0F80]">{lootMode ? `${t.itemsExchangePeriod}${fmtDate(expiresAt(p.wonAt))}` : `${t.itemsDateWon}${fmtDate(p.wonAt)}`}</p>
+                          <p className="mt-1 line-clamp-2 text-[10px] font-normal leading-relaxed text-[#0F0F0F]">{locDesc(p, lang)}</p>
+                          <p className="mt-1 text-[11px] font-semibold text-[#0F0F0F]">{lootMode ? `${t.itemsExchangePeriod}${fmtDate(expiresAt(p.wonAt))}` : `${t.itemsDateWon}${fmtDate(p.wonAt)}`}</p>
                           <div className="mt-auto flex items-center justify-center gap-1.5 rounded-xl border border-black/10 bg-white pt-2 pb-2" style={{ marginTop: 8 }}>
                             <CoinIcon size={18} />
                             <span className="text-[18px] font-bold text-[#0F0F0F]">{p.coinValue.toLocaleString()}</span>
@@ -3566,12 +3566,12 @@ function WaitingTab({ prizes, t, lang }: { prizes: WaitingPrize[]; t: Dict; lang
             <div className="min-w-0 flex-1">
               <img src={`/prize-tag-${rarityTier(p.rarity)}.png`} alt={t.prizeTier(rarityTier(p.rarity))} className="h-[24px] w-auto object-contain" draggable={false} />
               <p className="mt-1.5 truncate text-[14px] font-bold text-[#0F0F0F]">{locName(p, lang)}</p>
-              <p className="truncate text-[10px] font-normal text-[#0F0F0F80]">{locDesc(p, lang)}</p>
-              <p className="mt-1 text-[11px] text-[#0F0F0F80]">{t.requested(fmtDate(p.requestedAt))}</p>
+              <p className="truncate text-[10px] font-normal text-[#0F0F0F]">{locDesc(p, lang)}</p>
+              <p className="mt-1 text-[11px] text-[#0F0F0F]">{t.requested(fmtDate(p.requestedAt))}</p>
               <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-[#FFF3E0] px-2 py-0.5 text-[10.5px] font-semibold text-[#C9701B]">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#f5670a]" /> {t.preparing}
               </span>
-              <div className="mt-1.5 flex items-center justify-center gap-1.5 rounded-xl border border-black/10 bg-white py-2">
+              <div className="mt-1.5 flex h-7 items-center justify-center gap-1.5 rounded-[10px] bg-[rgba(255,223,147,0.5)]">
                 <CoinIcon size={18} />
                 <span className="text-[15px] font-bold leading-none text-[#0F0F0F]">{p.coinValue.toLocaleString()}</span>
               </div>
@@ -3598,16 +3598,16 @@ function ShippedTab({ prizes, onCopy, t, lang }: { prizes: ShippedPrize[]; onCop
             <div className="min-w-0 flex-1">
               <img src={`/prize-tag-${rarityTier(p.rarity)}.png`} alt={t.prizeTier(rarityTier(p.rarity))} className="h-[24px] w-auto object-contain" draggable={false} />
               <p className="mt-1.5 truncate text-[14px] font-bold text-[#0F0F0F]">{locName(p, lang)}</p>
-              <p className="truncate text-[10px] font-normal text-[#0F0F0F80]">{locDesc(p, lang)}</p>
-              <p className="mt-1 text-[11px] text-[#0F0F0F80]">{t.requested(fmtDate(p.requestedAt))}</p>
+              <p className="truncate text-[10px] font-normal text-[#0F0F0F]">{locDesc(p, lang)}</p>
+              <p className="mt-1 text-[11px] text-[#0F0F0F]">{t.requested(fmtDate(p.requestedAt))}</p>
               <div className="mt-1 flex items-center gap-1.5 rounded-lg bg-[#f1f3f6] px-2 py-1">
-                <span className="text-[10px] font-semibold text-[#0F0F0F80]">{t.tracking}</span>
+                <span className="text-[10px] font-semibold text-[#0F0F0F]">{t.tracking}</span>
                 <span className="text-[11px] font-bold tracking-wide text-[#0F0F0F]">{p.tracking}</span>
                 <button onClick={() => onCopy(p.tracking)} className="ml-auto text-[#D10005]" aria-label={t.copyAria}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="2" /><path d="M5 15V5a2 2 0 012-2h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
                 </button>
               </div>
-              <div className="mt-1.5 flex items-center justify-center gap-1.5 rounded-xl border border-black/10 bg-white py-2">
+              <div className="mt-1.5 flex h-7 items-center justify-center gap-1.5 rounded-[10px] bg-[rgba(255,223,147,0.5)]">
                 <CoinIcon size={18} />
                 <span className="text-[15px] font-bold leading-none text-[#0F0F0F]">{p.coinValue.toLocaleString()}</span>
               </div>
