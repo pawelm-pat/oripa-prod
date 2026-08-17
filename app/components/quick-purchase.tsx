@@ -141,7 +141,6 @@ export function QuickPurchaseFlow({
   onSaveCard,
   onClose,
   onPaid,
-  onDraw,
   onRequireKyc,
   localCurrency = null,
 }: {
@@ -152,7 +151,6 @@ export function QuickPurchaseFlow({
   onSaveCard: (card: QuickSavedCard) => void;
   onClose: () => void;
   onPaid: (pkg: PointPackage) => void;
-  onDraw: () => void;
   onRequireKyc?: () => boolean;
   localCurrency?: IntlCurrencyInfo | null;
 }) {
@@ -454,14 +452,9 @@ export function QuickPurchaseFlow({
                       <span className="text-[11px] font-semibold text-[#5c626b]">{paidMethod.label}</span>
                     </div>
                   </div>
-                  <button
-                    onClick={onDraw}
-                    className="mt-4 w-full rounded-xl py-3.5 text-[16px] font-extrabold text-white shadow-[0_4px_14px_rgba(180,2,6,0.35)] active:scale-[0.99]"
-                    style={{ background: "#B40206" }}
-                  >
-                    {lang === "ja" ? "ドロー" : "Draw"}
-                  </button>
-                  <p className="mt-2 text-center text-[9px] leading-relaxed text-[#8a9099]">{t.successBillingNote}</p>
+                  {/* No draw CTA here — closing the receipt hands the draw back
+                      to its confirmation popup. */}
+                  <p className="mt-3 text-center text-[9px] leading-relaxed text-[#8a9099]">{t.successBillingNote}</p>
                 </div>
               </div>
             </div>
