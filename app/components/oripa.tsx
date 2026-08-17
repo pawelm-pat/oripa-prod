@@ -116,6 +116,16 @@ function GemIcon({ size = 16 }: { size?: number }) {
   );
 }
 
+// The weui "arrow-filled" chevron the designs put between a before and after
+// amount: square-cut ends and a mitered tip rather than a rounded stroke.
+function BalanceArrow({ height = 16, color = "#0F0F0F" }: { height?: number; color?: string }) {
+  return (
+    <svg aria-hidden="true" width={Math.round((height * 15) / 26)} height={height} viewBox="0 0 15 26" fill="none" className="shrink-0">
+      <path d="M2.5 2.5L11.6 13L2.5 23.5" stroke={color} strokeWidth="5" strokeLinecap="butt" strokeLinejoin="miter" />
+    </svg>
+  );
+}
+
 function BrandLogo({ onClick }: { onClick?: () => void }) {
    
   const img = <img src="/oripa-logo.png" alt="オリパロット" className="h-7 w-auto shrink-0" />;
@@ -1607,9 +1617,6 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
   // spent; the other stays greyed out and unchanged.
   function balanceRows(count: number) {
     const cost = DRAW_PRICE * count;
-    const arrow = (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M9 6l6 6-6 6" stroke="#9aa1ab" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
-    );
     const rows = [
       { key: "coins" as const, Icon: CoinIcon, balance: coins },
       { key: "points" as const, Icon: GemIcon, balance: DRAW_FREE_POINTS },
@@ -1621,8 +1628,8 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
           const after = balance - cost;
           const body = (
             <>
-              <span className="flex items-center gap-2"><Icon size={30} /><span className={`text-[20px] font-extrabold leading-none ${selected ? "text-[#1d2129]" : "text-[#8a9099]"}`}>{balance.toLocaleString()}</span></span>
-              {arrow}
+              <span className="flex items-center gap-2"><Icon size={30} /><span className={`text-[20px] font-extrabold leading-none ${selected ? "text-[#0F0F0F]" : "text-[#8a9099]"}`}>{balance.toLocaleString()}</span></span>
+              <BalanceArrow color={selected ? "#0F0F0F" : "#b8bdc4"} />
               <span className="flex items-center gap-2"><Icon size={30} /><span className="text-[20px] font-extrabold leading-none" style={{ color: selected ? "#D10005" : "#b8bdc4" }}>{(selected ? after : balance).toLocaleString()}</span></span>
             </>
           );
@@ -1668,8 +1675,8 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
             <PackBanner src="/draw-banner-modal.webp" alt={t.drawPackSubtitle} width={748} height={561} priority />
 
             <div className="animate-sheet-body px-4 pb-4 pt-3.5">
-              <h3 className="text-center text-[18px] font-bold text-[#1d2129]">{locTitle(item, lang)}</h3>
-              <p className="mt-1.5 text-center text-[12px] leading-relaxed text-[#8a9099]">{confirmFree ? t.drawConfirmDescFree : t.drawConfirmDesc}</p>
+              <h3 className="text-center text-[18px] font-bold text-[#0F0F0F]">{locTitle(item, lang)}</h3>
+              <p className="mt-1.5 text-center text-[12px] leading-relaxed text-[#0F0F0F]">{confirmFree ? t.drawConfirmDescFree : t.drawConfirmDesc}</p>
 
               {!confirmFree && balanceRows(confirmCount)}
 
@@ -1695,7 +1702,7 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
               </button>
 
               {/* Terms */}
-              <p className="mt-3 text-center text-[12px] font-semibold text-[#1d2129]">
+              <p className="mt-3 text-center text-[12px] font-semibold text-[#0F0F0F]">
                 {t.drawConfirmTerms}{" "}
                 <button onClick={() => openLegal("terms")} className="font-bold text-[#D10005] underline decoration-[#D10005] underline-offset-2">
                   {t.drawConfirmTermsLink}
@@ -1722,8 +1729,8 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
             <PackBanner src="/draw-banner-modal.webp" alt={t.drawPackSubtitle} width={748} height={561} priority />
 
             <div className="animate-sheet-body px-4 pb-4 pt-3.5">
-              <h3 className="text-center text-[18px] font-bold text-[#1d2129]">{locTitle(item, lang)}</h3>
-              <p className="mt-1.5 text-center text-[12px] leading-relaxed text-[#8a9099]">{t.drawConfirmDesc}</p>
+              <h3 className="text-center text-[18px] font-bold text-[#0F0F0F]">{locTitle(item, lang)}</h3>
+              <p className="mt-1.5 text-center text-[12px] leading-relaxed text-[#0F0F0F]">{t.drawConfirmDesc}</p>
 
               {/* Quantity stepper */}
               <div className="mt-3.5 flex h-[60px] items-center justify-center gap-2">
@@ -1736,7 +1743,7 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
                   <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round"><path d="M2.5 7.5h10" /></svg>
                 </button>
                 <div className="flex h-[60px] w-[160px] items-center justify-center rounded-lg border border-[#e7e7e7] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-                  <span className="text-[50px] font-black leading-none text-[#1d2129]">{customQty}</span>
+                  <span className="text-[50px] font-black leading-none text-[#0F0F0F]">{customQty}</span>
                 </div>
                 <button
                   onClick={() => setQty(customQty + 1)}
@@ -1779,7 +1786,7 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
               </button>
 
               {/* Terms — at the very bottom */}
-              <p className="mt-3 text-center text-[12px] font-semibold text-[#1d2129]">
+              <p className="mt-3 text-center text-[12px] font-semibold text-[#0F0F0F]">
                 {t.drawConfirmTerms}{" "}
                 <button onClick={() => openLegal("terms")} className="font-bold text-[#D10005] underline decoration-[#D10005] underline-offset-2">
                   {t.drawConfirmTermsLink}
@@ -2238,8 +2245,8 @@ function ExchangeConfirm({ lang, coins, prizes, total, onConfirm, onClose }: { l
         {/* Balance before → after (green) */}
         <div className="mt-4 flex items-center justify-center gap-2.5 rounded-[12px] border border-black/10 bg-white px-3 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
           <CoinIcon size={22} />
-          <span className="text-[17px] font-extrabold text-[#1d2129]">{coins.toLocaleString()}</span>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a9099" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="mx-0.5 shrink-0"><path d="M9 6l6 6-6 6" /></svg>
+          <span className="text-[17px] font-extrabold text-[#0F0F0F]">{coins.toLocaleString()}</span>
+          <BalanceArrow height={15} />
           <CoinIcon size={22} />
           <span className="text-[17px] font-extrabold text-[#12a150]">{after.toLocaleString()}</span>
         </div>
@@ -5443,9 +5450,9 @@ function NotEnoughCoinsPopup({ lang, coins, cost, onCharge, onClose }: { lang: L
         <div className="mt-3.5 flex h-[39px] w-full items-center justify-center gap-3 rounded-lg border-2 border-[#e7e7e7] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
           <span className="flex items-center gap-2">
             <CoinIcon size={30} />
-            <span className="text-[20px] font-extrabold leading-none text-[#1d2129]">{coins.toLocaleString()}</span>
+            <span className="text-[20px] font-extrabold leading-none text-[#0F0F0F]">{coins.toLocaleString()}</span>
           </span>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M9 6l6 6-6 6" stroke="#9aa1ab" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          <BalanceArrow />
           <span className="flex items-center gap-2">
             <CoinIcon size={30} />
             <span className="text-[20px] font-extrabold leading-none text-[#D10005]">{(coins - cost).toLocaleString()}</span>
