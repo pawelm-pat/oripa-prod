@@ -28,10 +28,8 @@ export default function Page() {
   // Yes -> "Draw again" shows the Daily Limit Reached popup; No -> it re-opens
   // the draw-confirmation popup.
   const [dailyLimit, setDailyLimit] = useState(false);
-  // Demo control (draw screen only): whether the pack is expired/sold out.
-  // Yes -> confirming a draw shows the "Sold Out" popup, then the draw screen
-  // greys out with no CTAs; No -> normal draw flow.
-  // Demo control (draw screen only): pick a draw scenario.
+  // Demo control (draw screen and lobby): pick a draw scenario. It applies to
+  // every draw, whether it starts on the pack page or from a lobby card CTA.
   //   off      -> normal draw flow
   //   expired  -> Sold Out popup, then greyed-out draw screen
   //   connError-> Connection Error popup (Retry succeeds, Cancel returns)
@@ -69,8 +67,9 @@ export default function Page() {
               )}
             </>
           )}
-          {/* Draw screen only: pick a draw scenario to simulate. */}
-          {screen === "drawDetail" && !drawResultsOpen && (
+          {/* Anywhere a draw can start: the pack page, and the lobby, whose
+              card CTAs open the same confirmation without leaving the feed. */}
+          {(screen === "drawDetail" || screen === "oripa") && !drawResultsOpen && (
             <>
               <SelectControl
                 label="Draw scenario"
