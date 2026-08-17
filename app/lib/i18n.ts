@@ -300,6 +300,8 @@ const EN = {
   // Results filter chips: "ALL" stays pinned while the prize tiers scroll.
   resultsTierAll: "ALL",
   resultsTierChip: (n: number) => (["", "1st Prize", "2nd Prize", "3rd Prize"][n] ?? `No.${n} Prize`),
+  // Every card from the draw has been exchanged or sent for shipping.
+  resultsNoCardsLeft: "No cards left",
   drawSwipeReveal: "Swipe to reveal",
   drawSwipeTBC: "Swipe-to-reveal is coming soon.",
   drawLimitTitle: "Daily Limit Reached",
@@ -1374,6 +1376,7 @@ const JA: Dict = {
   resultsBackToInfo: "情報ページに戻る",
   resultsTierAll: "ALL",
   resultsTierChip: (n) => `${n}等`,
+  resultsNoCardsLeft: "残っているカードはありません",
   drawSwipeReveal: "スワイプでめくる",
   drawSwipeTBC: "スワイプでめくるは近日対応予定です。",
   drawLimitTitle: "本日の上限に達しました",

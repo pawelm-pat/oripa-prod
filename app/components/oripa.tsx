@@ -2505,6 +2505,10 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onBackToInfo, onHo
   useEffect(() => { setSelected(new Set()); }, [tierFilter]);
 
   const selectedPrizes = list.filter((p) => selected.has(p.id));
+  // Everything drawn has been exchanged or sent for shipping: the filters, sort
+  // and selection bar have nothing to act on, so the screen hands over to the
+  // lobby instead.
+  const noneLeft = list.length === 0;
   const total = selectedPrizes.reduce((s, p) => s + p.coinValue, 0);
   const canShip = total >= SHIP_MIN_COINS;
   const shortfall = Math.max(0, SHIP_MIN_COINS - total);
@@ -2550,6 +2554,8 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onBackToInfo, onHo
         </button>
       </div>
 
+      {!noneLeft && (
+      <>
       {/* Rarity-tier chips — "ALL" is pinned and the prize tiers scroll beside
           it, so a pack with more tiers than fit stays reachable. */}
       <div className="flex shrink-0 items-center gap-2.5 bg-white px-3 pt-2.5">
@@ -2599,10 +2605,24 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onBackToInfo, onHo
 
       {/* Tapping anywhere else dismisses the open sort menu. */}
       {sortOpen && <div className="absolute inset-0 z-10" onClick={() => setSortOpen(false)} />}
+      </>
+      )}
 
       {/* Results list */}
       <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-3">
-        {displayed.length === 0 ? (
+        {noneLeft ? (
+          /* Same mascot, message and hand-off CTA as the empty My Loot screen. */
+          <div className="flex min-h-full flex-col items-center justify-center">
+            <img src="/prize-character-wave.webp" alt="" className="mb-5 h-48 w-48 object-contain" />
+            <p className="text-center text-[14px] leading-[17px] text-[#0F0F0F80]">{t.resultsNoCardsLeft}</p>
+            <button
+              onClick={onHome}
+              className="mt-7 flex h-[39px] w-full max-w-[386px] items-center justify-center rounded-lg bg-[#D10005] text-[16px] font-extrabold leading-none text-white active:scale-[0.99]"
+            >
+              {t.winEmptyCta}
+            </button>
+          </div>
+        ) : displayed.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="mb-2 text-[32px]">🔍</div>
             <p className="text-[13px] font-semibold text-[#8a9099]">{t.searchNoResults}</p>
@@ -2643,6 +2663,7 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onBackToInfo, onHo
       </div>
 
       {/* Bottom action bar */}
+      {!noneLeft && (
       <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2.5 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
         <div className="mb-4 flex items-center justify-between">
           <span className="flex items-center gap-1.5">
@@ -2704,6 +2725,7 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onBackToInfo, onHo
         )}
         <p className="mx-auto mt-3 max-w-[330px] text-center text-[9.5px] leading-[11px] text-[#8a9099]">{freeShipAvailable ? t.shipSelectHint : t.shipSelectHintPaid}</p>
       </div>
+      )}
 
       {toast && (
         <div className="pointer-events-none absolute inset-x-0 bottom-28 z-[70] flex justify-center px-4">
