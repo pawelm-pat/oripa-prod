@@ -1909,14 +1909,16 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
             <h3 className="mt-4 text-[22px] font-extrabold text-[#1d2129]">{t.stockTitle}</h3>
             <p className="mx-auto mt-2 max-w-[290px] text-[13px] leading-relaxed text-[#6b7075]">{t.stockBody(STOCK_LEFT)}</p>
             {/* Original requested cost → remaining (M) draw cost */}
-            <div className="mt-4 flex items-center justify-center gap-2 rounded-[12px] border border-black/10 bg-white px-3 py-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-              <CoinIcon size={22} />
-              <span className="text-[16px] font-extrabold text-[#1d2129]">{(DRAW_PRICE * stockReqCount).toLocaleString()}</span>
-              <span className="text-[11px] font-bold text-[#8a9099]">{t.stockDrawCost(stockReqCount)}</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a9099" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="mx-0.5 shrink-0"><path d="M9 6l6 6-6 6" /></svg>
-              <CoinIcon size={22} />
-              <span className="text-[16px] font-extrabold text-[#D10005]">{(DRAW_PRICE * STOCK_LEFT).toLocaleString()}</span>
+            {/* 38px pill in the design; it only grows when the cost label wraps. */}
+            <div className="mt-4 flex min-h-[38px] items-center justify-center gap-1.5 rounded-lg border border-[#e7e7e7] bg-white px-2 py-1 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+              <CoinIcon size={26} />
+              <span className="text-[20px] font-bold leading-none text-[#0F0F0F]">{(DRAW_PRICE * stockReqCount).toLocaleString()}</span>
+              <span className="text-[10px] font-bold leading-tight text-[#878787]">{t.stockDrawCost(stockReqCount)}</span>
+              <BalanceArrow height={15} />
+              <CoinIcon size={26} />
+              <span className="text-[20px] font-bold leading-none text-[#D10005]">{(DRAW_PRICE * STOCK_LEFT).toLocaleString()}</span>
             </div>
+            {/* Both CTAs are 39px tall with a 6px radius per the button specs. */}
             <button
               onClick={() => {
                 setStockPopup(false);
@@ -1925,14 +1927,14 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
                 }
                 runDraw(STOCK_LEFT);
               }}
-              className="mt-4 w-full rounded-[14px] bg-[#D10005] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]"
+              className="mt-4 flex h-[39px] w-full items-center justify-center rounded-md bg-[#D10005] text-[17px] font-bold leading-none text-white active:scale-[0.98]"
             >
               {t.stockDrawRemaining(STOCK_LEFT)}
             </button>
-            <div className="my-3.5 border-t border-dashed border-black/20" />
+            <div className="my-3 border-t border-dashed border-black/20" />
             <button
               onClick={() => setStockPopup(false)}
-              className="w-full rounded-[14px] border-[1.5px] border-[#b5b8bd] bg-white py-3.5 text-[15px] font-bold text-[#6b7075] active:scale-[0.98]"
+              className="flex h-[39px] w-full items-center justify-center rounded-md border-2 border-[rgba(7,7,7,0.6)] bg-white text-[17px] font-bold leading-none text-[rgba(7,7,7,0.6)] active:scale-[0.98]"
             >
               {t.cancel}
             </button>
@@ -3044,7 +3046,7 @@ function CoinChip({ value, strong = false }: { value: number; strong?: boolean }
       className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-bold"
       style={{
         background: strong ? "#FFF1CF" : "#FFF6E3",
-        color: "#B5740A",
+        color: "#0F0F0F",
         fontSize: strong ? 14 : 12,
       }}
     >
@@ -3938,7 +3940,7 @@ function ShippingFlow({
                       </span>
                       <span className="pr-7 text-[12.5px] leading-relaxed">
                         <b className="text-[#1d2129]">{addrFlag(addr)} {addrName(addr)}</b>
-                        {addr.isDefault && <span className="ml-1.5 inline-flex h-4 items-center rounded-[3px] bg-[#00A63D] px-1.5 align-middle text-[9px] font-bold uppercase text-white">{t.shippingDefaultLabel}</span>}
+                        {addr.isDefault && <span className="ml-1.5 inline-flex h-4 items-center rounded-[3px] bg-[#00A63D] px-2 align-middle text-[9px] font-bold uppercase text-white">{t.shippingDefaultLabel}</span>}
                         <br />{lines.map((l, i) => <span key={i} className="text-[#5c626b]">{l}<br /></span>)}
                         <span className="text-[#8a9099]">{addrPhone(addr)}</span>
                       </span>
@@ -4162,6 +4164,8 @@ function ShippingFlow({
               <span className="text-[12px] font-semibold text-[#000000]">{t.totalValue}</span>
               <CoinChip value={total} strong />
             </div>
+            {/* Shipping fee reads the same whether the quota covers it or not. */}
+            <p className="mt-2 text-right text-[12px] font-semibold text-[#0F0F0F]">{t.shipFeeLine}</p>
             <p className="mt-2 text-center text-[11px] text-[#8a9099]">{t.freeShip}</p>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <button onClick={() => setStep("address")} className="rounded-xl border border-black/15 py-2.5 text-[13px] font-bold text-[#000000]">{t.back}</button>
@@ -4500,7 +4504,7 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
                 <div className="flex items-center gap-2 border-b border-black/[0.07] px-3 py-2" style={{ background: addr.isDefault ? "rgba(34,163,74,0.06)" : "#f9fafb" }}>
                   <span className="text-[12px] font-bold text-[#1d2129]">{countryFlag} {t.shippingFormTitle}</span>
                   {addr.isDefault && (
-                    <span className="ml-1 rounded px-1.5 py-0.5 text-[10px] font-bold text-white" style={{ background: "#22a34a" }}>{t.shippingDefaultLabel}</span>
+                    <span className="ml-1 inline-flex h-4 items-center rounded-[3px] bg-[#00A63D] px-2 text-[9px] font-bold uppercase text-white">{t.shippingDefaultLabel}</span>
                   )}
                   <div className="ml-auto flex items-center gap-2">
                     {!addr.isDefault && (
