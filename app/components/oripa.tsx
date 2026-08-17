@@ -1449,8 +1449,8 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
   const insufficientStock = drawScenario === "stock";
   // In the insufficient-stock scenario only this many draws remain.
   const STOCK_LEFT = 8;
-  // "Sold Out" popup, shown when an expired pack's draw is confirmed.
-  const [soldOutPopup, setSoldOutPopup] = useState(false);
+  // "Expired" popup, shown when an expired pack's draw is confirmed.
+  const [expiredPopup, setExpiredPopup] = useState(false);
   // Connection-error popup (simulated network failure) + the draw count to
   // retry when the user taps Retry.
   const [connErrorPopup, setConnErrorPopup] = useState(false);
@@ -1539,7 +1539,7 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
     const count = confirmCount;
     if (count == null) return;
     // Expired pack: the draw fails — show the Sold Out popup instead of results.
-    if (expired) { setConfirmCount(null); setSoldOutPopup(true); return; }
+    if (expired) { setConfirmCount(null); setExpiredPopup(true); return; }
     // Simulated connection error: show the error popup; Retry re-runs the draw.
     if (connError) { setConfirmCount(null); setRetryCount(count); setConnErrorPopup(true); return; }
     // Free draws and point payments leave the coin balance untouched.
@@ -1575,7 +1575,7 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
   }
 
   function confirmCustomDraw() {
-    if (expired) { setCustomOpen(false); setSoldOutPopup(true); return; }
+    if (expired) { setCustomOpen(false); setExpiredPopup(true); return; }
     if (connError) { setCustomOpen(false); setRetryCount(customQty); setConnErrorPopup(true); return; }
     if (insufficientStock && customQty > STOCK_LEFT) { setCustomOpen(false); setStockReqCount(customQty); setStockPopup(true); return; }
     // Paying with free points leaves the coin balance untouched.
@@ -1796,13 +1796,13 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
         </div>
       )}
 
-      {/* Sold Out popup — shown when an expired pack's draw is confirmed. Closing
+      {/* Expired popup — shown when an expired pack's draw is confirmed. Closing
           it latches the greyed-out sold-out state on the draw screen. */}
-      {soldOutPopup && (
+      {expiredPopup && (
         <div
           className="animate-popup-backdrop absolute inset-0 z-[65] flex items-center justify-center p-4"
           style={{ background: "rgba(20,8,4,0.62)" }}
-          onClick={() => { setSoldOutPopup(false); onSoldOut?.(); }}
+          onClick={() => { setExpiredPopup(false); onSoldOut?.(); }}
           role="dialog"
           aria-modal="true"
         >
@@ -1814,10 +1814,10 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
             <div className="mx-auto flex h-[92px] w-[92px] items-center justify-center rounded-full border-[5px] border-[#D10005]">
               <span className="text-[52px] font-black leading-none text-[#D10005]">!</span>
             </div>
-            <h3 className="mt-4 text-[12px] font-medium text-[#1d2129]">{t.soldOutTitle}</h3>
-            <p className="mx-auto mt-2 max-w-[280px] text-[12px] font-medium leading-relaxed text-[#6b7075]">{t.soldOutBody}</p>
+            <h3 className="mt-4 text-[12px] font-medium text-[#1d2129]">{t.expiredTitle}</h3>
+            <p className="mx-auto mt-2 max-w-[280px] text-[12px] font-medium leading-relaxed text-[#6b7075]">{t.expiredBody}</p>
             <button
-              onClick={() => { setSoldOutPopup(false); onSoldOut?.(); }}
+              onClick={() => { setExpiredPopup(false); onSoldOut?.(); }}
               className="mt-5 w-full rounded-[14px] border-[1.5px] border-[#b5b8bd] bg-white py-3.5 text-[15px] font-bold text-[#6b7075] active:scale-[0.98]"
             >
               {t.drawLimitClose}
