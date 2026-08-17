@@ -62,10 +62,12 @@ export default function Page() {
             <>
               <ToggleControl label="Free shipping" value={freeShipping} onChange={setFreeShipping} />
               <ToggleControl label="Address provided" value={addressProvided} onChange={setAddressProvided} />
-              {drawResultsOpen && (
-                <ToggleControl label="Daily limit" value={dailyLimit} onChange={setDailyLimit} />
-              )}
             </>
+          )}
+          {/* Reachable before the draw as well, so the limit can be armed on the
+              pack page and hit straight from the results' "Draw again". */}
+          {(screen === "drawDetail" || screen === "oripa" || drawResultsOpen) && (
+            <ToggleControl label="Daily limit" value={dailyLimit} onChange={setDailyLimit} />
           )}
           {/* Anywhere a draw can start: the pack page, and the lobby, whose
               card CTAs open the same confirmation without leaving the feed. */}

@@ -2202,6 +2202,12 @@ function ExchangeConfirm({ lang, coins, prizes, total, onConfirm, onClose }: { l
   const t = STR[lang];
   const hasRare = prizes.some((p) => rarityTier(p.rarity) <= 2);
   const after = coins + total;
+  // Rarest first, so the faces that survive the pile's cap are the ones worth
+  // a second look before the exchange is confirmed.
+  const ordered = useMemo(
+    () => [...prizes].sort((a, b) => rarityTier(a.rarity) - rarityTier(b.rarity) || b.coinValue - a.coinValue),
+    [prizes],
+  );
   return (
     <div
       className="animate-popup-backdrop absolute inset-0 z-[80] flex items-center justify-center p-4"
@@ -2237,7 +2243,7 @@ function ExchangeConfirm({ lang, coins, prizes, total, onConfirm, onClose }: { l
         {/* Card pile: makes it clear how many cards are being exchanged. Shows
             up to 5 faces; anything beyond collapses into a "+N" tile. */}
         <div className="mt-4 flex items-center justify-center gap-2">
-          <CardStack prizes={prizes} cardW={46} cardH={62} />
+          <CardStack prizes={ordered} cardW={46} cardH={62} />
           {prizes.length > 1 && (
             <span className="text-[12px] font-bold text-[#6b7075]">{t.exCardCount(prizes.length)}</span>
           )}
@@ -2391,6 +2397,23 @@ function NarrowDownSheet({
   );
 }
 
+// 25px pill holding a tier label and its drawn count; the active tier is the
+// filled red one.
+const tierChipCls = (on: boolean) =>
+  `flex h-[25px] shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-[19px] text-[13px] font-bold ${
+    on ? "bg-[#D10005] text-white" : "border border-[#e7e7e7] bg-white text-[#878787]"
+  }`;
+
+// Paired up/down arrows marking the results sort control.
+function SortArrows() {
+  return (
+    <svg aria-hidden="true" width="22" height="20" viewBox="0 0 22 20" fill="none" stroke="#D10005" strokeWidth="3" strokeLinejoin="miter" className="shrink-0">
+      <path d="M5.5 19V2M1 6.5L5.5 1.5L10 6.5" />
+      <path d="M16.5 1v17M12 13.5l4.5 5 4.5-5" />
+    </svg>
+  );
+}
+
 // Gacha results — "list mode". Shown after any draw (×1 / ×10 / custom). Lets
 // the player review the cards they pulled, narrow down by tier/search, sort,
 // select, and exchange to coins or request shipping. Self-contained (local
@@ -2401,6 +2424,9 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
   // Draw results are filtered by rarity tier via the top tabs (All / Ultra /
   // Gold / Silver). Each tab shows how many cards were drawn in that tier.
   const [tierFilter, setTierFilter] = useState<"all" | number>("all");
+  // Results only ever sort by coin value, so the picker holds two options.
+  const [sortKey, setSortKey] = useState<"coinDesc" | "coinAsc">("coinDesc");
+  const [sortOpen, setSortOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [shipOpen, setShipOpen] = useState(false);
   // Exchange-to-coins confirmation dialog.
@@ -2433,11 +2459,11 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
   }
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
-  // Highest coin value first, then narrowed to the active rarity-tier tab.
+  // Ordered by coin value, then narrowed to the active rarity-tier chip.
   const displayed = useMemo(() => {
-    const arr = [...list].sort((a, b) => b.coinValue - a.coinValue);
+    const arr = [...list].sort((a, b) => (sortKey === "coinAsc" ? a.coinValue - b.coinValue : b.coinValue - a.coinValue));
     return tierFilter === "all" ? arr : arr.filter((p) => rarityTier(p.rarity) === tierFilter);
-  }, [list, tierFilter]);
+  }, [list, tierFilter, sortKey]);
   // Per-tier drawn counts for the tab labels.
   const tierCount = (tier: number) => list.filter((p) => rarityTier(p.rarity) === tier).length;
   // Switching tabs resets the selection so the summary never counts cards
@@ -2480,31 +2506,62 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
     <div className="animate-screen-in absolute inset-0 z-50 flex h-full flex-col bg-[#eef0f3]">
       <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
 
-      {/* Top action: Draw again */}
-      <div className="shrink-0 bg-white px-3 py-3">
-        <button onClick={() => { if (dailyLimitReached) { setOtherIdx(0); setLimitOpen(true); } else { onDrawAgain(); } }} className="w-full rounded-xl bg-[#D10005] py-3 text-[14px] font-extrabold text-white active:scale-[0.99]">
+      {/* Top actions: roll again, or drop back to the pack's info page. */}
+      <div className="flex shrink-0 items-center gap-2 bg-white px-3 pt-3">
+        <button onClick={() => { if (dailyLimitReached) { setOtherIdx(0); setLimitOpen(true); } else { onDrawAgain(); } }} className="h-[39px] flex-1 rounded-lg bg-[#D10005] text-[14px] font-extrabold text-white active:scale-[0.99]">
           {t.drawAgain}
+        </button>
+        <button onClick={onClose} className="h-[39px] flex-1 rounded-lg border border-[#e7e7e7] bg-white text-[14px] font-extrabold text-[#0F0F0F] active:scale-[0.99]">
+          {t.resultsBackToInfo}
         </button>
       </div>
 
-      {/* Rarity-tier tabs — All + one per tier, each with the drawn count. */}
-      <div className="no-scrollbar shrink-0 flex items-stretch overflow-x-auto border-b border-black/10 bg-white">
-        {([["all", t.catAll, list.length], [1, t.prizeTier(1), tierCount(1)], [2, t.prizeTier(2), tierCount(2)], [3, t.prizeTier(3), tierCount(3)]] as [("all" | number), string, number][]).map(([key, label, count]) => {
-          const on = tierFilter === key;
-          const color = on ? "#D10005" : "#1d2129";
-          return (
-            <button
-              key={String(key)}
-              onClick={() => setTierFilter(key)}
-              className="relative flex flex-1 shrink-0 flex-col items-center justify-center gap-0.5 px-4 py-2.5"
-            >
-              <span className="whitespace-nowrap text-[13px] font-extrabold" style={{ color }}>{label}</span>
-              <span className="text-[11px] font-bold" style={{ color: on ? "#D10005" : "#8a9099" }}>{count}</span>
-              {on && <span className="absolute inset-x-3 bottom-0 h-[3px] rounded-full bg-[#D10005]" />}
+      {/* Rarity-tier chips — "ALL" is pinned and the prize tiers scroll beside
+          it, so a pack with more tiers than fit stays reachable. */}
+      <div className="flex shrink-0 items-center gap-2.5 bg-white px-3 pt-2.5">
+        <button onClick={() => setTierFilter("all")} className={tierChipCls(tierFilter === "all")}>
+          <span>{t.resultsTierAll}</span>
+          <span>{list.length}</span>
+        </button>
+        <span className="shrink-0 rotate-180"><BalanceArrow height={17} color="#D10005" /></span>
+        <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-2.5 overflow-x-auto">
+          {[1, 2, 3].map((tier) => (
+            <button key={tier} onClick={() => setTierFilter(tier)} className={tierChipCls(tierFilter === tier)}>
+              <span>{t.resultsTierChip(tier)}</span>
+              <span>{tierCount(tier)}</span>
             </button>
-          );
-        })}
+          ))}
+        </div>
       </div>
+
+      {/* Coin-value ordering — the only sort the results screen offers. */}
+      <div className="relative z-20 flex shrink-0 justify-end border-b border-black/10 bg-white px-3 py-2.5">
+        <button onClick={() => setSortOpen((v) => !v)} className="flex items-center gap-3.5" aria-haspopup="listbox" aria-expanded={sortOpen}>
+          <SortArrows />
+          <span className="text-[15px] font-bold leading-none text-[#0F0F0F]">{t.sortLabels[sortKey]}</span>
+          <svg width="11" height="7" viewBox="0 0 11 7" fill="none" aria-hidden="true" className={`shrink-0 transition-transform ${sortOpen ? "rotate-180" : ""}`}>
+            <path d="M1.4 1.4L5.5 5.5L9.6 1.4" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        {sortOpen && (
+          <div role="listbox" className="absolute right-3 top-full z-20 mt-1 w-[190px] overflow-hidden rounded-lg border border-[#e7e7e7] bg-white shadow-[0_8px_24px_rgba(0,0,0,0.14)]">
+            {(["coinDesc", "coinAsc"] as const).map((key) => (
+              <button
+                key={key}
+                role="option"
+                aria-selected={sortKey === key}
+                onClick={() => { setSortKey(key); setSortOpen(false); }}
+                className={`block w-full px-3 py-2.5 text-left text-[13px] font-bold ${sortKey === key ? "text-[#D10005]" : "text-[#0F0F0F]"}`}
+              >
+                {t.sortLabels[key]}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Tapping anywhere else dismisses the open sort menu. */}
+      {sortOpen && <div className="absolute inset-0 z-10" onClick={() => setSortOpen(false)} />}
 
       {/* Results list */}
       <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-3">
