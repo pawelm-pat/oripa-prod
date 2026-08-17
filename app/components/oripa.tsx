@@ -2719,11 +2719,13 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
 
             <div className="px-4 pb-4 pt-3.5">
               <h3 className="text-center text-[19px] font-extrabold tracking-tight text-[#D10005]">{t.drawLimitTitle}</h3>
-              <p className="mx-auto mt-1.5 max-w-[300px] text-center text-[12px] leading-relaxed text-[#5c626b]">{t.drawLimitBody}</p>
+              <p className="mx-auto mt-1.5 max-w-[300px] text-center text-[12px] leading-relaxed text-[#0F0F0F]">{t.drawLimitBody}</p>
 
+              {/* Secondary CTA per the design: full width, 39px tall, 6px
+                  radius, 2px outline in 60%-opacity ink. */}
               <button
                 onClick={() => setLimitOpen(false)}
-                className="mt-3.5 w-full rounded-[14px] border-[1.5px] border-[#b5b8bd] bg-white py-3.5 text-[15px] font-bold text-[#6b7075] active:scale-[0.98]"
+                className="mt-3.5 flex h-[39px] w-full items-center justify-center rounded-md border-2 border-[rgba(7,7,7,0.6)] bg-white text-[17px] font-bold leading-none text-[rgba(7,7,7,0.6)] active:scale-[0.98]"
               >
                 {t.drawLimitClose}
               </button>
@@ -3217,9 +3219,9 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
     tabScrollRef.current?.scrollTo({ top: 0 });
   }, [tab]);
 
-  // Lazy loading for the won list: reveal a batch at a time as the user
-  // scrolls near the bottom (no "Load more" button). Sized so both screens
-  // load several more sets, giving a real "fetching history" feel.
+  // Lazy loading, shared by all three tabs: reveal a batch at a time as the
+  // user scrolls near the bottom (no "Load more" button). Sized so both
+  // screens load several more sets, giving a real "fetching history" feel.
   const WON_PAGE = lootMode ? 4 : 6;
   const [wonVisible, setWonVisible] = useState(WON_PAGE);
   const [wonLoading, setWonLoading] = useState(false);
@@ -3309,18 +3311,18 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
   const filterActive = category !== "all" || rarityFilter !== "all" || q.length > 0;
   function clearFilters() { setCategory("all"); setRarityFilter("all"); setQuery(""); setListSelected(new Set()); }
 
-  // Paged slice of the won list + scroll-driven "load more".
+  // Paged slice of the active tab + scroll-driven "load more".
   const pagedWon = displayedWon.slice(0, wonVisible);
-  const wonHasMore = wonVisible < displayedWon.length;
-  function onWonScroll(e: React.UIEvent<HTMLDivElement>) {
-    if (tab !== "won") return;
+  const tabTotal = tab === "won" ? displayedWon.length : tab === "waiting" ? waiting.length : shipped.length;
+  const wonHasMore = wonVisible < tabTotal;
+  function onTabScroll(e: React.UIEvent<HTMLDivElement>) {
     const el = e.currentTarget;
-    if (wonBusy.current || wonVisible >= displayedWon.length) return;
+    if (wonBusy.current || wonVisible >= tabTotal) return;
     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 160) {
       wonBusy.current = true;
       setWonLoading(true);
       setTimeout(() => {
-        setWonVisible((v) => Math.min(v + WON_PAGE, displayedWon.length));
+        setWonVisible((v) => Math.min(v + WON_PAGE, tabTotal));
         setWonLoading(false);
         wonBusy.current = false;
       }, 450);
@@ -3419,7 +3421,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
         )}
       </header>
 
-      <div ref={tabScrollRef} onScroll={onWonScroll} className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
+      <div ref={tabScrollRef} onScroll={onTabScroll} className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
 
         {tab === "won" && (
           won.length === 0 ? (
@@ -3480,10 +3482,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                   })}
                 </div>
                 {wonHasMore ? (
-                  <div className="flex items-center justify-center gap-2 py-6 text-[12px] font-semibold text-[#8a9099]">
-                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#D10005] border-t-transparent" />
-                    {t.loadingMore}
-                  </div>
+                  <LoadingMoreRow t={t} />
                 ) : (
                   <div className="-mx-3 mt-3"><SiteFooter t={t} /></div>
                 )}
@@ -3491,8 +3490,8 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
             </>
           )
         )}
-        {tab === "waiting" && <WaitingTab prizes={waiting} t={t} lang={lang} />}
-        {tab === "shipped" && <ShippedTab prizes={shipped} onCopy={(c) => pushToast(t.toastCopied(c))} t={t} lang={lang} />}
+        {tab === "waiting" && <WaitingTab prizes={waiting} t={t} lang={lang} visible={wonVisible} page={WON_PAGE} hasMore={wonHasMore} />}
+        {tab === "shipped" && <ShippedTab prizes={shipped} onCopy={(c) => pushToast(t.toastCopied(c))} t={t} lang={lang} visible={wonVisible} page={WON_PAGE} hasMore={wonHasMore} />}
       </div>
 
       {lootMode && tab === "won" && won.length > 0 && (
@@ -3633,15 +3632,26 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
   );
 }
 
-function WaitingTab({ prizes, t, lang }: { prizes: WaitingPrize[]; t: Dict; lang: Lang }) {
+// Bottom-of-list spinner shared by the three My Loot tabs so paging feels the
+// same wherever the player is.
+function LoadingMoreRow({ t }: { t: Dict }) {
+  return (
+    <div className="flex items-center justify-center gap-2 py-6 text-[12px] font-semibold text-[#8a9099]">
+      <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#D10005] border-t-transparent" />
+      {t.loadingMore}
+    </div>
+  );
+}
+
+function WaitingTab({ prizes, t, lang, visible, page, hasMore }: { prizes: WaitingPrize[]; t: Dict; lang: Lang; visible: number; page: number; hasMore: boolean }) {
   if (prizes.length === 0) {
     return <EmptyState icon="📦" title={t.waitingEmptyTitle} subtitle={t.waitingEmptySub} />;
   }
   return (
     <div className="px-3 pb-4 pt-3">
       <div className="space-y-2.5">
-        {prizes.map((p) => (
-          <div key={p.id} className="flex gap-3 rounded-2xl bg-white p-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+        {prizes.slice(0, visible).map((p, i) => (
+          <div key={p.id} className="animate-fade-slide flex gap-3 rounded-2xl bg-white p-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.05)]" style={{ animationDelay: `${(i % page) * 45}ms` }}>
             <PrizeArt rarity={p.rarity} size={104} />
             <div className="min-w-0 flex-1">
               <img src={`/prize-tag-${rarityTier(p.rarity)}.png`} alt={t.prizeTier(rarityTier(p.rarity))} className="h-[24px] w-auto object-contain" draggable={false} />
@@ -3659,21 +3669,27 @@ function WaitingTab({ prizes, t, lang }: { prizes: WaitingPrize[]; t: Dict; lang
           </div>
         ))}
       </div>
-      <p className="mt-3 px-1 text-center text-[10.5px] text-[#a2a8b0]">{t.waitingFooter}</p>
-      <div className="-mx-3 mt-4"><SiteFooter t={t} /></div>
+      {hasMore ? (
+        <LoadingMoreRow t={t} />
+      ) : (
+        <>
+          <p className="mt-3 px-1 text-center text-[10.5px] text-[#a2a8b0]">{t.waitingFooter}</p>
+          <div className="-mx-3 mt-4"><SiteFooter t={t} /></div>
+        </>
+      )}
     </div>
   );
 }
 
-function ShippedTab({ prizes, onCopy, t, lang }: { prizes: ShippedPrize[]; onCopy: (code: string) => void; t: Dict; lang: Lang }) {
+function ShippedTab({ prizes, onCopy, t, lang, visible, page, hasMore }: { prizes: ShippedPrize[]; onCopy: (code: string) => void; t: Dict; lang: Lang; visible: number; page: number; hasMore: boolean }) {
   if (prizes.length === 0) {
     return <EmptyState icon="✅" title={t.shippedEmptyTitle} subtitle={t.shippedEmptySub} />;
   }
   return (
     <div className="px-3 pb-4 pt-3">
       <div className="space-y-2.5">
-        {prizes.map((p) => (
-          <div key={p.id} className="flex gap-3 rounded-2xl bg-white p-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+        {prizes.slice(0, visible).map((p, i) => (
+          <div key={p.id} className="animate-fade-slide flex gap-3 rounded-2xl bg-white p-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.05)]" style={{ animationDelay: `${(i % page) * 45}ms` }}>
             <PrizeArt rarity={p.rarity} size={104} />
             <div className="min-w-0 flex-1">
               <img src={`/prize-tag-${rarityTier(p.rarity)}.png`} alt={t.prizeTier(rarityTier(p.rarity))} className="h-[24px] w-auto object-contain" draggable={false} />
@@ -3695,8 +3711,21 @@ function ShippedTab({ prizes, onCopy, t, lang }: { prizes: ShippedPrize[]; onCop
           </div>
         ))}
       </div>
-      <div className="-mx-3 mt-4"><SiteFooter t={t} /></div>
+      {hasMore ? <LoadingMoreRow t={t} /> : <div className="-mx-3 mt-4"><SiteFooter t={t} /></div>}
     </div>
+  );
+}
+
+// Red house marking both address headings ("Choose shipping address" and
+// "Add a new delivery address").
+function AddressHomeIcon({ size = 24 }: { size?: number }) {
+  return (
+    <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" className="shrink-0" stroke="#D10005" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 11.2 12 4l9 7.2" />
+      <path d="M5 10v9h14v-9" />
+      <path d="M9.5 19v-4.5h5V19" />
+      <path d="M6.5 7.5v-2.2h2.2" />
+    </svg>
   );
 }
 
@@ -3834,8 +3863,10 @@ function ShippingFlow({
   function addrPhone(addr: ShippingAddr) { return `${addr.country === "japan" ? "+81" : "+1"} ${addr.phone}`; }
   function addrFlag(addr: ShippingAddr) { return addr.country === "japan" ? "🇯🇵" : "🇺🇸"; }
 
-  const inputCls = "w-full rounded-xl border border-black/15 px-3 py-2.5 text-[13px] text-[#1d2129] outline-none focus:border-[#D10005]";
-  const labelCls = "mb-1 mt-2 block text-[11px] font-semibold text-[#8a9099]";
+  // 182x39 with a 5px radius and a 1px #9D9D9D outline in the design; every
+  // field (inputs, selects, the phone prefix) shares the box.
+  const inputCls = "h-[39px] w-full rounded-[5px] border border-[#9D9D9D] px-3 text-[14px] text-[#0F0F0F] outline-none placeholder:text-[#9D9D9D] focus:border-[#D10005]";
+  const labelCls = "mb-1 mt-2 block text-[11px] font-semibold text-[#000000]";
 
   return (
     <div className="absolute inset-0 z-40 flex items-end" style={{ background: "rgba(0,0,0,0.45)" }} onClick={onClose}>
@@ -3848,7 +3879,10 @@ function ShippingFlow({
 
         {step === "address" && (
           <>
-            <h3 className="mb-2 text-[15px] font-bold text-[#1d2129]">{t.chooseAddress}</h3>
+            <div className="mb-2 flex items-center gap-2">
+              <AddressHomeIcon />
+              <h3 className="text-[15px] font-bold text-[#000000]">{t.chooseAddress}</h3>
+            </div>
             {shippingAddresses.length === 0 ? (
               <p className="mb-3 text-center text-[12.5px] text-[#8a9099]">{t.shippingEmpty}</p>
             ) : (
@@ -3902,8 +3936,8 @@ function ShippingFlow({
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
                 </button>
               )}
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M3 11.2 12 4l9 7.2" stroke="#D10005" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><path d="M5 10v9h14v-9" stroke="#D10005" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><path d="M9.5 19v-4.5h5V19" stroke="#D10005" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><path d="M6.5 7.5v-2.2h2.2" stroke="#D10005" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              <h3 className="text-[15px] font-bold text-[#1d2129]">{t.shippingAddNew}</h3>
+              <AddressHomeIcon />
+              <h3 className="text-[15px] font-bold text-[#000000]">{t.shippingAddNew}</h3>
             </div>
 
             <div className="mb-3 flex gap-2">
@@ -3928,8 +3962,8 @@ function ShippingFlow({
                   <option value="japan">{t.shippingJapan}</option>
                   <option value="usa">{t.shippingUSA}</option>
                 </select>
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#8a9099]">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#D10005]">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
                 </span>
               </div>
             </div>
@@ -3949,7 +3983,7 @@ function ShippingFlow({
                         <option value="">{lang === "ja" ? "都道府県" : "Prefecture"}</option>
                         {PREFECTURES_JA.map((ja, i) => <option key={ja} value={ja}>{lang === "ja" ? ja : PREFECTURES_EN[i]}</option>)}
                       </select>
-                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#8a9099]"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg></span>
+                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#D10005]"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg></span>
                     </div>
                   </div>
                 </div>
@@ -4016,7 +4050,7 @@ function ShippingFlow({
                       <option value="">Select State</option>
                       {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
-                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#8a9099]"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg></span>
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#D10005]"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg></span>
                   </div>
                 </div>
                 <div className="mb-3">
@@ -4030,7 +4064,7 @@ function ShippingFlow({
             <div className="mb-4">
               <label className={labelCls}>{t.profilePhone}<span className="ml-0.5 text-[#D10005]">*</span></label>
               <div className="flex items-center gap-2">
-                <div className="flex shrink-0 items-center self-stretch rounded-xl border border-black/15 px-3 text-[13px] text-[#1d2129]">{phonePrefix}</div>
+                <div className="flex h-[39px] shrink-0 items-center rounded-[5px] border border-[#9D9D9D] px-3 text-[14px] text-[#0F0F0F]">{phonePrefix}</div>
                 <div className="flex-1">
                   <input
                     type="tel"
@@ -4058,34 +4092,34 @@ function ShippingFlow({
 
         {step === "confirm" && (
           <>
-            <h3 className="mb-2 text-[15px] font-bold text-[#1d2129]">{t.confirmTitle}</h3>
+            <h3 className="mb-2 text-[15px] font-bold text-[#000000]">{t.confirmTitle}</h3>
             <div className="rounded-xl bg-[#f1f3f6] p-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.deliverTo}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#000000]">{t.deliverTo}</p>
               {chosen && (
-                <p className="mt-1 text-[12.5px] leading-relaxed text-[#1d2129]">
+                <p className="mt-1 text-[12.5px] leading-relaxed text-[#000000]">
                   <b>{addrFlag(chosen)} {addrName(chosen)}</b><br />
-                  {addrDisplayLines(chosen).map((l, i) => <span key={i} className="text-[#5c626b]">{l}<br /></span>)}
-                  <span className="text-[#8a9099]">{addrPhone(chosen)}</span>
+                  {addrDisplayLines(chosen).map((l, i) => <span key={i}>{l}<br /></span>)}
+                  <span>{addrPhone(chosen)}</span>
                 </p>
               )}
             </div>
-            <p className="mb-1 mt-3 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.prizesCount(prizes.length)}</p>
+            <p className="mb-1 mt-3 text-[11px] font-semibold uppercase tracking-wide text-[#000000]">{t.prizesCount(prizes.length)}</p>
             <div className="space-y-1.5">
               {prizes.map((p) => (
                 <div key={p.id} className="flex items-center gap-2">
                   <PrizeArt rarity={p.rarity} size={32} />
-                  <span className="flex-1 truncate text-[12px] text-[#41464e]">{locName(p, lang)}</span>
+                  <span className="flex-1 truncate text-[12px] text-[#000000]">{locName(p, lang)}</span>
                   <CoinChip value={p.coinValue} />
                 </div>
               ))}
             </div>
             <div className="mt-3 flex items-center justify-between rounded-xl bg-[#FFF6E3] px-3 py-2">
-              <span className="text-[12px] font-semibold text-[#B5740A]">{t.totalValue}</span>
+              <span className="text-[12px] font-semibold text-[#000000]">{t.totalValue}</span>
               <CoinChip value={total} strong />
             </div>
             <p className="mt-2 text-center text-[11px] text-[#8a9099]">{t.freeShip}</p>
             <div className="mt-3 grid grid-cols-2 gap-2">
-              <button onClick={() => setStep("address")} className="rounded-xl border border-black/15 py-2.5 text-[13px] font-bold text-[#5c626b]">{t.back}</button>
+              <button onClick={() => setStep("address")} className="rounded-xl border border-black/15 py-2.5 text-[13px] font-bold text-[#000000]">{t.back}</button>
               <div className="relative">
                 {shipBadge}
                 <button onClick={onConfirm} className="w-full rounded-xl py-2.5 text-[13px] font-bold text-white" style={{ background: "linear-gradient(180deg,#ff8a1f,#f5670a)" }}>{t.requestShippingBtn}</button>
