@@ -3725,17 +3725,19 @@ function ShippedTab({ prizes, onCopy, t, lang, visible, page, hasMore }: { prize
   );
 }
 
-// Red house marking both address headings ("Choose shipping address" and
-// "Add a new delivery address").
-function AddressHomeIcon({ size = 24 }: { size?: number }) {
-  return (
-    <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" className="shrink-0" stroke="#D10005" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 11.2 12 4l9 7.2" />
-      <path d="M5 10v9h14v-9" />
-      <path d="M9.5 19v-4.5h5V19" />
-      <path d="M6.5 7.5v-2.2h2.2" />
-    </svg>
-  );
+// Design icons for the address steps. The exported art already carries its own
+// padding, and the edit/add glyphs are ink at partial strength in the design,
+// hence the opacities.
+function AddressHomeIcon() {
+  return <img src="/icon-address-home.png" alt="" aria-hidden="true" draggable={false} className="h-[21px] w-[22px] shrink-0 object-contain" />;
+}
+
+function AddressEditIcon() {
+  return <img src="/icon-address-edit.png" alt="" aria-hidden="true" draggable={false} className="h-6 w-6 shrink-0 object-contain opacity-50" />;
+}
+
+function AddressAddIcon() {
+  return <img src="/icon-address-add.png" alt="" aria-hidden="true" draggable={false} className="h-5 w-5 shrink-0 object-contain opacity-60" />;
 }
 
 /* ── Shipping request flow (bottom-sheet) ────────────────────────────── */
@@ -3762,13 +3764,15 @@ function ShippingFlow({
 }) {
   // Shipping badge shown over the primary CTA on the address + confirm steps.
   const shipBadge = (
-    <div
-      className={`pointer-events-none absolute -top-2.5 left-0 right-0 z-10 flex items-center justify-center gap-1 whitespace-nowrap rounded-full px-2 py-[3px] ring-1 ${freeShipAvailable ? "bg-gradient-to-br from-[#1eae52] to-[#12813c] text-white ring-white/30" : "bg-gradient-to-br from-[#ffcf33] to-[#f5a623] text-[#3a2a00] ring-black/10"}`}
-      style={{ animation: "freeShipIn .3s cubic-bezier(.2,.9,.3,1) both" }}
-    >
+    <div className="pointer-events-none absolute -top-2 left-0 right-0 z-10 flex justify-center">
       <style>{`@keyframes freeShipIn{from{opacity:0;transform:translateY(-6px) scale(.9)}to{opacity:1;transform:none}}`}</style>
-      {freeShipAvailable && <svg width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M7.5 12.5l3 3 6-6.5" stroke="#12813c" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>}
-      <span className="text-[9.5px] font-extrabold tracking-wide">{freeShipAvailable ? t.freeShippingQuota(FREE_SHIP_QUOTA) : t.paidShipBadge}</span>
+      <span
+        className={`flex h-4 items-center gap-1 whitespace-nowrap rounded-[3px] px-1.5 ${freeShipAvailable ? "bg-[#00A63D] text-white" : "bg-[#FDC410] text-[#0F0F0F]"}`}
+        style={{ animation: "freeShipIn .3s cubic-bezier(.2,.9,.3,1) both" }}
+      >
+        {freeShipAvailable && <svg width="10" height="10" viewBox="0 0 24 24" className="shrink-0"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M7.5 12.5l3 3 6-6.5" stroke="#00A63D" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+        <span className="text-[10px] font-bold leading-none">{freeShipAvailable ? t.freeShippingQuota(FREE_SHIP_QUOTA) : t.paidShipBadge}</span>
+      </span>
     </div>
   );
   const [step, setStep] = useState<"address" | "confirm" | "addNew">(shippingAddresses.length === 0 ? "addNew" : "address");
@@ -3778,6 +3782,7 @@ function ShippingFlow({
   });
 
   const [newForm, setNewForm] = useState<Omit<ShippingAddr, "id" | "isDefault">>(EMPTY_SHIPPING_FORM);
+  const [editId, setEditId] = useState<string | null>(null);
   const [postalTouched, setPostalTouched] = useState(false);
   const [phoneTouched, setPhoneTouched] = useState(false);
   const [zipTouched, setZipTouched] = useState(false);
@@ -3849,7 +3854,19 @@ function ShippingFlow({
     setSearching(false); setCandidates([]);
   }
 
+  // Set while the form is editing an existing address rather than adding one.
+  function openEdit(addr: ShippingAddr) {
+    const { id: _id, isDefault: _isDefault, ...fields } = addr;
+    setEditId(addr.id);
+    setNewForm(fields);
+    setPostalTouched(false); setPhoneTouched(false); setZipTouched(false); setStreetNumTouched(false);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    setSearching(false); setCandidates([]);
+    setStep("addNew");
+  }
+
   function openAddNew() {
+    setEditId(null);
     setNewForm({ ...EMPTY_SHIPPING_FORM });
     setPostalTouched(false); setPhoneTouched(false); setZipTouched(false); setStreetNumTouched(false);
     if (searchTimer.current) clearTimeout(searchTimer.current);
@@ -3858,6 +3875,13 @@ function ShippingFlow({
   }
 
   function handleSaveNewAddress() {
+    if (editId) {
+      onShippingAddressesChange(prev => prev.map(a => (a.id === editId ? { ...a, ...newForm } : a)));
+      setAddrId(editId);
+      setEditId(null);
+      setStep("address");
+      return;
+    }
     const isFirst = shippingAddresses.length === 0;
     const newAddr: ShippingAddr = { id: Date.now().toString(36), isDefault: isFirst, ...newForm };
     onShippingAddressesChange(prev => [...prev, newAddr]);
@@ -3900,27 +3924,39 @@ function ShippingFlow({
                   const sel = addr.id === addrId;
                   const lines = addrDisplayLines(addr);
                   return (
-                    <button
+                    <div
                       key={addr.id}
                       onClick={() => setAddrId(addr.id)}
-                      className="flex w-full items-start gap-2.5 rounded-xl border-2 p-3 text-left"
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setAddrId(addr.id); } }}
+                      className="relative flex w-full items-start gap-2.5 rounded-xl border-2 p-3 text-left"
                       style={{ borderColor: sel ? "#D10005" : "#e5e8ec", background: sel ? "#FFF4F4" : "#fff" }}
                     >
                       <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2" style={{ borderColor: sel ? "#D10005" : "#c9ced6" }}>
                         {sel && <span className="h-2 w-2 rounded-full bg-[#D10005]" />}
                       </span>
-                      <span className="text-[12.5px] leading-relaxed">
+                      <span className="pr-7 text-[12.5px] leading-relaxed">
                         <b className="text-[#1d2129]">{addrFlag(addr)} {addrName(addr)}</b>
-                        {addr.isDefault && <span className="ml-1.5 rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ background: "#22a34a" }}>{t.shippingDefaultLabel}</span>}
+                        {addr.isDefault && <span className="ml-1.5 inline-flex h-4 items-center rounded-[3px] bg-[#00A63D] px-1.5 align-middle text-[9px] font-bold uppercase text-white">{t.shippingDefaultLabel}</span>}
                         <br />{lines.map((l, i) => <span key={i} className="text-[#5c626b]">{l}<br /></span>)}
                         <span className="text-[#8a9099]">{addrPhone(addr)}</span>
                       </span>
-                    </button>
+                      {/* Pencil opens this address in the form for editing. */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); openEdit(addr); }}
+                        aria-label={t.shippingEditAddress}
+                        className="absolute right-2.5 top-2.5 flex h-6 w-6 items-center justify-center active:opacity-60"
+                      >
+                        <AddressEditIcon />
+                      </button>
+                    </div>
                   );
                 })}
               </div>
             )}
-            <button onClick={openAddNew} className="mt-2 w-full rounded-xl border border-dashed border-black/20 py-2.5 text-[13px] font-bold text-[#5c626b]">
+            <button onClick={openAddNew} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-black/20 py-2.5 text-[13px] font-bold text-[#5c626b]">
+              <AddressAddIcon />
               {t.addNewAddress}
             </button>
             <div className="relative mt-3">
@@ -3946,7 +3982,7 @@ function ShippingFlow({
                 </button>
               )}
               <AddressHomeIcon />
-              <h3 className="text-[15px] font-bold text-[#000000]">{t.shippingAddNew}</h3>
+              <h3 className="text-[15px] font-bold text-[#000000]">{editId ? t.shippingEditAddress : t.shippingAddNew}</h3>
             </div>
 
             <div className="mb-3 flex gap-2">
