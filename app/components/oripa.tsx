@@ -2740,7 +2740,7 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onBackToInfo, onHo
               {otherOripa.length > 0 && (
                 <>
                   <div className="my-3.5 border-t border-dashed border-black/20" />
-                  <p className="mb-2.5 text-center text-[12px] font-bold text-[#8a9099]">{t.drawOtherOripa}</p>
+                  <p className="mb-2.5 text-center text-[12px] font-bold text-[#0F0F0F]">{t.drawOtherOripa}</p>
                   <div className="relative px-8">
                     {(() => {
                       const other = otherOripa[otherIdx % otherOripa.length];
