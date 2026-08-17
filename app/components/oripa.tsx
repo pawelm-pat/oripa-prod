@@ -1328,6 +1328,8 @@ const DRAW_PRICE = 1000; // coins per single draw (mirrors the lobby card price)
 // popup (mirrors the static free-point figure shown across the app).
 const DRAW_FREE_POINTS = 10000;
 const MAX_CUSTOM_DRAW = 100; // cap for the custom-draw quantity stepper
+// +5 / +10 / MAX buttons under the custom-draw stepper.
+const quickAddCls = "flex h-[30px] w-[94px] shrink-0 items-center justify-center whitespace-nowrap rounded-lg border-2 border-black bg-white text-[14px] font-bold leading-none text-black active:scale-95";
 
 // Beveled tier plate ("1等 / 2등 / 3등") — gold for 1st/2nd, silver for 3rd,
 // matching the design's metallic name-plates on the dark prize board.
@@ -1733,11 +1735,12 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
                 </button>
               </div>
 
-              {/* Quick-add */}
-              <div className="mt-3 flex items-center justify-center gap-2">
-                <button onClick={() => setQty(customQty + 5)} className="rounded-[10px] border-2 border-black bg-white px-4 py-2 text-[13px] font-bold text-black active:scale-95">{t.drawCustomAdd(5)}</button>
-                <button onClick={() => setQty(customQty + 10)} className="rounded-[10px] border-2 border-black bg-white px-4 py-2 text-[13px] font-bold text-black active:scale-95">{t.drawCustomAdd(10)}</button>
-                <button onClick={() => setQty(MAX_CUSTOM_DRAW)} className="rounded-[10px] border-2 border-black bg-white px-4 py-2 text-[13px] font-bold text-black active:scale-95">{t.drawCustomMax}</button>
+              {/* Quick-add — the design fixes all three to 94x30 with a 10px
+                  gap, so the row keeps its shape whatever the labels read. */}
+              <div className="mt-3 flex items-center justify-center gap-[10px]">
+                <button onClick={() => setQty(customQty + 5)} className={quickAddCls}>{t.drawCustomAdd(5)}</button>
+                <button onClick={() => setQty(customQty + 10)} className={quickAddCls}>{t.drawCustomAdd(10)}</button>
+                <button onClick={() => setQty(MAX_CUSTOM_DRAW)} className={quickAddCls}>{t.drawCustomMax}</button>
               </div>
 
               {/* Balances — same selectable rows as the fixed-count popup */}
