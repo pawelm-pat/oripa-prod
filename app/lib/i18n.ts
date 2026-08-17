@@ -102,6 +102,9 @@ const EN = {
   prizesCount: (n: number) => `${n} prize${n > 1 ? "s" : ""}`,
   totalValue: "Total value",
   freeShip: "Free shipping · delivery within 14 business days.",
+  // Used once the free quota is gone, so the note keeps the delivery estimate
+  // without claiming shipping is free.
+  paidShipNote: "Delivery within 14 business days.",
   requestShippingBtn: "Request Shipping",
   toastShipReq: "Shipping requested · delivery within 14 business days",
   requested: (d: string) => `Requested ${d}`,
@@ -1178,6 +1181,7 @@ const JA: Dict = {
   prizesCount: (n) => `${n}個の景品`,
   totalValue: "合計価値",
   freeShip: "送料無料 · 14営業日以内にお届け。",
+  paidShipNote: "14営業日以内にお届け。",
   requestShippingBtn: "発送を依頼",
   toastShipReq: "発送を依頼しました · 14営業日以内にお届け",
   requested: (d) => `依頼日 ${d}`,

@@ -4192,9 +4192,11 @@ function ShippingFlow({
               <span className="text-[12px] font-semibold text-[#000000]">{t.totalValue}</span>
               <CoinChip value={total} strong />
             </div>
-            {/* Shipping fee reads the same whether the quota covers it or not. */}
+            {/* Shipping fee reads the same whether the quota covers it or not,
+                but the note below drops the free-shipping claim once a fee
+                applies and keeps only the delivery estimate. */}
             <p className="mt-2 text-right text-[12px] font-semibold text-[#0F0F0F]">{t.shipFeeLine}</p>
-            <p className="mt-2 text-center text-[11px] text-[#8a9099]">{t.freeShip}</p>
+            <p className="mt-2 text-center text-[11px] text-[#8a9099]">{freeShipAvailable ? t.freeShip : t.paidShipNote}</p>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <button onClick={() => setStep("address")} className="rounded-xl border border-black/15 py-2.5 text-[13px] font-bold text-[#000000]">{t.back}</button>
               <div className="relative">
