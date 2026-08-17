@@ -1458,7 +1458,7 @@ function DrawTierCard({ rarity, large = false }: { rarity: Rarity; large?: boole
    because a lobby card's CTA opens the same flow without leaving the lobby.
    Hosts mount it as an overlay (the parent must be positioned) and ask for a
    draw by passing a `request`; it renders nothing while idle. */
-function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, onHome, onOpenStore, onOpenDraw, onAttemptPaidDraw, pendingConfirm, onPendingConfirmConsumed }: { lang: Lang; item: OripaItem; coins: number; request: DrawRequest | null; soldOut?: boolean; /** The sold-out popup was dismissed, so the host can latch its greyed state. */ onSoldOut?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem) => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** After Quick Purchase success, host re-opens this count's confirmation. */ pendingConfirm?: { count: number; token: number } | null; onPendingConfirmConsumed?: () => void }) {
+function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, onHome, onOpenStore, onOpenDraw, onAttemptPaidDraw, onTopUp, pendingConfirm, onPendingConfirmConsumed }: { lang: Lang; item: OripaItem; coins: number; request: DrawRequest | null; soldOut?: boolean; /** The sold-out popup was dismissed, so the host can latch its greyed state. */ onSoldOut?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem) => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** The confirmation's Charge/Top Up CTA: open the store for a draw the wallet can't cover. */ onTopUp?: (count: number) => void; /** After Quick Purchase success, host re-opens this count's confirmation. */ pendingConfirm?: { count: number; token: number } | null; onPendingConfirmConsumed?: () => void }) {
   const t = STR[lang];
   // Opens a stored legal document (T&Cs, etc.) in the shared overlay.
   const openLegal = useContext(LegalNavContext);
@@ -1655,6 +1655,27 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
     );
   }
 
+  // A draw that costs more than the wallet holds keeps its confirmation open:
+  // the shortfall is spelled out under the balance and the confirm CTA becomes
+  // the store, so topping up stays a choice. Free points have no top-up path,
+  // so paying with them keeps the normal CTA.
+  const shortfallFor = (count: number) => (payCurrency === "coins" ? Math.max(0, DRAW_PRICE * count - coins) : 0);
+  const shortfallNote = (amount: number) => (
+    <p className="mx-auto mt-3 max-w-[300px] text-center text-[13px] font-medium leading-[1.45] text-[#D10005]">
+      {t.noCoinsShortPre}
+      <span className="font-extrabold">{t.noCoinsShortAmount(amount.toLocaleString())}</span>
+      {t.noCoinsShortPost}
+    </p>
+  );
+  function requestTopUp(count: number) {
+    closeSheet();
+    // Without a host store the shortfall popup is the only route left.
+    if (onTopUp) onTopUp(count);
+    else onAttemptPaidDraw?.(count);
+  }
+  const confirmShort = confirmCount != null && !confirmFree ? shortfallFor(confirmCount) : 0;
+  const customShort = customOpen ? shortfallFor(customQty) : 0;
+
   return (
     <>
       {/* Draw-confirmation popup */}
@@ -1680,14 +1701,17 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
 
               {!confirmFree && balanceRows(confirmCount)}
 
-              {/* Confirm CTA — primary (red), fixed 39px / 8px radius per design */}
+              {confirmShort > 0 && shortfallNote(confirmShort)}
+
+              {/* Confirm CTA — primary (red), fixed 39px / 8px radius per design.
+                  Short of coins it charges the wallet instead of drawing. */}
               <button
-                onClick={confirmDraw}
+                onClick={confirmShort > 0 ? () => requestTopUp(confirmCount) : confirmDraw}
                 className="mt-3.5 flex h-[39px] w-full items-center justify-center rounded-lg bg-[#D10005] text-[15px] font-extrabold text-white active:scale-[0.98]"
               >
                 {/* Counts other than 1 or 10 reach here when a top-up resumes a
                     custom draw, so the label is built from the count. */}
-                {confirmFree ? (confirmCount === 1 ? t.btnFree : t.btnFree10) : t.drawCustomCta(confirmCount)}
+                {confirmShort > 0 ? t.noCoinsCta : confirmFree ? (confirmCount === 1 ? t.btnFree : t.btnFree10) : t.drawCustomCta(confirmCount)}
               </button>
 
               {/* Dashed divider */}
@@ -1766,12 +1790,15 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
               {/* Balances — same selectable rows as the fixed-count popup */}
               {balanceRows(customQty)}
 
-              {/* Confirm CTA — primary (red), fixed 39px / 8px radius; count in front */}
+              {customShort > 0 && shortfallNote(customShort)}
+
+              {/* Confirm CTA — primary (red), fixed 39px / 8px radius; count in
+                  front, or the store when the quantity outruns the balance. */}
               <button
-                onClick={confirmCustomDraw}
+                onClick={customShort > 0 ? () => requestTopUp(customQty) : confirmCustomDraw}
                 className="mt-3 flex h-[39px] w-full items-center justify-center rounded-lg bg-[#D10005] text-[15px] font-extrabold text-white active:scale-[0.98]"
               >
-                {t.drawCustomCta(customQty)}
+                {customShort > 0 ? t.noCoinsCta : t.drawCustomCta(customQty)}
               </button>
 
               {/* Dashed divider */}
@@ -1972,7 +1999,7 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
 
 // The pack page: artwork, price / stock, prize line-up and the sticky CTA row.
 // Drawing itself is delegated to DrawFlow, the same flow a lobby card opens.
-function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, onOpenDraw, onAttemptPaidDraw, pendingConfirm, onPendingConfirmConsumed }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; onOpenDraw?: (item: OripaItem) => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** After Quick Purchase success, host re-opens this count's confirmation. */ pendingConfirm?: { count: number; token: number } | null; onPendingConfirmConsumed?: () => void }) {
+function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, onOpenDraw, onAttemptPaidDraw, onTopUp, pendingConfirm, onPendingConfirmConsumed }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; onOpenDraw?: (item: OripaItem) => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** The confirmation's Charge/Top Up CTA: open the store for a draw the wallet can't cover. */ onTopUp?: (count: number) => void; /** After Quick Purchase success, host re-opens this count's confirmation. */ pendingConfirm?: { count: number; token: number } | null; onPendingConfirmConsumed?: () => void }) {
   const t = STR[lang];
   const openLegal = useContext(LegalNavContext);
   const [cautionOpen, setCautionOpen] = useState(false);
@@ -2152,6 +2179,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
         onOpenStore={onOpenStore}
         onOpenDraw={onOpenDraw}
         onAttemptPaidDraw={onAttemptPaidDraw}
+        onTopUp={onTopUp}
         pendingConfirm={pendingConfirm}
         onPendingConfirmConsumed={onPendingConfirmConsumed}
       />
@@ -5680,6 +5708,9 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
     setCoins((c) => c - cost);
     return true;
   };
+  // The draw confirmation states its own shortfall, so its Charge/Top Up CTA
+  // opens the sheet directly instead of repeating it in the shortfall popup.
+  const openTopUpForDraw = (count: number) => setQuickPurchase({ drawCount: count, billCount: count, cost: count * DRAW_PRICE });
   // john.inr@gmail.com → Quick Purchase / cashier show INR + JPY currency picker.
   const intlLocalCurrency: IntlCurrencyInfo | null = (() => {
     try {
@@ -5914,6 +5945,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             shippingAddresses={shippingAddresses}
             onShippingAddressesChange={setShippingAddresses}
             onAttemptPaidDraw={attemptDraw}
+            onTopUp={openTopUpForDraw}
             pendingConfirm={pendingConfirm}
             onPendingConfirmConsumed={() => setPendingConfirm(null)}
           />
@@ -6103,6 +6135,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onOpenStore={openStore}
             onOpenDraw={openDraw}
             onAttemptPaidDraw={attemptDraw}
+            onTopUp={openTopUpForDraw}
             pendingConfirm={pendingConfirm}
             onPendingConfirmConsumed={() => setPendingConfirm(null)}
           />
