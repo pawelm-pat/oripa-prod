@@ -3571,8 +3571,8 @@ function WaitingTab({ prizes, t, lang }: { prizes: WaitingPrize[]; t: Dict; lang
               <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-[#FFF3E0] px-2 py-0.5 text-[10.5px] font-semibold text-[#C9701B]">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#f5670a]" /> {t.preparing}
               </span>
-              <div className="mt-1.5 flex h-7 items-center justify-center gap-1.5 rounded-[10px] bg-[rgba(255,223,147,0.5)]">
-                <CoinIcon size={18} />
+              <div className="mt-1.5 flex h-6 w-fit items-center gap-2 rounded-lg bg-[rgba(255,223,147,0.5)] px-[18px]">
+                <CoinIcon size={15} />
                 <span className="text-[15px] font-bold leading-none text-[#0F0F0F]">{p.coinValue.toLocaleString()}</span>
               </div>
             </div>
@@ -3607,8 +3607,8 @@ function ShippedTab({ prizes, onCopy, t, lang }: { prizes: ShippedPrize[]; onCop
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="2" /><path d="M5 15V5a2 2 0 012-2h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
                 </button>
               </div>
-              <div className="mt-1.5 flex h-7 items-center justify-center gap-1.5 rounded-[10px] bg-[rgba(255,223,147,0.5)]">
-                <CoinIcon size={18} />
+              <div className="mt-1.5 flex h-6 w-fit items-center gap-2 rounded-lg bg-[rgba(255,223,147,0.5)] px-[18px]">
+                <CoinIcon size={15} />
                 <span className="text-[15px] font-bold leading-none text-[#0F0F0F]">{p.coinValue.toLocaleString()}</span>
               </div>
             </div>
