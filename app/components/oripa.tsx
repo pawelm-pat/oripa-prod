@@ -3794,14 +3794,16 @@ function ShippingFlow({
 }) {
   // Shipping badge shown over the primary CTA on the address + confirm steps.
   const shipBadge = (
-    <div className="pointer-events-none absolute -top-2 left-0 right-0 z-10 flex justify-center">
+    <div className="pointer-events-none absolute top-[-10px] left-0 right-0 z-10 flex justify-center">
       <style>{`@keyframes freeShipIn{from{opacity:0;transform:translateY(-6px) scale(.9)}to{opacity:1;transform:none}}`}</style>
+      {/* The design sits the tag on the CTA's top edge at the button's own
+          width, so it never overhangs the corners however long the label. */}
       <span
-        className={`flex h-4 items-center gap-1 whitespace-nowrap rounded-[3px] px-1.5 ${freeShipAvailable ? "bg-[#00A63D] text-white" : "bg-[#FDC410] text-[#0F0F0F]"}`}
+        className={`flex h-4 max-w-full items-center justify-center gap-1 overflow-hidden whitespace-nowrap rounded-[3px] px-1.5 ${freeShipAvailable ? "bg-[#00A63D] text-white" : "bg-[#FDC410] text-[#0F0F0F]"}`}
         style={{ animation: "freeShipIn .3s cubic-bezier(.2,.9,.3,1) both" }}
       >
         {freeShipAvailable && <svg width="10" height="10" viewBox="0 0 24 24" className="shrink-0"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M7.5 12.5l3 3 6-6.5" stroke="#00A63D" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>}
-        <span className="text-[10px] font-bold leading-none">{freeShipAvailable ? t.freeShippingQuota(FREE_SHIP_QUOTA) : t.paidShipBadge}</span>
+        <span className="truncate text-[9px] font-bold leading-none">{freeShipAvailable ? t.freeShippingQuota(FREE_SHIP_QUOTA) : t.paidShipBadge}</span>
       </span>
     </div>
   );
@@ -4192,10 +4194,10 @@ function ShippingFlow({
               <span className="text-[12px] font-semibold text-[#000000]">{t.totalValue}</span>
               <CoinChip value={total} strong />
             </div>
-            {/* Shipping fee reads the same whether the quota covers it or not,
-                but the note below drops the free-shipping claim once a fee
-                applies and keeps only the delivery estimate. */}
-            <p className="mt-2 text-right text-[12px] font-semibold text-[#0F0F0F]">{t.shipFeeLine}</p>
+            {/* The fee only exists once the monthly free quota is spent, and the
+                note below then drops the free-shipping claim, keeping just the
+                delivery estimate. */}
+            {!freeShipAvailable && <p className="mt-2 text-right text-[12px] font-semibold text-[#0F0F0F]">{t.shipFeeLine}</p>}
             <p className="mt-2 text-center text-[11px] text-[#8a9099]">{freeShipAvailable ? t.freeShip : t.paidShipNote}</p>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <button onClick={() => setStep("address")} className="rounded-xl border border-black/15 py-2.5 text-[13px] font-bold text-[#000000]">{t.back}</button>
