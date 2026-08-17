@@ -3464,11 +3464,13 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                 onClick={() => setTab(tb.key)}
                 className="relative flex-1 pb-2.5 pt-1 text-center"
               >
-                <span className={`text-[12px] font-bold ${active ? "text-[#D10005]" : "text-[#8a9099]"}`}>
+                {/* Every tab label stays ink in the design — the red underline and
+                    the filled count pill carry the active state. */}
+                <span className="text-[12px] font-bold text-[#0F0F0F]">
                   {tb.label}
                 </span>
                 <span
-                  className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${active ? "bg-[#D10005] text-white" : "bg-black/[0.07] text-[#8a9099]"}`}
+                  className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${active ? "bg-[#D10005] text-white" : "bg-black/[0.07] text-[#0F0F0F]"}`}
                 >
                   {counts[tb.key]}
                 </span>
@@ -4626,7 +4628,37 @@ const MENU_ICON_IMG: Record<string, string> = {
   faq: "/menu-faq.png",
   contact: "/menu-contact.png",
   notices: "/menu-notices.png",
+  coinHistory: "/menu-coin-history.png",
 };
+
+/* Coins + free points strip. My Page and the Coin History header show the same
+   design block: two equal halves split by a full-height 1px rule, a 14px label
+   over a 24px amount in #0F0F0F, and a plus on the coin side that opens the
+   store. */
+function BalanceStrip({ t, coins, points = 10000, onOpenStore }: { t: Dict; coins: number; points?: number; onOpenStore?: () => void }) {
+  return (
+    <div className="flex items-stretch">
+      <div className="min-w-0 flex-1 pr-4">
+        <p className="text-[14px] font-normal leading-none text-[#0F0F0F]">{t.chOripaCoins}</p>
+        <div className="mt-2.5 flex items-center gap-1.5">
+          <CoinIcon size={24} />
+          <span className="text-[24px] font-bold leading-none text-[#0F0F0F]">{coins.toLocaleString()}</span>
+          <button onClick={onOpenStore} aria-label={t.addCoinsAria} className="ml-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center transition active:scale-95">
+            <img src="/plus-sign.png" alt="" className="h-full w-full object-contain" draggable={false} />
+          </button>
+        </div>
+      </div>
+      <div className="w-px shrink-0 bg-[#E7E7E7]" />
+      <div className="min-w-0 flex-1 pl-5">
+        <p className="text-[14px] font-normal leading-none text-[#0F0F0F]">{t.chFreePoints}</p>
+        <div className="mt-2.5 flex items-center gap-1.5">
+          <GemIcon size={21} />
+          <span className="text-[24px] font-bold leading-none text-[#0F0F0F]">{points.toLocaleString()}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function myMenuIcon(key: string) {
   const c = "#D10005";
@@ -4634,8 +4666,6 @@ function myMenuIcon(key: string) {
     return <img src={MENU_ICON_IMG[key]} alt="" className="h-[26px] w-[26px] shrink-0 object-contain" />;
   }
   switch (key) {
-    case "coinHistory":
-      return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 1.8" /></svg>;
     case "shippingAddress":
       return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" /><circle cx="12" cy="9" r="2.5" /></svg>;
     case "subscriptions":
@@ -4693,49 +4723,47 @@ function MyPage({ lang, coins, displayName = "Username", onOpenQuest, onOpenPriz
             <div className="min-w-0 flex-1">
               <p className="truncate text-[19px] font-extrabold text-[#1d2129]">{displayName.trim() || t.accountName}</p>
               <p className="mt-0.5 text-[12px] font-normal text-[#8a9099]">{t.mpId} : XXXXXX</p>
-              <button onClick={onOpenProfile} className="mt-2 w-full rounded-lg border-2 border-[#D10005] py-1.5 text-[13px] font-bold text-[#D10005]">{t.mpEditProfile}</button>
+              {/* 24px tall, 1px outline, 6px radius — the design's secondary CTA. */}
+              <button onClick={onOpenProfile} className="mt-2.5 flex h-6 w-full items-center justify-center rounded-[6px] border border-[#D10005] text-[14px] font-bold leading-none text-[#D10005] active:bg-[#D10005]/[0.06]">{t.mpEditProfile}</button>
             </div>
           </div>
 
           {/* Balance card */}
-          <div className="mt-3 rounded-2xl bg-white p-4 shadow-[0_1px_4px_rgba(0,0,0,0.08)]">
-            <div className="flex items-stretch">
-              <div className="flex-1 pr-3">
-                <p className="text-[13px] font-normal text-[#5b616b]">{t.mpOripaCoin}</p>
-                <p className="mt-1 flex items-center gap-1.5 text-[22px] font-extrabold text-[#1d2129]">
-                  <CoinIcon size={22} />{coins.toLocaleString()}
-                  <img src="/icons/coin-plus.png" alt="" className="h-5 w-5 object-contain" draggable={false} />
-                </p>
-              </div>
-              <div className="w-px bg-black/10" />
-              <div className="flex-1 pl-4">
-                <p className="text-[13px] font-normal text-[#5b616b]">{t.mpFreePoint}</p>
-                <p className="mt-1 flex items-center gap-1.5 text-[22px] font-extrabold text-[#1d2129]"><GemIcon size={22} />10,000</p>
-              </div>
-            </div>
-            <div className="mt-3 flex items-center justify-end gap-3">
-              <button onClick={openCoinHistory} className="shrink-0 rounded-lg border border-black/25 px-4 py-1.5 text-[13px] font-bold text-[#1d2129] active:bg-black/[0.03]">{t.mpViewDetails}</button>
-            </div>
+          <div className="mt-3 rounded-2xl bg-white px-4 py-4 shadow-[0_1px_4px_rgba(0,0,0,0.08)]">
+            <BalanceStrip t={t} coins={coins} onOpenStore={onOpenStore} />
           </div>
 
-          {/* Rank card */}
-          <div className="relative mt-3 overflow-hidden rounded-2xl border border-[#eab984] p-4" style={{ background: "linear-gradient(135deg,#fdeeda,#f7dab6)" }}>
-            <span className="inline-block rounded-md px-2.5 py-1 text-[12px] font-bold text-white" style={{ background: "linear-gradient(180deg,#c46a1e,#a5511a)" }}>{t.mpCurrentRank}</span>
-            <div className="mt-2 flex items-center gap-3">
-              <img src="/rank-bronze.png" alt="" className="h-[68px] w-[68px] shrink-0 object-contain" />
+          {/* Rank card — 8px radius inside a 2px #AA5225 outline over a peach
+              vignette, with the badge, rank copy and benefits CTA on one row and
+              the level bar underneath. */}
+          <div
+            className="relative mt-3 overflow-hidden rounded-lg border-2 border-[#AA5225] px-3.5 py-3.5"
+            style={{
+              background:
+                "radial-gradient(55% 45% at 88% 6%, rgba(255,255,255,.6), transparent 72%), radial-gradient(45% 38% at 8% 96%, rgba(255,255,255,.5), transparent 72%), radial-gradient(125% 135% at 50% 45%, #FDF7F0 0%, #FCEEE1 45%, #FADCC0 85%, #F7CFA9 100%)",
+            }}
+          >
+            {/* Flex wrapper so the chip carries no line-height leading. */}
+            <div className="flex">
+              <span className="inline-flex h-[18px] items-center rounded-[4px] bg-[#BA5919] px-2 text-[11px] font-bold leading-none text-white">{t.mpCurrentRank}</span>
+            </div>
+            <div className="mt-4 flex items-center gap-3">
+              <img src="/rank-bronze.png" alt="" className="h-[80px] w-[80px] shrink-0 object-contain" draggable={false} />
               <div className="min-w-0 flex-1">
-                <p className="text-[22px] font-extrabold uppercase tracking-wide text-[#5a3a17]">{t.mpRankBronze}</p>
-                <p className="text-[13px] font-semibold text-[#6b4a23]">{t.mpNextLevel} <span className="text-[20px] font-bold text-[#BA5919]">1,000pt</span></p>
-                <button className="mt-2 w-full rounded-lg bg-[#D10005] py-2 text-[13px] font-bold text-white active:scale-[0.99]">{t.mpRankPerks}</button>
+                <p className="text-[21px] font-extrabold uppercase leading-none text-[#572907]">{t.mpRankBronze}</p>
+                <p className="mt-2 flex items-baseline gap-1.5 text-[13px] font-semibold leading-none text-[#572907]">
+                  {t.mpNextLevel} <span className="text-[20px] font-extrabold leading-none text-[#BA5919]">1,000pt</span>
+                </p>
+                <button className="mt-2 flex h-[29px] w-full items-center justify-center rounded-[6px] bg-[#D10005] text-[14px] font-bold leading-none text-white active:scale-[0.99]">{t.mpRankPerks}</button>
               </div>
             </div>
-            <div className="relative mt-3.5 h-2 w-full rounded-full border border-[#e2c197] bg-[#efe0c6]">
+            <div className="relative mt-3.5 h-[10px] w-full overflow-hidden rounded-full border border-[#D8A87F] bg-[#FBEEDF]">
               <div
-                className="absolute left-0 top-1/2 h-2 -translate-y-1/2 rounded-full"
-                style={{ width: "75%", background: "linear-gradient(180deg,#F5AF78 0%,#F18532 40%,#D56A21 75%,#CC6023 100%)", border: "0.5px solid #934516" }}
+                className="absolute inset-y-0 left-0 rounded-full"
+                style={{ width: "75%", background: "linear-gradient(180deg,#F5A76B 0%,#ED8332 45%,#D16822 100%)", border: "0.5px solid #A34E19" }}
               />
             </div>
-            <p className="mt-1 text-center text-[12px] font-medium text-[#6b4a23]">3,000/4,000</p>
+            <p className="mt-1.5 text-center text-[13px] font-semibold leading-none text-[#572907]">3,000/4,000</p>
           </div>
 
           {/* My Menu grid */}
@@ -5108,39 +5136,21 @@ function CoinHistoryPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
       </div>
 
       <div onScroll={onCoinScroll} className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-3">
-        {/* Balance summary */}
-        <div className="rounded-2xl bg-white p-3 shadow-[0_1px_3px_rgba(0,0,0,0.07)]">
-          <div className="flex items-stretch">
-            <div className="flex-1 pr-3">
-              <p className="text-[20px] font-bold text-[#5c626b]">{t.chOripaCoins}</p>
-              <div className="mt-1 flex items-center gap-2">
-                <CoinIcon size={22} />
-                <span className="text-[25px] font-bold text-[#1d2129]">{coins.toLocaleString()}</span>
-                <button onClick={onOpenStore} aria-label={t.addCoinsAria} className="flex h-[22px] w-[22px] items-center justify-center transition active:scale-95">
-                  <img src="/plus-sign.png" alt="" className="h-full w-full object-contain" draggable={false} />
-                </button>
-              </div>
-            </div>
-            <div className="w-px bg-black/10" />
-            <div className="flex-1 pl-3">
-              <p className="text-[20px] font-bold text-[#5c626b]">{t.chFreePoints}</p>
-              <div className="mt-1 flex items-center gap-2">
-                <GemIcon size={22} />
-                <span className="text-[25px] font-bold text-[#1d2129]">10,000</span>
-              </div>
-            </div>
-          </div>
+        {/* Balance summary — same block as My Page. */}
+        <div className="rounded-2xl bg-white px-4 py-4 shadow-[0_1px_3px_rgba(0,0,0,0.07)]">
+          <BalanceStrip t={t} coins={coins} onOpenStore={onOpenStore} />
         </div>
 
         {/* Note */}
-        <p className="px-1 py-2.5 text-[10px] font-normal text-[#8a9099]">{t.chNote}</p>
+        <p className="px-1 py-2.5 text-[10px] font-normal text-[#0F0F0FCC]">{t.chNote}</p>
 
         {/* Transactions */}
         <div className="space-y-2 pb-6">
           {items.map((tx, i) => {
             const isCoin = tx.currency === "coin";
             const positive = tx.sign === "+";
-            const amountColor = !isCoin ? "#2f6fed" : positive ? "#E8890C" : "#1d2129";
+            // Credits read green, debits stay ink — same for coins and points.
+            const amountColor = positive ? "#54AB11" : "#0F0F0F";
             const subLabel = sub(tx.kind);
             return (
               <div key={tx.id} className="animate-fade-slide rounded-xl bg-white px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.07)]" style={{ animationDelay: `${(i % PAGE) * 70}ms` }}>
@@ -5150,10 +5160,10 @@ function CoinHistoryPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
                 </div>
                 <div className="mt-1 flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-[14px] font-bold text-[#1d2129]">{title(tx.kind)}</p>
-                    {subLabel && <p className="text-[10px] font-normal text-[#8a9099]">{subLabel}</p>}
-                    {tx.paymentId && <p className="text-[10px] font-normal text-[#8a9099]">{t.chPaymentId}: {tx.paymentId}</p>}
-                    {tx.expires && <p className="text-[10px] font-normal text-[#8a9099]">{t.chExpiresOn} {tx.expires}</p>}
+                    <p className="text-[14px] font-bold text-[#0F0F0F]">{title(tx.kind)}</p>
+                    {subLabel && <p className="text-[10px] font-normal text-[#0F0F0F]">{subLabel}</p>}
+                    {tx.paymentId && <p className="text-[10px] font-normal text-[#0F0F0F]">{t.chPaymentId}: {tx.paymentId}</p>}
+                    {tx.expires && <p className="text-[10px] font-normal text-[#0F0F0F]">{t.chExpiresOn} {tx.expires}</p>}
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5">
                     {isCoin ? <CoinIcon size={18} /> : <GemIcon size={18} />}
