@@ -4724,7 +4724,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenQuest, onOpenPriz
             <img src="/account-avatar.png" alt="" className="h-[86px] w-[86px] shrink-0 rounded-full object-cover" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[19px] font-extrabold text-[#1d2129]">{displayName.trim() || t.accountName}</p>
-              <p className="mt-0.5 text-[12px] font-normal text-[#8a9099]">{t.mpId} : XXXXXX</p>
+              <p className="mt-0.5 text-[12px] font-normal text-[#0F0F0F]">{t.mpId} : XXXXXX</p>
               {/* 175x24 with a 1px outline and 6px radius — the design's secondary CTA. */}
               <button onClick={onOpenProfile} className="mt-2.5 flex h-6 w-[175px] max-w-full items-center justify-center rounded-[6px] border border-[#D10005] text-[14px] font-bold leading-none text-[#D10005] active:bg-[#D10005]/[0.06]">{t.mpEditProfile}</button>
             </div>
@@ -4733,9 +4733,8 @@ function MyPage({ lang, coins, displayName = "Username", onOpenQuest, onOpenPriz
           {/* Balance card */}
           <div className="mt-3 rounded-2xl bg-white px-4 py-4 shadow-[0_1px_4px_rgba(0,0,0,0.08)]">
             <BalanceStrip t={t} coins={coins} onOpenStore={onOpenStore} />
-            {/* Expiry warning under the coins, the ledger link under the points. */}
-            <div className="mt-4 flex items-center justify-between gap-3">
-              <p className="text-[12px] font-bold text-[#D10005]">{t.mpCoinExpiry}</p>
+            {/* Ledger link sits under the points column. */}
+            <div className="mt-4 flex items-center justify-end">
               <button onClick={openCoinHistory} className="flex h-6 w-[146px] max-w-[50%] shrink-0 items-center justify-center rounded-[6px] border border-[#0F0F0F] text-[14px] font-bold leading-none text-[#0F0F0F] active:bg-black/[0.04]">{t.mpViewDetails}</button>
             </div>
           </div>
@@ -5153,8 +5152,9 @@ function CoinHistoryPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
           {items.map((tx, i) => {
             const isCoin = tx.currency === "coin";
             const positive = tx.sign === "+";
-            // Credits read green, debits stay ink — same for coins and points.
-            const amountColor = positive ? "#54AB11" : "#0F0F0F";
+            // Credits carry their currency's colour — amber for coins, green for
+            // points — while every debit stays ink.
+            const amountColor = !positive ? "#0F0F0F" : isCoin ? "#FF8A00" : "#54AB11";
             const subLabel = sub(tx.kind);
             return (
               <div key={tx.id} className="animate-fade-slide rounded-xl bg-white px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.07)]" style={{ animationDelay: `${(i % PAGE) * 70}ms` }}>
