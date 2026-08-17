@@ -1954,7 +1954,9 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
           // re-open the draw-confirmation popup for the same count. Cancelling
           // it leaves the player on the draw screen; confirming rolls again.
           onDrawAgain={() => { const c = results?.length ?? 1; setResults(null); setConfirmCount(c); }}
-          onClose={() => setResults(null)}
+          // Always lands on this pack's info page, including for draws started
+          // from a lobby card (which never left the feed).
+          onBackToInfo={() => { setResults(null); onOpenDraw?.(item); }}
           onHome={onHome}
           onOpenStore={onOpenStore}
           freeShipAvailable={freeShipAvailable}
@@ -2249,23 +2251,25 @@ function ExchangeConfirm({ lang, coins, prizes, total, onConfirm, onClose }: { l
           )}
         </div>
         {/* Balance before → after (green) */}
-        <div className="mt-4 flex items-center justify-center gap-2.5 rounded-[12px] border border-black/10 bg-white px-3 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-          <CoinIcon size={22} />
-          <span className="text-[17px] font-extrabold text-[#0F0F0F]">{coins.toLocaleString()}</span>
-          <BalanceArrow height={15} />
-          <CoinIcon size={22} />
-          <span className="text-[17px] font-extrabold text-[#12a150]">{after.toLocaleString()}</span>
+        {/* 38px tall in the design, with 30px coins either side of the arrow. */}
+        <div className="mt-4 flex h-[38px] items-center justify-center gap-2 rounded-lg border border-[#e7e7e7] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+          <CoinIcon size={30} />
+          <span className="text-[23px] font-bold leading-none text-[#0F0F0F]">{coins.toLocaleString()}</span>
+          <BalanceArrow height={17} />
+          <CoinIcon size={30} />
+          <span className="text-[23px] font-bold leading-none text-[#00A63D]">{after.toLocaleString()}</span>
         </div>
+        {/* Both CTAs are 39px tall with a 6px radius per the button specs. */}
         <button
           onClick={onConfirm}
-          className="mt-4 w-full rounded-[14px] bg-[#FF8A00] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]"
+          className="mt-4 flex h-[39px] w-full items-center justify-center rounded-md bg-[#FF8A00] text-[17px] font-bold leading-none text-white active:scale-[0.98]"
         >
           {t.exchange}
         </button>
-        <div className="my-3.5 border-t border-dashed border-black/20" />
+        <div className="my-3 border-t border-dashed border-black/20" />
         <button
           onClick={onClose}
-          className="w-full rounded-[14px] border-[1.5px] border-[#b5b8bd] bg-white py-3.5 text-[15px] font-bold text-[#6b7075] active:scale-[0.98]"
+          className="flex h-[39px] w-full items-center justify-center rounded-md border-2 border-[rgba(7,7,7,0.6)] bg-white text-[17px] font-bold leading-none text-[rgba(7,7,7,0.6)] active:scale-[0.98]"
         >
           {t.cancel}
         </button>
@@ -2418,7 +2422,7 @@ function SortArrows() {
 // the player review the cards they pulled, narrow down by tier/search, sort,
 // select, and exchange to coins or request shipping. Self-contained (local
 // selection). Mirrors the My Loot screen (which shows all un-actioned cards).
-function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, onOpenStore, freeShipAvailable = true, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, onOpenDraw }: { lang: Lang; coins: number; item: OripaItem; cards: WonPrize[]; onDrawAgain: () => void; onClose: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; onOpenDraw?: (item: OripaItem) => void }) {
+function DrawResults({ lang, coins, item, cards, onDrawAgain, onBackToInfo, onHome, onOpenStore, freeShipAvailable = true, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, onOpenDraw }: { lang: Lang; coins: number; item: OripaItem; cards: WonPrize[]; onDrawAgain: () => void; onBackToInfo: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; onOpenDraw?: (item: OripaItem) => void }) {
   const t = STR[lang];
   const [list, setList] = useState<WonPrize[]>(cards);
   // Draw results are filtered by rarity tier via the top tabs (All / Ultra /
@@ -2511,7 +2515,7 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
         <button onClick={() => { if (dailyLimitReached) { setOtherIdx(0); setLimitOpen(true); } else { onDrawAgain(); } }} className="h-[39px] flex-1 rounded-lg bg-[#D10005] text-[14px] font-extrabold text-white active:scale-[0.99]">
           {t.drawAgain}
         </button>
-        <button onClick={onClose} className="h-[39px] flex-1 rounded-lg border border-[#e7e7e7] bg-white text-[14px] font-extrabold text-[#0F0F0F] active:scale-[0.99]">
+        <button onClick={onBackToInfo} className="h-[39px] flex-1 rounded-lg border border-[#e7e7e7] bg-white text-[14px] font-extrabold text-[#0F0F0F] active:scale-[0.99]">
           {t.resultsBackToInfo}
         </button>
       </div>
@@ -2533,6 +2537,9 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
           ))}
         </div>
       </div>
+
+      {/* Hairline splitting the tier chips from the sort control. */}
+      <div className="shrink-0 bg-white pt-2.5"><div className="h-px bg-black/20" /></div>
 
       {/* Coin-value ordering — the only sort the results screen offers. */}
       <div className="relative z-20 flex shrink-0 justify-end border-b border-black/10 bg-white px-3 py-2.5">
@@ -5798,10 +5805,12 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   // Draw screen (gacha pack detail) opens when a lobby pack's Draw / View is
   // tapped; back returns to the lobby.
   const [drawItem, setDrawItem] = useState<OripaItem | null>(null);
-  const openDraw = (item: OripaItem) => { setDrawItem(item); setScreen("drawDetail"); };
   // A lobby card's CTA draws without leaving the lobby: the pack and the
   // requested draw are held here and handed to a DrawFlow mounted over the feed.
   const [lobbyDraw, setLobbyDraw] = useState<{ item: OripaItem; request: DrawRequest } | null>(null);
+  // Dropping the held lobby request keeps its DrawFlow from replaying the draw
+  // when the lobby is next mounted.
+  const openDraw = (item: OripaItem) => { setLobbyDraw(null); setDrawItem(item); setScreen("drawDetail"); };
   const requestLobbyDraw = (item: OripaItem, req: Omit<DrawRequest, "token">) =>
     setLobbyDraw({ item, request: { ...req, token: Date.now() } });
   // Legal document reader (Terms / Privacy / SCTA), rendered at the app root so
