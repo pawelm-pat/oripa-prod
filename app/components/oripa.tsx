@@ -1339,7 +1339,7 @@ const DRAW_PRICE = 1000; // coins per single draw (mirrors the lobby card price)
 const DRAW_FREE_POINTS = 10000;
 const MAX_CUSTOM_DRAW = 100; // cap for the custom-draw quantity stepper
 // +5 / +10 / MAX buttons under the custom-draw stepper.
-const quickAddCls = "flex h-[30px] w-[94px] shrink-0 items-center justify-center whitespace-nowrap rounded-lg border-2 border-black bg-white text-[14px] font-bold leading-none text-black active:scale-95";
+const quickAddCls = "flex h-[30px] w-[94px] shrink-0 items-center justify-center whitespace-nowrap rounded-[5px] border-2 border-[#0F0F0F] bg-white text-[14px] font-bold leading-none text-[#0F0F0F] active:scale-95";
 
 // Beveled tier plate ("1等 / 2등 / 3등") — gold for 1st/2nd, silver for 3rd,
 // matching the design's metallic name-plates on the dark prize board.
@@ -2152,22 +2152,38 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
 // tell they're exchanging more than one card. Every selected card face is
 // rendered and stays visible; when there are many, the overlap tightens so the
 // whole pile fits (each face still peeks out).
-function CardStack({ prizes, cardW = 46, cardH = 62, maxWidth = 240 }: { prizes: WonPrize[]; cardW?: number; cardH?: number; maxWidth?: number }) {
+function CardStack({ prizes, cardW = 46, cardH = 62, maxWidth = 240, maxFaces = 5 }: { prizes: WonPrize[]; cardW?: number; cardH?: number; maxWidth?: number; maxFaces?: number }) {
   const count = prizes.length;
   if (count === 0) return null;
   const defaultShift = Math.round(cardW * 0.44);
-  const shift = count > 1 ? Math.max(10, Math.min(defaultShift, Math.floor((maxWidth - cardW) / (count - 1)))) : 0;
+  const minShift = 6; // tightest fan that still reads as separate cards
+  const fits = (n: number) => n < 2 || Math.floor((maxWidth - cardW) / (n - 1)) >= minShift;
+  // A selection made up purely of top-tier cards shows every face — as long as
+  // the fan still fits — so the player sees each rare card they are burning.
+  const allTopTier = prizes.every((p) => rarityTier(p.rarity) === 1);
+  const faces = allTopTier && fits(count) ? prizes : prizes.slice(0, maxFaces);
+  const hidden = count - faces.length;
+  const tiles = faces.length + (hidden > 0 ? 1 : 0);
+  const shift = tiles > 1 ? Math.max(minShift, Math.min(defaultShift, Math.floor((maxWidth - cardW) / (tiles - 1)))) : 0;
   return (
-    <div className="relative shrink-0" style={{ width: cardW + shift * (count - 1), height: cardH }}>
-      {prizes.map((p, i) => (
+    <div className="relative shrink-0" style={{ width: cardW + shift * (tiles - 1), height: cardH }}>
+      {faces.map((p, i) => (
         <img
           key={p.id}
           src={RARITY_IMG[p.rarity]}
           alt=""
           className="absolute top-0 rounded-[5px] object-cover shadow-[0_2px_6px_rgba(0,0,0,0.28)] ring-1 ring-white/70"
-          style={{ left: i * shift, width: cardW, height: cardH, zIndex: count - i }}
+          style={{ left: i * shift, width: cardW, height: cardH, zIndex: tiles - i }}
         />
       ))}
+      {hidden > 0 && (
+        <div
+          className="absolute top-0 flex items-center justify-center rounded-[5px] bg-[#2b2f36] text-[13px] font-extrabold text-white shadow-[0_2px_6px_rgba(0,0,0,0.28)] ring-1 ring-white/70"
+          style={{ left: faces.length * shift, width: cardW, height: cardH, zIndex: tiles + 1 }}
+        >
+          +{hidden}
+        </div>
+      )}
     </div>
   );
 }
@@ -2212,7 +2228,7 @@ function ExchangeConfirm({ lang, coins, prizes, total, onConfirm, onClose }: { l
           </>
         )}
         {/* Card pile: makes it clear how many cards are being exchanged. Shows
-            the first 3 faces; anything beyond collapses into a "+N" tile. */}
+            up to 5 faces; anything beyond collapses into a "+N" tile. */}
         <div className="mt-4 flex items-center justify-center gap-2">
           <CardStack prizes={prizes} cardW={46} cardH={62} />
           {prizes.length > 1 && (
@@ -3562,7 +3578,7 @@ function WaitingTab({ prizes, t, lang }: { prizes: WaitingPrize[]; t: Dict; lang
       <div className="space-y-2.5">
         {prizes.map((p) => (
           <div key={p.id} className="flex gap-3 rounded-2xl bg-white p-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
-            <PrizeArt rarity={p.rarity} />
+            <PrizeArt rarity={p.rarity} size={104} />
             <div className="min-w-0 flex-1">
               <img src={`/prize-tag-${rarityTier(p.rarity)}.png`} alt={t.prizeTier(rarityTier(p.rarity))} className="h-[24px] w-auto object-contain" draggable={false} />
               <p className="mt-1.5 truncate text-[14px] font-bold text-[#0F0F0F]">{locName(p, lang)}</p>
@@ -3594,7 +3610,7 @@ function ShippedTab({ prizes, onCopy, t, lang }: { prizes: ShippedPrize[]; onCop
       <div className="space-y-2.5">
         {prizes.map((p) => (
           <div key={p.id} className="flex gap-3 rounded-2xl bg-white p-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
-            <PrizeArt rarity={p.rarity} />
+            <PrizeArt rarity={p.rarity} size={104} />
             <div className="min-w-0 flex-1">
               <img src={`/prize-tag-${rarityTier(p.rarity)}.png`} alt={t.prizeTier(rarityTier(p.rarity))} className="h-[24px] w-auto object-contain" draggable={false} />
               <p className="mt-1.5 truncate text-[14px] font-bold text-[#0F0F0F]">{locName(p, lang)}</p>

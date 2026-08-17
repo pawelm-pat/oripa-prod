@@ -287,8 +287,9 @@ const EN = {
   drawConfirmTerms: "T & Cs",
   drawConfirmTermsLink: "Here",
   drawPayWith: "Pay with",
-  drawCustomAdd: (n: number) => `+${n}`,
-  drawCustomMax: "MAX (100)",
+  // The 回 ("draws") glyph is part of the button artwork in both locales.
+  drawCustomAdd: (n: number) => `+${n}回`,
+  drawCustomMax: "MAX(100回)",
   drawCustomCta: (n: number) => `${n} Draw${n === 1 ? "" : "s"}`,
   drawAgain: "Draw again",
   drawSwipeReveal: "Swipe to reveal",
