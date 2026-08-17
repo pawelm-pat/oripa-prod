@@ -2216,8 +2216,10 @@ function CardStack({ prizes, cardW = 46, cardH = 62, maxWidth = 240, maxFaces = 
         />
       ))}
       {hidden > 0 && (
+        /* The remainder reads as one more card in the fan: a pale tile with the
+           count in ink rather than a black slab behind the artwork. */
         <div
-          className="absolute top-0 flex items-center justify-center rounded-[5px] bg-[#2b2f36] text-[13px] font-extrabold text-white shadow-[0_2px_6px_rgba(0,0,0,0.28)] ring-1 ring-white/70"
+          className="absolute top-0 flex items-center justify-center rounded-[5px] bg-gradient-to-b from-[#F7F8FA] to-[#E4E7EC] text-[14px] font-extrabold leading-none text-[#0F0F0F] shadow-[0_2px_6px_rgba(0,0,0,0.22)] ring-1 ring-black/10"
           style={{ left: faces.length * shift, width: cardW, height: cardH, zIndex: tiles + 1 }}
         >
           +{hidden}
@@ -4723,14 +4725,19 @@ function MyPage({ lang, coins, displayName = "Username", onOpenQuest, onOpenPriz
             <div className="min-w-0 flex-1">
               <p className="truncate text-[19px] font-extrabold text-[#1d2129]">{displayName.trim() || t.accountName}</p>
               <p className="mt-0.5 text-[12px] font-normal text-[#8a9099]">{t.mpId} : XXXXXX</p>
-              {/* 24px tall, 1px outline, 6px radius — the design's secondary CTA. */}
-              <button onClick={onOpenProfile} className="mt-2.5 flex h-6 w-full items-center justify-center rounded-[6px] border border-[#D10005] text-[14px] font-bold leading-none text-[#D10005] active:bg-[#D10005]/[0.06]">{t.mpEditProfile}</button>
+              {/* 175x24 with a 1px outline and 6px radius — the design's secondary CTA. */}
+              <button onClick={onOpenProfile} className="mt-2.5 flex h-6 w-[175px] max-w-full items-center justify-center rounded-[6px] border border-[#D10005] text-[14px] font-bold leading-none text-[#D10005] active:bg-[#D10005]/[0.06]">{t.mpEditProfile}</button>
             </div>
           </div>
 
           {/* Balance card */}
           <div className="mt-3 rounded-2xl bg-white px-4 py-4 shadow-[0_1px_4px_rgba(0,0,0,0.08)]">
             <BalanceStrip t={t} coins={coins} onOpenStore={onOpenStore} />
+            {/* Expiry warning under the coins, the ledger link under the points. */}
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <p className="text-[12px] font-bold text-[#D10005]">{t.mpCoinExpiry}</p>
+              <button onClick={openCoinHistory} className="flex h-6 w-[146px] max-w-[50%] shrink-0 items-center justify-center rounded-[6px] border border-[#0F0F0F] text-[14px] font-bold leading-none text-[#0F0F0F] active:bg-black/[0.04]">{t.mpViewDetails}</button>
+            </div>
           </div>
 
           {/* Rank card — 8px radius inside a 2px #AA5225 outline over a peach
@@ -4738,10 +4745,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenQuest, onOpenPriz
               the level bar underneath. */}
           <div
             className="relative mt-3 overflow-hidden rounded-lg border-2 border-[#AA5225] px-3.5 py-3.5"
-            style={{
-              background:
-                "radial-gradient(55% 45% at 88% 6%, rgba(255,255,255,.6), transparent 72%), radial-gradient(45% 38% at 8% 96%, rgba(255,255,255,.5), transparent 72%), radial-gradient(125% 135% at 50% 45%, #FDF7F0 0%, #FCEEE1 45%, #FADCC0 85%, #F7CFA9 100%)",
-            }}
+            style={{ backgroundImage: "url(/rank-card-bg.png)", backgroundSize: "cover", backgroundPosition: "center" }}
           >
             {/* Flex wrapper so the chip carries no line-height leading. */}
             <div className="flex">
