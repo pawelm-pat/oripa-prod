@@ -252,6 +252,16 @@ function SearchIcon({ size = 20 }: { size?: number }) {
   );
 }
 
+// Solid funnel used by the "Narrow down" control: a full-width bar that tapers
+// into a centred stem, per the design's filter glyph.
+function FilterIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M3.5 2.5h17a1 1 0 0 1 1 1v3.3l-6.9 5.8v7.9a1 1 0 0 1-1 1h-3.2a1 1 0 0 1-1-1v-7.9L2.5 6.8V3.5a1 1 0 0 1 1-1Z" />
+    </svg>
+  );
+}
+
 // The "per draw" suffix beside a price is a design asset rather than text. It
 // sits on the price's baseline at ~95% of its cap height, per the design.
 function PerDrawMark({ height, alt }: { height: number; alt: string }) {
@@ -2517,9 +2527,9 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
 
       {/* Bottom action bar */}
       <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2.5 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
-        <div className="mb-2 flex items-center justify-between">
+        <div className="mb-4 flex items-center justify-between">
           <span className="flex items-center gap-1.5">
-            <CoinIcon size={20} />
+            <CoinIcon size={26} />
             <span className="text-[18px] font-extrabold text-[#1d2129]">{total.toLocaleString()}</span>
           </span>
           <div className="flex items-center gap-4 text-[13px] font-bold">
@@ -2531,35 +2541,35 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
         <div className="grid grid-cols-2 gap-2">
           {/* Request Shipping on the left (matches My Loot placement). */}
           <div className="relative">
-            <style>{`@keyframes freeShipIn{from{opacity:0;transform:translateY(-6px) scale(.9)}to{opacity:1;transform:none}}@keyframes freeShipPulse{0%,100%{box-shadow:0 3px 8px rgba(18,129,60,0.45)}50%{box-shadow:0 3px 14px rgba(18,129,60,0.75)}}`}</style>
+            <style>{`@keyframes freeShipIn{from{opacity:0;transform:translateY(-6px) scale(.9)}to{opacity:1;transform:none}}`}</style>
             {/* Three states (matches My Loot):
                 - red "min coins" while the selection is short of the threshold
                 - green "free shipping" once eligible AND free quota remains
                 - amber "standard shipping fee" once eligible with no free quota */}
             {!canShip ? (
-              <div className="pointer-events-none absolute -top-2.5 left-0 right-0 z-10 flex items-center justify-center gap-1 whitespace-nowrap rounded-full bg-[#e30613] px-2.5 py-[3px] text-white shadow-[0_2px_6px_rgba(227,6,19,0.4)] ring-1 ring-white/30">
-                <svg width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M12 7v6" stroke="#e30613" strokeWidth="2.6" strokeLinecap="round" /><circle cx="12" cy="16.6" r="1.35" fill="#e30613" /></svg>
-                <span className="text-[9.5px] font-extrabold tracking-wide">{t.minCoinsBadge}</span>
+              <div className="pointer-events-none absolute -top-2 left-1/2 z-10 flex h-4 -translate-x-1/2 items-center justify-center gap-1 whitespace-nowrap rounded-[5px] bg-[#e30613] px-1.5 text-white">
+                <svg width="11" height="11" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M12 7v6" stroke="#e30613" strokeWidth="2.6" strokeLinecap="round" /><circle cx="12" cy="16.6" r="1.35" fill="#e30613" /></svg>
+                <span className="text-[9.5px] font-extrabold">{t.minCoinsBadge}</span>
               </div>
             ) : freeShipAvailable ? (
               <div
-                className="pointer-events-none absolute -top-2.5 left-0 right-0 z-10 flex items-center justify-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-br from-[#1eae52] to-[#12813c] px-2 py-[3px] text-white ring-1 ring-white/30"
-                style={{ animation: "freeShipIn .3s cubic-bezier(.2,.9,.3,1) both, freeShipPulse 2.4s ease-in-out infinite" }}
+                className="pointer-events-none absolute -top-2 left-1/2 z-10 flex h-4 -translate-x-1/2 items-center justify-center gap-1 whitespace-nowrap rounded-[5px] bg-gradient-to-br from-[#1eae52] to-[#12813c] px-1.5 text-white"
+                style={{ animation: "freeShipIn .3s cubic-bezier(.2,.9,.3,1) both" }}
               >
-                <svg width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M7.5 12.5l3 3 6-6.5" stroke="#12813c" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                <span className="text-[9.5px] font-extrabold tracking-wide">{t.freeShippingQuota(FREE_SHIP_QUOTA)}</span>
+                <svg width="10" height="10" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M7.5 12.5l3 3 6-6.5" stroke="#12813c" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                <span className="text-[9px] font-extrabold">{t.freeShippingQuota(FREE_SHIP_QUOTA)}</span>
               </div>
             ) : (
               <div
-                className="pointer-events-none absolute -top-2.5 left-0 right-0 z-10 flex items-center justify-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-br from-[#ffcf33] to-[#f5a623] px-2 py-[3px] text-[#3a2a00] ring-1 ring-black/10"
+                className="pointer-events-none absolute -top-2 left-1/2 z-10 flex h-4 -translate-x-1/2 items-center justify-center gap-1 whitespace-nowrap rounded-[5px] bg-gradient-to-br from-[#ffcf33] to-[#f5a623] px-1.5 text-[#3a2a00]"
                 style={{ animation: "freeShipIn .3s cubic-bezier(.2,.9,.3,1) both" }}
               >
-                <span className="text-[9.5px] font-extrabold tracking-wide">{t.paidShipBadge}</span>
+                <span className="text-[9px] font-extrabold">{t.paidShipBadge}</span>
               </div>
             )}
             <button
               onClick={ship}
-              className="w-full rounded-xl py-3 text-[14px] font-extrabold text-white transition active:scale-[0.98]"
+              className="flex h-9 w-full items-center justify-center rounded-lg text-[14px] font-extrabold text-white transition active:scale-[0.98]"
               style={{ background: canShip ? "#f5670a" : "#c9ced6" }}
             >
               {t.requestShipping}
@@ -2569,13 +2579,13 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
           <button
             onClick={() => { if (selected.size > 0) setExchangeOpen(true); }}
             disabled={selected.size === 0}
-            className="rounded-xl border-2 border-[#D10005] bg-white py-3 text-[14px] font-extrabold text-[#D10005] active:scale-[0.98] disabled:opacity-40"
+            className="h-9 rounded-lg border-2 border-[#D10005] bg-white text-[14px] font-extrabold text-[#D10005] active:scale-[0.98] disabled:opacity-40"
           >
             {t.exchange}
           </button>
         </div>
         )}
-        <p className="mt-1.5 text-center text-[10.5px] leading-tight text-[#8a9099]">{freeShipAvailable ? t.shipSelectHint : t.shipSelectHintPaid}</p>
+        <p className="mx-auto mt-3 max-w-[330px] text-center text-[9.5px] leading-[11px] text-[#8a9099]">{freeShipAvailable ? t.shipSelectHint : t.shipSelectHintPaid}</p>
       </div>
 
       {toast && (
@@ -3297,14 +3307,14 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
           <h2 className="text-[20px] font-bold text-[#1d2129]">{screenTitle}</h2>
         </div>
 
-        {/* Won/Waiting/Shipped tabs. Winning History is a pure audit of what the
+        {/* Selection-state tabs. Winning History is a pure audit of what the
             customer has won, so the tabs are hidden there; My Loot keeps them. */}
         {lootMode && (
         <div className="flex border-b border-black/10 bg-white px-2">
           {([
-            { key: "won", label: t.tabWon },
-            { key: "waiting", label: t.tabWaiting },
-            { key: "shipped", label: t.tabShipped },
+            { key: "won", label: t.itemsTabNotSelected },
+            { key: "waiting", label: t.itemsTabPending },
+            { key: "shipped", label: t.itemsTabShipped },
           ] as { key: PrizeTab; label: string }[]).map((tb) => {
             const active = tab === tb.key;
             return (
@@ -3338,7 +3348,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
             <>
               <div className="sticky top-0 z-10 flex items-stretch border-b border-black/10 bg-white">
                 <button onClick={() => setFilterOpen(true)} className="flex flex-1 items-center justify-center gap-2 py-3 text-[14px] font-extrabold text-[#1d2129] active:bg-black/[0.03]">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><circle cx="7" cy="8" r="2" /><circle cx="16" cy="16" r="2" /><path d="M9 8h11M4 8h1M15 16h5M4 16h9" /></svg>
+                  <FilterIcon size={18} />
                   {LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"].narrowDown}
                   {filterActive && <span className="flex h-[8px] w-[8px] rounded-full bg-[#D10005]" />}
                 </button>
@@ -3407,11 +3417,11 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
 
       {lootMode && tab === "won" && won.length > 0 && (
         <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2.5 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
-          <style>{`@keyframes mlBadgeIn{from{opacity:0;transform:translateY(-6px) scale(.9)}to{opacity:1;transform:translateY(0)}}@keyframes mlBadgePulse{0%,100%{box-shadow:0 3px 8px rgba(18,129,60,0.45)}50%{box-shadow:0 3px 14px rgba(18,129,60,0.75)}}`}</style>
+          <style>{`@keyframes mlBadgeIn{from{opacity:0;transform:translateY(-6px) scale(.9)}to{opacity:1;transform:none}}`}</style>
           {/* Selection summary + bulk actions */}
-          <div className="mb-2 flex items-center justify-between">
+          <div className="mb-4 flex items-center justify-between">
             <span className="flex items-center gap-1.5">
-              <CoinIcon size={20} />
+              <CoinIcon size={26} />
               <span className="text-[18px] font-extrabold text-[#1d2129]">{listTotal.toLocaleString()}</span>
             </span>
             <div className="flex items-center gap-4 text-[13px] font-bold">
@@ -3420,32 +3430,32 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
             </div>
           </div>
           {listSelected.size > 0 && (
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-2 gap-2">
             {/* Request Shipping on the left (POC placement). */}
             <div className="relative">
-              {/* Three states; badge spans the full CTA width like a ribbon:
+              {/* Three states; the badge is a compact tag straddling the CTA's top edge:
                   - red "min coins" while the selection is short of the threshold
                   - green "free shipping" once eligible AND free quota remains
                   - amber "standard shipping fee" once eligible with no free quota */}
               {!listCanShip ? (
-                <div className="pointer-events-none absolute -top-2.5 left-0 right-0 z-10 flex items-center justify-center gap-1 whitespace-nowrap rounded-full bg-[#e30613] px-2.5 py-[3px] text-white shadow-[0_2px_6px_rgba(227,6,19,0.4)] ring-1 ring-white/30">
-                  <svg width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M12 7v6" stroke="#e30613" strokeWidth="2.6" strokeLinecap="round" /><circle cx="12" cy="16.6" r="1.35" fill="#e30613" /></svg>
-                  <span className="text-[9.5px] font-extrabold tracking-wide">{t.minCoinsBadge}</span>
+                <div className="pointer-events-none absolute -top-2 left-1/2 z-10 flex h-4 -translate-x-1/2 items-center justify-center gap-1 whitespace-nowrap rounded-[5px] bg-[#e30613] px-1.5 text-white">
+                  <svg width="11" height="11" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M12 7v6" stroke="#e30613" strokeWidth="2.6" strokeLinecap="round" /><circle cx="12" cy="16.6" r="1.35" fill="#e30613" /></svg>
+                  <span className="text-[9.5px] font-extrabold">{t.minCoinsBadge}</span>
                 </div>
               ) : freeShipAvailable ? (
                 <div
-                  className="pointer-events-none absolute -top-2.5 left-0 right-0 z-10 flex items-center justify-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-br from-[#1eae52] to-[#12813c] px-2.5 py-[3px] text-white ring-1 ring-white/30"
-                  style={{ animation: "mlBadgeIn .3s cubic-bezier(.2,.9,.3,1) both, mlBadgePulse 2.4s ease-in-out infinite" }}
+                  className="pointer-events-none absolute -top-2 left-1/2 z-10 flex h-4 -translate-x-1/2 items-center justify-center gap-1 whitespace-nowrap rounded-[5px] bg-gradient-to-br from-[#1eae52] to-[#12813c] px-1.5 text-white"
+                  style={{ animation: "mlBadgeIn .3s cubic-bezier(.2,.9,.3,1) both" }}
                 >
-                  <svg width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M7.5 12.5l3 3 6-6.5" stroke="#12813c" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                  <span className="text-[9.5px] font-extrabold tracking-wide">{t.freeShippingQuota(FREE_SHIP_QUOTA)}</span>
+                  <svg width="10" height="10" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M7.5 12.5l3 3 6-6.5" stroke="#12813c" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  <span className="text-[9px] font-extrabold">{t.freeShippingQuota(FREE_SHIP_QUOTA)}</span>
                 </div>
               ) : (
                 <div
-                  className="pointer-events-none absolute -top-2.5 left-0 right-0 z-10 flex items-center justify-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-br from-[#ffcf33] to-[#f5a623] px-2.5 py-[3px] text-[#3a2a00] ring-1 ring-black/10"
+                  className="pointer-events-none absolute -top-2 left-1/2 z-10 flex h-4 -translate-x-1/2 items-center justify-center gap-1 whitespace-nowrap rounded-[5px] bg-gradient-to-br from-[#ffcf33] to-[#f5a623] px-1.5 text-[#3a2a00]"
                   style={{ animation: "mlBadgeIn .3s cubic-bezier(.2,.9,.3,1) both" }}
                 >
-                  <span className="text-[9.5px] font-extrabold tracking-wide">{t.paidShipBadge}</span>
+                  <span className="text-[9px] font-extrabold">{t.paidShipBadge}</span>
                 </div>
               )}
               <button
@@ -3455,7 +3465,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                   if (onRequestKyc && !onRequestKyc()) return;
                   setListShipOpen(true);
                 }}
-                className="w-full rounded-xl py-3 text-[14px] font-extrabold text-white transition active:scale-[0.98]"
+                className="flex h-9 w-full items-center justify-center rounded-lg text-[14px] font-extrabold text-white transition active:scale-[0.98]"
                 style={{ background: listCanShip ? "#f5670a" : "#c9ced6" }}
               >
                 {t.requestShipping}
@@ -3464,14 +3474,14 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
             {/* Exchange on the right — opens the confirmation dialog. */}
             <button
               onClick={() => { if (listSelected.size === 0) { pushToast(t.toastSelectFirst); return; } setListExchangeOpen(true); }}
-              className="rounded-xl border-2 py-3 text-[14px] font-extrabold transition active:scale-[0.98]"
+              className="h-9 rounded-lg border-2 text-[14px] font-extrabold transition active:scale-[0.98]"
               style={{ borderColor: "#f5670a", color: "#1d2129", background: "#fff" }}
             >
               {t.exchange}
             </button>
           </div>
           )}
-          <p className="mt-2 text-center text-[10.5px] leading-tight text-[#8a9099]">{freeShipAvailable ? t.shipSelectHint : t.shipSelectHintPaid}</p>
+          <p className="mx-auto mt-3 max-w-[330px] text-center text-[9.5px] leading-[11px] text-[#8a9099]">{freeShipAvailable ? t.shipSelectHint : t.shipSelectHintPaid}</p>
         </div>
       )}
 
