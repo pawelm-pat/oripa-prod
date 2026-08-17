@@ -831,10 +831,18 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
   // Commit the draft to the applied filters — this is the only path that
   // actually filters the feed (the "Filter" CTA).
   const applyFilters = () => { onApply(draftQuery, draftFilters, draftMin, draftMax); setSearchActive(false); inputRef.current?.blur(); };
-  // Clear everything (draft + applied), used by "Reset" and "Clear all".
+  // Clear everything (draft + applied), used by "Reset", "Clear all" and by a
+  // category switch.
   const clearEverything = () => {
     setDraftQuery(""); setDraftFilters({}); setDraftMin(0); setDraftMax(PRICE_MAX);
     onClearAll();
+  };
+  // The dropdown's "Reset" CTA also dismisses the search, like "Filter" does:
+  // both end the editing session, one keeping the draft and one dropping it.
+  const resetFilters = () => {
+    clearEverything();
+    setSearchActive(false);
+    inputRef.current?.blur();
   };
   // Remove a single applied filter chip (also drop it from the draft so the two
   // stay in sync when the dropdown is reopened).
@@ -1223,7 +1231,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
           {/* CTAs follow the design's button spec: 39px tall, 8px radius, and a
               2px border on the secondary one. */}
           <div className="flex gap-3 border-t border-black/10 bg-white px-4 py-3">
-            <button onClick={clearEverything} className="h-[39px] grow basis-1/2 rounded-lg border-2 border-[#1d2129] bg-white text-[15px] font-bold leading-none text-[#1d2129] active:scale-[0.99]">{L.reset}</button>
+            <button onClick={resetFilters} className="h-[39px] grow basis-1/2 rounded-lg border-2 border-[#1d2129] bg-white text-[15px] font-bold leading-none text-[#1d2129] active:scale-[0.99]">{L.reset}</button>
             <button onClick={applyFilters} className="h-[39px] grow basis-1/2 rounded-lg bg-[#D10005] text-[15px] font-extrabold leading-none text-white active:scale-[0.99]">{L.filter}</button>
           </div>
         </div>
