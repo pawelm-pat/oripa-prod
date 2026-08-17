@@ -5379,6 +5379,55 @@ function StorePage({
   );
 }
 
+/* ── Not enough coins ────────────────────────────────────────────────────
+   A paid draw that costs more than the wallet holds stops here first: the
+   shortfall is spelled out before the store is offered, so topping up is a
+   choice rather than something the app does on the user's behalf. */
+function NotEnoughCoinsPopup({ lang, coins, cost, onCharge, onClose }: { lang: Lang; coins: number; cost: number; onCharge: () => void; onClose: () => void }) {
+  const t = STR[lang];
+  const shortBy = Math.max(0, cost - coins);
+  return (
+    <div
+      className="animate-popup-backdrop absolute inset-0 z-[75] flex items-center justify-center p-4 backdrop-blur-[3px]"
+      style={{ background: "rgba(20,8,4,0.45)" }}
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="animate-popup-pop w-full max-w-[340px] rounded-2xl bg-white px-5 pb-5 pt-6 text-center shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+        style={{ fontFamily: "var(--font-noto-sans-jp), system-ui, sans-serif" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-[20px] font-extrabold leading-none text-[#0F0F0F]">{t.noCoinsTitle}</h3>
+        {/* Balance before → after, in the same 39px box the draw popups use. */}
+        <div className="mt-3.5 flex h-[39px] w-full items-center justify-center gap-3 rounded-lg border-2 border-[#e7e7e7] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+          <span className="flex items-center gap-2">
+            <CoinIcon size={30} />
+            <span className="text-[20px] font-extrabold leading-none text-[#1d2129]">{coins.toLocaleString()}</span>
+          </span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M9 6l6 6-6 6" stroke="#9aa1ab" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          <span className="flex items-center gap-2">
+            <CoinIcon size={30} />
+            <span className="text-[20px] font-extrabold leading-none text-[#D10005]">{(coins - cost).toLocaleString()}</span>
+          </span>
+        </div>
+        <p className="mx-auto mt-3 max-w-[290px] text-[13px] font-medium leading-[1.45] text-[#D10005]">
+          {t.noCoinsShortPre}
+          <span className="font-extrabold">{t.noCoinsShortAmount(shortBy.toLocaleString())}</span>
+          {t.noCoinsShortPost}
+        </p>
+        <button onClick={onCharge} className="mt-3.5 h-[39px] w-full rounded-lg bg-[#D10005] text-[15px] font-extrabold leading-none text-white active:scale-[0.99]">
+          {t.noCoinsCta}
+        </button>
+        <button onClick={onClose} className="mt-2.5 h-[39px] w-full rounded-lg border-2 border-[#696969] bg-white text-[15px] font-bold leading-none text-[#696969] active:scale-[0.99]">
+          {t.drawLimitClose}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off", multiCurrency = true }: {
   lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean;
 }) {
@@ -5429,11 +5478,14 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   // Quick Purchase sheet when a paid draw costs more than the wallet balance.
   const [quickPurchase, setQuickPurchase] = useState<QuickPurchasePending | null>(null);
   const [pendingRunDraw, setPendingRunDraw] = useState<{ count: number; token: number } | null>(null);
+  // Shortfall popup shown before the Quick Purchase sheet; its CTA is what
+  // actually opens the sheet.
+  const [shortfall, setShortfall] = useState<QuickPurchasePending | null>(null);
   const attemptDraw = (count: number, billCount?: number) => {
     const billed = billCount ?? count;
     const cost = billed * DRAW_PRICE;
     if (cost > coins) {
-      setQuickPurchase({ drawCount: count, billCount: billed, cost });
+      setShortfall({ drawCount: count, billCount: billed, cost });
       return false;
     }
     setCoins((c) => c - cost);
@@ -5805,6 +5857,15 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
           />
         )}
         </div>
+        {shortfall && (
+          <NotEnoughCoinsPopup
+            lang={lang}
+            coins={coins}
+            cost={shortfall.cost}
+            onCharge={() => { setQuickPurchase(shortfall); setShortfall(null); }}
+            onClose={() => setShortfall(null)}
+          />
+        )}
         {quickPurchase && (
           <QuickPurchaseFlow
             lang={lang}
