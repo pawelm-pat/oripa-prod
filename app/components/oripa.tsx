@@ -843,8 +843,14 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
     setDraftFilters((f) => { const n = { ...f }; delete n[k]; return n; });
   };
   // Clear-text (X) button in the search field: drop the query from both draft
-  // and applied immediately, keeping any tag/price filters intact.
-  const clearQuery = () => { setDraftQuery(""); onApply("", filters, priceMin, priceMax); setSearchActive(false); inputRef.current?.blur(); };
+  // and applied immediately, keeping any tag/price filters intact. The field
+  // stays open and focused — X empties the text, it doesn't dismiss the search.
+  const clearQuery = () => {
+    setDraftQuery("");
+    onApply("", filters, priceMin, priceMax);
+    setSearchActive(true);
+    inputRef.current?.focus();
+  };
 
   // When switching categories: if the user has already scrolled past the promo
   // banner (so the feed has scrolled up under the top nav), bring the top nav
@@ -957,10 +963,13 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
   }, [searchActive]);
 
   // Switching category closes the search dropdown (and blurs the field) so an
-  // open search doesn't linger over the new category's feed.
+  // open search doesn't linger over the new category's feed, and starts the new
+  // category unfiltered — a query or tag picked for the previous category would
+  // otherwise silently keep trimming this one's feed.
   const selectCat = (key: string) => {
     setSearchActive(false);
     inputRef.current?.blur();
+    if (key !== cat) clearEverything();
     setCat(key);
   };
 
@@ -1694,25 +1703,25 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
               <p className="mt-1.5 text-center text-[12px] leading-relaxed text-[#8a9099]">{t.drawConfirmDesc}</p>
 
               {/* Quantity stepper */}
-              <div className="mt-3.5 flex items-center justify-center gap-3">
+              <div className="mt-3.5 flex h-[60px] items-center justify-center gap-2">
                 <button
                   onClick={() => setQty(customQty - 1)}
                   disabled={customQty <= 1}
                   aria-label="decrease"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#8f959d] text-white active:scale-95 disabled:opacity-40"
+                  className="flex h-[27px] w-[27px] shrink-0 items-center justify-center rounded-full bg-[#8f959d] text-white active:scale-95 disabled:opacity-40"
                 >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round"><path d="M5 12h14" /></svg>
+                  <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round"><path d="M2.5 7.5h10" /></svg>
                 </button>
-                <div className="flex min-w-[150px] items-center justify-center rounded-2xl border border-black/10 bg-white px-6 py-1.5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-                  <span className="text-[38px] font-black leading-none text-[#1d2129]">{customQty}</span>
+                <div className="flex h-[60px] w-[160px] items-center justify-center rounded-lg border border-[#e7e7e7] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+                  <span className="text-[50px] font-black leading-none text-[#1d2129]">{customQty}</span>
                 </div>
                 <button
                   onClick={() => setQty(customQty + 1)}
                   disabled={customQty >= MAX_CUSTOM_DRAW}
                   aria-label="increase"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#D10005] text-white active:scale-95 disabled:opacity-40"
+                  className="flex h-[27px] w-[27px] shrink-0 items-center justify-center rounded-full bg-[#D10005] text-white active:scale-95 disabled:opacity-40"
                 >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+                  <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round"><path d="M7.5 2.5v10M2.5 7.5h10" /></svg>
                 </button>
               </div>
 
