@@ -149,6 +149,9 @@ export type Screen =
   | "login"
   | "oripa"
   | "drawDetail"
+  // Same pack page shown to a signed-out visitor: it browses, but every draw
+  // CTA asks for a login first.
+  | "guestDraw"
   | "notifications"
   | "prizeHistory"
   | "myLoot"

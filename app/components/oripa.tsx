@@ -362,9 +362,15 @@ function OripaCard({ item, t, onView, onRequestDraw }: { item: OripaItem; t: Dic
 // "PROMO BANNER" label) until the client signs off on final creative.
 const PROMO_SLIDE_COUNT = 7;
 
+// The slides stand in for campaign creative, so a tapped banner opens a pack
+// that can actually be drawn — sold-out and expired packs are skipped, and the
+// slide index picks one so a given banner always leads to the same oripa.
+const BANNER_PACKS = ALL_ORIPA.filter((it) => !it.expired && !it.soldOut && it.remaining > 0);
+const bannerPack = (slide: number) => BANNER_PACKS[slide % BANNER_PACKS.length];
+
 // V1 homepage top: auto-advancing promo carousel. Slides walk into a cloned
 // first slide for a seamless wrap, then snap back without animation.
-function PromoCarousel() {
+function PromoCarousel({ onOpenSlide }: { onOpenSlide?: (slide: number) => void }) {
   const [idx, setIdx] = useState(0);
   const [anim, setAnim] = useState(true);
   const n = PROMO_SLIDE_COUNT;
@@ -401,16 +407,29 @@ function PromoCarousel() {
             }
           }}
         >
-          {Array.from({ length: slideCount }).map((_, i) => (
+          {Array.from({ length: slideCount }).map((_, i) => {
             // Each slide owns its 8:3 ratio so its height never depends on a
-            // fragile h-full chain through the flex track.
-            <div key={i} className="relative aspect-[8/3] w-full shrink-0">
-              <img src="/placeholder-banner.png" alt="" className="absolute inset-0 h-full w-full object-cover" />
-              <span className="absolute inset-0 flex items-center justify-center text-[18px] font-extrabold tracking-wide text-[#1d2129]">
-                PROMO BANNER
-              </span>
-            </div>
-          ))}
+            // fragile h-full chain through the flex track. The cloned wrap
+            // slide leads to the same pack as the first one.
+            const slide = i % n;
+            const art = (
+              <>
+                <img src="/placeholder-banner.png" alt="" className="absolute inset-0 h-full w-full object-cover" />
+                <span className="absolute inset-0 flex items-center justify-center text-[18px] font-extrabold tracking-wide text-[#1d2129]">
+                  PROMO BANNER
+                </span>
+              </>
+            );
+            return onOpenSlide ? (
+              <button key={i} type="button" onClick={() => onOpenSlide(slide)} className="relative aspect-[8/3] w-full shrink-0">
+                {art}
+              </button>
+            ) : (
+              <div key={i} className="relative aspect-[8/3] w-full shrink-0">
+                {art}
+              </div>
+            );
+          })}
         </div>
       </div>
       <div className="mt-2 flex items-center justify-center gap-1.5">
@@ -808,7 +827,7 @@ function PriceRangeFilter({ label, min, max, onMin, onMax }: { label: string; mi
 
 // V2 lobby feed. `onView` (tap on any card) is inert in the logged-in lobby
 // and routes to Sign-up on the logged-out landing.
-function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll, onView, onOpenDraw, onRequestDraw }: { t: Dict; lang: Lang; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void; onView?: () => void; onOpenDraw?: (item: OripaItem) => void; onRequestDraw?: (item: OripaItem, req: Omit<DrawRequest, "token">) => void }) {
+function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll, onView, onOpenDraw, onRequestDraw, showPromo = false }: { t: Dict; lang: Lang; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void; onView?: () => void; onOpenDraw?: (item: OripaItem) => void; onRequestDraw?: (item: OripaItem, req: Omit<DrawRequest, "token">) => void; showPromo?: boolean }) {
   const L = LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"];
   const [cat, setCat] = useState("all");
   const [searchActive, setSearchActive] = useState(false);
@@ -1049,10 +1068,10 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
 
   // Promo banner — rendered between the recommended (red) oripas and the rest
   // of the feed. Single banner with dots; swap the placeholder creative for
-  // real art later. Only shown to logged-in users (the logged-in lobby passes
-  // `onOpenDraw`); the logged-out landing feed omits it.
-  const promoBanners = onOpenDraw ? (
-    <div className="px-3.5 pt-3"><PromoCarousel /></div>
+  // real art later. Only the logged-in lobby shows it (the logged-out landing
+  // carries its own carousel at the top), and a tapped slide opens its pack.
+  const promoBanners = showPromo ? (
+    <div className="px-3.5 pt-3"><PromoCarousel onOpenSlide={(s) => openCard(bannerPack(s))} /></div>
   ) : null;
 
   // Sparkle mark that leads the recommended heading. The art is white, so it
@@ -1331,7 +1350,7 @@ function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, onRequestDraw
       <FeedScroller scrollElRef={scrollElRef} onScroll={(el) => { if (scrollRef) scrollRef.current = el.scrollTop; }}>
         <HomeHero lang={lang} />
 
-        <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={onApply} onToggleApplied={onToggleApplied} onClearAll={onClearAll} onOpenDraw={onOpenDraw} onRequestDraw={onRequestDraw} />
+        <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={onApply} onToggleApplied={onToggleApplied} onClearAll={onClearAll} onOpenDraw={onOpenDraw} onRequestDraw={onRequestDraw} showPromo />
 
         <SiteFooter t={t} />
       </FeedScroller>
@@ -1999,13 +2018,18 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
 
 // The pack page: artwork, price / stock, prize line-up and the sticky CTA row.
 // Drawing itself is delegated to DrawFlow, the same flow a lobby card opens.
-function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, onOpenDraw, onAttemptPaidDraw, onTopUp, pendingConfirm, onPendingConfirmConsumed }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; onOpenDraw?: (item: OripaItem) => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** The confirmation's Charge/Top Up CTA: open the store for a draw the wallet can't cover. */ onTopUp?: (count: number) => void; /** After Quick Purchase success, host re-opens this count's confirmation. */ pendingConfirm?: { count: number; token: number } | null; onPendingConfirmConsumed?: () => void }) {
+function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, onOpenDraw, onAttemptPaidDraw, onTopUp, pendingConfirm, onPendingConfirmConsumed, guest }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; onOpenDraw?: (item: OripaItem) => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** The confirmation's Charge/Top Up CTA: open the store for a draw the wallet can't cover. */ onTopUp?: (count: number) => void; /** After Quick Purchase success, host re-opens this count's confirmation. */ pendingConfirm?: { count: number; token: number } | null; onPendingConfirmConsumed?: () => void; /** Signed-out visitor: the page is browsable, but any draw CTA asks for an account. */ guest?: { onSignUp: () => void; onLogin: () => void } }) {
   const t = STR[lang];
   const openLegal = useContext(LegalNavContext);
   const [cautionOpen, setCautionOpen] = useState(false);
   // What the tapped CTA asked the flow to open.
   const [request, setRequest] = useState<DrawRequest | null>(null);
-  const requestDraw = (req: Omit<DrawRequest, "token">) => setRequest({ ...req, token: Date.now() });
+  // A visitor's draw never starts: every CTA on the page — fixed counts, custom
+  // and free draws alike — goes through here, so all of them ask for a login.
+  const requestDraw = (req: Omit<DrawRequest, "token">) => {
+    if (guest) { guest.onLogin(); return; }
+    setRequest({ ...req, token: Date.now() });
+  };
   // A failed draw on an expired pack latches the greyed-out sold-out state;
   // `item.expired` packs open that way to begin with.
   const [soldOutHit, setSoldOutHit] = useState(false);
@@ -2016,7 +2040,11 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
 
   return (
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
-      <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
+      {/* A visitor has no wallet to show, so the page keeps the landing page's
+          sign-up / login header instead of the balance pill. */}
+      {guest
+        ? <AuthHeader lang={lang} onSignUp={guest.onSignUp} onLogin={guest.onLogin} />
+        : <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />}
 
       {/* Warm the confirmation banner while the pack page is open so the popup
           never animates in around an empty banner slot. */}
@@ -2161,7 +2189,9 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
         </div>
       )}
 
-      <DrawFlow
+      {/* Nothing to draw for a visitor, so the flow (and its wallet, shipping
+          and results machinery) never mounts. */}
+      {!guest && <DrawFlow
         lang={lang}
         item={item}
         coins={coins}
@@ -2182,7 +2212,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
         onTopUp={onTopUp}
         pendingConfirm={pendingConfirm}
         onPendingConfirmConsumed={onPendingConfirmConsumed}
-      />
+      />}
     </div>
   );
 }
@@ -2944,8 +2974,9 @@ function BottomNav({ screen, t, onNavigate }: { screen: Screen; t: Dict; onNavig
 
 /* ── LandingPage ──────────────────────────────────────────────────────── */
 // Logged-out lobby (V1 homepage): auth header + search + banner placeholder +
-// category-filtered card sections. Card taps prompt sign-up.
-function LandingPage({ lang, onSignUp, onLogin }: { lang: Lang; onSignUp: () => void; onLogin: () => void }) {
+// category-filtered card sections. A visitor can browse any pack page; only a
+// draw CTA asks them to log in.
+function LandingPage({ lang, onSignUp, onLogin, onOpenDraw, onRequireLogin }: { lang: Lang; onSignUp: () => void; onLogin: () => void; onOpenDraw: (item: OripaItem) => void; onRequireLogin: (item: OripaItem) => void }) {
   const t = STR[lang];
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<Record<string, boolean>>({});
@@ -2961,9 +2992,11 @@ function LandingPage({ lang, onSignUp, onLogin }: { lang: Lang; onSignUp: () => 
       <AuthHeader lang={lang} onSignUp={onSignUp} onLogin={onLogin} />
 
       <FeedScroller>
-        <div className="px-3 pb-4 pt-3"><PromoCarousel /></div>
+        <div className="px-3 pb-4 pt-3"><PromoCarousel onOpenSlide={(s) => onOpenDraw(bannerPack(s))} /></div>
 
-        <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={applyLobby} onToggleApplied={toggleApplied} onClearAll={clearAll} onView={onSignUp} />
+        {/* Card art opens the pack page; its inline draw CTAs need an account,
+            so they route to login and come back to the same pack. */}
+        <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={applyLobby} onToggleApplied={toggleApplied} onClearAll={clearAll} onOpenDraw={onOpenDraw} onRequestDraw={(item) => onRequireLogin(item)} />
 
         <SiteFooter t={t} />
       </FeedScroller>
@@ -4637,14 +4670,28 @@ const MENU_ICON_IMG: Record<string, string> = {
    design block: two equal halves split by a full-height 1px rule, a 14px label
    over a 24px amount in #0F0F0F, and a plus on the coin side that opens the
    store. */
-function BalanceStrip({ t, coins, points = 10000, onOpenStore }: { t: Dict; coins: number; points?: number; onOpenStore?: () => void }) {
+function BalanceStrip({ t, coins, points = 10000, onOpenStore, onOpenHistory }: { t: Dict; coins: number; points?: number; onOpenStore?: () => void; onOpenHistory?: () => void }) {
+  // Both amounts open the ledger wherever one is given, matching the header
+  // pill; the plus stays its own target so it still reaches the store.
+  const amount = (children: React.ReactNode) =>
+    onOpenHistory ? (
+      <button type="button" onClick={onOpenHistory} aria-label={t.coinHistoryTitle} className="flex items-center gap-1.5 transition active:scale-[0.97]">
+        {children}
+      </button>
+    ) : (
+      <div className="flex items-center gap-1.5">{children}</div>
+    );
   return (
     <div className="flex items-stretch">
       <div className="min-w-0 flex-1 pr-4">
         <p className="text-[14px] font-normal leading-none text-[#0F0F0F]">{t.chOripaCoins}</p>
         <div className="mt-2.5 flex items-center gap-1.5">
-          <CoinIcon size={24} />
-          <span className="text-[24px] font-bold leading-none text-[#0F0F0F]">{coins.toLocaleString()}</span>
+          {amount(
+            <>
+              <CoinIcon size={24} />
+              <span className="text-[24px] font-bold leading-none text-[#0F0F0F]">{coins.toLocaleString()}</span>
+            </>
+          )}
           <button onClick={onOpenStore} aria-label={t.addCoinsAria} className="ml-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center transition active:scale-95">
             <img src="/plus-sign.png" alt="" className="h-full w-full object-contain" draggable={false} />
           </button>
@@ -4653,9 +4700,13 @@ function BalanceStrip({ t, coins, points = 10000, onOpenStore }: { t: Dict; coin
       <div className="w-px shrink-0 bg-[#E7E7E7]" />
       <div className="min-w-0 flex-1 pl-5">
         <p className="text-[14px] font-normal leading-none text-[#0F0F0F]">{t.chFreePoints}</p>
-        <div className="mt-2.5 flex items-center gap-1.5">
-          <GemIcon size={21} />
-          <span className="text-[24px] font-bold leading-none text-[#0F0F0F]">{points.toLocaleString()}</span>
+        <div className="mt-2.5">
+          {amount(
+            <>
+              <GemIcon size={21} />
+              <span className="text-[24px] font-bold leading-none text-[#0F0F0F]">{points.toLocaleString()}</span>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -4732,7 +4783,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenQuest, onOpenPriz
 
           {/* Balance card */}
           <div className="mt-3 rounded-2xl bg-white px-4 py-4 shadow-[0_1px_4px_rgba(0,0,0,0.08)]">
-            <BalanceStrip t={t} coins={coins} onOpenStore={onOpenStore} />
+            <BalanceStrip t={t} coins={coins} onOpenStore={onOpenStore} onOpenHistory={openCoinHistory} />
             {/* Ledger link sits under the points column. */}
             <div className="mt-4 flex items-center justify-end">
               <button onClick={openCoinHistory} className="flex h-6 w-[146px] max-w-[50%] shrink-0 items-center justify-center rounded-[6px] border border-[#0F0F0F] text-[14px] font-bold leading-none text-[#0F0F0F] active:bg-black/[0.04]">{t.mpViewDetails}</button>
@@ -5867,11 +5918,22 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
     setLobbyDraw(null);
     setScreen("oripa");
   };
-  // PROD: login/sign-up land straight on the lobby (no onboarding flow).
+  // A visitor sent to authenticate from a pack page (its draw CTA, or the
+  // sign-up / login buttons in its header) is owed that pack back once they're
+  // in, so it is parked here until the auth screen succeeds.
+  const [authReturn, setAuthReturn] = useState<OripaItem | null>(null);
+  // PROD: login/sign-up land straight on the lobby (no onboarding flow), unless
+  // a pack is owed — then they land on it, ready to draw.
   const enterHome = (method?: "line") => {
-    setScreen("oripa");
+    const pack = authReturn;
+    setAuthReturn(null);
+    if (pack) { setDrawItem(pack); setScreen("drawDetail"); }
+    else setScreen("oripa");
     if (method === "line") setLineLoginToast(true);
   };
+  // Leaving the visitor's pack page for the logged-out lobby drops that debt:
+  // logging in from the landing header belongs on the lobby.
+  const goLanding = () => { setAuthReturn(null); setScreen("landing"); };
   const logout = () => {
     try {
       sessionStorage.removeItem("authData");
@@ -5924,6 +5986,14 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   // Dropping the held lobby request keeps its DrawFlow from replaying the draw
   // when the lobby is next mounted.
   const openDraw = (item: OripaItem) => { setLobbyDraw(null); setDrawItem(item); setScreen("drawDetail"); };
+  // The visitor's read-only view of the same pack page.
+  const openGuestDraw = (item: OripaItem) => { setDrawItem(item); setScreen("guestDraw"); };
+  // Any draw a visitor asks for: hold the pack, then send them to authenticate.
+  const requireAuthForDraw = (item: OripaItem, to: "login" | "signup" = "login") => {
+    setDrawItem(item);
+    setAuthReturn(item);
+    setScreen(to);
+  };
   const requestLobbyDraw = (item: OripaItem, req: Omit<DrawRequest, "token">) =>
     setLobbyDraw({ item, request: { ...req, token: Date.now() } });
   // Legal document reader (Terms / Privacy / SCTA), rendered at the app root so
@@ -5937,7 +6007,9 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
     if (s === "store") { openStore(); return; }
     // quest tab remains inert.
   };
-  const onLanding = screen === "landing" || screen === "signup" || screen === "login";
+  // Signed-out screens, the visitor's pack page included: no bottom nav, and no
+  // route into the member-only notification or coin-history screens.
+  const onLanding = screen === "landing" || screen === "signup" || screen === "login" || screen === "guestDraw";
   const showNav = !onLanding && !kyc.activeScreen;
   return (
     <NotifNavContext.Provider value={onLanding ? () => {} : openNotifications}>
@@ -5949,11 +6021,39 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             body-only fade/slide-in (headers are excluded per-screen). */}
         <div key={screen} className="h-full">
         {/* Logged-out lobby — V1 homepage layout */}
-        {screen === "landing" && <LandingPage lang={lang} onSignUp={() => setScreen("signup")} onLogin={() => setScreen("login")} />}
+        {screen === "landing" && (
+          <LandingPage
+            lang={lang}
+            onSignUp={() => setScreen("signup")}
+            onLogin={() => setScreen("login")}
+            onOpenDraw={openGuestDraw}
+            onRequireLogin={(item) => requireAuthForDraw(item)}
+          />
+        )}
+        {/* Visitor's pack page: same design, no wallet, CTAs route to auth. */}
+        {screen === "guestDraw" && drawItem && (
+          <DrawDetail
+            key={drawItem.id}
+            lang={lang}
+            item={drawItem}
+            coins={coins}
+            onBack={goLanding}
+            onHome={goLanding}
+            freeShipAvailable={freeShipAvailable}
+            drawScenario={drawScenario}
+            multiCurrency={multiCurrency}
+            shippingAddresses={shippingAddresses}
+            onShippingAddressesChange={setShippingAddresses}
+            guest={{
+              onSignUp: () => requireAuthForDraw(drawItem, "signup"),
+              onLogin: () => requireAuthForDraw(drawItem),
+            }}
+          />
+        )}
         {screen === "signup" && (
           <SignupPage
             lang={lang}
-            onQuit={() => setScreen("landing")}
+            onQuit={goLanding}
             onLogin={() => setScreen("login")}
             onSuccess={() => enterHome()}
           />

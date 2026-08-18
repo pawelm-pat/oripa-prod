@@ -407,6 +407,30 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
     ],
   },
 
+  guestDraw: {
+    label: "Draw (pack detail, signed out)",
+    summary: "The same pack detail page, opened by a signed-out visitor from a landing card or promo banner: everything is browsable, but drawing needs an account.",
+    groups: [
+      {
+        title: "Header",
+        items: ["Landing page's Sign up / Login header instead of the balance pill (a visitor has no wallet).", "Both buttons open their auth screen and come back to this pack once authenticated."],
+      },
+      {
+        title: "Page content",
+        items: ["Identical to the logged-in pack page: banner, remaining/period, caution note, prize line-up by tier and footer.", "Back arrow returns to the logged-out lobby."],
+      },
+      {
+        title: "Draw CTA (sticky)",
+        items: [
+          { text: "Any draw CTA (×1 / ×10 / Custom / free draw)", sub: ["Opens Login instead of a draw confirmation; no draw flow, wallet or results exist for a visitor."] },
+          "After a successful login or sign-up the visitor lands back on this pack page, signed in and able to draw.",
+        ],
+      },
+      FOOTER_GROUP,
+      LEGAL_OVERLAY_GROUP,
+    ],
+  },
+
   notifications: {
     label: "Notifications",
     summary: "Personal notifications and service announcements.",
