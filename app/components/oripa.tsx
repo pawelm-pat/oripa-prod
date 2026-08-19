@@ -1602,6 +1602,13 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
     setCustomOpen(true);
   }
   const setQty = (n: number) => setCustomQty(() => Math.min(MAX_CUSTOM_DRAW, Math.max(1, n)));
+  // MAX fills in the largest draw the chosen balance covers, so nobody has to
+  // divide their wallet by the draw price. The stepper's own ceiling still
+  // applies, and it never lands below 1 so the popup keeps a drawable count.
+  const maxAffordableQty = () => {
+    const balance = payCurrency === "points" ? DRAW_FREE_POINTS : coins;
+    return Math.min(MAX_CUSTOM_DRAW, Math.max(1, Math.floor(balance / DRAW_PRICE)));
+  };
 
   // A tapped CTA (lobby card or pack page) arrives as a request; the token
   // distinguishes repeat taps of the same CTA. Applied while rendering rather
@@ -1806,7 +1813,7 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
               <div className="mt-3 flex items-center justify-center gap-[10px]">
                 <button onClick={() => setQty(customQty + 5)} className={quickAddCls}>{t.drawCustomAdd(5)}</button>
                 <button onClick={() => setQty(customQty + 10)} className={quickAddCls}>{t.drawCustomAdd(10)}</button>
-                <button onClick={() => setQty(MAX_CUSTOM_DRAW)} className={quickAddCls}>{t.drawCustomMax}</button>
+                <button onClick={() => setQty(maxAffordableQty())} className={quickAddCls}>{t.drawCustomMax}</button>
               </div>
 
               {/* Balances — same selectable rows as the fixed-count popup */}

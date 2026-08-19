@@ -293,7 +293,7 @@ const EN = {
   drawPayWith: "Pay with",
   // The 回 ("draws") glyph is part of the button artwork in both locales.
   drawCustomAdd: (n: number) => `+${n}回`,
-  drawCustomMax: "MAX(100回)",
+  drawCustomMax: "MAX",
   drawCustomCta: (n: number) => `${n} Draw${n === 1 ? "" : "s"}`,
   drawAgain: "Draw again",
   resultsBackToInfo: "Back to info page",
@@ -1370,7 +1370,7 @@ const JA: Dict = {
   drawConfirmTermsLink: "こちら",
   drawPayWith: "支払い方法",
   drawCustomAdd: (n) => `+${n}回`,
-  drawCustomMax: "MAX(100回)",
+  drawCustomMax: "MAX",
   drawCustomCta: (n) => `${n}回ガチャ`,
   drawAgain: "もう一回引く",
   resultsBackToInfo: "情報ページに戻る",
