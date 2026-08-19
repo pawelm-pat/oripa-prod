@@ -1644,7 +1644,10 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
       <div className="mt-3.5 space-y-2" role={multiCurrency ? "radiogroup" : undefined} aria-label={multiCurrency ? t.drawPayWith : undefined}>
         {rows.map(({ key, Icon, balance }) => {
           const selected = payCurrency === key;
-          const after = balance - cost;
+          // A wallet can't go below zero, so a draw it can't cover reads as 0
+          // rather than a negative figure — the shortfall note under the rows
+          // is what states how much is missing.
+          const after = Math.max(0, balance - cost);
           const body = (
             <>
               <span className="flex items-center gap-2"><Icon size={30} /><span className={`text-[20px] font-extrabold leading-none ${selected ? "text-[#0F0F0F]" : "text-[#8a9099]"}`}>{balance.toLocaleString()}</span></span>
@@ -5714,7 +5717,9 @@ function NotEnoughCoinsPopup({ lang, coins, cost, onCharge, onClose }: { lang: L
           <BalanceArrow />
           <span className="flex items-center gap-2">
             <CoinIcon size={30} />
-            <span className="text-[20px] font-extrabold leading-none text-[#D10005]">{(coins - cost).toLocaleString()}</span>
+            {/* Floors at zero like the confirmation rows; the line below says
+                how far short the wallet is. */}
+            <span className="text-[20px] font-extrabold leading-none text-[#D10005]">{Math.max(0, coins - cost).toLocaleString()}</span>
           </span>
         </div>
         <p className="mx-auto mt-3 max-w-[290px] text-[13px] font-medium leading-[1.45] text-[#D10005]">
