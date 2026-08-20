@@ -413,7 +413,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
     groups: [
       {
         title: "Header",
-        items: ["Landing page's Sign up / Login header instead of the balance pill (a visitor has no wallet).", "Both buttons open their auth screen and come back to this pack once authenticated."],
+        items: ["Landing page's Sign up / Login header instead of the balance pill (a visitor has no wallet).", "Both buttons open their auth screen and come back to this pack once authenticated.", "The logo returns to the logged-out lobby, as it does everywhere else."],
       },
       {
         title: "Page content",

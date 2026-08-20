@@ -2067,7 +2067,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
       {/* A visitor has no wallet to show, so the page keeps the landing page's
           sign-up / login header instead of the balance pill. */}
       {guest
-        ? <AuthHeader lang={lang} onSignUp={guest.onSignUp} onLogin={guest.onLogin} />
+        ? <AuthHeader lang={lang} onSignUp={guest.onSignUp} onLogin={guest.onLogin} onHome={onHome} />
         : <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />}
 
       {/* Warm the confirmation banner while the pack page is open so the popup

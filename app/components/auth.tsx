@@ -13,11 +13,12 @@ function GreenCheck() {
   );
 }
 
-export function AuthHeader({ lang, onSignUp, onLogin }: { lang: Lang; onSignUp: () => void; onLogin: () => void }) {
+export function AuthHeader({ lang, onSignUp, onLogin, onHome }: { lang: Lang; onSignUp: () => void; onLogin: () => void; /** Away from the lobby (a visitor's pack page), the logo leads back to it. */ onHome?: () => void }) {
   const t = STR[lang];
+  const logo = <img src="/oripa-logo.png" alt="オリパロット" className="h-8 w-auto shrink-0" />;
   return (
     <header className="flex shrink-0 items-center justify-between bg-white px-4 py-2.5 shadow-[0_1px_4px_rgba(0,0,0,0.10)]">
-      <img src="/oripa-logo.png" alt="オリパロット" className="h-8 w-auto shrink-0" />
+      {onHome ? <button onClick={onHome} aria-label="Home" className="shrink-0">{logo}</button> : logo}
       <div className="flex items-center gap-2">
         <button onClick={onSignUp} className="rounded-lg px-4 py-1.5 text-[13px] font-bold text-white" style={{ background: "#D10005" }}>{t.authSignUp}</button>
         <button onClick={onLogin} className="rounded-lg px-4 py-1.5 text-[13px] font-bold text-white" style={{ background: "#f59e0b" }}>{t.authLogin}</button>
