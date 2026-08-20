@@ -1582,8 +1582,15 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
     if (expired) { setConfirmCount(null); setExpiredPopup(true); return; }
     // Simulated connection error: show the error popup; Retry re-runs the draw.
     if (connError) { setConfirmCount(null); setRetryCount(count); setConnErrorPopup(true); return; }
-    // Free draws and point payments leave the coin balance untouched.
-    if (confirmFree || payCurrency === "points") { runDraw(count); return; }
+    // Free draws leave both balances untouched.
+    if (confirmFree) { runDraw(count); return; }
+    // Free points leave the coin balance untouched, but a draw they can't cover
+    // routes to the store just like a coin shortfall does.
+    if (payCurrency === "points") {
+      if (shortfallFor(count) > 0) { requestTopUp(count); return; }
+      runDraw(count);
+      return;
+    }
     // Paid draw: debit via host (or open Quick Purchase if short).
     if (onAttemptPaidDraw) {
       setConfirmCount(null);
@@ -1626,7 +1633,11 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
     if (connError) { setCustomOpen(false); setRetryCount(customQty); setConnErrorPopup(true); return; }
     if (insufficientStock && customQty > STOCK_LEFT) { setCustomOpen(false); setStockReqCount(customQty); setStockPopup(true); return; }
     // Paying with free points leaves the coin balance untouched.
-    if (payCurrency === "points") { runDraw(customQty); return; }
+    if (payCurrency === "points") {
+      if (shortfallFor(customQty) > 0) { requestTopUp(customQty); return; }
+      runDraw(customQty);
+      return;
+    }
     if (onAttemptPaidDraw) {
       setCustomOpen(false);
       if (!onAttemptPaidDraw(customQty)) return;
@@ -1684,16 +1695,19 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
     );
   }
 
-  // A draw that costs more than the wallet holds keeps its confirmation open:
-  // the shortfall is spelled out under the balance and the confirm CTA becomes
-  // the store, so topping up stays a choice. Free points have no top-up path,
-  // so paying with them keeps the normal CTA.
-  const shortfallFor = (count: number) => (payCurrency === "coins" ? Math.max(0, DRAW_PRICE * count - coins) : 0);
+  // A draw that costs more than the chosen wallet holds keeps its confirmation
+  // open: the shortfall is spelled out under the balance and the confirm CTA
+  // becomes the store, so topping up stays a choice. Coin packages grant free
+  // points too, so a points shortfall leads to the same place.
+  const shortfallFor = (count: number) =>
+    Math.max(0, DRAW_PRICE * count - (payCurrency === "points" ? DRAW_FREE_POINTS : coins));
   const shortfallNote = (amount: number) => (
     <p className="mx-auto mt-3 max-w-[300px] text-center text-[13px] font-medium leading-[1.45] text-[#D10005]">
       {t.noCoinsShortPre}
-      <span className="font-extrabold">{t.noCoinsShortAmount(amount.toLocaleString())}</span>
-      {t.noCoinsShortPost}
+      <span className="font-extrabold">
+        {payCurrency === "points" ? t.noPointsShortAmount(amount.toLocaleString()) : t.noCoinsShortAmount(amount.toLocaleString())}
+      </span>
+      {payCurrency === "points" ? t.noPointsShortPost : t.noCoinsShortPost}
     </p>
   );
   function requestTopUp(count: number) {

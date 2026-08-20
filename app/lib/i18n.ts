@@ -318,6 +318,10 @@ const EN = {
   noCoinsShortPre: "You are short by ",
   noCoinsShortAmount: (amount: string) => `${amount} coins`,
   noCoinsShortPost: " to draw the gacha. Please charge coins.",
+  // Same sentence when the draw is paid with free points: coin packages come
+  // with points, so the way out is still the store.
+  noPointsShortAmount: (amount: string) => `${amount} points`,
+  noPointsShortPost: " to draw the gacha. Please charge coins to get more points.",
   noCoinsCta: "Charge/Top Up",
   soldOutLabel: "Sold Out",
   expiredLabel: "Expired",
@@ -1391,6 +1395,8 @@ const JA: Dict = {
   noCoinsShortPre: "ガチャを回すには",
   noCoinsShortAmount: (amount: string) => `${amount}コイン`,
   noCoinsShortPost: "不足しています。コインをチャージしてください。",
+  noPointsShortAmount: (amount: string) => `${amount}ポイント`,
+  noPointsShortPost: "不足しています。コインをチャージするとポイントが付与されます。",
   noCoinsCta: "チャージする",
   soldOutLabel: "完売しました",
   expiredLabel: "期限切れ",
