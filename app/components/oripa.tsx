@@ -4750,7 +4750,9 @@ function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
     <div className="flex gap-3">
       <div className="flex w-[34px] shrink-0 flex-col items-center">
         <div className="flex h-[34px] w-[34px] items-center justify-center">{icon}</div>
-        {!last && <div className="mt-1 w-[3px] flex-1 rounded-full bg-[#D10005]" />}
+        {/* Drawn as a 24px rule with a 3px stroke, so it stays that length
+            however tall the step's copy runs. */}
+        {!last && <div className="mt-1 h-[24px] w-[3px] shrink-0 bg-[#D10005]" />}
       </div>
       <div className={last ? "pb-1" : "pb-5"}>
         <p className="text-[15px] font-bold leading-tight text-[#0F0F0F]">{title}</p>
