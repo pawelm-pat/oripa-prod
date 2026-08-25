@@ -607,7 +607,7 @@ function SiteFooter({ t }: { t: Dict }) {
   };
   return (
     <footer className="bg-black px-4 py-7 text-white">
-      <img src="/oripa-logo-footer.png" alt="オリパロット" className="h-8 w-auto" />
+      <img src="/oripa-logo-footer.png" alt="オリパロット" className="h-[55px] w-[199px] object-contain" />
       <p className="mt-3 text-[11px] text-white">{t.ftCopyright}</p>
       <p className="mt-3 text-[11px] leading-relaxed text-white">{t.ftBlurb}</p>
 
@@ -4741,7 +4741,7 @@ function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
       <p className="text-center text-[13px] font-bold leading-[1.15] text-[#D10005]">{label}</p>
       <div className="flex items-center gap-1.5">
         {icon}
-        <span className="text-[15px] font-bold text-[#0F0F0F]">{value}</span>
+        <span className="text-[16px] font-medium uppercase leading-[100%] text-[#0F0F0F]">{value}</span>
       </div>
     </div>
   );
@@ -4750,11 +4750,11 @@ function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
     <div className="flex gap-3">
       <div className="flex w-[34px] shrink-0 flex-col items-center">
         <div className="flex h-[34px] w-[34px] items-center justify-center">{icon}</div>
-        {!last && <div className="mt-1 w-0 flex-1 border-l-2 border-dashed border-[#D10005]" />}
+        {!last && <div className="mt-1 w-[3px] flex-1 rounded-full bg-[#D10005]" />}
       </div>
       <div className={last ? "pb-1" : "pb-5"}>
         <p className="text-[15px] font-bold leading-tight text-[#0F0F0F]">{title}</p>
-        <p className="mt-1 text-[11.5px] font-normal leading-[1.45] text-[#5c626b]">{desc}</p>
+        <p className="mt-1.5 text-[14px] font-medium leading-[100%] text-[#0F0F0F]">{desc}</p>
       </div>
     </div>
   );
@@ -4777,10 +4777,10 @@ function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
           <div className="mt-2 flex items-center gap-2">
             <img src="/refer-mascot.png" alt="" className="h-[132px] w-[132px] shrink-0 object-contain" draggable={false} />
             <div className="min-w-0 flex-1">
-              <p className="text-[14px] font-extrabold uppercase leading-[1.25] text-[#0F0F0F]">{t.rafHeroTitle}</p>
-              <p className="mt-2 text-[13px] font-medium uppercase leading-[1.3] text-[#0F0F0F]">
+              <p className="text-[14px] font-bold uppercase leading-[100%] text-[#0F0F0F]">{t.rafHeroTitle}</p>
+              <p className="mt-2.5 text-[12px] font-normal uppercase leading-[100%] text-[#0F0F0F]">
                 {t.rafHeroLead}
-                <span className="font-extrabold text-[#D10005]">{t.rafHeroCoins}</span>
+                <span className="font-bold text-[#D10005]">{t.rafHeroCoins}</span>
                 {t.rafHeroTail}
               </p>
             </div>
