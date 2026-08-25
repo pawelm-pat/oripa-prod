@@ -597,15 +597,17 @@ function SiteFooter({ t }: { t: Dict }) {
   const openLegal = useContext(LegalNavContext);
   const chip = (label: string) => {
     const doc: LegalDocKey | null = label === t.mpTerms ? "terms" : label === t.mpPrivacy ? "privacy" : label === t.mpLegal ? "legal" : label === t.mpAntisocial ? "antisocial" : null;
+    // Height and padding follow the footer button in the design.
+    const chipClass = "inline-flex h-[26px] items-center rounded-full bg-white px-5 text-[12px] font-bold text-[#1d2129]";
     return doc ? (
-      <button key={label} onClick={() => openLegal(doc)} className="rounded-full bg-white px-3.5 py-2 text-[12px] font-bold text-[#1d2129] active:bg-white/80">{label}</button>
+      <button key={label} onClick={() => openLegal(doc)} className={`${chipClass} active:bg-white/80`}>{label}</button>
     ) : (
-      <span key={label} className="rounded-full bg-white px-3.5 py-2 text-[12px] font-bold text-[#1d2129]">{label}</span>
+      <span key={label} className={chipClass}>{label}</span>
     );
   };
   return (
     <footer className="bg-black px-4 py-7 text-white">
-      <img src="/oripa-logo.png" alt="オリパロット" className="h-8 w-auto" />
+      <img src="/oripa-logo-footer.png" alt="オリパロット" className="h-8 w-auto" />
       <p className="mt-3 text-[11px] text-white">{t.ftCopyright}</p>
       <p className="mt-3 text-[11px] leading-relaxed text-white">{t.ftBlurb}</p>
 
@@ -4676,38 +4678,11 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
 /* ── Refer a friend ──────────────────────────────────────────────────────
    Reached from the My Page "Invite Friends" tile. The member's invite link
    with its three routes (copy, share sheet, QR overlay), their referral
-   tallies and the reward tiers. Dark surface per design, which runs straight
-   into the black site footer. */
-function ReferLinkIcon({ size = 26, color = "#D10005" }: { size?: number; color?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M10 13.5a4 4 0 006 .5l2.5-2.5a4 4 0 00-5.66-5.66L11.5 7.2" />
-      <path d="M14 10.5a4 4 0 00-6-.5L5.5 12.5a4 4 0 005.66 5.66l1.3-1.3" />
-    </svg>
-  );
-}
-
-/* Reward-tier medals: gold for the first tier, silver for the second. */
-function MedalIcon({ tone, size = 22 }: { tone: "gold" | "silver"; size?: number }) {
-  const [outer, inner, rim] = tone === "gold" ? ["#F5A524", "#FFD977", "#C9761A"] : ["#B9C2CC", "#E9EEF3", "#8A949F"];
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
-      <circle cx="12" cy="13" r="8.2" fill={outer} />
-      <circle cx="12" cy="13" r="5.6" fill={inner} />
-      <circle cx="12" cy="13" r="5.6" fill="none" stroke={rim} strokeWidth="0.9" />
-      <path d="M12 9.6l1 2.1 2.3.3-1.7 1.6.4 2.3-2-1.1-2 1.1.4-2.3-1.7-1.6 2.3-.3z" fill={rim} opacity="0.55" />
-    </svg>
-  );
-}
-
-function QrGlyph({ size = 18, color = "#D10005" }: { size?: number; color?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} aria-hidden>
-      <path d="M3 3h7v7H3V3zm2 2v3h3V5H5zM14 3h7v7h-7V3zm2 2v3h3V5h-3zM3 14h7v7H3v-7zm2 2v3h3v-3H5z" />
-      <path d="M14 14h3v3h-3v-3zm5 0h2v2h-2v-2zm-5 5h3v2h-3v-2zm5 1h2v1h-2v-1zm-1-3h2v2h-2v-2z" />
-    </svg>
-  );
-}
+   tallies and the reward tiers. */
+// Every control in the link block — the field, Copy, Share Link and QR code —
+// shares this height, as the design draws them.
+const REFER_CTA_H = "h-[34px]";
+const referIcon = (src: string, size: number) => <img src={src} alt="" width={size} height={size} className="shrink-0 object-contain" style={{ width: size, height: size }} draggable={false} />;
 
 /* Share destinations. The POC has nothing to hand the link to, so a target
    just reports which app would open; "Copy link" behaves like the Copy CTA. */
@@ -4739,7 +4714,7 @@ const SHARE_TARGETS: ShareTarget[] = [
   },
 ];
 
-function ReferFriendPage({ lang, onBack }: { lang: Lang; onBack: () => void }) {
+function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: Lang; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void }) {
   const t = STR[lang];
   const [toast, setToast] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
@@ -4762,7 +4737,7 @@ function ReferFriendPage({ lang, onBack }: { lang: Lang; onBack: () => void }) {
   }
 
   const stat = (label: string, icon: ReactNode, value: string) => (
-    <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl bg-white px-2 py-3.5">
+    <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl bg-white px-2 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.07)]">
       <p className="text-center text-[13px] font-bold leading-[1.15] text-[#D10005]">{label}</p>
       <div className="flex items-center gap-1.5">
         {icon}
@@ -4778,72 +4753,76 @@ function ReferFriendPage({ lang, onBack }: { lang: Lang; onBack: () => void }) {
         {!last && <div className="mt-1 w-0 flex-1 border-l-2 border-dashed border-[#D10005]" />}
       </div>
       <div className={last ? "pb-1" : "pb-5"}>
-        <p className="text-[15px] font-bold leading-tight text-white">{title}</p>
-        <p className="mt-1 text-[11.5px] font-normal leading-[1.45] text-white/60">{desc}</p>
+        <p className="text-[15px] font-bold leading-tight text-[#0F0F0F]">{title}</p>
+        <p className="mt-1 text-[11.5px] font-normal leading-[1.45] text-[#5c626b]">{desc}</p>
       </div>
     </div>
   );
 
   return (
-    <div className="flex h-full flex-col bg-black">
-      {/* Title row — back returns to My Page */}
-      <div className="shrink-0 flex items-center gap-2 bg-black px-3 py-3">
-        <button onClick={onBack} aria-label={t.backAria} className="flex h-8 w-8 items-center justify-center text-[#D10005] active:opacity-70">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 12H4M10 6l-6 6 6 6" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
-        </button>
-        <h1 className="text-[16px] font-bold text-white">{t.rafTitle}</h1>
-      </div>
+    <div className="flex h-full flex-col bg-[#F9F9F9]">
+      <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
 
       <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
-        <div className="px-4 pb-6">
-          {/* Hero */}
+        <div className="px-4 pb-6 pt-4">
+          {/* Title row — back returns to My Page */}
           <div className="flex items-center gap-2">
-            <img src="/refer-mascot.png" alt="" className="h-[118px] w-[118px] shrink-0 object-contain" draggable={false} />
+            <button onClick={onBack} aria-label={t.backAria} className="flex h-9 w-9 items-center justify-center text-[#D10005] active:opacity-70">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M20 12H4M10 6l-6 6 6 6" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </button>
+            <h1 className="text-[20px] font-bold text-[#0F0F0F]">{t.rafTitle}</h1>
+          </div>
+
+          {/* Hero */}
+          <div className="mt-2 flex items-center gap-2">
+            <img src="/refer-mascot.png" alt="" className="h-[132px] w-[132px] shrink-0 object-contain" draggable={false} />
             <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-extrabold uppercase leading-[1.25] text-white">{t.rafHeroTitle}</p>
-              <p className="mt-2 text-[11px] font-bold uppercase leading-[1.3] text-white/70">
+              <p className="text-[14px] font-extrabold uppercase leading-[1.25] text-[#0F0F0F]">{t.rafHeroTitle}</p>
+              <p className="mt-2 text-[13px] font-medium uppercase leading-[1.3] text-[#0F0F0F]">
                 {t.rafHeroLead}
-                <span className="text-[#FF3B3B]">{t.rafHeroCoins}</span>
+                <span className="font-extrabold text-[#D10005]">{t.rafHeroCoins}</span>
                 {t.rafHeroTail}
               </p>
             </div>
           </div>
 
-          {/* Invite link + its three routes */}
+          {/* Invite link + its three routes, all sharing one control height */}
           <div className="mt-3 flex items-center gap-2">
-            <div className="min-w-0 flex-1 truncate rounded-xl bg-white px-3.5 py-3 text-[12px] font-medium text-[#5c626b]">{t.rafLinkShort}</div>
-            <button onClick={copyLink} className="shrink-0 rounded-xl px-5 py-3 text-[14px] font-bold text-white active:scale-[0.98]" style={{ background: "#D10005" }}>
+            <div className={`flex ${REFER_CTA_H} min-w-0 flex-1 items-center truncate rounded-lg border border-[#9d9d9d] bg-white px-3 text-[12px] font-medium text-[#9d9d9d]`}>
+              {t.rafLinkShort}
+            </div>
+            <button onClick={copyLink} className={`flex ${REFER_CTA_H} shrink-0 items-center justify-center rounded-lg px-6 text-[15px] font-bold text-white active:scale-[0.98]`} style={{ background: "#D10005" }}>
               {t.rafCopy}
             </button>
           </div>
-          <button onClick={() => setShareOpen(true)} className="mt-2.5 w-full rounded-xl border border-white/15 bg-[#141414] py-3 text-[14px] font-bold text-white active:bg-[#1f1f1f]">
+          <button onClick={() => setShareOpen(true)} className={`mt-2.5 flex ${REFER_CTA_H} w-full items-center justify-center rounded-lg bg-[#0A0A0A] text-[15px] font-bold text-white active:bg-[#242424]`}>
             {t.rafShare}
           </button>
-          <button onClick={() => setQrOpen(true)} className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-[14px] font-bold text-[#0F0F0F] active:bg-white/90">
-            <QrGlyph />
+          <button onClick={() => setQrOpen(true)} className={`mt-2.5 flex ${REFER_CTA_H} w-full items-center justify-center gap-2 rounded-lg border border-[#e7e7e7] bg-white text-[15px] font-bold text-[#0F0F0F] active:bg-black/[0.03]`}>
+            {referIcon("/refer-qrcode.png", 19)}
             {t.rafQr}
           </button>
 
           {/* Referral tallies */}
-          <h2 className="mb-2 mt-5 text-[15px] font-bold text-white">{t.rafMyFriends}</h2>
+          <h2 className="mb-2 mt-5 text-[15px] font-bold text-[#0F0F0F]">{t.rafMyFriends}</h2>
           <div className="grid grid-cols-2 gap-2.5">
-            {stat(t.rafInvited, <ReferLinkIcon size={20} />, "100")}
-            {stat(t.rafRewardsEarned, <CoinIcon size={18} />, "200,000")}
-            {stat(t.rafQualified1, <MedalIcon tone="gold" />, "70")}
-            {stat(t.rafQualified2, <MedalIcon tone="silver" />, "20")}
+            {stat(t.rafInvited, referIcon("/refer-handshake.png", 22), "100")}
+            {stat(t.rafRewardsEarned, <CoinIcon size={20} />, "200,000")}
+            {stat(t.rafQualified1, referIcon("/refer-tier-1.png", 24), "70")}
+            {stat(t.rafQualified2, referIcon("/refer-tier-2.png", 24), "20")}
           </div>
 
           {/* Reward tiers */}
-          <h2 className="mb-3 mt-5 text-[15px] font-bold text-white">{t.rafHowItWorks}</h2>
-          {step(<ReferLinkIcon size={28} />, t.rafStep1Title, t.rafStep1Desc)}
+          <h2 className="mb-3 mt-5 text-[15px] font-bold text-[#0F0F0F]">{t.rafHowItWorks}</h2>
+          {step(referIcon("/refer-handshake.png", 30), t.rafStep1Title, t.rafStep1Desc)}
           {step(
-            <MedalIcon tone="gold" size={30} />,
-            <>{t.rafStepRewardLead}<span className="text-[#FF3B3B]">{t.rafStepRewardCoins}</span> <span className="text-[#FF3B3B]">{t.rafStepRewardBang}</span></>,
+            referIcon("/refer-tier-1.png", 32),
+            <>{t.rafStepRewardLead}<span className="text-[#D10005]">{t.rafStepRewardCoins}</span> <span className="text-[#D10005]">{t.rafStepRewardBang}</span></>,
             t.rafStep2Desc,
           )}
           {step(
-            <MedalIcon tone="silver" size={30} />,
-            <>{t.rafStepRewardLead}<span className="text-[#FF3B3B]">{t.rafStepRewardCoins}</span> <span className="text-[#FF3B3B]">{t.rafStepRewardBang}</span></>,
+            referIcon("/refer-tier-2.png", 32),
+            <>{t.rafStepRewardLead}<span className="text-[#D10005]">{t.rafStepRewardCoins}</span> <span className="text-[#D10005]">{t.rafStepRewardBang}</span></>,
             t.rafStep3Desc,
             true,
           )}
@@ -6471,7 +6450,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onOpenStore={openStore}
           />
         )}
-        {screen === "refer" && <ReferFriendPage lang={lang} onBack={() => setScreen("mypage")} />}
+        {screen === "refer" && <ReferFriendPage lang={lang} coins={coins} onBack={() => setScreen("mypage")} onHome={resetHome} onOpenStore={openStore} />}
         {screen === "quest" && (
           <QuestScreen
             lang={lang}

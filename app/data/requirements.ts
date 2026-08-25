@@ -821,11 +821,12 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
 
   refer: {
     label: "Refer a friend",
-    summary: "Invite screen opened from the My Account 'Invite Friends' tile: the member's invite link with copy / share / QR routes, their referral tallies and the reward tiers. Dark surface that runs into the site footer.",
+    summary: "Invite screen opened from the My Account 'Invite Friends' tile: the member's invite link with copy / share / QR routes, their referral tallies and the reward tiers.",
     groups: [
+      APP_HEADER_GROUP,
       {
         title: "Header",
-        items: ["Back returns to My Account.", "No balance pill on this screen, per design."],
+        items: ["Back returns to My Account."],
       },
       {
         title: "Hero",
