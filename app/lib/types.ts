@@ -161,4 +161,6 @@ export type Screen =
   | "store"
   | "coinHistory"
   | "mypage"
-  | "profile";
+  | "profile"
+  // Invite friends: the referral link, its share routes and the reward tiers.
+  | "refer";

@@ -720,7 +720,8 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
           { text: "Purchase history", sub: ["Opens Purchase history."] },
           { text: "Announcements", sub: ["Opens the announcements-only notifications view."] },
           { text: "Address", sub: ["Opens Address management."] },
-          { text: "Quests, Invite Friends, FAQ, Support Inquiry, Subscriptions", sub: ["Do nothing (TBC)."] },
+          { text: "Invite Friends", sub: ["Opens Refer a friend."] },
+          { text: "Quests, FAQ, Support Inquiry, Subscriptions", sub: ["Do nothing (TBC)."] },
         ],
       },
       {
@@ -815,6 +816,40 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
           "KYC state persists in sessionStorage.",
         ],
       },
+    ],
+  },
+
+  refer: {
+    label: "Refer a friend",
+    summary: "Invite screen opened from the My Account 'Invite Friends' tile: the member's invite link with copy / share / QR routes, their referral tallies and the reward tiers. Dark surface that runs into the site footer.",
+    groups: [
+      {
+        title: "Header",
+        items: ["Back returns to My Account.", "No balance pill on this screen, per design."],
+      },
+      {
+        title: "Hero",
+        items: ["Mascot, the milestone headline and the 'up to 200,000 gold coins' line with the amount picked out in red."],
+      },
+      {
+        title: "Invite link",
+        items: [
+          { text: "Copy", sub: ["Writes the full invite link to the clipboard and confirms with a 'Link copied' toast."] },
+          { text: "Share Link", sub: ["Opens a bottom sheet of share targets: LINE, WhatsApp, Messenger, X, Instagram, Facebook and Copy link.", "A target closes the sheet and reports which app would open; Copy link behaves like the Copy CTA.", "The sheet closes on its X or on the scrim."] },
+          { text: "QR code", sub: ["Opens an overlay holding a QR code for the same invite link.", "The overlay closes on the X in its corner or on a tap outside the code."] },
+        ],
+        tbc: ["The link is a fixed placeholder and no share target actually hands the link over."],
+      },
+      {
+        title: "My Friends",
+        items: ["Invited friends, rewards earned and the level 1 / level 2 qualifier counts."],
+        tbc: ["All four tallies are static."],
+      },
+      {
+        title: "How it works",
+        items: ["Three tiers: share the link, the first-deposit reward and the rank-up reward, each up to 50,000 coins."],
+      },
+      FOOTER_REF_GROUP,
     ],
   },
 };

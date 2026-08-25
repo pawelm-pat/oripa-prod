@@ -2969,7 +2969,7 @@ function BottomNav({ screen, t, onNavigate }: { screen: Screen; t: Dict; onNavig
   const activeKey: Screen =
     screen === "myLoot"
       ? "prizeHistory"
-      : screen === "prizeHistory" || screen === "purchaseHistory" || screen === "shippingAddress" || screen === "profile"
+      : screen === "prizeHistory" || screen === "purchaseHistory" || screen === "shippingAddress" || screen === "profile" || screen === "refer"
       ? "mypage"
       : screen;
   return (
@@ -4673,6 +4673,241 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
   );
 }
 
+/* ── Refer a friend ──────────────────────────────────────────────────────
+   Reached from the My Page "Invite Friends" tile. The member's invite link
+   with its three routes (copy, share sheet, QR overlay), their referral
+   tallies and the reward tiers. Dark surface per design, which runs straight
+   into the black site footer. */
+function ReferLinkIcon({ size = 26, color = "#D10005" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 13.5a4 4 0 006 .5l2.5-2.5a4 4 0 00-5.66-5.66L11.5 7.2" />
+      <path d="M14 10.5a4 4 0 00-6-.5L5.5 12.5a4 4 0 005.66 5.66l1.3-1.3" />
+    </svg>
+  );
+}
+
+/* Reward-tier medals: gold for the first tier, silver for the second. */
+function MedalIcon({ tone, size = 22 }: { tone: "gold" | "silver"; size?: number }) {
+  const [outer, inner, rim] = tone === "gold" ? ["#F5A524", "#FFD977", "#C9761A"] : ["#B9C2CC", "#E9EEF3", "#8A949F"];
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
+      <circle cx="12" cy="13" r="8.2" fill={outer} />
+      <circle cx="12" cy="13" r="5.6" fill={inner} />
+      <circle cx="12" cy="13" r="5.6" fill="none" stroke={rim} strokeWidth="0.9" />
+      <path d="M12 9.6l1 2.1 2.3.3-1.7 1.6.4 2.3-2-1.1-2 1.1.4-2.3-1.7-1.6 2.3-.3z" fill={rim} opacity="0.55" />
+    </svg>
+  );
+}
+
+function QrGlyph({ size = 18, color = "#D10005" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} aria-hidden>
+      <path d="M3 3h7v7H3V3zm2 2v3h3V5H5zM14 3h7v7h-7V3zm2 2v3h3V5h-3zM3 14h7v7H3v-7zm2 2v3h3v-3H5z" />
+      <path d="M14 14h3v3h-3v-3zm5 0h2v2h-2v-2zm-5 5h3v2h-3v-2zm5 1h2v1h-2v-1zm-1-3h2v2h-2v-2z" />
+    </svg>
+  );
+}
+
+/* Share destinations. The POC has nothing to hand the link to, so a target
+   just reports which app would open; "Copy link" behaves like the Copy CTA. */
+type ShareTarget = { key: string; label: string; chip: string; glyph: ReactNode };
+const SHARE_TARGETS: ShareTarget[] = [
+  {
+    key: "line", label: "LINE", chip: "#06C755",
+    glyph: <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M12 3.6c-4.7 0-8.5 3-8.5 6.8 0 3.4 3 6.2 7.1 6.7.27.06.65.18.75.42.09.22.06.55.03.77l-.12.72c-.04.21-.17.84.74.46s4.9-2.89 6.69-4.95c1.23-1.35 1.82-2.72 1.82-4.12 0-3.75-3.81-6.8-8.51-6.8zM8.3 12.5H6.6a.35.35 0 01-.35-.35V9.05c0-.2.16-.35.35-.35s.36.16.36.35v2.74H8.3c.2 0 .35.16.35.36a.35.35 0 01-.35.35zm1.4-.35a.35.35 0 01-.71 0V9.05a.35.35 0 01.71 0v3.1zm3.6 0a.35.35 0 01-.63.21l-1.6-2.16v1.95a.35.35 0 01-.71 0V9.05a.35.35 0 01.63-.21l1.6 2.17V9.05a.35.35 0 01.71 0v3.1zm2.4-1.9c.2 0 .36.16.36.35a.35.35 0 01-.36.36h-1.34v.79h1.34c.2 0 .36.16.36.35a.35.35 0 01-.36.35h-1.7a.35.35 0 01-.35-.35V9.05c0-.2.16-.35.35-.35h1.7c.2 0 .36.16.36.35a.35.35 0 01-.36.36h-1.34v.79h1.34z" /></svg>,
+  },
+  {
+    key: "whatsapp", label: "WhatsApp", chip: "#25D366",
+    glyph: <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M12.04 3.5a8.4 8.4 0 00-7.2 12.72L3.6 20.5l4.4-1.18A8.4 8.4 0 1012.04 3.5zm0 1.7a6.7 6.7 0 015.7 10.24l-.2.32.63 2.3-2.37-.62-.31.18a6.7 6.7 0 01-9.9-8.28A6.7 6.7 0 0112.04 5.2zm-3 3.05c-.15 0-.4.06-.6.28-.2.22-.78.76-.78 1.85s.8 2.15.91 2.3c.11.14 1.54 2.46 3.81 3.35 1.9.75 2.28.6 2.69.56.41-.04 1.32-.54 1.5-1.06.19-.52.19-.97.14-1.06-.06-.09-.2-.14-.42-.25-.22-.11-1.32-.65-1.52-.72-.2-.08-.35-.11-.5.11-.14.22-.57.72-.7.87-.13.15-.26.17-.48.06-.22-.11-.94-.35-1.79-1.1-.66-.59-1.11-1.32-1.24-1.54-.13-.22-.01-.34.1-.45.1-.1.22-.26.33-.39.11-.13.14-.22.22-.37.07-.15.04-.28-.02-.39-.06-.11-.5-1.2-.68-1.65-.18-.43-.36-.37-.5-.38h-.42z" /></svg>,
+  },
+  {
+    key: "messenger", label: "Messenger", chip: "#0084FF",
+    glyph: <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M12 3.2c-4.86 0-8.6 3.56-8.6 8.36 0 2.74 1.22 5.13 3.2 6.7v3.3l2.94-1.62c.78.22 1.61.34 2.46.34 4.86 0 8.6-3.56 8.6-8.36S16.86 3.2 12 3.2zm.9 11.06L10.7 11.9l-4.05 2.36 4.45-4.72 2.24 2.36 4-2.36-4.44 4.72z" /></svg>,
+  },
+  {
+    key: "x", label: "X", chip: "#0F0F0F",
+    glyph: <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M17.53 3h3.02l-6.6 7.54L21.7 21h-6.05l-4.74-6.2L5.48 21H2.46l7.06-8.07L2.3 3h6.2l4.29 5.67L17.53 3zm-1.06 16.2h1.67L7.6 4.7H5.8l10.67 14.5z" /></svg>,
+  },
+  {
+    key: "instagram", label: "Instagram", chip: "linear-gradient(135deg,#F58529,#DD2A7B 55%,#8134AF)",
+    glyph: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.9"><rect x="3.2" y="3.2" width="17.6" height="17.6" rx="5" /><circle cx="12" cy="12" r="4.1" /><circle cx="17.1" cy="6.9" r="1.15" fill="#fff" stroke="none" /></svg>,
+  },
+  {
+    key: "facebook", label: "Facebook", chip: "#1877F2",
+    glyph: <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M13.5 21v-7.4h2.5l.4-2.9h-2.9V8.85c0-.84.24-1.41 1.44-1.41h1.54V4.85c-.27-.04-1.18-.12-2.25-.12-2.23 0-3.75 1.36-3.75 3.85v2.15H8v2.9h2.47V21h3.03z" /></svg>,
+  },
+];
+
+function ReferFriendPage({ lang, onBack }: { lang: Lang; onBack: () => void }) {
+  const t = STR[lang];
+  const [toast, setToast] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
+
+  function pushToast(text: string) {
+    setToast(text);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 2400);
+  }
+  function copyLink() {
+    // Clipboard access needs a secure context and permission, and rejects
+    // asynchronously when it has neither; the confirmation shows either way.
+    try {
+      navigator.clipboard?.writeText(t.rafLinkFull).catch(() => {});
+    } catch { /* no clipboard API */ }
+    pushToast(t.rafCopied);
+  }
+
+  const stat = (label: string, icon: ReactNode, value: string) => (
+    <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl bg-white px-2 py-3.5">
+      <p className="text-center text-[13px] font-bold leading-[1.15] text-[#D10005]">{label}</p>
+      <div className="flex items-center gap-1.5">
+        {icon}
+        <span className="text-[15px] font-bold text-[#0F0F0F]">{value}</span>
+      </div>
+    </div>
+  );
+
+  const step = (icon: ReactNode, title: ReactNode, desc: string, last = false) => (
+    <div className="flex gap-3">
+      <div className="flex w-[34px] shrink-0 flex-col items-center">
+        <div className="flex h-[34px] w-[34px] items-center justify-center">{icon}</div>
+        {!last && <div className="mt-1 w-0 flex-1 border-l-2 border-dashed border-[#D10005]" />}
+      </div>
+      <div className={last ? "pb-1" : "pb-5"}>
+        <p className="text-[15px] font-bold leading-tight text-white">{title}</p>
+        <p className="mt-1 text-[11.5px] font-normal leading-[1.45] text-white/60">{desc}</p>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex h-full flex-col bg-black">
+      {/* Title row — back returns to My Page */}
+      <div className="shrink-0 flex items-center gap-2 bg-black px-3 py-3">
+        <button onClick={onBack} aria-label={t.backAria} className="flex h-8 w-8 items-center justify-center text-[#D10005] active:opacity-70">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 12H4M10 6l-6 6 6 6" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </button>
+        <h1 className="text-[16px] font-bold text-white">{t.rafTitle}</h1>
+      </div>
+
+      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
+        <div className="px-4 pb-6">
+          {/* Hero */}
+          <div className="flex items-center gap-2">
+            <img src="/refer-mascot.png" alt="" className="h-[118px] w-[118px] shrink-0 object-contain" draggable={false} />
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-extrabold uppercase leading-[1.25] text-white">{t.rafHeroTitle}</p>
+              <p className="mt-2 text-[11px] font-bold uppercase leading-[1.3] text-white/70">
+                {t.rafHeroLead}
+                <span className="text-[#FF3B3B]">{t.rafHeroCoins}</span>
+                {t.rafHeroTail}
+              </p>
+            </div>
+          </div>
+
+          {/* Invite link + its three routes */}
+          <div className="mt-3 flex items-center gap-2">
+            <div className="min-w-0 flex-1 truncate rounded-xl bg-white px-3.5 py-3 text-[12px] font-medium text-[#5c626b]">{t.rafLinkShort}</div>
+            <button onClick={copyLink} className="shrink-0 rounded-xl px-5 py-3 text-[14px] font-bold text-white active:scale-[0.98]" style={{ background: "#D10005" }}>
+              {t.rafCopy}
+            </button>
+          </div>
+          <button onClick={() => setShareOpen(true)} className="mt-2.5 w-full rounded-xl border border-white/15 bg-[#141414] py-3 text-[14px] font-bold text-white active:bg-[#1f1f1f]">
+            {t.rafShare}
+          </button>
+          <button onClick={() => setQrOpen(true)} className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-[14px] font-bold text-[#0F0F0F] active:bg-white/90">
+            <QrGlyph />
+            {t.rafQr}
+          </button>
+
+          {/* Referral tallies */}
+          <h2 className="mb-2 mt-5 text-[15px] font-bold text-white">{t.rafMyFriends}</h2>
+          <div className="grid grid-cols-2 gap-2.5">
+            {stat(t.rafInvited, <ReferLinkIcon size={20} />, "100")}
+            {stat(t.rafRewardsEarned, <CoinIcon size={18} />, "200,000")}
+            {stat(t.rafQualified1, <MedalIcon tone="gold" />, "70")}
+            {stat(t.rafQualified2, <MedalIcon tone="silver" />, "20")}
+          </div>
+
+          {/* Reward tiers */}
+          <h2 className="mb-3 mt-5 text-[15px] font-bold text-white">{t.rafHowItWorks}</h2>
+          {step(<ReferLinkIcon size={28} />, t.rafStep1Title, t.rafStep1Desc)}
+          {step(
+            <MedalIcon tone="gold" size={30} />,
+            <>{t.rafStepRewardLead}<span className="text-[#FF3B3B]">{t.rafStepRewardCoins}</span> <span className="text-[#FF3B3B]">{t.rafStepRewardBang}</span></>,
+            t.rafStep2Desc,
+          )}
+          {step(
+            <MedalIcon tone="silver" size={30} />,
+            <>{t.rafStepRewardLead}<span className="text-[#FF3B3B]">{t.rafStepRewardCoins}</span> <span className="text-[#FF3B3B]">{t.rafStepRewardBang}</span></>,
+            t.rafStep3Desc,
+            true,
+          )}
+        </div>
+
+        <SiteFooter t={t} />
+      </div>
+
+      {/* Share sheet */}
+      {shareOpen && (
+        <div className="absolute inset-0 z-[60] flex items-end bg-black/60" onClick={() => setShareOpen(false)}>
+          <div className="w-full rounded-t-2xl bg-white px-4 pb-6 pt-3" onClick={(e) => e.stopPropagation()}>
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-black/15" />
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-[15px] font-bold text-[#0F0F0F]">{t.rafShareSheetTitle}</h3>
+              <button onClick={() => setShareOpen(false)} aria-label="Close" className="flex h-8 w-8 items-center justify-center rounded-full text-[#5c626b] active:bg-black/5">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+              </button>
+            </div>
+            <div className="grid grid-cols-4 gap-y-4">
+              {SHARE_TARGETS.map((s) => (
+                <button
+                  key={s.key}
+                  onClick={() => { setShareOpen(false); pushToast(t.rafShareOpening(s.label)); }}
+                  className="flex flex-col items-center gap-1.5 active:opacity-70"
+                >
+                  <span className="flex h-[46px] w-[46px] items-center justify-center rounded-full" style={{ background: s.chip }}>{s.glyph}</span>
+                  <span className="text-[11px] font-medium text-[#41464e]">{s.label}</span>
+                </button>
+              ))}
+              <button onClick={() => { setShareOpen(false); copyLink(); }} className="flex flex-col items-center gap-1.5 active:opacity-70">
+                <span className="flex h-[46px] w-[46px] items-center justify-center rounded-full bg-[#eef0f3]">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#41464e" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.5" /><path d="M6.5 15H5.5A1.5 1.5 0 014 13.5v-8A1.5 1.5 0 015.5 4h8A1.5 1.5 0 0115 5.5v1" /></svg>
+                </span>
+                <span className="text-[11px] font-medium text-[#41464e]">{t.rafShareCopyLink}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QR overlay — closes on the X or on the scrim */}
+      {qrOpen && (
+        <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/70 px-6" onClick={() => setQrOpen(false)}>
+          <div className="relative w-full max-w-[280px] rounded-2xl bg-white px-5 pb-5 pt-11" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setQrOpen(false)} aria-label="Close" className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full text-[#5c626b] active:bg-black/5">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
+            <img src="/refer-qr.svg" alt={t.rafQr} className="mx-auto h-[190px] w-[190px]" draggable={false} />
+            <p className="mt-3 text-center text-[12px] font-medium leading-[1.45] text-[#0F0F0F]">{t.rafQrHint}</p>
+            <p className="mt-1 break-all text-center text-[11px] font-normal text-[#8a9099]">{t.rafLinkShort}</p>
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-6 z-[70] flex justify-center px-6">
+          <div className="animate-fade-slide rounded-full bg-black/85 px-4 py-2.5 text-[13px] font-bold text-white shadow-[0_6px_18px_rgba(0,0,0,0.35)]">{toast}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── My Account ──────────────────────────────────────────────────────────
    Visual layout mirrors the POC's MyPage (profile / balance / rank cards +
    menu grid + account/other sections). Edit profile and Account Settings
@@ -4752,7 +4987,7 @@ function myMenuIcon(key: string) {
   }
 }
 
-function MyPage({ lang, coins, displayName = "Username", onOpenQuest, onOpenPrizeHistory, onOpenMyLoot, onOpenPurchaseHistory, onOpenAnnouncements, onOpenShippingAddress, onOpenProfile, onHome, onLogout, onOpenStore }: { lang: Lang; coins: number; displayName?: string; onOpenQuest: () => void; onOpenPrizeHistory: () => void; onOpenMyLoot: () => void; onOpenPurchaseHistory: () => void; onOpenAnnouncements: () => void; onOpenShippingAddress: () => void; onOpenProfile: () => void; onHome: () => void; onLogout: () => void; onOpenStore?: () => void }) {
+function MyPage({ lang, coins, displayName = "Username", onOpenQuest, onOpenPrizeHistory, onOpenMyLoot, onOpenPurchaseHistory, onOpenAnnouncements, onOpenShippingAddress, onOpenProfile, onOpenRefer, onHome, onLogout, onOpenStore }: { lang: Lang; coins: number; displayName?: string; onOpenQuest: () => void; onOpenPrizeHistory: () => void; onOpenMyLoot: () => void; onOpenPurchaseHistory: () => void; onOpenAnnouncements: () => void; onOpenShippingAddress: () => void; onOpenProfile: () => void; onOpenRefer: () => void; onHome: () => void; onLogout: () => void; onOpenStore?: () => void }) {
   const t = STR[lang];
   const openLegal = useContext(LegalNavContext);
   const openCoinHistory = useContext(CoinHistoryNavContext);
@@ -4774,7 +5009,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenQuest, onOpenPriz
     { key: "history", label: t.mmPrizeHistory, onClick: onOpenPrizeHistory },
     { key: "purchases", label: t.mmPurchases, onClick: onOpenPurchaseHistory },
     { key: "coinHistory", label: t.coinHistoryTitle, onClick: openCoinHistory },
-    { key: "invite", label: t.mmInvite },
+    { key: "invite", label: t.mmInvite, onClick: onOpenRefer },
     { key: "faq", label: t.mmFaq },
     { key: "contact", label: t.mmContact },
     { key: "notices", label: t.mmNotices, onClick: onOpenAnnouncements },
@@ -5781,7 +6016,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
       // Yield once so this isn't a synchronous setState within the effect.
       await Promise.resolve();
       if (!alive) return;
-      const valid: Screen[] = ["landing", "signup", "login", "oripa", "notifications", "prizeHistory", "myLoot", "purchaseHistory", "shippingAddress", "quest", "store", "coinHistory", "mypage", "profile"];
+      const valid: Screen[] = ["landing", "signup", "login", "oripa", "notifications", "prizeHistory", "myLoot", "purchaseHistory", "shippingAddress", "quest", "store", "coinHistory", "mypage", "profile", "refer"];
       const target = new URLSearchParams(window.location.search).get("screen");
       if (target && valid.includes(target as Screen)) setScreen(target as Screen);
     };
@@ -6129,6 +6364,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onOpenAnnouncements={openAnnouncements}
             onOpenShippingAddress={() => setScreen("shippingAddress")}
             onOpenProfile={() => setScreen("profile")}
+            onOpenRefer={() => setScreen("refer")}
             onHome={resetHome}
             onLogout={logout}
             onOpenStore={openStore}
@@ -6235,6 +6471,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onOpenStore={openStore}
           />
         )}
+        {screen === "refer" && <ReferFriendPage lang={lang} onBack={() => setScreen("mypage")} />}
         {screen === "quest" && (
           <QuestScreen
             lang={lang}
