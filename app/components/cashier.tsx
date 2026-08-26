@@ -19,10 +19,6 @@ function CoinIcon({ size = 16 }: { size?: number }) {
   return <img src="/coin.png" alt="" aria-hidden className="shrink-0 inline-block object-contain" style={{ width: size, height: "auto" }} />;
 }
 
-function PointsLogoIcon({ size = 16 }: { size?: number }) {
-  return <img src="/points_logo.svg" alt="" aria-hidden className="shrink-0 inline-block object-contain" style={{ width: size, height: "auto" }} />;
-}
-
 function StoreCoinIcon({ size = 32 }: { size?: number }) {
   return <img src="/coin.png" alt="" width={size} height={size} className="shrink-0 object-contain" />;
 }
@@ -548,11 +544,6 @@ export function PurchaseFlow({
                     <StoreCoinIcon />
                     <div className="min-w-0 flex-1">
                       <p className="text-[15px] font-extrabold text-[#1d2129]">{t.storeCoins(lp.coins)}</p>
-                      <div className="mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5" style={{ background: "#fef3c7" }}>
-                        <span className="text-[11px] font-semibold text-[#92400e]">+</span>
-                        <PointsLogoIcon size={12} />
-                        <span className="text-[11px] font-semibold text-[#92400e]">{t.storeFreePoints(lp.freePoints)}</span>
-                      </div>
                     </div>
                     <span className="shrink-0 rounded-lg px-4 py-2 text-[13px] font-bold text-white" style={{ background: "#B40206" }}>¥{lp.jpy.toLocaleString()}</span>
                   </button>
@@ -695,12 +686,6 @@ export function PurchaseFlow({
                   <div className="flex items-center gap-1.5">
                     <CoinIcon size={18} />
                     <span className="text-[15px] font-extrabold text-[#1d2129]">{pkg.coins.toLocaleString()}</span>
-                  </div>
-                  <div className="h-5 w-px bg-black/10" />
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[15px] font-extrabold text-[#1d2129]">+</span>
-                    <PointsLogoIcon size={18} />
-                    <span className="text-[15px] font-extrabold text-[#1d2129]">{t.storeFreePoints(pkg.freePoints)}</span>
                   </div>
                 </div>
                 <div className="mt-2 flex items-center justify-center gap-2 border-t border-dashed border-black/10 pt-2">
@@ -1134,11 +1119,6 @@ export function PurchaseFlow({
               <StoreCoinIcon />
               <div className="min-w-0 flex-1">
                 <p className="text-[15px] font-extrabold text-[#1d2129]">{t.storeCoins(pkg.coins)}</p>
-                <div className="mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5" style={{ background: "#fef3c7" }}>
-                  <span className="text-[11px] font-semibold text-[#92400e]">+</span>
-                  <PointsLogoIcon size={12} />
-                  <span className="text-[11px] font-semibold text-[#92400e]">{t.storeFreePoints(pkg.freePoints)}</span>
-                </div>
               </div>
             </>
           )}
