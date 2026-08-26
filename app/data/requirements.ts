@@ -575,15 +575,14 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
       {
         title: "Store sections",
         items: [
-          { text: "Special Offers", sub: ["2 first-purchase tiles; entire section hides after any purchase in the session."] },
-          { text: "Coin Purchase", sub: ["2 hero packs (first-time / mega sale) + 7 plain packs (¥500–¥100,000). Each shows coins, free points, and JPY price."] },
+          { text: "Buy Coins", sub: ["10 packs (1,000–1,000,000 coins, 1:1 JPY). Each shows coins and JPY price."] },
         ],
         tbc: ["Loyalty, limited bundles, and subscriptions are not in this build."],
       },
       {
         title: "Cashier V1 — checkout & payment",
         items: [
-          "Selecting a package opens Cashier V1 with a package summary (coins, free points, price; offer tags / strikethrough when present).",
+          "Selecting a package opens Cashier V1 with a package summary (coins, price; offer tags / strikethrough when present).",
           { text: "Currency selector (john.inr@gmail.com only)", sub: [
             "INR / JPY toggle above payment methods; INR selected by default.",
             "INR: package + pay amounts use the package exchange rate (1 JPY = 0.6103 INR); show rate + bank-fee warning; wallets limited to Apple Pay + Google Pay (+ cards).",

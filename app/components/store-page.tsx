@@ -5,8 +5,7 @@ import type { Lang } from "../lib/types";
 import { STR } from "../lib/i18n";
 
 /**
- * Store V1 — exact port of HeorhiiPovstianyi_repo StorePage with storeVariant="v3"
- * (UI label "Store V1": Special Offers + Coin Purchase heroes/plain packs).
+ * Store — Buy Coins catalog (1:1 coin-to-JPY packs).
  */
 
 export type PointPackage = {
@@ -22,41 +21,15 @@ export type PointPackage = {
   subscriptionName?: string;
 };
 
-export const SPECIAL_OFFERS: PointPackage[] = [
-  { id: "so1", coins: 5000, freePoints: 500, jpy: 500, inrApprox: 306.64, firstTimeOffer: true, discount: 90 },
-  { id: "so2", coins: 5000, freePoints: 500, jpy: 5000, inrApprox: 3066.44, originalJpy: 10000, firstTimeOffer: true, discount: 90 },
-];
-
-export type StoreV3HeroPackage = {
-  id: string;
-  coins: number;
-  freePoints: number;
-  jpy: number;
-  originalJpy: number;
-  discount: number;
-  tag: string;
-  art: string;
-  gradient: string;
-};
-
-export const STORE_V3_HERO_PACKAGES: StoreV3HeroPackage[] = [
-  { id: "v3hero1", coins: 100000, freePoints: 500, jpy: 100000, originalJpy: 10000, discount: 88, tag: "FIRST-TIME OFFER", art: "/coin-bag.png", gradient: "linear-gradient(135deg,#c50008,#8b0000)" },
-  { id: "v3hero2", coins: 100000, freePoints: 500, jpy: 100000, originalJpy: 10000, discount: 90, tag: "MEGA SALE", art: "/coin-chest.png", gradient: "linear-gradient(135deg,#1d4ed8,#1e3a8a)" },
-];
-
-export const STORE_V3_PLAIN_PACKAGES: PointPackage[] = [500, 1000, 5000, 10000, 20000, 50000, 100000].map((c) => ({
+export const STORE_V3_PLAIN_PACKAGES: PointPackage[] = [
+  1000, 3000, 5000, 10000, 30000, 50000, 100000, 300000, 500000, 1000000,
+].map((c) => ({
   id: `v3plain${c}`,
   coins: c,
-  freePoints: 500,
+  freePoints: 0,
   jpy: c,
   inrApprox: c * 0.613,
 }));
-
-function PointsLogoIcon({ size = 16 }: { size?: number }) {
-  return (
-    <img src="/points_logo.svg" alt="" aria-hidden className="shrink-0 inline-block object-contain" style={{ width: size, height: "auto" }} />
-  );
-}
 
 export type StorePageChrome = {
   header: ReactNode;
@@ -128,112 +101,12 @@ export function StorePage({
       </div>
 
       <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-        {/* Special Offers grid (Store V1 / internal v3) */}
-        {purchasedIds.length === 0 && (
-          <div className="px-4 pt-4">
-            <p className="mb-2.5 text-[14px] font-extrabold text-[#1d2129]">{t.storeSpecialOffers}</p>
-            <div className="grid grid-cols-2 gap-3">
-              {SPECIAL_OFFERS.map((offer, idx) => {
-                const highlighted = idx === 1;
-                return (
-                  <div
-                    key={offer.id}
-                    onClick={() => selectPackage(offer)}
-                    role="button"
-                    className="relative flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] active:scale-[0.98]"
-                    style={{ border: highlighted ? "2px solid #B40206" : "2px solid #e5e8ec" }}
-                  >
-                    <div className="flex h-[148px] items-end justify-center px-2 pt-3">
-                      <img
-                        src={idx === 0 ? "/coin-bag.png" : "/coin-chest.png"}
-                        alt=""
-                        className={`w-full object-contain object-bottom ${highlighted ? "h-[136px]" : "h-[112px]"}`}
-                      />
-                    </div>
-                    <div className="flex flex-1 flex-col items-center px-2.5 pb-3 pt-1">
-                      <span className="text-[16px] font-extrabold leading-tight text-[#1d2129]">{t.storeCoins(offer.coins)}</span>
-                      <div className="mt-1.5 inline-flex items-center justify-center gap-0.5 rounded-full px-2 py-0.5" style={{ background: "#fde9c4" }}>
-                        <span className="text-[10px] font-semibold text-[#92400e]">+</span>
-                        <PointsLogoIcon size={12} />
-                        <span className="text-[10px] font-semibold text-[#92400e]">{t.storeFreePoints(offer.freePoints)}</span>
-                      </div>
-                      <div className="mt-1.5 flex flex-wrap items-center justify-center gap-1">
-                        <span className="rounded-full px-1.5 py-0.5 text-[8px] font-extrabold text-[#1d2129]" style={{ background: "#f5c518" }}>{t.storeFirstTimeOffer}</span>
-                        {offer.discount && <span className="rounded-full px-1.5 py-0.5 text-[8px] font-extrabold text-white" style={{ background: "#B40206" }}>{t.storeOff(offer.discount)}</span>}
-                      </div>
-                      <div className="mt-auto flex w-full flex-col items-center pt-1.5">
-                        <span className="flex h-[14px] items-center text-[11px] font-semibold leading-none text-[#c5c8ce] line-through">
-                          {offer.originalJpy ? `¥${offer.originalJpy.toLocaleString()}` : ""}
-                        </span>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); selectPackage(offer); }}
-                          className="mt-1 flex w-full items-center justify-center rounded-lg py-2 text-[14px] font-black text-white"
-                          style={{ background: "#B40206" }}
-                        >
-                          ¥{offer.jpy.toLocaleString()}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Buy Coins (Store V1 — hero rows + flat list) */}
+        {/* Buy Coins */}
         <div className="px-4 pt-4 pb-4">
           <div className="mb-3">
             <p className="text-[14px] font-extrabold text-[#1d2129]">{t.storeCoinPurchase}</p>
           </div>
           <div className="space-y-2.5">
-            {STORE_V3_HERO_PACKAGES.map((hero) => {
-              const pkg: PointPackage = {
-                id: hero.id,
-                coins: hero.coins,
-                freePoints: hero.freePoints,
-                jpy: hero.jpy,
-                inrApprox: hero.jpy * 0.613,
-                originalJpy: hero.originalJpy,
-                firstTimeOffer: hero.tag === "FIRST-TIME OFFER",
-                discount: hero.discount,
-              };
-              return (
-                <div
-                  key={hero.id}
-                  onClick={() => selectPackage(pkg)}
-                  role="button"
-                  className="relative cursor-pointer overflow-hidden rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.07)] active:scale-[0.99]"
-                  style={{ background: hero.gradient }}
-                >
-                  <div className="flex items-center gap-1.5 px-3 pt-1.5 pb-1" style={{ background: "rgba(0,0,0,0.15)" }}>
-                    <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ background: "#B40206" }}>{hero.tag}</span>
-                    <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ background: "rgba(255,255,255,0.25)" }}>{t.storeOff(hero.discount)}</span>
-                  </div>
-                  <div className="flex items-center gap-2.5 px-3 py-2.5">
-                    <img src={hero.art} alt="" className="h-9 w-9 shrink-0 object-contain" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[15px] font-extrabold text-white">{t.storeCoins(hero.coins)}</p>
-                      <div className="mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5" style={{ background: "rgba(255,255,255,0.2)" }}>
-                        <span className="text-[11px] font-semibold text-white">+</span>
-                        <PointsLogoIcon size={12} />
-                        <span className="text-[11px] font-semibold text-white">{t.storeFreePoints(hero.freePoints)}</span>
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 flex-col items-end gap-0.5">
-                      <span className="text-[11px] line-through" style={{ color: "rgba(255,255,255,0.55)" }}>¥{hero.originalJpy.toLocaleString()}</span>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); selectPackage(pkg); }}
-                        className="rounded-lg px-4 py-2 text-[13px] font-bold text-white"
-                        style={{ background: "#f97316" }}
-                      >
-                        ¥{hero.jpy.toLocaleString()}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
             {STORE_V3_PLAIN_PACKAGES.map((pkg) => (
               <div
                 key={pkg.id}
@@ -245,11 +118,6 @@ export function StorePage({
                   <img src="/oripa-coin.png" alt="" className="h-8 w-8 shrink-0 object-contain" />
                   <div className="min-w-0 flex-1">
                     <p className="text-[15px] font-extrabold text-[#1d2129]">{t.storeCoins(pkg.coins)}</p>
-                    <div className="mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5" style={{ background: "#fef3c7" }}>
-                      <span className="text-[11px] font-semibold text-[#92400e]">+</span>
-                      <PointsLogoIcon size={12} />
-                      <span className="text-[11px] font-semibold text-[#92400e]">{t.storeFreePoints(pkg.freePoints)}</span>
-                    </div>
                   </div>
                   <button
                     onClick={(e) => { e.stopPropagation(); selectPackage(pkg); }}

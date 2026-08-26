@@ -8,8 +8,6 @@ import { useEffect, useMemo, useState } from "react";
 import type { Lang } from "../lib/types";
 import { STR } from "../lib/i18n";
 import {
-  SPECIAL_OFFERS,
-  STORE_V3_HERO_PACKAGES,
   STORE_V3_PLAIN_PACKAGES,
   type PointPackage,
 } from "./store-page";
@@ -20,13 +18,6 @@ function CoinIcon({ size = 16 }: { size?: number }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img src="/coin.png" alt="" aria-hidden className="shrink-0 inline-block object-contain" style={{ width: size, height: "auto" }} />
-  );
-}
-
-function PointsLogoIcon({ size = 16 }: { size?: number }) {
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src="/points_logo.svg" alt="" aria-hidden className="shrink-0 inline-block object-contain" style={{ width: size, height: "auto" }} />
   );
 }
 
@@ -62,66 +53,23 @@ type QuickOffer = PointPackage & {
   isSpecial?: boolean;
 };
 
-function buildQuickSpecialOffers(purchasedIds: string[]): QuickOffer[] {
-  const heroes: QuickOffer[] = STORE_V3_HERO_PACKAGES
-    .filter((h) => !purchasedIds.includes(h.id))
-    .map((h) => ({
-      id: h.id,
-      coins: h.coins,
-      freePoints: h.freePoints,
-      jpy: h.jpy,
-      inrApprox: h.jpy * 0.613,
-      originalJpy: h.originalJpy,
-      discount: h.discount,
-      firstTimeOffer: /first/i.test(h.tag),
-      tag: h.tag,
-      art: h.art,
-      gradient: h.gradient,
-      isSpecial: true,
-    }));
-  const specials: QuickOffer[] = SPECIAL_OFFERS
-    .filter((s) => !purchasedIds.includes(s.id))
-    .map((s) => ({
-      ...s,
-      tag: "FIRST-TIME OFFER",
-      art: "/coin-bag.png",
-      gradient: "linear-gradient(135deg,#c50008,#8b0000)",
-      isSpecial: true,
-    }));
-  return [...heroes, ...specials];
+function listCoveringPackages(needed: number, purchasedIds: string[]): QuickOffer[] {
+  return STORE_V3_PLAIN_PACKAGES
+    .filter((p) => p.coins >= needed && !purchasedIds.includes(p.id))
+    .sort((a, b) => a.coins - b.coins || a.jpy - b.jpy)
+    .map((p): QuickOffer => ({ ...p, art: "/coin.png" }));
 }
 
 /** Covering packages for the initial 2 quick-purchase slots. */
 function listFeaturedQuickOffers(needed: number, purchasedIds: string[]): QuickOffer[] {
-  const specials = buildQuickSpecialOffers(purchasedIds)
-    .filter((p) => p.coins >= needed)
-    .sort((a, b) => {
-      if (a.coins !== b.coins) return a.coins - b.coins;
-      if (!!a.firstTimeOffer !== !!b.firstTimeOffer) return a.firstTimeOffer ? -1 : 1;
-      return 0;
-    });
-  const specialIds = new Set(specials.map((p) => p.id));
-  const regular = STORE_V3_PLAIN_PACKAGES
-    .filter((p) => p.coins >= needed && !purchasedIds.includes(p.id) && !specialIds.has(p.id))
-    .sort((a, b) => a.coins - b.coins || a.jpy - b.jpy)
-    .map((p): QuickOffer => ({ ...p, art: "/coin.png" }));
-  if (specials.length >= 2) return specials.slice(0, 2);
-  if (specials.length === 1) {
-    const s = specials[0];
-    const next = regular.find((r) => r.coins > s.coins) || regular[0];
-    return next ? [s, next] : [s];
-  }
-  return regular.slice(0, 2);
+  return listCoveringPackages(needed, purchasedIds).slice(0, 2);
 }
 
 /** Full store catalog for "View More Packages" scroll. */
 function listAllStoreOffers(purchasedIds: string[]): QuickOffer[] {
-  const fromBuild = buildQuickSpecialOffers(purchasedIds);
-  const seen = new Set(fromBuild.map((p) => p.id));
-  const plain = STORE_V3_PLAIN_PACKAGES
-    .filter((p) => !purchasedIds.includes(p.id) && !seen.has(p.id))
+  return STORE_V3_PLAIN_PACKAGES
+    .filter((p) => !purchasedIds.includes(p.id))
     .map((p): QuickOffer => ({ ...p, art: "/coin.png" }));
-  return [...fromBuild, ...plain];
 }
 
 export type QuickPurchasePending = {
@@ -292,11 +240,6 @@ export function QuickPurchaseFlow({
             <img src={offer.art || "/coin.png"} alt="" className="h-8 w-8 shrink-0 object-contain" />
             <div className="min-w-0 flex-1">
               <p className={`text-[14px] font-extrabold ${gradient ? "text-white" : "text-[#1d2129]"}`}>{t.storeCoins(offer.coins)}</p>
-              <div className="mt-0.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5" style={{ background: gradient ? "rgba(255,255,255,0.2)" : "#fef3c7" }}>
-                <span className={`text-[10px] font-semibold ${gradient ? "text-white" : "text-[#92400e]"}`}>+</span>
-                <PointsLogoIcon size={11} />
-                <span className={`text-[10px] font-semibold ${gradient ? "text-white" : "text-[#92400e]"}`}>{t.storeFreePoints(offer.freePoints)}</span>
-              </div>
             </div>
             <span className={`text-[14px] font-extrabold ${gradient ? "text-white" : "text-[#1d2129]"}`}>¥{offer.jpy.toLocaleString()}</span>
           </div>
@@ -325,11 +268,6 @@ export function QuickPurchaseFlow({
           <img src={offer.art || "/coin.png"} alt="" className="h-9 w-9 shrink-0 object-contain" />
           <div className="min-w-0 flex-1">
             <p className={`text-[15px] font-extrabold ${gradient ? "text-white" : "text-[#1d2129]"}`}>{t.storeCoins(offer.coins)}</p>
-            <div className="mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5" style={{ background: gradient ? "rgba(255,255,255,0.2)" : "#fef3c7" }}>
-              <span className={`text-[11px] font-semibold ${gradient ? "text-white" : "text-[#92400e]"}`}>+</span>
-              <PointsLogoIcon size={12} />
-              <span className={`text-[11px] font-semibold ${gradient ? "text-white" : "text-[#92400e]"}`}>{t.storeFreePoints(offer.freePoints)}</span>
-            </div>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-0.5">
             {offer.originalJpy != null && (
@@ -441,12 +379,6 @@ export function QuickPurchaseFlow({
                       <div className="flex items-center gap-1.5">
                         <CoinIcon size={18} />
                         <span className="text-[15px] font-extrabold text-[#1d2129]">{pkg.coins.toLocaleString()}</span>
-                      </div>
-                      <div className="h-5 w-px bg-black/10" />
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[15px] font-extrabold text-[#1d2129]">+</span>
-                        <PointsLogoIcon size={18} />
-                        <span className="text-[15px] font-extrabold text-[#1d2129]">{t.storeFreePoints(pkg.freePoints)}</span>
                       </div>
                     </div>
                     <div className="mt-2 flex items-center justify-center gap-2 border-t border-dashed border-black/10 pt-2">
