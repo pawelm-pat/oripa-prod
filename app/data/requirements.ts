@@ -821,7 +821,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
 
   refer: {
     label: "Refer a friend",
-    summary: "Invite screen opened from the My Account 'Invite Friends' tile: the member's invite link with copy / share / QR routes, their referral tallies and the reward tiers.",
+    summary: "Invite screen opened from the My Account 'Invite Friends' tile: the member's promo code and invite link with their share routes, the referral tallies, what each milestone pays out and the latest activity on the link.",
     groups: [
       APP_HEADER_GROUP,
       {
@@ -829,26 +829,50 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
         items: ["Back returns to My Account."],
       },
       {
-        title: "Hero",
-        items: ["Mascot, the milestone headline and the 'up to 200,000 gold coins' line with the amount picked out in red."],
+        title: "Hero banner",
+        items: ["Referral banner: the 一緒に楽しもう！ ribbon over the 友達紹介 headline, its two-line strapline and the mascot."],
+        tbc: ["Drawn in the page rather than placed as the artwork export."],
       },
       {
-        title: "Invite link",
+        title: "Promo code and referral link",
         items: [
-          { text: "Copy", sub: ["Writes the full invite link to the clipboard and confirms with a 'Link copied' toast."] },
-          { text: "Share Link", sub: ["Opens a bottom sheet of share targets: LINE, WhatsApp, Messenger, X, Instagram, Facebook and Copy link.", "A target closes the sheet and reports which app would open; Copy link behaves like the Copy CTA.", "The sheet closes on its X or on the scrim."] },
-          { text: "QR code", sub: ["Opens an overlay holding a QR code for the same invite link.", "The overlay closes on the X in its corner or on a tap outside the code."] },
+          { text: "Your Promo Code", sub: ["Read-only code with a Copy CTA that writes it to the clipboard and confirms with a 'Code copied' toast."] },
+          { text: "Your Referral Link", sub: ["Read-only link with a Copy CTA that writes the full link to the clipboard and confirms with a 'Link copied' toast."] },
+          { text: "Share via", sub: ["X (Twitter) and LINE each report which app would open.", "QR code opens an overlay holding a QR code for the same invite link; it closes on the X in its corner or on a tap outside the code."] },
         ],
-        tbc: ["The link is a fixed placeholder and no share target actually hands the link over."],
+        tbc: ["The code and link are fixed placeholders and no share destination actually hands them over."],
       },
       {
-        title: "My Friends",
-        items: ["Invited friends, rewards earned and the level 1 / level 2 qualifier counts."],
-        tbc: ["All four tallies are static."],
+        title: "My Stats",
+        items: [
+          "Invited friends, friends with a deposit pending and the Bronze qualifier count.",
+          "Qualified For Silver reads 'Coming soon' on a dimmed card — the milestone is not live yet.",
+          "Total Rewards Earned spans the row below.",
+        ],
+        tbc: ["All five tallies are static."],
       },
       {
-        title: "How it works",
-        items: ["Three tiers: share the link, the first-deposit reward and the rank-up reward, each up to 50,000 coins."],
+        title: "How it Works",
+        items: ["Three numbered steps threaded by a dotted rule: share the link, the friend registers for a welcome bonus, then the first deposit pays both sides."],
+      },
+      {
+        title: "Reward Breakdown",
+        items: [
+          "Table of what the introducer and their friend each receive: sign-up (friend only, tagged 'Welcome bonus'), first deposit and the Bronze rank-up, 100 coins apiece.",
+          "The Silver rank-up row is dimmed and reads 'Coming soon' on both sides.",
+        ],
+      },
+      {
+        title: "Recent Activity",
+        items: [
+          "Four rows of who registered or completed a first deposit, how long ago, and the +500 coins a deposit paid.",
+          { text: "View More Activity", sub: ["Reveals the rest of the list and then drops away."] },
+        ],
+        tbc: ["The activity list is static sample data."],
+      },
+      {
+        title: "Notes & Terms of use",
+        items: ["Collapsed to its first note; the header row opens the full list."],
       },
       FOOTER_REF_GROUP,
     ],
