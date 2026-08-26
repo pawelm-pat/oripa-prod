@@ -83,19 +83,19 @@ export type OripaItem = {
   // Permanently sold-out / expired pack: the draw screen opens greyed out with
   // no draw CTAs (used for a demo example that doesn't need the harness toggle).
   expired?: boolean;
+  // Sold-out pack: same greyed, no-CTA treatment as `expired`, but the card
+  // surfaces the "完売しました / Sold Out" label instead of "期限切れ / Expired".
+  soldOut?: boolean;
+  // Which draw CTAs this pack offers, on the lobby card and on its draw screen.
+  // Defaults to the full row (Draw ×1 / Draw ×10 / Custom draw).
+  cta?: DrawCta;
 };
 
 // Draw-screen demo scenario (dev harness): normal, permanently sold out,
 // simulated connection error, or insufficient remaining stock.
 export type DrawScenario = "off" | "expired" | "connError" | "stock";
 
-// How the draw screen was opened from the lobby card. This decides which CTA
-// variants are on offer: a paid entry can show the multi-draw row, a single
-// "1 Draw", the free trial pair, or the LINE prompt; a free entry can show
-// "Free draw" or the LINE prompt.
-export type DrawEntry = "paid" | "free";
-
-// Which CTA row the draw screen renders (dev harness demo control).
+// Which CTA row a pack offers, both on its lobby card and on its draw screen.
 //   all         -> paid: Draw ×1 / Draw ×10 / Custom draw
 //   one         -> paid: single full-width "1 Draw"
 //   trial       -> paid: "Free 10 draws" (with Free Trial badge) + "1 Draw"
@@ -103,7 +103,17 @@ export type DrawEntry = "paid" | "free";
 //   freePending -> either: green "LINE account link required" prompt
 export type DrawCta = "all" | "one" | "free" | "freePending" | "trial";
 
-export type SectionIconKey = "new" | "popular" | "pokemon" | "limited" | "cards";
+// What a tapped CTA asks the draw flow to open: a fixed-count confirmation
+// (free when the CTA was a free draw), the custom-quantity popup, or the LINE
+// account-link prompt. The token lets the flow react to repeat taps.
+export type DrawRequest = {
+  kind: "count" | "custom" | "line";
+  count?: number;
+  free?: boolean;
+  token: number;
+};
+
+export type SectionIconKey = "new" | "popular" | "pokemon" | "limited" | "other";
 
 export type HomeSection = {
   id: string;
@@ -139,6 +149,9 @@ export type Screen =
   | "login"
   | "oripa"
   | "drawDetail"
+  // Same pack page shown to a signed-out visitor: it browses, but every draw
+  // CTA asks for a login first.
+  | "guestDraw"
   | "notifications"
   | "prizeHistory"
   | "myLoot"
@@ -148,4 +161,6 @@ export type Screen =
   | "store"
   | "coinHistory"
   | "mypage"
-  | "profile";
+  | "profile"
+  // Invite friends: the referral link, its share routes and the reward tiers.
+  | "refer";

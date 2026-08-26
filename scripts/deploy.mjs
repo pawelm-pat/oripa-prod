@@ -1,9 +1,13 @@
 // Deploy to https://oripa-prod-psi.vercel.app/ and stamp the deploy with a git
-// tag so every production release is traceable from the handoff baseline
-// (poc-handoff-v21.7). Diff any deploy against the baseline with:
+// tag so every production release is traceable from the frozen handoff snapshot
+// the partner holds. That snapshot lives on the oripa-poc-snapshot branch of
+// patrianna/HeorhiiPovstianyi_repo and is served from
+// https://oripa-poc-frozen.vercel.app/; each refresh gets its own
+// poc-handoff-<version> tag (v21.7 was the original, v32.8 the current one).
+// Diff any deploy against the frozen snapshot with:
 //
-//   git log poc-handoff-v21.7..<deploy-tag>
-//   git diff poc-handoff-v21.7..<deploy-tag>
+//   git log poc-handoff-v32.8..<deploy-tag>
+//   git diff poc-handoff-v32.8..<deploy-tag>
 //
 // Usage: npm run deploy
 import { execSync } from "node:child_process";

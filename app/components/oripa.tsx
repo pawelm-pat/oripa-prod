@@ -1,13 +1,13 @@
 "use client";
 
 import { Fragment, createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, ReactNode, RefObject, SetStateAction } from "react";
 import { APP_VERSION } from "../version";
 import type {
   Category,
   Lang,
   DrawCta,
-  DrawEntry,
+  DrawRequest,
   DrawScenario,
   OripaItem,
   Rarity,
@@ -23,7 +23,7 @@ import type {
   WonPrize,
 } from "../lib/types";
 import { STR, type Dict, locTitle } from "../lib/i18n";
-import { AuthHeader, SignupPage, LoginPage, LineAuthIcon, DEMO_INR_EMAIL } from "./auth";
+import { AuthHeader, SignupPage, LoginPage, LineAuthIcon, LineAuthSheet, DEMO_INR_EMAIL } from "./auth";
 import { HOME_SECTIONS, ALL_ORIPA } from "../data/lobby";
 import { NOTIF_YOU, NOTIF_NOTICE, NOTIF_UNREAD_TOTAL } from "../data/notifications";
 import { LEGAL, type LegalDocKey } from "../data/legal";
@@ -116,6 +116,16 @@ function GemIcon({ size = 16 }: { size?: number }) {
   );
 }
 
+// The weui "arrow-filled" chevron the designs put between a before and after
+// amount: square-cut ends and a mitered tip rather than a rounded stroke.
+function BalanceArrow({ height = 16, color = "#0F0F0F" }: { height?: number; color?: string }) {
+  return (
+    <svg aria-hidden="true" width={Math.round((height * 15) / 26)} height={height} viewBox="0 0 15 26" fill="none" className="shrink-0">
+      <path d="M2.5 2.5L11.6 13L2.5 23.5" stroke={color} strokeWidth="5" strokeLinecap="butt" strokeLinejoin="miter" />
+    </svg>
+  );
+}
+
 function BrandLogo({ onClick }: { onClick?: () => void }) {
    
   const img = <img src="/oripa-logo.png" alt="オリパロット" className="h-7 w-auto shrink-0" />;
@@ -133,7 +143,8 @@ function BellIcon({ label }: { label: string }) {
   const openNotif = useContext(NotifNavContext);
   return (
     <button onClick={openNotif} aria-label={label} className="relative flex h-8 w-8 items-center justify-center">
-      <img src="/bell-notification.png" alt="" className="h-[22px] w-[22px] object-contain" />
+      {/* 24×24 per design. */}
+      <img src="/bell-notification.png" alt="" className="h-6 w-6 object-contain" />
       {NOTIF_UNREAD_TOTAL > 0 && (
         <span className="absolute -right-0.5 -top-0.5 flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-[#D10005] px-1 text-[9px] font-extrabold leading-none text-white ring-2 ring-white">{NOTIF_UNREAD_TOTAL}</span>
       )}
@@ -172,18 +183,23 @@ function BalancePill({ coins, t, onOpenStore }: { coins: number; t: Dict; onOpen
           aria-label={t.coinHistoryTitle}
           className="flex items-center gap-2 rounded-full border border-black/15 bg-white py-1 pl-3 pr-5 shadow-[0_1px_3px_rgba(0,0,0,0.10)] transition active:scale-[0.97]"
         >
+          {/* Design sizes the coin mark 24×25; its 108×111 art hits that height
+              from the width alone. The point mark rides at the same 5:6 ratio to
+              the coin as it does in the price block. */}
           <span className="flex items-center gap-1 text-[13px] font-medium text-[#1d2129]">
-            <CoinIcon size={18} /> {coins.toLocaleString()}
+            <CoinIcon size={24} /> {coins.toLocaleString()}
           </span>
           <span className="h-4 w-px bg-black/15" />
           <span className="flex items-center gap-1 text-[13px] font-medium text-[#1d2129]">
-            <GemIcon size={18} /> 10,000
+            <GemIcon size={20} /> 10,000
           </span>
         </button>
+        {/* 24px badge (the mark ships as a 36px export of a 24px node),
+            straddling the pill's right edge. */}
         <button
           onClick={onOpenStore}
           aria-label={t.addCoinsAria}
-          className="absolute right-0 top-1/2 flex h-[22px] w-[22px] -translate-y-1/2 translate-x-1/2 items-center justify-center transition active:scale-[0.95]"
+          className="absolute right-0 top-1/2 flex h-6 w-6 -translate-y-1/2 translate-x-1/2 items-center justify-center transition active:scale-[0.95]"
         >
           <img src="/plus-sign.png" alt="" className="h-full w-full object-contain" draggable={false} />
         </button>
@@ -193,10 +209,11 @@ function BalancePill({ coins, t, onOpenStore }: { coins: number; t: Dict; onOpen
   );
 }
 
+// Section headings reuse the category glyphs, so a section always carries the
+// same mark as the category it belongs to.
 function sectionIcon(icon: SectionIconKey, red: boolean) {
-  const c = red ? "#fff" : "#1d2129";
-  if (icon === "cards") return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinejoin="round"><rect x="4.5" y="5" width="9" height="13" rx="1.4" transform="rotate(-10 9 11.5)" /><rect x="10" y="5" width="9" height="13" rx="1.4" transform="rotate(8 14.5 11.5)" /></svg>;
-  return catIcon(icon, c);
+  // Matches the heading text it sits beside rather than the category bar's ink.
+  return catIcon(icon, red ? "#fff" : "#1d2129");
 }
 
 function TagPill({ children, variant }: { children: React.ReactNode; variant: "redOutline" | "redFill" | "darkOutline" }) {
@@ -209,22 +226,81 @@ function TagPill({ children, variant }: { children: React.ReactNode; variant: "r
   return <span className={`whitespace-nowrap rounded-full px-2 py-[1px] text-[10px] font-bold ${cls}`}>{children}</span>;
 }
 
-function OripaCard({ item, t, onView, onDraw }: { item: OripaItem; t: Dict; onView?: () => void; onDraw?: (count: number, free?: boolean) => void }) {
-  const pct = Math.round((item.remaining / item.total) * 100);
-  // Expired / sold-out packs: greyed artwork, an "期限切れ / Expired" label in
-  // place of the stock+countdown, and no Draw CTAs (the card still opens the
-  // greyed-out draw view on tap). See DRAW-5 / DRAW-4 in the product spec.
-  const expired = !!item.expired || item.remaining <= 0;
-  const price = (
-    <span className="flex items-baseline">
-      <span className="text-[15px] font-extrabold text-[#1d2129] underline decoration-[#D10005] decoration-2 underline-offset-2">1,000</span>
-      <span className="text-[11px] font-bold text-[#8a9099]">{t.perDraw}</span>
+// Stacked coin and point prices, drawn to the design's "Price" node: a 137×83
+// block with 8px side padding holding two 40px rows 3px apart. The point mark is
+// narrower than the coin, so both sit right-aligned in a 36px column and the
+// prices beside them start on the same edge.
+function PriceStack({ t, showPoint }: { t: Dict; showPoint: boolean }) {
+  const row = (icon: React.ReactNode) => (
+    <span className="flex h-10 items-center gap-[8.5px]">
+      <span className="flex w-9 shrink-0 justify-end">{icon}</span>
+      {/* No thousands separator here: the design draws "1000/1回", and a comma's
+          tail would sit in the gap the red rule needs. */}
+      <span className="flex items-baseline border-b-[3px] border-[#D10005] pb-[3px]">
+        <span className="text-[21px] font-extrabold leading-none text-[#1d2129]">{DRAW_PRICE}</span>
+        <PerDrawMark height={14.5} alt={t.perDraw} />
+      </span>
     </span>
   );
   return (
+    <div className="flex shrink-0 flex-col gap-[3px] px-2">
+      {row(<CoinIcon size={36} />)}
+      {showPoint && row(<GemIcon size={30} />)}
+    </div>
+  );
+}
+
+// Search magnifier, traced from the design's SearchOutlined export: the lens is
+// top-left (outer edge on 1, centre 9) and the handle leaves the rim at 45° and
+// runs to 22, so the glyph fills its box corner to corner.
+function SearchIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <circle cx="9.1" cy="9.1" r="7.1" />
+      <path d="M14.1 14.1 21 21" />
+    </svg>
+  );
+}
+
+// Solid funnel used by the "Narrow down" control: a full-width bar that tapers
+// into a centred stem, per the design's filter glyph.
+function FilterIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M3.5 2.5h17a1 1 0 0 1 1 1v3.3l-6.9 5.8v7.9a1 1 0 0 1-1 1h-3.2a1 1 0 0 1-1-1v-7.9L2.5 6.8V3.5a1 1 0 0 1 1-1Z" />
+    </svg>
+  );
+}
+
+// The "per draw" suffix beside a price is a design asset rather than text. It
+// sits on the price's baseline at ~95% of its cap height, per the design.
+function PerDrawMark({ height, alt }: { height: number; alt: string }) {
+  return (
+    <img
+      src="/per-draw.png"
+      alt={alt}
+      width={57}
+      height={30}
+      draggable={false}
+      className="ml-[1.5px] w-auto shrink-0 select-none"
+      style={{ height, WebkitUserDrag: "none" } as React.CSSProperties}
+    />
+  );
+}
+
+function OripaCard({ item, t, onView, onRequestDraw }: { item: OripaItem; t: Dict; onView?: () => void; /** A tapped CTA draws in place; only the banner opens the pack page. */ onRequestDraw?: (req: Omit<DrawRequest, "token">) => void }) {
+  const pct = Math.round((item.remaining / item.total) * 100);
+  // Expired / sold-out packs: greyed artwork, a status label in place of the
+  // stock+countdown, and no Draw CTAs (the card still opens the greyed-out draw
+  // view on tap). See DRAW-5 / DRAW-4 in the product spec. `soldOut` surfaces
+  // "完売しました / Sold Out"; `expired` surfaces "期限切れ / Expired".
+  const soldOut = !!item.soldOut;
+  const expired = !soldOut && (!!item.expired || item.remaining <= 0);
+  const inactive = soldOut || expired;
+  return (
     <div
-      className={`overflow-hidden rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.12)] ${expired ? "cursor-pointer" : ""}`}
-      onClick={expired ? onView : undefined}
+      className={`overflow-hidden rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.12)] ${inactive ? "cursor-pointer" : ""}`}
+      onClick={inactive ? onView : undefined}
     >
       <div className="flex flex-wrap items-center gap-1.5 px-2.5 pt-2.5">
         <TagPill variant="redOutline">{t.tagPopular}</TagPill>
@@ -232,24 +308,31 @@ function OripaCard({ item, t, onView, onDraw }: { item: OripaItem; t: Dict; onVi
         <TagPill variant="darkOutline">{t.tagLv5}</TagPill>
         <TagPill variant="darkOutline">{t.tagSsr}</TagPill>
       </div>
-      {/* Banner opens the draw detail, same as the Draw / View CTAs. Expired
-          cards let the whole card handle the tap (parent onClick). */}
+      {/* Banner opens the draw detail, same as the Draw / View CTAs. Inactive
+          (sold-out / expired) cards let the whole card handle the tap (parent
+          onClick). Full-bleed: no side or bottom margins — the artwork runs
+          edge-to-edge and sits flush against the period bar below. */}
       <div
-        className={`mx-2.5 mt-2 flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg bg-[#ededf0] ${!expired && onView ? "cursor-pointer" : ""}`}
-        onClick={!expired && onView ? onView : undefined}
+        className={`mt-2 flex aspect-[4/3] items-center justify-center overflow-hidden bg-[#ededf0] ${!inactive && onView ? "cursor-pointer" : ""}`}
+        onClick={!inactive && onView ? onView : undefined}
       >
-        {/* Figma placeholder until final oripa-draw creative is signed off. */}
-        <img src="/placeholder-oripa.png" alt="" className="h-full w-full object-cover" style={expired ? { filter: "grayscale(1)", opacity: 0.6 } : undefined} />
+        {/* Inactive packs carry the design's desaturated creative; active ones
+            show their own art, falling back to the placeholder where a pack has
+            none yet. */}
+        <img src={inactive ? "/card-banner-inactive.webp" : (item.image ?? "/placeholder-oripa.png")} alt="" className="h-full w-full object-cover" />
       </div>
-      <div className="mt-2.5 bg-[#1d1d1d] px-3 py-1 text-center text-[11px] font-bold text-white">{t.periodLabel("2026/01/01")}</div>
+      {/* A pack that can no longer be drawn has no sales period to announce. */}
+      {!inactive && <div className="bg-[#1d1d1d] px-3 py-1 text-center text-[11px] font-bold text-white">{t.periodLabel("2026/01/01")}</div>}
       <div className="flex items-stretch px-3 py-2.5">
-        <div className="flex flex-col justify-center gap-1.5 border-r border-dashed border-black/20 pr-3">
-          <span className="flex items-center gap-1.5"><CoinIcon size={20} />{price}</span>
-          {item.gem && <span className="flex items-center gap-1.5"><GemIcon size={20} />{price}</span>}
+        <div className="flex items-center border-r border-dashed border-black/20 pr-3">
+          <PriceStack t={t} showPoint={item.gem} />
         </div>
         <div className="flex flex-1 flex-col justify-center gap-1 pl-3">
-          {expired ? (
-            <span className="text-center text-[18px] font-extrabold tracking-wide text-[#D10005]">{t.expiredLabel}</span>
+          {inactive ? (
+            // Status label sized to the design's node: Hug 120×24, centred.
+            // 20px with no extra tracking makes the six-character Japanese
+            // label hug exactly 120px, as in the export.
+            <span className="mx-auto flex h-[24px] w-[120px] items-center justify-center text-[20px] font-extrabold leading-none text-[#D10005]">{soldOut ? t.soldOutLabel : t.expiredLabel}</span>
           ) : (
             <>
               <p className="flex items-baseline justify-center gap-0.5 leading-none">
@@ -266,11 +349,9 @@ function OripaCard({ item, t, onView, onDraw }: { item: OripaItem; t: Dict; onVi
           )}
         </div>
       </div>
-      {!expired && (
-        <div className="flex gap-2 px-3 pb-3">
-          <button onClick={onView} className="flex-1 rounded-lg py-2 text-[12px] font-bold text-white" style={{ background: "#D10005" }}>{t.btnDraw}</button>
-          {item.free && <button onClick={() => onDraw?.(1, true)} className="flex-1 rounded-lg border border-[#D10005] py-2 text-[12px] font-bold text-[#D10005]">{t.btnFree}</button>}
-          <button onClick={onView} className="flex-1 rounded-lg border border-black/40 py-2 text-[12px] font-bold text-[#1d2129]">{t.btnView}</button>
+      {!inactive && onRequestDraw && (
+        <div className="px-3 pb-3">
+          <DrawCtaRow variant={item.cta ?? "all"} t={t} onRequest={onRequestDraw} compact />
         </div>
       )}
     </div>
@@ -281,9 +362,15 @@ function OripaCard({ item, t, onView, onDraw }: { item: OripaItem; t: Dict; onVi
 // "PROMO BANNER" label) until the client signs off on final creative.
 const PROMO_SLIDE_COUNT = 7;
 
+// The slides stand in for campaign creative, so a tapped banner opens a pack
+// that can actually be drawn — sold-out and expired packs are skipped, and the
+// slide index picks one so a given banner always leads to the same oripa.
+const BANNER_PACKS = ALL_ORIPA.filter((it) => !it.expired && !it.soldOut && it.remaining > 0);
+const bannerPack = (slide: number) => BANNER_PACKS[slide % BANNER_PACKS.length];
+
 // V1 homepage top: auto-advancing promo carousel. Slides walk into a cloned
 // first slide for a seamless wrap, then snap back without animation.
-function PromoCarousel() {
+function PromoCarousel({ onOpenSlide }: { onOpenSlide?: (slide: number) => void }) {
   const [idx, setIdx] = useState(0);
   const [anim, setAnim] = useState(true);
   const n = PROMO_SLIDE_COUNT;
@@ -320,16 +407,29 @@ function PromoCarousel() {
             }
           }}
         >
-          {Array.from({ length: slideCount }).map((_, i) => (
+          {Array.from({ length: slideCount }).map((_, i) => {
             // Each slide owns its 8:3 ratio so its height never depends on a
-            // fragile h-full chain through the flex track.
-            <div key={i} className="relative aspect-[8/3] w-full shrink-0">
-              <img src="/placeholder-banner.png" alt="" className="absolute inset-0 h-full w-full object-cover" />
-              <span className="absolute inset-0 flex items-center justify-center text-[18px] font-extrabold tracking-wide text-[#1d2129]">
-                PROMO BANNER
-              </span>
-            </div>
-          ))}
+            // fragile h-full chain through the flex track. The cloned wrap
+            // slide leads to the same pack as the first one.
+            const slide = i % n;
+            const art = (
+              <>
+                <img src="/placeholder-banner.png" alt="" className="absolute inset-0 h-full w-full object-cover" />
+                <span className="absolute inset-0 flex items-center justify-center text-[18px] font-extrabold tracking-wide text-[#1d2129]">
+                  PROMO BANNER
+                </span>
+              </>
+            );
+            return onOpenSlide ? (
+              <button key={i} type="button" onClick={() => onOpenSlide(slide)} className="relative aspect-[8/3] w-full shrink-0">
+                {art}
+              </button>
+            ) : (
+              <div key={i} className="relative aspect-[8/3] w-full shrink-0">
+                {art}
+              </div>
+            );
+          })}
         </div>
       </div>
       <div className="mt-2 flex items-center justify-center gap-1.5">
@@ -421,42 +521,24 @@ function HomeHero({ lang }: { lang: Lang }) {
   );
 }
 
-// 12-point starburst outline for the "New" category icon, computed once so it
-// can inherit the active/inactive colour like the other line icons.
-const NEW_BURST_PATH = (() => {
-  const cx = 12, cy = 12, spikes = 12, R = 9.6, r = 7.1;
-  let d = "";
-  for (let k = 0; k < spikes * 2; k++) {
-    const rad = k % 2 === 0 ? R : r;
-    const a = ((-90 + k * (180 / spikes)) * Math.PI) / 180;
-    const x = +(cx + rad * Math.cos(a)).toFixed(2);
-    const y = +(cy + rad * Math.sin(a)).toFixed(2);
-    d += (k === 0 ? "M" : "L") + x + " " + y + " ";
-  }
-  return d + "Z";
-})();
+// Category art from the design set. Each file is a single-colour glyph with its
+// counters knocked out to transparency, so one asset can be tinted for both the
+// resting (black) and active (red) states by using it as a mask.
+const CAT_ICON_SRC: Record<string, string> = {
+  all: "/cat/all.png",
+  new: "/cat/new.png",
+  popular: "/cat/hot.png",
+  pokemon: "/cat/pokemon.png",
+  limited: "/cat/time.png",
+  other: "/cat/more.png",
+};
 
 function catIcon(key: string, color: string) {
-  switch (key) {
-    case "all":
-      return <svg width="23" height="23" viewBox="0 0 24 24" fill={color}><rect x="3" y="3" width="7.5" height="7.5" rx="2.2" /><rect x="13.5" y="3" width="7.5" height="7.5" rx="2.2" /><rect x="3" y="13.5" width="7.5" height="7.5" rx="2.2" /><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2.2" /></svg>;
-    case "new":
-      return (
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round">
-          <path d={NEW_BURST_PATH} />
-          <path d="M12 8v4" />
-          <path d="M12 15h.01" />
-        </svg>
-      );
-    case "popular":
-      return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" /></svg>;
-    case "pokemon":
-      return <svg width="26" height="26" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#fff" stroke={color} strokeWidth="1.8" /><path d="M3 12A9 9 0 0 1 21 12Z" fill={color} /><circle cx="12" cy="12" r="3.1" fill="#fff" stroke={color} strokeWidth="1.8" /><circle cx="12" cy="12" r="1.25" fill={color} /></svg>;
-    case "limited":
-      return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><circle cx="12" cy="12" r="8.6" /><path d="M12 7v5.2l3.3 1.9" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-    default:
-      return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinejoin="round"><path d="M12 3.2l2.5 5.2 5.7.8-4.1 4 1 5.6-5.1-2.7-5.1 2.7 1-5.6-4.1-4 5.7-.8z" /></svg>;
-  }
+  const src = CAT_ICON_SRC[key] ?? CAT_ICON_SRC.other;
+  // The "All" glyph is drawn smaller than the rest in the design.
+  const size = key === "all" ? 18.5 : 21.6;
+  const mask = { maskImage: `url(${src})`, WebkitMaskImage: `url(${src})`, maskSize: "contain", WebkitMaskSize: "contain", maskRepeat: "no-repeat", WebkitMaskRepeat: "no-repeat", maskPosition: "center", WebkitMaskPosition: "center" };
+  return <span aria-hidden className="block shrink-0" style={{ width: size, height: size, backgroundColor: color, ...mask } as React.CSSProperties} />;
 }
 
 // Legal document reader (Terms of Use, Privacy Policy, SCTA notation).
@@ -515,15 +597,17 @@ function SiteFooter({ t }: { t: Dict }) {
   const openLegal = useContext(LegalNavContext);
   const chip = (label: string) => {
     const doc: LegalDocKey | null = label === t.mpTerms ? "terms" : label === t.mpPrivacy ? "privacy" : label === t.mpLegal ? "legal" : label === t.mpAntisocial ? "antisocial" : null;
+    // Height and padding follow the footer button in the design.
+    const chipClass = "inline-flex h-[26px] items-center rounded-full bg-white px-5 text-[12px] font-bold text-[#1d2129]";
     return doc ? (
-      <button key={label} onClick={() => openLegal(doc)} className="rounded-full bg-white px-3.5 py-2 text-[12px] font-bold text-[#1d2129] active:bg-white/80">{label}</button>
+      <button key={label} onClick={() => openLegal(doc)} className={`${chipClass} active:bg-white/80`}>{label}</button>
     ) : (
-      <span key={label} className="rounded-full bg-white px-3.5 py-2 text-[12px] font-bold text-[#1d2129]">{label}</span>
+      <span key={label} className={chipClass}>{label}</span>
     );
   };
   return (
     <footer className="bg-black px-4 py-7 text-white">
-      <img src="/oripa-logo-footer.png" alt="オリパロット" className="h-8 w-auto" />
+      <img src="/oripa-logo-footer.png" alt="オリパロット" className="h-[55px] w-[199px] object-contain" />
       <p className="mt-3 text-[11px] text-white">{t.ftCopyright}</p>
       <p className="mt-3 text-[11px] leading-relaxed text-white">{t.ftBlurb}</p>
 
@@ -570,11 +654,10 @@ function AppHeader({ coins, t, onHome, onOpenStore }: { coins: number; t: Dict; 
 
 /* ── Lobby navigation (V2) ───────────────────────────────────────────────
    Competitor-style browse: a category chip bar + "Narrow down" / sort toolbar
-   over a sectioned feed (each lane has a "See all" jump). A bottom sheet holds
-   search + quick filters. All filtering / sorting is client-side (POC data). */
+   over a sectioned feed. A bottom sheet holds search + quick filters. All
+   filtering / sorting is client-side (POC data). */
 const LOBBY_NAV_STR = {
   en: {
-    seeAll: "See all",
     empty: "No packs match your search.",
     narrowDown: "Narrow down",
     searchPlaceholder: "Search for original packs (e.g., Pikachu, Charizard)",
@@ -593,7 +676,6 @@ const LOBBY_NAV_STR = {
     quickOpts: [["popular", "Most popular"], ["newarrivals", "New Arrivals"], ["fewleft", "Only a few left"], ["psa10", "PSA10 confirmed"], ["guarantee60", "High return"], ["pokemon", "Pokémon"], ["onepiece", "One Piece"], ["box", "BOX"]] as [string, string][],
   },
   ja: {
-    seeAll: "すべて見る",
     empty: "一致するオリパがありません。",
     narrowDown: "絞り込み",
     searchPlaceholder: "オリパを検索（例：ピカチュウ、リザードン）",
@@ -646,6 +728,8 @@ function priceValToPct(v: number): number {
   }
   return 100;
 }
+
+const PRICE_BOX_CLS = "h-[22px] w-[100px] rounded-[4px] border-[1.5px] border-[#cfcfcf] text-center text-[13px] font-bold leading-none text-[#0F0F0F] focus:border-[#D10005] focus:outline-none";
 
 // Dual-handle price slider with keyboard-editable min/max boxes (0–999,999).
 // Built from pointer events (not overlapping native range inputs, which fight
@@ -701,19 +785,21 @@ function PriceRangeFilter({ label, min, max, onMin, onMax }: { label: string; mi
   return (
     <div className="mt-5 select-none">
       <h4 className="mb-2.5 text-[15px] font-extrabold text-[#1d2129]">{label}</h4>
-      <div className="flex items-center gap-3">
+      {/* Min and max sit at the two ends of the row (design: 100×22 boxes with
+          the space between them left empty), not stretched to fill it. */}
+      <div className="flex items-center justify-between">
         <input
           inputMode="numeric"
           value={min.toLocaleString()}
           onChange={(e) => onMin(Math.min(parseNum(e.target.value), max))}
-          className="w-full rounded-lg border border-[#c9ced6] px-3 py-2 text-center text-[14px] font-bold text-[#1d2129] focus:border-[#D10005] focus:outline-none"
+          className={PRICE_BOX_CLS}
           aria-label={`${label} min`}
         />
         <input
           inputMode="numeric"
           value={max.toLocaleString()}
           onChange={(e) => onMax(Math.max(parseNum(e.target.value), min))}
-          className="w-full rounded-lg border border-[#c9ced6] px-3 py-2 text-center text-[14px] font-bold text-[#1d2129] focus:border-[#D10005] focus:outline-none"
+          className={PRICE_BOX_CLS}
           aria-label={`${label} max`}
         />
       </div>
@@ -727,14 +813,14 @@ function PriceRangeFilter({ label, min, max, onMin, onMax }: { label: string; mi
         className="relative mx-2.5 mt-4 h-5 cursor-pointer"
         style={{ touchAction: "none" }}
       >
-        <div className="pointer-events-none absolute inset-x-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-[#e3e6ea]" />
-        <div className="pointer-events-none absolute top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-[#D10005]" style={{ left: `${minPct}%`, right: `${100 - maxPct}%` }} />
+        <div className="pointer-events-none absolute inset-x-0 top-1/2 h-[6px] -translate-y-1/2 rounded-full bg-[#e3e6ea]" />
+        <div className="pointer-events-none absolute top-1/2 h-[6px] -translate-y-1/2 rounded-full bg-[#D10005]" style={{ left: `${minPct}%`, right: `${100 - maxPct}%` }} />
         <span className="pointer-events-none absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#D10005] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.3)]" style={{ left: `${minPct}%` }} />
         <span className="pointer-events-none absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#D10005] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.3)]" style={{ left: `${maxPct}%` }} />
       </div>
-      <div className="mx-2.5 mt-1.5 flex justify-between text-[11px] font-semibold text-[#8a9099]">
+      <div className="mx-2.5 mt-1.5 flex justify-between text-[13px] font-normal text-[#0F0F0F]">
         {ticks.map(([lbl, val]) => (
-          <button key={lbl} type="button" onClick={() => clickTick(val)} className="-mx-1 cursor-pointer px-1 active:text-[#D10005]">{lbl}</button>
+          <button key={lbl} type="button" onClick={() => clickTick(val)} className="-mx-0.5 cursor-pointer px-0.5 leading-none active:text-[#D10005]">{lbl}</button>
         ))}
       </div>
     </div>
@@ -743,7 +829,7 @@ function PriceRangeFilter({ label, min, max, onMin, onMax }: { label: string; mi
 
 // V2 lobby feed. `onView` (tap on any card) is inert in the logged-in lobby
 // and routes to Sign-up on the logged-out landing.
-function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll, onView, onOpenDraw }: { t: Dict; lang: Lang; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void; onView?: () => void; onOpenDraw?: (item: OripaItem, entry?: DrawEntry) => void }) {
+function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll, onView, onOpenDraw, onRequestDraw, showPromo = false }: { t: Dict; lang: Lang; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void; onView?: () => void; onOpenDraw?: (item: OripaItem) => void; onRequestDraw?: (item: OripaItem, req: Omit<DrawRequest, "token">) => void; showPromo?: boolean }) {
   const L = LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"];
   const [cat, setCat] = useState("all");
   const [searchActive, setSearchActive] = useState(false);
@@ -786,10 +872,18 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
   // Commit the draft to the applied filters — this is the only path that
   // actually filters the feed (the "Filter" CTA).
   const applyFilters = () => { onApply(draftQuery, draftFilters, draftMin, draftMax); setSearchActive(false); inputRef.current?.blur(); };
-  // Clear everything (draft + applied), used by "Reset" and "Clear all".
+  // Clear everything (draft + applied), used by "Reset", "Clear all" and by a
+  // category switch.
   const clearEverything = () => {
     setDraftQuery(""); setDraftFilters({}); setDraftMin(0); setDraftMax(PRICE_MAX);
     onClearAll();
+  };
+  // The dropdown's "Reset" CTA also dismisses the search, like "Filter" does:
+  // both end the editing session, one keeping the draft and one dropping it.
+  const resetFilters = () => {
+    clearEverything();
+    setSearchActive(false);
+    inputRef.current?.blur();
   };
   // Remove a single applied filter chip (also drop it from the draft so the two
   // stay in sync when the dropdown is reopened).
@@ -798,8 +892,14 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
     setDraftFilters((f) => { const n = { ...f }; delete n[k]; return n; });
   };
   // Clear-text (X) button in the search field: drop the query from both draft
-  // and applied immediately, keeping any tag/price filters intact.
-  const clearQuery = () => { setDraftQuery(""); onApply("", filters, priceMin, priceMax); setSearchActive(false); inputRef.current?.blur(); };
+  // and applied immediately, keeping any tag/price filters intact. The field
+  // stays open and focused — X empties the text, it doesn't dismiss the search.
+  const clearQuery = () => {
+    setDraftQuery("");
+    onApply("", filters, priceMin, priceMax);
+    setSearchActive(true);
+    inputRef.current?.focus();
+  };
 
   // When switching categories: if the user has already scrolled past the promo
   // banner (so the feed has scrolled up under the top nav), bring the top nav
@@ -912,10 +1012,13 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
   }, [searchActive]);
 
   // Switching category closes the search dropdown (and blurs the field) so an
-  // open search doesn't linger over the new category's feed.
+  // open search doesn't linger over the new category's feed, and starts the new
+  // category unfiltered — a query or tag picked for the previous category would
+  // otherwise silently keep trimming this one's feed.
   const selectCat = (key: string) => {
     setSearchActive(false);
     inputRef.current?.blur();
+    if (key !== cat) clearEverything();
     setCat(key);
   };
 
@@ -938,19 +1041,18 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
     return arr;
   }
 
-  // In the logged-in lobby `onOpenDraw` opens the draw screen for the tapped
-  // pack; the logged-out lobby falls back to `onView` (sign-up bridge).
+  // Tapping a card's artwork opens the pack page; its CTAs draw in place via
+  // `onRequestDraw`. The logged-out lobby has neither, so both bridge to
+  // sign-up through `onView`.
   const canOpen = !!(onOpenDraw || onView);
-  // The tapped CTA decides the draw screen's entry mode: "Free draw" opens the
-  // free variants, "Draw" / "View" / the banner open the paid ones.
-  const openCard = (it: OripaItem, entry: DrawEntry = "paid") => (onOpenDraw ? onOpenDraw(it, entry) : onView?.());
+  const openCard = (it: OripaItem) => (onOpenDraw ? onOpenDraw(it) : onView?.());
   const full = (it: OripaItem) => (
     <OripaCard
       key={it.id}
       item={it}
       t={t}
       onView={canOpen ? () => openCard(it) : undefined}
-      onDraw={canOpen ? (_count, free) => openCard(it, free ? "free" : "paid") : undefined}
+      onRequestDraw={canOpen ? (req) => (onRequestDraw ? onRequestDraw(it, req) : onView?.()) : undefined}
     />
   );
   const tagPill = ([key, label]: [string, string]) => {
@@ -959,7 +1061,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
       <button
         key={key}
         onClick={() => toggleDraft(key)}
-        className={`rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition active:scale-95 ${on ? "border-[#D10005] bg-[#D10005] text-white" : "border-[#a3a8b0] bg-white text-[#4b5058]"}`}
+        className={`flex h-[22px] items-center rounded-full border-[1.5px] px-2 text-[13px] font-medium leading-none transition active:scale-95 ${on ? "border-[#D10005] bg-[#D10005] text-white" : "border-[#6F6F6F] bg-white text-[#6F6F6F]"}`}
       >
         {label}
       </button>
@@ -968,11 +1070,15 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
 
   // Promo banner — rendered between the recommended (red) oripas and the rest
   // of the feed. Single banner with dots; swap the placeholder creative for
-  // real art later. Only shown to logged-in users (the logged-in lobby passes
-  // `onOpenDraw`); the logged-out landing feed omits it.
-  const promoBanners = onOpenDraw ? (
-    <div className="px-3.5 pt-3"><PromoCarousel /></div>
+  // real art later. Only the logged-in lobby shows it (the logged-out landing
+  // carries its own carousel at the top), and a tapped slide opens its pack.
+  const promoBanners = showPromo ? (
+    <div className="px-3.5 pt-3"><PromoCarousel onOpenSlide={(s) => openCard(bannerPack(s))} /></div>
   ) : null;
+
+  // Sparkle mark that leads the recommended heading. The art is white, so it
+  // only belongs on the red section.
+  const sparkle = <img src="/sparkle.png" alt="" aria-hidden width={18} height={18} className="shrink-0" draggable={false} />;
 
   const showResults = hasQuery || filterCount > 0 || priceActive;
   let body: React.ReactNode;
@@ -986,7 +1092,6 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
       <div>
         {HOME_SECTIONS.map((s, i) => {
           const title = (t as unknown as Record<string, string>)[s.titleKey];
-          const seeAllCat = s.cats[0];
           // No divider directly after the red recommended block (the promo
           // banners already separate it from the following section).
           const afterRed = i > 0 && HOME_SECTIONS[i - 1].variant === "red";
@@ -999,10 +1104,9 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
                 <div className="bg-[#FEFEFE]">
                   <img src="/home-divider-top.png" alt="" className="-mb-px block w-full" />
                 </div>
-                <section className="bg-[#D10005] px-3.5 pb-6 pt-4">
+                <section className="bg-[#B40206] px-3.5 pb-6 pt-4">
                   <div className="mb-3 flex items-center justify-between">
-                    <h3 className="text-[15px] font-extrabold text-white">{title}</h3>
-                    {seeAllCat && <button onClick={() => setCat(seeAllCat)} className="text-[12px] font-bold text-white/90">{L.seeAll} →</button>}
+                    <h3 className="flex items-center gap-1.5 text-[15px] font-extrabold text-white">{sparkle}{title}</h3>
                   </div>
                   <div className="flex flex-col gap-3">{s.items.map(full)}</div>
                 </section>
@@ -1014,9 +1118,8 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
           }
           return (
             <div key={s.id} className={`px-3.5 py-3.5 first:border-t-0 ${afterRed ? "" : "border-t border-black/10"}`}>
-              <div className="mb-2.5 flex items-center justify-between">
+              <div className="mb-2.5 flex items-center">
                 <h3 className="flex items-center gap-1.5 text-[15px] font-extrabold text-[#1d2129]">{s.icon ? sectionIcon(s.icon, false) : null}{title}</h3>
-                {seeAllCat && <button onClick={() => setCat(seeAllCat)} className="text-[12px] font-bold text-[#D10005]">{L.seeAll} →</button>}
               </div>
               <div className="flex flex-col gap-3">{s.items.map(full)}</div>
             </div>
@@ -1037,8 +1140,8 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
           <div className="bg-[#FEFEFE]">
             <img src="/home-divider-top.png" alt="" className="-mb-px block w-full" />
           </div>
-          <section className="bg-[#D10005] px-3.5 pb-6 pt-4">
-            <h3 className="mb-3 text-[15px] font-extrabold text-white">{recTitle}</h3>
+          <section className="bg-[#B40206] px-3.5 pb-6 pt-4">
+            <h3 className="mb-3 flex items-center gap-1.5 text-[15px] font-extrabold text-white">{sparkle}{recTitle}</h3>
             <div className="flex flex-col gap-3">{featured.map(full)}</div>
           </section>
           <img src="/home-divider-bottom.png" alt="" className="-mt-px block w-full" />
@@ -1050,11 +1153,16 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
 
   return (
     <div ref={rootRef} className="bg-[#eef0f3]">
+      {/* Warm the pack artwork behind every card so opening a draw doesn't wait
+          on the banner. Low priority keeps it behind the lobby's own images. */}
+      <link rel="preload" as="image" href="/draw-banner.webp" fetchPriority="low" />
+
       {/* Sticky lobby nav: the category bar stays pinned; the search bar
           collapses on scroll-down and expands again on scroll-up. */}
       <div ref={searchBoxRef} className="sticky top-0 z-30 bg-[#FEFEFE]">
-      {/* Category bar — icon over label; ALL is a black D-tab pinned to the
-          left edge, the active category is red with an underline. */}
+      {/* Category bar — icon over label; ALL is a black D-tab flush with the
+          left edge, the active category is red with an underline. Sizes follow
+          the design: a 73px bar, a 55px square tab, 63.6px item pitch. */}
       <div className="no-scrollbar flex items-stretch overflow-x-auto border-b border-black/10 bg-[#FEFEFE]">
         {catList.map((c) => {
           const on = cat === c.key;
@@ -1064,25 +1172,27 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
                 key={c.key}
                 onClick={() => selectCat(c.key)}
                 aria-pressed={on}
-                className="sticky left-0 z-[3] flex shrink-0 items-stretch bg-[#FEFEFE] pr-2.5"
+                className="sticky left-0 z-[3] flex shrink-0 items-center bg-[#FEFEFE] pb-[12px] pt-[5px]"
               >
-                <span className="flex flex-col items-center justify-center gap-1 rounded-r-[28px] bg-[#141414] px-4 py-2 text-white shadow-[3px_0_12px_rgba(0,0,0,0.18)]">
+                {/* Content sits a touch left of centre, as in the design — the
+                    rounded right edge otherwise pulls it visually right. */}
+                <span className="flex h-[55px] w-[55px] flex-col items-center justify-center gap-[4px] rounded-r-full bg-[#0F0F0F] pr-[5px] text-white shadow-[3px_0_12px_rgba(0,0,0,0.18)]">
                   {catIcon("all", "#fff")}
-                  <span className="text-[11px] font-medium uppercase tracking-wide">{c.label}</span>
+                  <span className="text-[12px] font-medium leading-none">{c.label}</span>
                 </span>
               </button>
             );
           }
-          const color = on ? "#D10005" : "#1d2129";
+          const color = on ? "#D10005" : "#0F0F0F";
           return (
             <button
               key={c.key}
               onClick={() => selectCat(c.key)}
-              className="relative flex shrink-0 flex-col items-center justify-center gap-1 px-3 py-2.5"
+              className="relative flex w-[63.6px] shrink-0 flex-col items-center gap-[3px] pt-[12px]"
             >
               {catIcon(c.key, color)}
-              <span className="text-[11px] font-medium uppercase tracking-wide" style={{ color }}>{c.label}</span>
-              {on && <span className="absolute inset-x-3 bottom-0 h-[3px] rounded-full bg-[#D10005]" />}
+              <span className="whitespace-nowrap text-[12px] font-medium leading-none" style={{ color }}>{c.label}</span>
+              {on && <span className="absolute inset-x-[9px] bottom-[14px] h-[4.5px] bg-[#D10005]" />}
             </button>
           );
         })}
@@ -1102,7 +1212,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
         >
           <div className="relative">
             <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#1d2129]">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M20.5 20.5l-4-4" /></svg>
+              <SearchIcon />
             </span>
             <input
               ref={inputRef}
@@ -1159,9 +1269,11 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
             <div className="flex flex-wrap gap-2.5">{L.pokemonTags.map(tagPill)}</div>
             <PriceRangeFilter label={L.cost} min={draftMin} max={draftMax} onMin={setDraftMin} onMax={setDraftMax} />
           </div>
+          {/* CTAs follow the design's button spec: 39px tall, 8px radius, and a
+              2px border on the secondary one. */}
           <div className="flex gap-3 border-t border-black/10 bg-white px-4 py-3">
-            <button onClick={clearEverything} className="flex-1 rounded-[10px] border-[1.6px] border-[#1d2129] bg-white py-3 text-[15px] font-extrabold text-[#1d2129] active:scale-[0.99]">{L.reset}</button>
-            <button onClick={applyFilters} className="flex-1 rounded-[10px] bg-[#D10005] py-3 text-[15px] font-extrabold text-white active:scale-[0.99]">{L.filter}</button>
+            <button onClick={resetFilters} className="h-[39px] grow basis-1/2 rounded-lg border-2 border-[#1d2129] bg-white text-[15px] font-bold leading-none text-[#1d2129] active:scale-[0.99]">{L.reset}</button>
+            <button onClick={applyFilters} className="h-[39px] grow basis-1/2 rounded-lg bg-[#D10005] text-[15px] font-extrabold leading-none text-white active:scale-[0.99]">{L.filter}</button>
           </div>
         </div>
       )}
@@ -1172,7 +1284,57 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
   );
 }
 
-function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, scrollRef, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll }: { lang: Lang; coins: number; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem, entry?: DrawEntry) => void; scrollRef?: { current: number }; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void }) {
+// The lobby feed runs to a dozen screens, so it carries its own scroll
+// indicator down the right edge: the phone mock hides platform scrollbars, and
+// macOS overlay bars fade out anyway, leaving no sign the feed continues.
+function measureThumb(el: HTMLDivElement) {
+  const view = el.clientHeight;
+  const total = el.scrollHeight;
+  if (total <= view + 4) return null;
+  const height = Math.max(36, (view / total) * view);
+  return { top: (el.scrollTop / (total - view)) * (view - height), height };
+}
+
+function FeedScroller({ scrollElRef, onScroll, children }: { scrollElRef?: RefObject<HTMLDivElement | null>; onScroll?: (el: HTMLDivElement) => void; children: ReactNode }) {
+  const ownRef = useRef<HTMLDivElement>(null);
+  const ref = scrollElRef ?? ownRef;
+  const [thumb, setThumb] = useState<{ top: number; height: number } | null>(null);
+
+  // Filters and lazily decoded art change the feed's height under us, so track
+  // the sections themselves rather than trusting a one-off measurement. The
+  // observer also fires once on observe, which is what sizes the thumb first.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setThumb(measureThumb(el)));
+    ro.observe(el);
+    for (const child of Array.from(el.children)) ro.observe(child);
+    return () => ro.disconnect();
+  }, [ref]);
+
+  return (
+    <div className="relative min-h-0 flex-1">
+      <div
+        ref={ref}
+        onScroll={(e) => { onScroll?.(e.currentTarget); setThumb(measureThumb(e.currentTarget)); }}
+        className="animate-screen-in no-scrollbar h-full overflow-y-auto"
+      >
+        {children}
+      </div>
+      {thumb && (
+        <span
+          aria-hidden="true"
+          // Mid grey rather than a tint of the text colour: the thumb has to
+          // stay legible over the white feed and the black footer alike.
+          className="pointer-events-none absolute right-[3px] z-40 w-[4px] rounded-full bg-[#8a9099]"
+          style={{ top: thumb.top, height: thumb.height }}
+        />
+      )}
+    </div>
+  );
+}
+
+function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, onRequestDraw, scrollRef, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll }: { lang: Lang; coins: number; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem) => void; onRequestDraw?: (item: OripaItem, req: Omit<DrawRequest, "token">) => void; scrollRef?: { current: number }; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void }) {
   const t = STR[lang];
   // Preserve the lobby's scroll position across navigation (e.g. opening a draw
   // and coming back) so the user lands where they were, not at the top. The
@@ -1187,17 +1349,13 @@ function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, scrollRef, qu
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
       <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
 
-      <div
-        ref={scrollElRef}
-        onScroll={(e) => { if (scrollRef) scrollRef.current = e.currentTarget.scrollTop; }}
-        className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto"
-      >
+      <FeedScroller scrollElRef={scrollElRef} onScroll={(el) => { if (scrollRef) scrollRef.current = el.scrollTop; }}>
         <HomeHero lang={lang} />
 
-        <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={onApply} onToggleApplied={onToggleApplied} onClearAll={onClearAll} onOpenDraw={onOpenDraw} />
+        <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={onApply} onToggleApplied={onToggleApplied} onClearAll={onClearAll} onOpenDraw={onOpenDraw} onRequestDraw={onRequestDraw} showPromo />
 
         <SiteFooter t={t} />
-      </div>
+      </FeedScroller>
     </div>
   );
 }
@@ -1211,13 +1369,87 @@ const DRAW_PRICE = 1000; // coins per single draw (mirrors the lobby card price)
 // popup (mirrors the static free-point figure shown across the app).
 const DRAW_FREE_POINTS = 10000;
 const MAX_CUSTOM_DRAW = 100; // cap for the custom-draw quantity stepper
+// +5 / +10 / MAX buttons under the custom-draw stepper.
+const quickAddCls = "flex h-[30px] w-[94px] shrink-0 items-center justify-center whitespace-nowrap rounded-[5px] border-2 border-[#0F0F0F] bg-white text-[14px] font-bold leading-none text-[#0F0F0F] active:scale-95";
 
 // Beveled tier plate ("1等 / 2등 / 3등") — gold for 1st/2nd, silver for 3rd,
 // matching the design's metallic name-plates on the dark prize board.
-// Shared shapes for the draw screen's sticky CTA row (see DrawCta variants).
+// Shared shapes for the draw CTA row (see DrawCta variants).
 const ctaBase = "flex min-h-[40px] items-center justify-center rounded-md px-2 text-center text-[13px] font-extrabold leading-tight active:scale-[0.98]";
 const ctaPrimary = `${ctaBase} bg-[#D10005] text-white`;
 const ctaOutline = `${ctaBase} border-2 border-[#D10005] bg-white text-[#1d2129]`;
+
+// The draw CTAs a pack offers. Each pack carries its own variant, so the row a
+// lobby card shows is the row its pack page shows. Tapping one doesn't navigate
+// anywhere — it asks DrawFlow to open the matching popup. The card renders the
+// same row a size down.
+function DrawCtaRow({ variant, t, onRequest, compact = false }: { variant: DrawCta; t: Dict; onRequest: (req: Omit<DrawRequest, "token">) => void; compact?: boolean }) {
+  const base = compact ? "flex min-h-[32px] items-center justify-center rounded-md px-1.5 text-center text-[12px] font-bold leading-tight active:scale-[0.98]" : ctaBase;
+  const primary = compact ? `${base} bg-[#D10005] text-white` : ctaPrimary;
+  const outline = compact ? `${base} border-2 border-[#D10005] bg-white text-[#1d2129]` : ctaOutline;
+  return (
+    <div className="flex gap-2">
+      {variant === "all" && (
+        <>
+          <button onClick={() => onRequest({ kind: "count", count: 1 })} className={`flex-1 ${outline}`}>{t.drawDraw1}</button>
+          <button onClick={() => onRequest({ kind: "count", count: 10 })} className={`flex-1 ${primary}`}>{t.drawDrawTen}</button>
+          <button onClick={() => onRequest({ kind: "custom" })} className={`flex-1 whitespace-nowrap ${primary}`}>{t.drawDrawCustom}</button>
+        </>
+      )}
+      {variant === "one" && (
+        <button onClick={() => onRequest({ kind: "count", count: 1 })} className={`flex-1 ${primary}`}>{t.drawDraw1}</button>
+      )}
+      {variant === "free" && (
+        <button onClick={() => onRequest({ kind: "count", count: 1, free: true })} className={`flex-1 ${outline}`}>{t.btnFree}</button>
+      )}
+      {variant === "freePending" && (
+        <button onClick={() => onRequest({ kind: "line" })} className={`flex-1 ${base} bg-[#01B901] text-white`}>{t.btnLineLink}</button>
+      )}
+      {variant === "trial" && (
+        <>
+          {/* "Free Trial" tag straddles the top edge of the free-draws CTA */}
+          <div className="relative flex-1">
+            <img
+              src="/cta/free-trial-tag.png"
+              alt={t.btnFreeTrial}
+              width={222}
+              height={32}
+              draggable={false}
+              className={`absolute left-1/2 z-[1] max-w-none -translate-x-1/2 select-none ${compact ? "-top-1.5 h-3 w-[83px]" : "-top-2 h-4 w-[111px]"}`}
+            />
+            <button onClick={() => onRequest({ kind: "count", count: 10, free: true })} className={`w-full ${outline}`}>{t.btnFree10}</button>
+          </div>
+          <button onClick={() => onRequest({ kind: "count", count: 1 })} className={`flex-1 ${primary}`}>{t.drawDraw1}</button>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Pack artwork (draw screen and confirmation popups). The intrinsic size is
+// declared so the space is reserved on the very first paint — otherwise the
+// content below snaps down when the file lands — and the image fades in once
+// decoded, including when it comes straight from cache.
+function PackBanner({ src, alt, width, height, priority = false }: { src: string; alt: string; width: number; height: number; priority?: boolean }) {
+  const [ready, setReady] = useState(false);
+  return (
+    <span className="relative block w-full overflow-hidden bg-[#20222a]" style={{ aspectRatio: `${width} / ${height}` }}>
+      {!ready && <span className="animate-pulse absolute inset-0 bg-gradient-to-br from-[#2b2e38] via-[#20222a] to-[#2b2e38]" />}
+      <img
+        ref={(el) => { if (el?.complete) setReady(true); }}
+        src={src}
+        alt={alt}
+        width={width}
+        height={height}
+        draggable={false}
+        fetchPriority={priority ? "high" : undefined}
+        onLoad={() => setReady(true)}
+        className={`absolute inset-0 h-full w-full select-none transition-opacity duration-300 ease-out ${ready ? "opacity-100" : "opacity-0"}`}
+        style={{ WebkitUserDrag: "none" } as React.CSSProperties}
+      />
+    </span>
+  );
+}
 
 function DrawTierLabel({ tier, alt }: { tier: 1 | 2 | 3; alt: string }) {
   return (
@@ -1240,21 +1472,26 @@ function DrawTierCard({ rarity, large = false }: { rarity: Rarity; large?: boole
   );
 }
 
-function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, drawCta = "all", onOpenDraw, onAttemptPaidDraw, pendingRunDraw, onPendingRunDrawConsumed }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; drawCta?: DrawCta; onOpenDraw?: (item: OripaItem) => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** After Quick Purchase success, host requests this count to run. */ pendingRunDraw?: { count: number; token: number } | null; onPendingRunDrawConsumed?: () => void }) {
+/* ── Draw flow ────────────────────────────────────────────────────────────
+   Every popup a draw passes through — the confirmation, the custom-quantity
+   sheet, the scenario failures (sold out / connection / stock), the LINE
+   prompt and the results screen — lives here rather than on the pack page,
+   because a lobby card's CTA opens the same flow without leaving the lobby.
+   Hosts mount it as an overlay (the parent must be positioned) and ask for a
+   draw by passing a `request`; it renders nothing while idle. */
+function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, onHome, onOpenStore, onOpenDraw, onAttemptPaidDraw, onTopUp, pendingConfirm, onPendingConfirmConsumed }: { lang: Lang; item: OripaItem; coins: number; request: DrawRequest | null; soldOut?: boolean; /** The sold-out popup was dismissed, so the host can latch its greyed state. */ onSoldOut?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem) => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** The confirmation's Charge/Top Up CTA: open the store for a draw the wallet can't cover. */ onTopUp?: (count: number) => void; /** After Quick Purchase success, host re-opens this count's confirmation. */ pendingConfirm?: { count: number; token: number } | null; onPendingConfirmConsumed?: () => void }) {
   const t = STR[lang];
   // Opens a stored legal document (T&Cs, etc.) in the shared overlay.
   const openLegal = useContext(LegalNavContext);
-  // Draw-screen demo scenarios (dev harness): expired pack, connection error,
-  // or insufficient remaining stock.
+  // Draw demo scenarios (dev harness): expired pack, connection error, or
+  // insufficient remaining stock.
   const expired = drawScenario === "expired";
   const connError = drawScenario === "connError";
   const insufficientStock = drawScenario === "stock";
   // In the insufficient-stock scenario only this many draws remain.
   const STOCK_LEFT = 8;
-  // "Sold Out" popup (shown when an expired pack's draw is confirmed) and the
-  // latched greyed-out state that follows once it's dismissed.
-  const [soldOutPopup, setSoldOutPopup] = useState(false);
-  const [soldOutHit, setSoldOutHit] = useState(false);
+  // "Expired" popup, shown when an expired pack's draw is confirmed.
+  const [expiredPopup, setExpiredPopup] = useState(false);
   // Connection-error popup (simulated network failure) + the draw count to
   // retry when the user taps Retry.
   const [connErrorPopup, setConnErrorPopup] = useState(false);
@@ -1263,17 +1500,26 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
   // original vs. remaining cost).
   const [stockPopup, setStockPopup] = useState(false);
   const [stockReqCount, setStockReqCount] = useState(0);
-  // `item.expired` packs are permanently sold out: greyed on open, no CTAs.
-  const soldOut = item.remaining <= 0 || soldOutHit || !!item.expired;
-  const remainingShown = soldOut ? 0 : (insufficientStock ? STOCK_LEFT : item.remaining);
-  const pct = soldOut ? 0 : Math.round((remainingShown / item.total) * 100);
   const [toast, setToast] = useState<string | null>(null);
-  const [cautionOpen, setCautionOpen] = useState(false);
   // Draw-confirmation popup: holds the requested draw count while open.
   const [confirmCount, setConfirmCount] = useState<number | null>(null);
+  // Set when the pending confirmation came from a free-draw CTA: the popup then
+  // costs nothing, so it shows no balances and confirms as a free draw.
+  const [confirmFree, setConfirmFree] = useState(false);
+  // LINE account-link prompt shown by the "link required" CTA: allowing it
+  // grants the free draw, cancelling returns to this pack.
+  const [lineVerify, setLineVerify] = useState(false);
+  // Which balance the confirmation popup spends. Only selectable when the pack
+  // accepts both currencies; coins-only packs always pay with coins.
+  const [payWith, setPayWith] = useState<"coins" | "points">("coins");
+  const payCurrency = multiCurrency ? payWith : "coins";
   // Custom-draw popup: quantity stepper (min 1, up to MAX_CUSTOM_DRAW).
   const [customOpen, setCustomOpen] = useState(false);
   const [customQty, setCustomQty] = useState(1);
+  // Dismissing a draw popup keeps it mounted for the length of the exit
+  // animation. Confirming a draw skips this so the roll isn't held up.
+  const [sheetClosing, setSheetClosing] = useState(false);
+  const sheetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Draw results (list mode) — shown full-screen after a draw is confirmed.
   const [results, setResults] = useState<WonPrize[] | null>(null);
   const [resultsRun, setResultsRun] = useState(0);
@@ -1285,17 +1531,29 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
     toastTimer.current = setTimeout(() => setToast(null), 2600);
   }
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
+  useEffect(() => () => { if (sheetTimer.current) clearTimeout(sheetTimer.current); }, []);
+
+  function closeSheet() {
+    const done = () => { setSheetClosing(false); setConfirmCount(null); setCustomOpen(false); };
+    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) { done(); return; }
+    setSheetClosing(true);
+    if (sheetTimer.current) clearTimeout(sheetTimer.current);
+    sheetTimer.current = setTimeout(done, 180);
+  }
+
   // Surface whether the draw-results overlay is open so the harness can show
   // the Free-shipping toggle only on the results screen (not draw selection).
   useEffect(() => { onResultsChange?.(results !== null); }, [results, onResultsChange]);
   useEffect(() => () => { onResultsChange?.(false); }, [onResultsChange]);
 
-  function draw(count: number) {
+  function draw(count: number, free = false) {
     if (soldOut) return;
     // Insufficient stock: asking for more than what's left prompts the
     // "draw remaining" popup instead of the normal confirmation.
     if (insufficientStock && count > STOCK_LEFT) { setStockReqCount(count); setStockPopup(true); return; }
     // Open the confirmation popup; coin check / Quick Purchase happens on confirm.
+    setSheetClosing(false);
+    setConfirmFree(free);
     setConfirmCount(count);
   }
 
@@ -1307,24 +1565,34 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
     setResultsRun((r) => r + 1);
   }
 
-  // Host can resume a draw after Quick Purchase credits coins.
+  // The host resumes an interrupted draw once Quick Purchase has credited the
+  // coins: the user lands back on the confirmation, not on a finished draw.
   const consumedDrawToken = useRef<number | null>(null);
   useEffect(() => {
-    if (!pendingRunDraw) return;
-    if (consumedDrawToken.current === pendingRunDraw.token) return;
-    consumedDrawToken.current = pendingRunDraw.token;
-    runDraw(pendingRunDraw.count);
-    onPendingRunDrawConsumed?.();
+    if (!pendingConfirm) return;
+    if (consumedDrawToken.current === pendingConfirm.token) return;
+    consumedDrawToken.current = pendingConfirm.token;
+    draw(pendingConfirm.count);
+    onPendingConfirmConsumed?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only react to host resume token
-  }, [pendingRunDraw]);
+  }, [pendingConfirm]);
 
   function confirmDraw() {
     const count = confirmCount;
     if (count == null) return;
     // Expired pack: the draw fails — show the Sold Out popup instead of results.
-    if (expired) { setConfirmCount(null); setSoldOutPopup(true); return; }
+    if (expired) { setConfirmCount(null); setExpiredPopup(true); return; }
     // Simulated connection error: show the error popup; Retry re-runs the draw.
     if (connError) { setConfirmCount(null); setRetryCount(count); setConnErrorPopup(true); return; }
+    // Free draws leave both balances untouched.
+    if (confirmFree) { runDraw(count); return; }
+    // Free points leave the coin balance untouched, but a draw they can't cover
+    // routes to the store just like a coin shortfall does.
+    if (payCurrency === "points") {
+      if (shortfallFor(count) > 0) { requestTopUp(count); return; }
+      runDraw(count);
+      return;
+    }
     // Paid draw: debit via host (or open Quick Purchase if short).
     if (onAttemptPaidDraw) {
       setConfirmCount(null);
@@ -1338,15 +1606,40 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
 
   function openCustom() {
     if (soldOut) return;
+    setSheetClosing(false);
     setCustomQty(1);
     setCustomOpen(true);
   }
   const setQty = (n: number) => setCustomQty(() => Math.min(MAX_CUSTOM_DRAW, Math.max(1, n)));
+  // MAX fills in the largest draw the chosen balance covers, so nobody has to
+  // divide their wallet by the draw price. The stepper's own ceiling still
+  // applies, and it never lands below 1 so the popup keeps a drawable count.
+  const maxAffordableQty = () => {
+    const balance = payCurrency === "points" ? DRAW_FREE_POINTS : coins;
+    return Math.min(MAX_CUSTOM_DRAW, Math.max(1, Math.floor(balance / DRAW_PRICE)));
+  };
+
+  // A tapped CTA (lobby card or pack page) arrives as a request; the token
+  // distinguishes repeat taps of the same CTA. Applied while rendering rather
+  // than in an effect so the popup appears in the same commit as the tap.
+  const [handledToken, setHandledToken] = useState<number | null>(null);
+  if (request && request.token !== handledToken) {
+    setHandledToken(request.token);
+    if (request.kind === "custom") openCustom();
+    else if (request.kind === "line") setLineVerify(true);
+    else draw(request.count ?? 1, request.free);
+  }
 
   function confirmCustomDraw() {
-    if (expired) { setCustomOpen(false); setSoldOutPopup(true); return; }
+    if (expired) { setCustomOpen(false); setExpiredPopup(true); return; }
     if (connError) { setCustomOpen(false); setRetryCount(customQty); setConnErrorPopup(true); return; }
     if (insufficientStock && customQty > STOCK_LEFT) { setCustomOpen(false); setStockReqCount(customQty); setStockPopup(true); return; }
+    // Paying with free points leaves the coin balance untouched.
+    if (payCurrency === "points") {
+      if (shortfallFor(customQty) > 0) { requestTopUp(customQty); return; }
+      runDraw(customQty);
+      return;
+    }
     if (onAttemptPaidDraw) {
       setCustomOpen(false);
       if (!onAttemptPaidDraw(customQty)) return;
@@ -1357,9 +1650,431 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
     runDraw(customQty);
   }
 
+  // Balance change for a draw of `count` — coins and free points shown as
+  // current → after-draw. When the pack accepts both currencies each row is a
+  // radio option (highlighted by its border) and only the chosen balance is
+  // spent; the other stays greyed out and unchanged.
+  function balanceRows(count: number) {
+    const cost = DRAW_PRICE * count;
+    const rows = [
+      { key: "coins" as const, Icon: CoinIcon, balance: coins },
+      { key: "points" as const, Icon: GemIcon, balance: DRAW_FREE_POINTS },
+    ].filter((r) => multiCurrency || r.key === "coins");
+    return (
+      <div className="mt-3.5 space-y-2" role={multiCurrency ? "radiogroup" : undefined} aria-label={multiCurrency ? t.drawPayWith : undefined}>
+        {rows.map(({ key, Icon, balance }) => {
+          const selected = payCurrency === key;
+          // A wallet can't go below zero, so a draw it can't cover reads as 0
+          // rather than a negative figure — the shortfall note under the rows
+          // is what states how much is missing.
+          const after = Math.max(0, balance - cost);
+          const body = (
+            <>
+              <span className="flex items-center gap-2"><Icon size={30} /><span className={`text-[20px] font-extrabold leading-none ${selected ? "text-[#0F0F0F]" : "text-[#8a9099]"}`}>{balance.toLocaleString()}</span></span>
+              <BalanceArrow color={selected ? "#0F0F0F" : "#b8bdc4"} />
+              <span className="flex items-center gap-2"><Icon size={30} /><span className="text-[20px] font-extrabold leading-none" style={{ color: selected ? "#D10005" : "#b8bdc4" }}>{(selected ? after : balance).toLocaleString()}</span></span>
+            </>
+          );
+          // 352×38 with an 8px radius in the design; the CTAs below use the same
+          // 39px/8px box. With a single currency there is nothing to choose, so
+          // the row gets a neutral border instead of the red "selected" one.
+          const shell = `flex h-[39px] w-full items-center justify-center gap-3 rounded-lg border-2 ${
+            !multiCurrency
+              ? "border-[#e8eaee] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
+              : selected
+                ? "border-[#D10005] bg-white"
+                : "border-transparent bg-[#f2f3f5]"
+          }`;
+          return multiCurrency ? (
+            <button key={key} type="button" role="radio" aria-checked={selected} onClick={() => setPayWith(key)} className={shell}>
+              {body}
+            </button>
+          ) : (
+            <div key={key} className={shell}>{body}</div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // A draw that costs more than the chosen wallet holds keeps its confirmation
+  // open: the shortfall is spelled out under the balance and the confirm CTA
+  // becomes the store, so topping up stays a choice. Coin packages grant free
+  // points too, so a points shortfall leads to the same place.
+  const shortfallFor = (count: number) =>
+    Math.max(0, DRAW_PRICE * count - (payCurrency === "points" ? DRAW_FREE_POINTS : coins));
+  const shortfallNote = (amount: number) => (
+    <p className="mx-auto mt-3 max-w-[300px] text-center text-[13px] font-medium leading-[1.45] text-[#D10005]">
+      {t.noCoinsShortPre}
+      <span className="font-extrabold">
+        {payCurrency === "points" ? t.noPointsShortAmount(amount.toLocaleString()) : t.noCoinsShortAmount(amount.toLocaleString())}
+      </span>
+      {payCurrency === "points" ? t.noPointsShortPost : t.noCoinsShortPost}
+    </p>
+  );
+  function requestTopUp(count: number) {
+    closeSheet();
+    // Without a host store the shortfall popup is the only route left.
+    if (onTopUp) onTopUp(count);
+    else onAttemptPaidDraw?.(count);
+  }
+  const confirmShort = confirmCount != null && !confirmFree ? shortfallFor(confirmCount) : 0;
+  const customShort = customOpen ? shortfallFor(customQty) : 0;
+
+  return (
+    <>
+      {/* Draw-confirmation popup */}
+      {confirmCount != null && (
+        <div
+          className={`absolute inset-0 z-[60] flex items-center justify-center p-4 ${sheetClosing ? "animate-popup-backdrop-out" : "animate-popup-backdrop"}`}
+          style={{ background: "rgba(20,8,4,0.62)" }}
+          onClick={closeSheet}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className={`no-scrollbar flex max-h-full w-full max-w-[380px] flex-col overflow-y-auto bg-white shadow-[0_18px_50px_rgba(0,0,0,0.5)] ${sheetClosing ? "animate-sheet-out" : "animate-sheet-in"}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Intrinsic size reserves the banner's space so the panel doesn't
+                resize under the entry animation while the art decodes. */}
+            <PackBanner src="/draw-banner-modal.webp" alt={t.drawPackSubtitle} width={748} height={561} priority />
+
+            <div className="animate-sheet-body px-4 pb-4 pt-3.5">
+              <h3 className="text-center text-[18px] font-bold text-[#0F0F0F]">{locTitle(item, lang)}</h3>
+              <p className="mt-1.5 text-center text-[12px] leading-relaxed text-[#0F0F0F]">{confirmFree ? t.drawConfirmDescFree : t.drawConfirmDesc}</p>
+
+              {!confirmFree && balanceRows(confirmCount)}
+
+              {confirmShort > 0 && shortfallNote(confirmShort)}
+
+              {/* Confirm CTA — primary (red), fixed 39px / 8px radius per design.
+                  Short of coins it charges the wallet instead of drawing. */}
+              <button
+                onClick={confirmShort > 0 ? () => requestTopUp(confirmCount) : confirmDraw}
+                className="mt-3.5 flex h-[39px] w-full items-center justify-center rounded-lg bg-[#D10005] text-[15px] font-extrabold text-white active:scale-[0.98]"
+              >
+                {/* Counts other than 1 or 10 reach here when a top-up resumes a
+                    custom draw, so the label is built from the count. */}
+                {confirmShort > 0 ? t.noCoinsCta : confirmFree ? (confirmCount === 1 ? t.btnFree : t.btnFree10) : t.drawCustomCta(confirmCount)}
+              </button>
+
+              {/* Dashed divider */}
+              <div className="my-3.5 border-t border-dashed border-black/20" />
+
+              {/* Cancel — secondary (2px grey outline), fixed 39px / 8px radius */}
+              <button
+                onClick={closeSheet}
+                className="flex h-[39px] w-full items-center justify-center rounded-lg border-2 border-[#82878f] bg-white text-[15px] font-bold text-[#6b7078] active:scale-[0.98]"
+              >
+                {t.cancel}
+              </button>
+
+              {/* Terms */}
+              <p className="mt-3 text-center text-[12px] font-semibold text-[#0F0F0F]">
+                {t.drawConfirmTerms}{" "}
+                <button onClick={() => openLegal("terms")} className="font-bold text-[#D10005] underline decoration-[#D10005] underline-offset-2">
+                  {t.drawConfirmTermsLink}
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom-draw popup — quantity stepper + quick-add + dynamic cost/CTA */}
+      {customOpen && (
+        <div
+          className={`absolute inset-0 z-[60] flex items-center justify-center p-4 ${sheetClosing ? "animate-popup-backdrop-out" : "animate-popup-backdrop"}`}
+          style={{ background: "rgba(20,8,4,0.62)" }}
+          onClick={closeSheet}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className={`no-scrollbar flex max-h-full w-full max-w-[380px] flex-col overflow-y-auto bg-white shadow-[0_18px_50px_rgba(0,0,0,0.5)] ${sheetClosing ? "animate-sheet-out" : "animate-sheet-in"}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <PackBanner src="/draw-banner-modal.webp" alt={t.drawPackSubtitle} width={748} height={561} priority />
+
+            <div className="animate-sheet-body px-4 pb-4 pt-3.5">
+              <h3 className="text-center text-[18px] font-bold text-[#0F0F0F]">{locTitle(item, lang)}</h3>
+              <p className="mt-1.5 text-center text-[12px] leading-relaxed text-[#0F0F0F]">{t.drawConfirmDesc}</p>
+
+              {/* Quantity stepper */}
+              <div className="mt-3.5 flex h-[60px] items-center justify-center gap-2">
+                <button
+                  onClick={() => setQty(customQty - 1)}
+                  disabled={customQty <= 1}
+                  aria-label="decrease"
+                  className="flex h-[27px] w-[27px] shrink-0 items-center justify-center rounded-full bg-[#8f959d] text-white active:scale-95 disabled:opacity-40"
+                >
+                  <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round"><path d="M2.5 7.5h10" /></svg>
+                </button>
+                <div className="flex h-[60px] w-[160px] items-center justify-center rounded-lg border border-[#e7e7e7] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+                  <span className="text-[50px] font-black leading-none text-[#0F0F0F]">{customQty}</span>
+                </div>
+                <button
+                  onClick={() => setQty(customQty + 1)}
+                  disabled={customQty >= MAX_CUSTOM_DRAW}
+                  aria-label="increase"
+                  className="flex h-[27px] w-[27px] shrink-0 items-center justify-center rounded-full bg-[#D10005] text-white active:scale-95 disabled:opacity-40"
+                >
+                  <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round"><path d="M7.5 2.5v10M2.5 7.5h10" /></svg>
+                </button>
+              </div>
+
+              {/* Quick-add — the design fixes all three to 94x30 with a 10px
+                  gap, so the row keeps its shape whatever the labels read. */}
+              <div className="mt-3 flex items-center justify-center gap-[10px]">
+                <button onClick={() => setQty(customQty + 5)} className={quickAddCls}>{t.drawCustomAdd(5)}</button>
+                <button onClick={() => setQty(customQty + 10)} className={quickAddCls}>{t.drawCustomAdd(10)}</button>
+                <button onClick={() => setQty(maxAffordableQty())} className={quickAddCls}>{t.drawCustomMax}</button>
+              </div>
+
+              {/* Balances — same selectable rows as the fixed-count popup */}
+              {balanceRows(customQty)}
+
+              {customShort > 0 && shortfallNote(customShort)}
+
+              {/* Confirm CTA — primary (red), fixed 39px / 8px radius; count in
+                  front, or the store when the quantity outruns the balance. */}
+              <button
+                onClick={customShort > 0 ? () => requestTopUp(customQty) : confirmCustomDraw}
+                className="mt-3 flex h-[39px] w-full items-center justify-center rounded-lg bg-[#D10005] text-[15px] font-extrabold text-white active:scale-[0.98]"
+              >
+                {customShort > 0 ? t.noCoinsCta : t.drawCustomCta(customQty)}
+              </button>
+
+              {/* Dashed divider */}
+              <div className="my-3.5 border-t border-dashed border-black/20" />
+
+              {/* Cancel — secondary (2px grey outline), fixed 39px / 8px radius */}
+              <button
+                onClick={closeSheet}
+                className="flex h-[39px] w-full items-center justify-center rounded-lg border-2 border-[#82878f] bg-white text-[15px] font-bold text-[#6b7078] active:scale-[0.98]"
+              >
+                {t.cancel}
+              </button>
+
+              {/* Terms — at the very bottom */}
+              <p className="mt-3 text-center text-[12px] font-semibold text-[#0F0F0F]">
+                {t.drawConfirmTerms}{" "}
+                <button onClick={() => openLegal("terms")} className="font-bold text-[#D10005] underline decoration-[#D10005] underline-offset-2">
+                  {t.drawConfirmTermsLink}
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* LINE account-link prompt — the same verification screen as signup.
+          Allowing it rolls the free draw straight into the results; cancelling
+          drops back onto this pack. */}
+      {lineVerify && (
+        <LineAuthSheet
+          lang={lang}
+          signUp={false}
+          showAddFriend
+          onClose={() => setLineVerify(false)}
+          onSuccess={() => { setLineVerify(false); runDraw(1); }}
+        />
+      )}
+
+      {toast && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-24 z-[70] flex justify-center px-4">
+          <div className="rounded-full bg-black/85 px-4 py-2 text-[12px] font-semibold text-white shadow-lg">{toast}</div>
+        </div>
+      )}
+
+      {/* Expired popup — shown when an expired pack's draw is confirmed. Closing
+          it latches the greyed-out sold-out state on the draw screen. */}
+      {expiredPopup && (
+        <div
+          className="animate-popup-backdrop absolute inset-0 z-[65] flex items-center justify-center p-4"
+          style={{ background: "rgba(20,8,4,0.62)" }}
+          onClick={() => { setExpiredPopup(false); onSoldOut?.(); }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="animate-popup-pop w-full max-w-[340px] rounded-2xl bg-white px-6 pb-6 pt-7 text-center shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+            style={{ fontFamily: "var(--font-noto-sans-jp), system-ui, sans-serif" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto flex h-[92px] w-[92px] items-center justify-center rounded-full border-[5px] border-[#D10005]">
+              <span className="text-[52px] font-black leading-none text-[#D10005]">!</span>
+            </div>
+            <h3 className="mt-4 text-[12px] font-medium text-[#1d2129]">{t.expiredTitle}</h3>
+            <p className="mx-auto mt-2 max-w-[280px] text-[12px] font-medium leading-relaxed text-[#6b7075]">{t.expiredBody}</p>
+            <button
+              onClick={() => { setExpiredPopup(false); onSoldOut?.(); }}
+              className="mt-5 w-full rounded-[14px] border-[1.5px] border-[#b5b8bd] bg-white py-3.5 text-[15px] font-bold text-[#6b7075] active:scale-[0.98]"
+            >
+              {t.drawLimitClose}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Connection Error popup — simulated network failure on draw. Retry
+          re-attempts (and succeeds); Cancel returns to the draw screen. */}
+      {connErrorPopup && (
+        <div
+          className="animate-popup-backdrop absolute inset-0 z-[65] flex items-center justify-center p-4"
+          style={{ background: "rgba(20,8,4,0.62)" }}
+          onClick={() => setConnErrorPopup(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="animate-popup-pop w-full max-w-[340px] rounded-2xl bg-white px-6 pb-6 pt-7 text-center shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+            style={{ fontFamily: "var(--font-noto-sans-jp), system-ui, sans-serif" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto flex h-[92px] w-[92px] items-center justify-center rounded-full border-[5px] border-[#D10005]">
+              <span className="text-[52px] font-black leading-none text-[#D10005]">!</span>
+            </div>
+            <h3 className="mt-4 text-[22px] font-extrabold text-[#1d2129]">{t.connErrorTitle}</h3>
+            <p className="mx-auto mt-2 max-w-[280px] text-[13px] leading-relaxed text-[#6b7075]">{t.connErrorBody}</p>
+            <button
+              onClick={() => {
+                setConnErrorPopup(false);
+                if (onAttemptPaidDraw) {
+                  if (!onAttemptPaidDraw(retryCount)) return;
+                }
+                runDraw(retryCount);
+              }}
+              className="mt-5 w-full rounded-[14px] bg-[#D10005] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]"
+            >
+              {t.connErrorRetry}
+            </button>
+            <button
+              onClick={() => setConnErrorPopup(false)}
+              className="mt-2.5 w-full rounded-[14px] border-[1.5px] border-[#b5b8bd] bg-white py-3.5 text-[15px] font-bold text-[#6b7075] active:scale-[0.98]"
+            >
+              {t.cancel}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Insufficient Stock popup — the requested count exceeds what's left.
+          "Draw Remaining" rolls the remaining stock; Cancel returns. */}
+      {stockPopup && (
+        <div
+          className="animate-popup-backdrop absolute inset-0 z-[65] flex items-center justify-center p-4"
+          style={{ background: "rgba(20,8,4,0.62)" }}
+          onClick={() => setStockPopup(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="animate-popup-pop w-full max-w-[340px] rounded-2xl bg-white px-6 pb-6 pt-7 text-center shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+            style={{ fontFamily: "var(--font-noto-sans-jp), system-ui, sans-serif" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto flex h-[92px] w-[92px] items-center justify-center rounded-full border-[5px] border-[#D10005]">
+              <span className="text-[52px] font-black leading-none text-[#D10005]">!</span>
+            </div>
+            <h3 className="mt-4 text-[22px] font-extrabold text-[#1d2129]">{t.stockTitle}</h3>
+            <p className="mx-auto mt-2 max-w-[290px] text-[13px] leading-relaxed text-[#6b7075]">{t.stockBody(STOCK_LEFT)}</p>
+            {/* Original requested cost → remaining (M) draw cost */}
+            {/* 38px pill in the design; it only grows when the cost label wraps. */}
+            <div className="mt-4 flex min-h-[38px] items-center justify-center gap-1.5 rounded-lg border border-[#e7e7e7] bg-white px-2 py-1 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+              <CoinIcon size={26} />
+              <span className="text-[20px] font-bold leading-none text-[#0F0F0F]">{(DRAW_PRICE * stockReqCount).toLocaleString()}</span>
+              <span className="text-[10px] font-bold leading-tight text-[#878787]">{t.stockDrawCost(stockReqCount)}</span>
+              <BalanceArrow height={15} />
+              <CoinIcon size={26} />
+              <span className="text-[20px] font-bold leading-none text-[#D10005]">{(DRAW_PRICE * STOCK_LEFT).toLocaleString()}</span>
+            </div>
+            {/* Both CTAs are 39px tall with a 6px radius per the button specs. */}
+            <button
+              onClick={() => {
+                setStockPopup(false);
+                if (onAttemptPaidDraw) {
+                  if (!onAttemptPaidDraw(STOCK_LEFT)) return;
+                }
+                runDraw(STOCK_LEFT);
+              }}
+              className="mt-4 flex h-[39px] w-full items-center justify-center rounded-md bg-[#D10005] text-[17px] font-bold leading-none text-white active:scale-[0.98]"
+            >
+              {t.stockDrawRemaining(STOCK_LEFT)}
+            </button>
+            <div className="my-3 border-t border-dashed border-black/20" />
+            <button
+              onClick={() => setStockPopup(false)}
+              className="flex h-[39px] w-full items-center justify-center rounded-md border-2 border-[rgba(7,7,7,0.6)] bg-white text-[17px] font-bold leading-none text-[rgba(7,7,7,0.6)] active:scale-[0.98]"
+            >
+              {t.cancel}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Draw results (list mode) — full-screen overlay above the draw screen */}
+      {results && (
+        <DrawResults
+          key={resultsRun}
+          lang={lang}
+          coins={coins}
+          item={item}
+          cards={results}
+          dailyLimitReached={dailyLimitReached}
+          onOpenDraw={onOpenDraw}
+          // "Draw again" (within the daily limit): close the results and
+          // re-open the draw-confirmation popup for the same count. Cancelling
+          // it leaves the player on the draw screen; confirming rolls again.
+          onDrawAgain={() => { const c = results?.length ?? 1; setResults(null); setConfirmCount(c); }}
+          // Always lands on this pack's info page, including for draws started
+          // from a lobby card (which never left the feed).
+          onBackToInfo={() => { setResults(null); onOpenDraw?.(item); }}
+          onHome={onHome}
+          onOpenStore={onOpenStore}
+          freeShipAvailable={freeShipAvailable}
+          shippingAddresses={shippingAddresses}
+          onShippingAddressesChange={onShippingAddressesChange}
+        />
+      )}
+    </>
+  );
+}
+
+// The pack page: artwork, price / stock, prize line-up and the sticky CTA row.
+// Drawing itself is delegated to DrawFlow, the same flow a lobby card opens.
+function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, onOpenDraw, onAttemptPaidDraw, onTopUp, pendingConfirm, onPendingConfirmConsumed, guest }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; onOpenDraw?: (item: OripaItem) => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** The confirmation's Charge/Top Up CTA: open the store for a draw the wallet can't cover. */ onTopUp?: (count: number) => void; /** After Quick Purchase success, host re-opens this count's confirmation. */ pendingConfirm?: { count: number; token: number } | null; onPendingConfirmConsumed?: () => void; /** Signed-out visitor: the page is browsable, but any draw CTA asks for an account. */ guest?: { onSignUp: () => void; onLogin: () => void } }) {
+  const t = STR[lang];
+  const openLegal = useContext(LegalNavContext);
+  const [cautionOpen, setCautionOpen] = useState(false);
+  // What the tapped CTA asked the flow to open.
+  const [request, setRequest] = useState<DrawRequest | null>(null);
+  // A visitor's draw never starts: every CTA on the page — fixed counts, custom
+  // and free draws alike — goes through here, so all of them ask for a login.
+  const requestDraw = (req: Omit<DrawRequest, "token">) => {
+    if (guest) { guest.onLogin(); return; }
+    setRequest({ ...req, token: Date.now() });
+  };
+  // A failed draw on an expired pack latches the greyed-out sold-out state;
+  // `item.expired` packs open that way to begin with.
+  const [soldOutHit, setSoldOutHit] = useState(false);
+  const soldOut = item.remaining <= 0 || soldOutHit || !!item.expired || !!item.soldOut;
+  // Only this many draws remain in the insufficient-stock scenario.
+  const remainingShown = soldOut ? 0 : (drawScenario === "stock" ? 8 : item.remaining);
+  const pct = soldOut ? 0 : Math.round((remainingShown / item.total) * 100);
+
   return (
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
-      <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
+      {/* A visitor has no wallet to show, so the page keeps the landing page's
+          sign-up / login header instead of the balance pill. */}
+      {guest
+        ? <AuthHeader lang={lang} onSignUp={guest.onSignUp} onLogin={guest.onLogin} onHome={onHome} />
+        : <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />}
+
+      {/* Warm the confirmation banner while the pack page is open so the popup
+          never animates in around an empty banner slot. */}
+      <link rel="preload" as="image" href="/draw-banner-modal.webp" />
 
       {/* Title row */}
       <div className="shrink-0 flex items-center gap-2 border-b border-black/10 bg-white px-3 py-2.5">
@@ -1373,28 +2088,22 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
         {/* ── Promotional banner ─────────────────────────────────────────
             Fiery radial burst + ray sweep, gold 3D headline, "new-only"
             ribbon, tagline, mascot and a countdown chip. */}
-        <div className="px-3 pt-3">
+        {/* Tags — sit above the banner, as on the lobby card */}
+        <div className="flex flex-wrap items-center gap-1.5 px-3.5 pb-1.5 pt-2.5">
+          <TagPill variant="redOutline">{t.tagPopular}</TagPill>
+          <TagPill variant="redFill">{t.tagPokemon}</TagPill>
+          <TagPill variant="darkOutline">{t.tagLv5}</TagPill>
+          <TagPill variant="darkOutline">{t.tagSsr}</TagPill>
+        </div>
+
+        <div className="px-3">
           {/* Design creative (fiery burst headline + mascot + baked-in sales
               period bar). Sold-out packs are desaturated. The remaining-time
               detail is shown in the price/remaining section below, so no
               separate period box is rendered here. */}
           <div className={soldOut ? "grayscale" : ""}>
-            <img
-              src="/draw-banner.png"
-              alt={t.drawPackSubtitle}
-              draggable={false}
-              className="block w-full select-none"
-              style={{ WebkitUserDrag: "none" } as React.CSSProperties}
-            />
+            <PackBanner src="/draw-banner.webp" alt={t.drawPackSubtitle} width={748} height={613} priority />
           </div>
-        </div>
-
-        {/* Tags */}
-        <div className="flex flex-wrap items-center gap-1.5 px-3.5 pb-1 pt-1">
-          <TagPill variant="redOutline">{t.tagPopular}</TagPill>
-          <TagPill variant="redFill">{t.tagPokemon}</TagPill>
-          <TagPill variant="darkOutline">{t.tagLv5}</TagPill>
-          <TagPill variant="darkOutline">{t.tagSsr}</TagPill>
         </div>
 
         {/* Cost + remaining — two columns split by a dashed divider: price per
@@ -1402,17 +2111,8 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
         <div className="mx-3 mt-2 rounded-2xl bg-white px-4 py-3 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
           <div className="flex items-stretch gap-4">
             {/* Left: price per draw (coin + optional free point), red-underlined */}
-            <div className="flex shrink-0 flex-col justify-center gap-2.5">
-              <span className="flex items-center gap-2">
-                <CoinIcon size={22} />
-                <span className="text-[18px] font-extrabold leading-none text-[#1d2129] underline decoration-[#D10005] decoration-2 underline-offset-[3px]">{DRAW_PRICE.toLocaleString()}<span className="text-[11px] font-bold text-[#8a9099]">{t.perDraw}</span></span>
-              </span>
-              {multiCurrency && (
-                <span className="flex items-center gap-2">
-                  <GemIcon size={22} />
-                  <span className="text-[18px] font-extrabold leading-none text-[#1d2129] underline decoration-[#D10005] decoration-2 underline-offset-[3px]">{DRAW_PRICE.toLocaleString()}<span className="text-[11px] font-bold text-[#8a9099]">{t.perDraw}</span></span>
-                </span>
-              )}
+            <div className="flex items-center">
+              <PriceStack t={t} showPoint={multiCurrency} />
             </div>
 
             {/* Dashed vertical divider */}
@@ -1420,7 +2120,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
 
             {/* Right: remaining count, progress bar, remaining time */}
             <div className="flex min-w-0 flex-1 flex-col justify-center">
-              <div className="flex items-baseline justify-between">
+              <div className="flex items-baseline justify-center gap-1">
                 <span className={`text-[13px] font-bold ${soldOut ? "text-[#D10005]" : "text-[#1d2129]"}`}>{t.remainingLabel}</span>
                 <span className="leading-none"><span className={`text-[20px] font-extrabold ${soldOut ? "text-[#D10005]" : "text-[#1d2129]"}`}>{remainingShown}</span><span className="text-[12px] font-bold text-[#8a9099]">/{item.total}</span></span>
               </div>
@@ -1428,7 +2128,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
               {soldOut ? (
                 <p className="mt-2 text-center text-[15px] font-extrabold text-[#D10005]">{t.soldOutLabel}</p>
               ) : (
-                <p className="mt-2 flex items-center justify-between text-[#D10005]">
+                <p className="mt-2 flex items-baseline justify-center gap-1 text-[#D10005]">
                   <span className="text-[12px] font-bold">{t.remainingTimeLabel}</span>
                   <span className="text-[14px] font-extrabold">{t.minUnit(item.endsIn)}</span>
                 </p>
@@ -1511,382 +2211,34 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
           entirely once sold out: the only remaining action is the back button. */}
       {!soldOut && (
         <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2.5 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
-          <div className="flex gap-2">
-            {drawCta === "all" && (
-              <>
-                <button onClick={() => draw(1)} className={`flex-1 ${ctaOutline}`}>
-                  {t.drawDraw1}
-                </button>
-                <button onClick={() => draw(10)} className={`flex-1 ${ctaPrimary}`}>
-                  {t.drawDrawTen}
-                </button>
-                <button onClick={openCustom} className={`flex-1 whitespace-nowrap ${ctaPrimary}`}>
-                  {t.drawDrawCustom}
-                </button>
-              </>
-            )}
-            {drawCta === "one" && (
-              <button onClick={() => draw(1)} className={`flex-1 ${ctaPrimary}`}>{t.btnDraw1}</button>
-            )}
-            {drawCta === "free" && (
-              <button onClick={() => draw(1)} className={`flex-1 ${ctaOutline}`}>{t.btnFree}</button>
-            )}
-            {drawCta === "freePending" && (
-              <button onClick={() => draw(1)} className={`flex-1 ${ctaBase} bg-[#01B901] text-white`}>{t.btnLineLink}</button>
-            )}
-            {drawCta === "trial" && (
-              <>
-                {/* "Free Trial" tag straddles the top edge of the free-draws CTA */}
-                <div className="relative flex-1">
-                  <span className="absolute -top-2 left-1/2 z-[1] -translate-x-1/2 whitespace-nowrap rounded-md bg-[#0F0F0F] px-2.5 py-0.5 text-[10px] font-bold text-white">{t.btnFreeTrial}</span>
-                  <button onClick={() => draw(10)} className={`w-full ${ctaOutline}`}>{t.btnFree10}</button>
-                </div>
-                <button onClick={() => draw(1)} className={`flex-1 ${ctaPrimary}`}>{t.btnDraw1}</button>
-              </>
-            )}
-          </div>
+          <DrawCtaRow variant={item.cta ?? "all"} t={t} onRequest={requestDraw} />
         </div>
       )}
 
-      {/* Draw-confirmation popup */}
-      {confirmCount != null && (
-        <div
-          className="absolute inset-0 z-[60] flex items-center justify-center p-4"
-          style={{ background: "rgba(20,8,4,0.62)" }}
-          onClick={() => setConfirmCount(null)}
-          role="dialog"
-          aria-modal="true"
-        >
-          <style>{`@keyframes drawConfirmIn{0%{opacity:0;transform:translateY(12px) scale(.94)}100%{opacity:1;transform:none}}`}</style>
-          <div
-            className="no-scrollbar flex max-h-full w-full max-w-[380px] flex-col overflow-y-auto bg-white shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
-            style={{ animation: "drawConfirmIn 260ms cubic-bezier(0.22,0.61,0.36,1) both" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <img
-              src="/draw-banner-modal.png"
-              alt={t.drawPackSubtitle}
-              draggable={false}
-              className="block w-full select-none"
-              style={{ WebkitUserDrag: "none" } as React.CSSProperties}
-            />
-
-            <div className="px-4 pb-4 pt-3.5">
-              <h3 className="text-center text-[18px] font-bold text-[#1d2129]">{locTitle(item, lang)}</h3>
-              <p className="mt-1.5 text-center text-[12px] leading-relaxed text-[#8a9099]">{t.drawConfirmDesc}</p>
-
-              {/* Balance change — coins (primary, red box) and free points
-                  (secondary, grey box), each shown as current → after-draw. */}
-              {(() => {
-                const cost = DRAW_PRICE * confirmCount;
-                const coinsAfter = coins - cost;
-                const pointsAfter = DRAW_FREE_POINTS - cost;
-                const arrow = (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M9 6l6 6-6 6" stroke="#9aa1ab" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                );
-                return (
-                  <div className="mt-3.5 space-y-2">
-                    {/* Coins */}
-                    <div className="flex items-center justify-center gap-3 rounded-xl border-2 border-[#D10005] bg-white py-3">
-                      <span className="flex items-center gap-1.5"><CoinIcon size={26} /><span className="text-[20px] font-extrabold text-[#1d2129]">{coins.toLocaleString()}</span></span>
-                      {arrow}
-                      <span className="flex items-center gap-1.5"><CoinIcon size={26} /><span className="text-[20px] font-extrabold" style={{ color: coinsAfter < 0 ? "#ef8a8a" : "#D10005" }}>{coinsAfter.toLocaleString()}</span></span>
-                    </div>
-                    {/* Free points — only when the pack accepts both currencies. */}
-                    {multiCurrency && (
-                      <div className="flex items-center justify-center gap-3 rounded-xl bg-[#f2f3f5] py-3">
-                        <span className="flex items-center gap-1.5"><GemIcon size={26} /><span className="text-[20px] font-extrabold text-[#8a9099]">{DRAW_FREE_POINTS.toLocaleString()}</span></span>
-                        {arrow}
-                        <span className="flex items-center gap-1.5"><GemIcon size={26} /><span className="text-[20px] font-extrabold" style={{ color: pointsAfter < 0 ? "#ef8a8a" : "#e0706e" }}>{pointsAfter.toLocaleString()}</span></span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-
-              {/* Confirm CTA — primary (red), fixed 39px / 8px radius per design */}
-              <button
-                onClick={confirmDraw}
-                className="mt-3.5 flex h-[39px] w-full items-center justify-center rounded-lg bg-[#D10005] text-[15px] font-extrabold text-white active:scale-[0.98]"
-              >
-                {confirmCount === 1 ? t.drawDraw1 : t.drawDrawTen}
-              </button>
-
-              {/* Dashed divider */}
-              <div className="my-3.5 border-t border-dashed border-black/20" />
-
-              {/* Cancel — secondary (2px grey outline), fixed 39px / 8px radius */}
-              <button
-                onClick={() => setConfirmCount(null)}
-                className="flex h-[39px] w-full items-center justify-center rounded-lg border-2 border-[#82878f] bg-white text-[15px] font-bold text-[#6b7078] active:scale-[0.98]"
-              >
-                {t.cancel}
-              </button>
-
-              {/* Terms */}
-              <p className="mt-3 text-center text-[12px] font-semibold text-[#1d2129]">
-                {t.drawConfirmTerms}{" "}
-                <button onClick={() => openLegal("terms")} className="font-bold text-[#D10005] underline decoration-[#D10005] underline-offset-2">
-                  {t.drawConfirmTermsLink}
-                </button>
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Custom-draw popup — quantity stepper + quick-add + dynamic cost/CTA */}
-      {customOpen && (
-        <div
-          className="absolute inset-0 z-[60] flex items-center justify-center p-4"
-          style={{ background: "rgba(20,8,4,0.62)" }}
-          onClick={() => setCustomOpen(false)}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div
-            className="no-scrollbar flex max-h-full w-full max-w-[380px] flex-col overflow-y-auto bg-white shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
-            style={{ animation: "drawConfirmIn 260ms cubic-bezier(0.22,0.61,0.36,1) both" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <img
-              src="/draw-banner-modal.png"
-              alt={t.drawPackSubtitle}
-              draggable={false}
-              className="block w-full select-none"
-              style={{ WebkitUserDrag: "none" } as React.CSSProperties}
-            />
-
-            <div className="px-4 pb-4 pt-3.5">
-              <h3 className="text-center text-[18px] font-bold text-[#1d2129]">{locTitle(item, lang)}</h3>
-              <p className="mt-1.5 text-center text-[12px] leading-relaxed text-[#8a9099]">{t.drawConfirmDesc}</p>
-
-              {/* Quantity stepper */}
-              <div className="mt-3.5 flex items-center justify-center gap-3">
-                <button
-                  onClick={() => setQty(customQty - 1)}
-                  disabled={customQty <= 1}
-                  aria-label="decrease"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#8f959d] text-white active:scale-95 disabled:opacity-40"
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round"><path d="M5 12h14" /></svg>
-                </button>
-                <div className="flex min-w-[150px] items-center justify-center rounded-2xl border border-black/10 bg-white px-6 py-1.5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-                  <span className="text-[38px] font-black leading-none text-[#1d2129]">{customQty}</span>
-                </div>
-                <button
-                  onClick={() => setQty(customQty + 1)}
-                  disabled={customQty >= MAX_CUSTOM_DRAW}
-                  aria-label="increase"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#D10005] text-white active:scale-95 disabled:opacity-40"
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-                </button>
-              </div>
-
-              {/* Quick-add */}
-              <div className="mt-3 flex items-center justify-center gap-2">
-                <button onClick={() => setQty(customQty + 5)} className="rounded-[10px] border-2 border-black bg-white px-4 py-2 text-[13px] font-bold text-black active:scale-95">{t.drawCustomAdd(5)}</button>
-                <button onClick={() => setQty(customQty + 10)} className="rounded-[10px] border-2 border-black bg-white px-4 py-2 text-[13px] font-bold text-black active:scale-95">{t.drawCustomAdd(10)}</button>
-                <button onClick={() => setQty(MAX_CUSTOM_DRAW)} className="rounded-[10px] border-2 border-black bg-white px-4 py-2 text-[13px] font-bold text-black active:scale-95">{t.drawCustomMax}</button>
-              </div>
-
-              {/* Cost row */}
-              <div className="mt-3.5 flex items-center justify-center gap-3 rounded-xl border border-black/10 bg-white py-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-                <span className="flex items-center gap-1.5">
-                  <CoinIcon size={26} />
-                  <span className="text-[20px] font-extrabold text-[#1d2129]">{(DRAW_PRICE * customQty).toLocaleString()}</span>
-                </span>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M9 6l6 6-6 6" stroke="#9aa1ab" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                <span className="flex items-center gap-1.5">
-                  <GemIcon size={26} />
-                  <span className="text-[20px] font-extrabold text-[#D10005]">0</span>
-                </span>
-              </div>
-
-              {/* Confirm CTA — primary (red), fixed 39px / 8px radius; count in front */}
-              <button
-                onClick={confirmCustomDraw}
-                className="mt-3 flex h-[39px] w-full items-center justify-center rounded-lg bg-[#D10005] text-[15px] font-extrabold text-white active:scale-[0.98]"
-              >
-                {t.drawCustomCta(customQty)}
-              </button>
-
-              {/* Dashed divider */}
-              <div className="my-3.5 border-t border-dashed border-black/20" />
-
-              {/* Cancel — secondary (2px grey outline), fixed 39px / 8px radius */}
-              <button
-                onClick={() => setCustomOpen(false)}
-                className="flex h-[39px] w-full items-center justify-center rounded-lg border-2 border-[#82878f] bg-white text-[15px] font-bold text-[#6b7078] active:scale-[0.98]"
-              >
-                {t.cancel}
-              </button>
-
-              {/* Terms — at the very bottom */}
-              <p className="mt-3 text-center text-[12px] font-semibold text-[#1d2129]">
-                {t.drawConfirmTerms}{" "}
-                <button onClick={() => openLegal("terms")} className="font-bold text-[#D10005] underline decoration-[#D10005] underline-offset-2">
-                  {t.drawConfirmTermsLink}
-                </button>
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {toast && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-24 z-[70] flex justify-center px-4">
-          <div className="rounded-full bg-black/85 px-4 py-2 text-[12px] font-semibold text-white shadow-lg">{toast}</div>
-        </div>
-      )}
-
-      {/* Sold Out popup — shown when an expired pack's draw is confirmed. Closing
-          it latches the greyed-out sold-out state on the draw screen. */}
-      {soldOutPopup && (
-        <div
-          className="animate-popup-backdrop absolute inset-0 z-[65] flex items-center justify-center p-4"
-          style={{ background: "rgba(20,8,4,0.62)" }}
-          onClick={() => { setSoldOutPopup(false); setSoldOutHit(true); }}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div
-            className="animate-popup-pop w-full max-w-[340px] rounded-2xl bg-white px-6 pb-6 pt-7 text-center shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
-            style={{ fontFamily: "var(--font-noto-sans-jp), system-ui, sans-serif" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mx-auto flex h-[92px] w-[92px] items-center justify-center rounded-full border-[5px] border-[#D10005]">
-              <span className="text-[52px] font-black leading-none text-[#D10005]">!</span>
-            </div>
-            <h3 className="mt-4 text-[12px] font-medium text-[#1d2129]">{t.soldOutTitle}</h3>
-            <p className="mx-auto mt-2 max-w-[280px] text-[12px] font-medium leading-relaxed text-[#6b7075]">{t.soldOutBody}</p>
-            <button
-              onClick={() => { setSoldOutPopup(false); setSoldOutHit(true); }}
-              className="mt-5 w-full rounded-[14px] border-[1.5px] border-[#b5b8bd] bg-white py-3.5 text-[15px] font-bold text-[#6b7075] active:scale-[0.98]"
-            >
-              {t.drawLimitClose}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Connection Error popup — simulated network failure on draw. Retry
-          re-attempts (and succeeds); Cancel returns to the draw screen. */}
-      {connErrorPopup && (
-        <div
-          className="animate-popup-backdrop absolute inset-0 z-[65] flex items-center justify-center p-4"
-          style={{ background: "rgba(20,8,4,0.62)" }}
-          onClick={() => setConnErrorPopup(false)}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div
-            className="animate-popup-pop w-full max-w-[340px] rounded-2xl bg-white px-6 pb-6 pt-7 text-center shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
-            style={{ fontFamily: "var(--font-noto-sans-jp), system-ui, sans-serif" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mx-auto flex h-[92px] w-[92px] items-center justify-center rounded-full border-[5px] border-[#D10005]">
-              <span className="text-[52px] font-black leading-none text-[#D10005]">!</span>
-            </div>
-            <h3 className="mt-4 text-[22px] font-extrabold text-[#1d2129]">{t.connErrorTitle}</h3>
-            <p className="mx-auto mt-2 max-w-[280px] text-[13px] leading-relaxed text-[#6b7075]">{t.connErrorBody}</p>
-            <button
-              onClick={() => {
-                setConnErrorPopup(false);
-                if (onAttemptPaidDraw) {
-                  if (!onAttemptPaidDraw(retryCount)) return;
-                }
-                runDraw(retryCount);
-              }}
-              className="mt-5 w-full rounded-[14px] bg-[#D10005] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]"
-            >
-              {t.connErrorRetry}
-            </button>
-            <button
-              onClick={() => setConnErrorPopup(false)}
-              className="mt-2.5 w-full rounded-[14px] border-[1.5px] border-[#b5b8bd] bg-white py-3.5 text-[15px] font-bold text-[#6b7075] active:scale-[0.98]"
-            >
-              {t.cancel}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Insufficient Stock popup — the requested count exceeds what's left.
-          "Draw Remaining" rolls the remaining stock; Cancel returns. */}
-      {stockPopup && (
-        <div
-          className="animate-popup-backdrop absolute inset-0 z-[65] flex items-center justify-center p-4"
-          style={{ background: "rgba(20,8,4,0.62)" }}
-          onClick={() => setStockPopup(false)}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div
-            className="animate-popup-pop w-full max-w-[340px] rounded-2xl bg-white px-6 pb-6 pt-7 text-center shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
-            style={{ fontFamily: "var(--font-noto-sans-jp), system-ui, sans-serif" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mx-auto flex h-[92px] w-[92px] items-center justify-center rounded-full border-[5px] border-[#D10005]">
-              <span className="text-[52px] font-black leading-none text-[#D10005]">!</span>
-            </div>
-            <h3 className="mt-4 text-[22px] font-extrabold text-[#1d2129]">{t.stockTitle}</h3>
-            <p className="mx-auto mt-2 max-w-[290px] text-[13px] leading-relaxed text-[#6b7075]">{t.stockBody(STOCK_LEFT)}</p>
-            {/* Original requested cost → remaining (M) draw cost */}
-            <div className="mt-4 flex items-center justify-center gap-2 rounded-[12px] border border-black/10 bg-white px-3 py-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-              <CoinIcon size={22} />
-              <span className="text-[16px] font-extrabold text-[#1d2129]">{(DRAW_PRICE * stockReqCount).toLocaleString()}</span>
-              <span className="text-[11px] font-bold text-[#8a9099]">{t.stockDrawCost(stockReqCount)}</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a9099" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="mx-0.5 shrink-0"><path d="M9 6l6 6-6 6" /></svg>
-              <CoinIcon size={22} />
-              <span className="text-[16px] font-extrabold text-[#D10005]">{(DRAW_PRICE * STOCK_LEFT).toLocaleString()}</span>
-            </div>
-            <button
-              onClick={() => {
-                setStockPopup(false);
-                if (onAttemptPaidDraw) {
-                  if (!onAttemptPaidDraw(STOCK_LEFT)) return;
-                }
-                runDraw(STOCK_LEFT);
-              }}
-              className="mt-4 w-full rounded-[14px] bg-[#D10005] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]"
-            >
-              {t.stockDrawRemaining(STOCK_LEFT)}
-            </button>
-            <div className="my-3.5 border-t border-dashed border-black/20" />
-            <button
-              onClick={() => setStockPopup(false)}
-              className="w-full rounded-[14px] border-[1.5px] border-[#b5b8bd] bg-white py-3.5 text-[15px] font-bold text-[#6b7075] active:scale-[0.98]"
-            >
-              {t.cancel}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Draw results (list mode) — full-screen overlay above the draw screen */}
-      {results && (
-        <DrawResults
-          key={resultsRun}
-          lang={lang}
-          coins={coins}
-          item={item}
-          cards={results}
-          dailyLimitReached={dailyLimitReached}
-          onOpenDraw={onOpenDraw}
-          // "Draw again" (within the daily limit): close the results and
-          // re-open the draw-confirmation popup for the same count. Cancelling
-          // it leaves the player on the draw screen; confirming rolls again.
-          onDrawAgain={() => { const c = results?.length ?? 1; setResults(null); setConfirmCount(c); }}
-          onClose={() => setResults(null)}
-          onHome={onHome}
-          onOpenStore={onOpenStore}
-          freeShipAvailable={freeShipAvailable}
-          shippingAddresses={shippingAddresses}
-          onShippingAddressesChange={onShippingAddressesChange}
-        />
-      )}
+      {/* Nothing to draw for a visitor, so the flow (and its wallet, shipping
+          and results machinery) never mounts. */}
+      {!guest && <DrawFlow
+        lang={lang}
+        item={item}
+        coins={coins}
+        request={request}
+        soldOut={soldOut}
+        onSoldOut={() => setSoldOutHit(true)}
+        freeShipAvailable={freeShipAvailable}
+        onResultsChange={onResultsChange}
+        shippingAddresses={shippingAddresses}
+        onShippingAddressesChange={onShippingAddressesChange}
+        dailyLimitReached={dailyLimitReached}
+        drawScenario={drawScenario}
+        multiCurrency={multiCurrency}
+        onHome={onHome}
+        onOpenStore={onOpenStore}
+        onOpenDraw={onOpenDraw}
+        onAttemptPaidDraw={onAttemptPaidDraw}
+        onTopUp={onTopUp}
+        pendingConfirm={pendingConfirm}
+        onPendingConfirmConsumed={onPendingConfirmConsumed}
+      />}
     </div>
   );
 }
@@ -1895,22 +2247,40 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
 // tell they're exchanging more than one card. Every selected card face is
 // rendered and stays visible; when there are many, the overlap tightens so the
 // whole pile fits (each face still peeks out).
-function CardStack({ prizes, cardW = 46, cardH = 62, maxWidth = 240 }: { prizes: WonPrize[]; cardW?: number; cardH?: number; maxWidth?: number }) {
+function CardStack({ prizes, cardW = 46, cardH = 62, maxWidth = 240, maxFaces = 5 }: { prizes: WonPrize[]; cardW?: number; cardH?: number; maxWidth?: number; maxFaces?: number }) {
   const count = prizes.length;
   if (count === 0) return null;
   const defaultShift = Math.round(cardW * 0.44);
-  const shift = count > 1 ? Math.max(10, Math.min(defaultShift, Math.floor((maxWidth - cardW) / (count - 1)))) : 0;
+  const minShift = 6; // tightest fan that still reads as separate cards
+  const fits = (n: number) => n < 2 || Math.floor((maxWidth - cardW) / (n - 1)) >= minShift;
+  // A selection made up purely of top-tier cards shows every face — as long as
+  // the fan still fits — so the player sees each rare card they are burning.
+  const allTopTier = prizes.every((p) => rarityTier(p.rarity) === 1);
+  const faces = allTopTier && fits(count) ? prizes : prizes.slice(0, maxFaces);
+  const hidden = count - faces.length;
+  const tiles = faces.length + (hidden > 0 ? 1 : 0);
+  const shift = tiles > 1 ? Math.max(minShift, Math.min(defaultShift, Math.floor((maxWidth - cardW) / (tiles - 1)))) : 0;
   return (
-    <div className="relative shrink-0" style={{ width: cardW + shift * (count - 1), height: cardH }}>
-      {prizes.map((p, i) => (
+    <div className="relative shrink-0" style={{ width: cardW + shift * (tiles - 1), height: cardH }}>
+      {faces.map((p, i) => (
         <img
           key={p.id}
           src={RARITY_IMG[p.rarity]}
           alt=""
           className="absolute top-0 rounded-[5px] object-cover shadow-[0_2px_6px_rgba(0,0,0,0.28)] ring-1 ring-white/70"
-          style={{ left: i * shift, width: cardW, height: cardH, zIndex: count - i }}
+          style={{ left: i * shift, width: cardW, height: cardH, zIndex: tiles - i }}
         />
       ))}
+      {hidden > 0 && (
+        /* The remainder reads as one more card in the fan: a pale tile with the
+           count in ink rather than a black slab behind the artwork. */
+        <div
+          className="absolute top-0 flex items-center justify-center rounded-[5px] bg-gradient-to-b from-[#F7F8FA] to-[#E4E7EC] text-[14px] font-extrabold leading-none text-[#0F0F0F] shadow-[0_2px_6px_rgba(0,0,0,0.22)] ring-1 ring-black/10"
+          style={{ left: faces.length * shift, width: cardW, height: cardH, zIndex: tiles + 1 }}
+        >
+          +{hidden}
+        </div>
+      )}
     </div>
   );
 }
@@ -1922,6 +2292,12 @@ function ExchangeConfirm({ lang, coins, prizes, total, onConfirm, onClose }: { l
   const t = STR[lang];
   const hasRare = prizes.some((p) => rarityTier(p.rarity) <= 2);
   const after = coins + total;
+  // Rarest first, so the faces that survive the pile's cap are the ones worth
+  // a second look before the exchange is confirmed.
+  const ordered = useMemo(
+    () => [...prizes].sort((a, b) => rarityTier(a.rarity) - rarityTier(b.rarity) || b.coinValue - a.coinValue),
+    [prizes],
+  );
   return (
     <div
       className="animate-popup-backdrop absolute inset-0 z-[80] flex items-center justify-center p-4"
@@ -1955,31 +2331,33 @@ function ExchangeConfirm({ lang, coins, prizes, total, onConfirm, onClose }: { l
           </>
         )}
         {/* Card pile: makes it clear how many cards are being exchanged. Shows
-            the first 3 faces; anything beyond collapses into a "+N" tile. */}
+            up to 5 faces; anything beyond collapses into a "+N" tile. */}
         <div className="mt-4 flex items-center justify-center gap-2">
-          <CardStack prizes={prizes} cardW={46} cardH={62} />
+          <CardStack prizes={ordered} cardW={46} cardH={62} />
           {prizes.length > 1 && (
             <span className="text-[12px] font-bold text-[#6b7075]">{t.exCardCount(prizes.length)}</span>
           )}
         </div>
         {/* Balance before → after (green) */}
-        <div className="mt-4 flex items-center justify-center gap-2.5 rounded-[12px] border border-black/10 bg-white px-3 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-          <CoinIcon size={22} />
-          <span className="text-[17px] font-extrabold text-[#1d2129]">{coins.toLocaleString()}</span>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a9099" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="mx-0.5 shrink-0"><path d="M9 6l6 6-6 6" /></svg>
-          <CoinIcon size={22} />
-          <span className="text-[17px] font-extrabold text-[#12a150]">{after.toLocaleString()}</span>
+        {/* 38px tall in the design, with 30px coins either side of the arrow. */}
+        <div className="mt-4 flex h-[38px] items-center justify-center gap-2 rounded-lg border border-[#e7e7e7] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+          <CoinIcon size={30} />
+          <span className="text-[23px] font-bold leading-none text-[#0F0F0F]">{coins.toLocaleString()}</span>
+          <BalanceArrow height={17} />
+          <CoinIcon size={30} />
+          <span className="text-[23px] font-bold leading-none text-[#00A63D]">{after.toLocaleString()}</span>
         </div>
+        {/* Both CTAs are 39px tall with a 6px radius per the button specs. */}
         <button
           onClick={onConfirm}
-          className="mt-4 w-full rounded-[14px] bg-[#FF8A00] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]"
+          className="mt-4 flex h-[39px] w-full items-center justify-center rounded-md bg-[#FF8A00] text-[17px] font-bold leading-none text-white active:scale-[0.98]"
         >
           {t.exchange}
         </button>
-        <div className="my-3.5 border-t border-dashed border-black/20" />
+        <div className="my-3 border-t border-dashed border-black/20" />
         <button
           onClick={onClose}
-          className="w-full rounded-[14px] border-[1.5px] border-[#b5b8bd] bg-white py-3.5 text-[15px] font-bold text-[#6b7075] active:scale-[0.98]"
+          className="flex h-[39px] w-full items-center justify-center rounded-md border-2 border-[rgba(7,7,7,0.6)] bg-white text-[17px] font-bold leading-none text-[rgba(7,7,7,0.6)] active:scale-[0.98]"
         >
           {t.cancel}
         </button>
@@ -2053,7 +2431,7 @@ function NarrowDownSheet({
         <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-4">
           <div className="relative">
             <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9aa0a8]">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.2-3.2" /></svg>
+              <SearchIcon size={18} />
             </span>
             <input
               type="text"
@@ -2111,16 +2489,36 @@ function NarrowDownSheet({
   );
 }
 
+// 25px pill holding a tier label and its drawn count; the active tier is the
+// filled red one.
+const tierChipCls = (on: boolean) =>
+  `flex h-[25px] shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-[19px] text-[13px] font-bold ${
+    on ? "bg-[#D10005] text-white" : "border border-[#e7e7e7] bg-white text-[#878787]"
+  }`;
+
+// Paired up/down arrows marking the results sort control.
+function SortArrows() {
+  return (
+    <svg aria-hidden="true" width="22" height="20" viewBox="0 0 22 20" fill="none" stroke="#D10005" strokeWidth="3" strokeLinejoin="miter" className="shrink-0">
+      <path d="M5.5 19V2M1 6.5L5.5 1.5L10 6.5" />
+      <path d="M16.5 1v17M12 13.5l4.5 5 4.5-5" />
+    </svg>
+  );
+}
+
 // Gacha results — "list mode". Shown after any draw (×1 / ×10 / custom). Lets
 // the player review the cards they pulled, narrow down by tier/search, sort,
 // select, and exchange to coins or request shipping. Self-contained (local
 // selection). Mirrors the My Loot screen (which shows all un-actioned cards).
-function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, onOpenStore, freeShipAvailable = true, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, onOpenDraw }: { lang: Lang; coins: number; item: OripaItem; cards: WonPrize[]; onDrawAgain: () => void; onClose: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; onOpenDraw?: (item: OripaItem) => void }) {
+function DrawResults({ lang, coins, item, cards, onDrawAgain, onBackToInfo, onHome, onOpenStore, freeShipAvailable = true, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, onOpenDraw }: { lang: Lang; coins: number; item: OripaItem; cards: WonPrize[]; onDrawAgain: () => void; onBackToInfo: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; onOpenDraw?: (item: OripaItem) => void }) {
   const t = STR[lang];
   const [list, setList] = useState<WonPrize[]>(cards);
   // Draw results are filtered by rarity tier via the top tabs (All / Ultra /
   // Gold / Silver). Each tab shows how many cards were drawn in that tier.
   const [tierFilter, setTierFilter] = useState<"all" | number>("all");
+  // Results only ever sort by coin value, so the picker holds two options.
+  const [sortKey, setSortKey] = useState<"coinDesc" | "coinAsc">("coinDesc");
+  const [sortOpen, setSortOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [shipOpen, setShipOpen] = useState(false);
   // Exchange-to-coins confirmation dialog.
@@ -2153,11 +2551,11 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
   }
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
-  // Highest coin value first, then narrowed to the active rarity-tier tab.
+  // Ordered by coin value, then narrowed to the active rarity-tier chip.
   const displayed = useMemo(() => {
-    const arr = [...list].sort((a, b) => b.coinValue - a.coinValue);
+    const arr = [...list].sort((a, b) => (sortKey === "coinAsc" ? a.coinValue - b.coinValue : b.coinValue - a.coinValue));
     return tierFilter === "all" ? arr : arr.filter((p) => rarityTier(p.rarity) === tierFilter);
-  }, [list, tierFilter]);
+  }, [list, tierFilter, sortKey]);
   // Per-tier drawn counts for the tab labels.
   const tierCount = (tier: number) => list.filter((p) => rarityTier(p.rarity) === tier).length;
   // Switching tabs resets the selection so the summary never counts cards
@@ -2165,6 +2563,10 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
   useEffect(() => { setSelected(new Set()); }, [tierFilter]);
 
   const selectedPrizes = list.filter((p) => selected.has(p.id));
+  // Everything drawn has been exchanged or sent for shipping: the filters, sort
+  // and selection bar have nothing to act on, so the screen hands over to the
+  // lobby instead.
+  const noneLeft = list.length === 0;
   const total = selectedPrizes.reduce((s, p) => s + p.coinValue, 0);
   const canShip = total >= SHIP_MIN_COINS;
   const shortfall = Math.max(0, SHIP_MIN_COINS - total);
@@ -2197,38 +2599,88 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
   }
 
   return (
-    <div className="absolute inset-0 z-50 flex h-full flex-col bg-[#eef0f3]">
+    <div className="animate-screen-in absolute inset-0 z-50 flex h-full flex-col bg-[#eef0f3]">
       <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
 
-      {/* Top action: Draw again */}
-      <div className="shrink-0 bg-white px-3 py-3">
-        <button onClick={() => { if (dailyLimitReached) { setOtherIdx(0); setLimitOpen(true); } else { onDrawAgain(); } }} className="w-full rounded-xl bg-[#D10005] py-3 text-[14px] font-extrabold text-white active:scale-[0.99]">
+      {/* Top actions: roll again, or drop back to the pack's info page. */}
+      <div className="flex shrink-0 items-center gap-2 bg-white px-3 pt-3">
+        <button onClick={() => { if (dailyLimitReached) { setOtherIdx(0); setLimitOpen(true); } else { onDrawAgain(); } }} className="h-[39px] flex-1 rounded-lg bg-[#D10005] text-[14px] font-extrabold text-white active:scale-[0.99]">
           {t.drawAgain}
+        </button>
+        <button onClick={onBackToInfo} className="h-[39px] flex-1 rounded-lg border border-[#e7e7e7] bg-white text-[14px] font-extrabold text-[#0F0F0F] active:scale-[0.99]">
+          {t.resultsBackToInfo}
         </button>
       </div>
 
-      {/* Rarity-tier tabs — All + one per tier, each with the drawn count. */}
-      <div className="no-scrollbar shrink-0 flex items-stretch overflow-x-auto border-b border-black/10 bg-white">
-        {([["all", t.catAll, list.length], [1, t.prizeTier(1), tierCount(1)], [2, t.prizeTier(2), tierCount(2)], [3, t.prizeTier(3), tierCount(3)]] as [("all" | number), string, number][]).map(([key, label, count]) => {
-          const on = tierFilter === key;
-          const color = on ? "#D10005" : "#1d2129";
-          return (
-            <button
-              key={String(key)}
-              onClick={() => setTierFilter(key)}
-              className="relative flex flex-1 shrink-0 flex-col items-center justify-center gap-0.5 px-4 py-2.5"
-            >
-              <span className="whitespace-nowrap text-[13px] font-extrabold" style={{ color }}>{label}</span>
-              <span className="text-[11px] font-bold" style={{ color: on ? "#D10005" : "#8a9099" }}>{count}</span>
-              {on && <span className="absolute inset-x-3 bottom-0 h-[3px] rounded-full bg-[#D10005]" />}
+      {!noneLeft && (
+      <>
+      {/* Rarity-tier chips — "ALL" is pinned and the prize tiers scroll beside
+          it, so a pack with more tiers than fit stays reachable. */}
+      <div className="flex shrink-0 items-center gap-2.5 bg-white px-3 pt-2.5">
+        <button onClick={() => setTierFilter("all")} className={tierChipCls(tierFilter === "all")}>
+          <span>{t.resultsTierAll}</span>
+          <span>{list.length}</span>
+        </button>
+        <span className="shrink-0 rotate-180"><BalanceArrow height={17} color="#D10005" /></span>
+        <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-2.5 overflow-x-auto">
+          {[1, 2, 3].map((tier) => (
+            <button key={tier} onClick={() => setTierFilter(tier)} className={tierChipCls(tierFilter === tier)}>
+              <span>{t.resultsTierChip(tier)}</span>
+              <span>{tierCount(tier)}</span>
             </button>
-          );
-        })}
+          ))}
+        </div>
       </div>
+
+      {/* Hairline splitting the tier chips from the sort control. */}
+      <div className="shrink-0 bg-white pt-2.5"><div className="h-px bg-black/20" /></div>
+
+      {/* Coin-value ordering — the only sort the results screen offers. */}
+      <div className="relative z-20 flex shrink-0 justify-end border-b border-black/10 bg-white px-3 py-2.5">
+        <button onClick={() => setSortOpen((v) => !v)} className="flex items-center gap-3.5" aria-haspopup="listbox" aria-expanded={sortOpen}>
+          <SortArrows />
+          <span className="text-[15px] font-bold leading-none text-[#0F0F0F]">{t.sortLabels[sortKey]}</span>
+          <svg width="11" height="7" viewBox="0 0 11 7" fill="none" aria-hidden="true" className={`shrink-0 transition-transform ${sortOpen ? "rotate-180" : ""}`}>
+            <path d="M1.4 1.4L5.5 5.5L9.6 1.4" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        {sortOpen && (
+          <div role="listbox" className="absolute right-3 top-full z-20 mt-1 w-[190px] overflow-hidden rounded-lg border border-[#e7e7e7] bg-white shadow-[0_8px_24px_rgba(0,0,0,0.14)]">
+            {(["coinDesc", "coinAsc"] as const).map((key) => (
+              <button
+                key={key}
+                role="option"
+                aria-selected={sortKey === key}
+                onClick={() => { setSortKey(key); setSortOpen(false); }}
+                className={`block w-full px-3 py-2.5 text-left text-[13px] font-bold ${sortKey === key ? "text-[#D10005]" : "text-[#0F0F0F]"}`}
+              >
+                {t.sortLabels[key]}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Tapping anywhere else dismisses the open sort menu. */}
+      {sortOpen && <div className="absolute inset-0 z-10" onClick={() => setSortOpen(false)} />}
+      </>
+      )}
 
       {/* Results list */}
       <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-3">
-        {displayed.length === 0 ? (
+        {noneLeft ? (
+          /* Same mascot, message and hand-off CTA as the empty My Loot screen. */
+          <div className="flex min-h-full flex-col items-center justify-center">
+            <img src="/prize-character-wave.webp" alt="" className="mb-5 h-48 w-48 object-contain" />
+            <p className="text-center text-[14px] leading-[17px] text-[#0F0F0F80]">{t.resultsNoCardsLeft}</p>
+            <button
+              onClick={onHome}
+              className="mt-7 flex h-[39px] w-full max-w-[386px] items-center justify-center rounded-lg bg-[#D10005] text-[16px] font-extrabold leading-none text-white active:scale-[0.99]"
+            >
+              {t.winEmptyCta}
+            </button>
+          </div>
+        ) : displayed.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="mb-2 text-[32px]">🔍</div>
             <p className="text-[13px] font-semibold text-[#8a9099]">{t.searchNoResults}</p>
@@ -2253,12 +2705,12 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
                         <svg width="15" height="15" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill={isSel ? "#FF7A1A" : "#c9ced6"} /><path d="M6 10l3 3 5-5" stroke="white" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
                       </span>
                     </div>
-                    <p className="mt-1.5 text-[14px] font-bold leading-tight text-[#1d2129]">{locName(p, lang)}</p>
-                    <p className="mt-1 line-clamp-2 text-[10px] font-normal leading-relaxed text-[#8a9099]">{locDesc(p, lang)}</p>
-                    <p className="mt-1 text-[11px] font-semibold text-[#8a9099]">{t.itemsExchangePeriod}{fmtDate(expiresAt(p.wonAt))}</p>
+                    <p className="mt-1.5 text-[14px] font-bold leading-tight text-[#0F0F0F]">{locName(p, lang)}</p>
+                    <p className="mt-1 line-clamp-2 text-[10px] font-normal leading-relaxed text-[#0F0F0F]">{locDesc(p, lang)}</p>
+                    <p className="mt-1 text-[11px] font-semibold text-[#0F0F0F]">{t.itemsExchangePeriod}{fmtDate(expiresAt(p.wonAt))}</p>
                     <div className="mt-auto flex items-center justify-center gap-1.5 rounded-xl border border-black/10 bg-white pt-2 pb-2" style={{ marginTop: 8 }}>
                       <CoinIcon size={18} />
-                      <span className="text-[18px] font-bold text-[#1d2129]">{p.coinValue.toLocaleString()}</span>
+                      <span className="text-[18px] font-bold text-[#0F0F0F]">{p.coinValue.toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
@@ -2269,10 +2721,11 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
       </div>
 
       {/* Bottom action bar */}
+      {!noneLeft && (
       <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2.5 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
-        <div className="mb-2 flex items-center justify-between">
+        <div className="mb-4 flex items-center justify-between">
           <span className="flex items-center gap-1.5">
-            <CoinIcon size={20} />
+            <CoinIcon size={26} />
             <span className="text-[18px] font-extrabold text-[#1d2129]">{total.toLocaleString()}</span>
           </span>
           <div className="flex items-center gap-4 text-[13px] font-bold">
@@ -2284,35 +2737,35 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
         <div className="grid grid-cols-2 gap-2">
           {/* Request Shipping on the left (matches My Loot placement). */}
           <div className="relative">
-            <style>{`@keyframes freeShipIn{from{opacity:0;transform:translateY(-6px) scale(.9)}to{opacity:1;transform:none}}@keyframes freeShipPulse{0%,100%{box-shadow:0 3px 8px rgba(18,129,60,0.45)}50%{box-shadow:0 3px 14px rgba(18,129,60,0.75)}}`}</style>
+            <style>{`@keyframes freeShipIn{from{opacity:0;transform:translateY(-6px) scale(.9)}to{opacity:1;transform:none}}`}</style>
             {/* Three states (matches My Loot):
                 - red "min coins" while the selection is short of the threshold
                 - green "free shipping" once eligible AND free quota remains
                 - amber "standard shipping fee" once eligible with no free quota */}
             {!canShip ? (
-              <div className="pointer-events-none absolute -top-2.5 left-0 right-0 z-10 flex items-center justify-center gap-1 whitespace-nowrap rounded-full bg-[#e30613] px-2.5 py-[3px] text-white shadow-[0_2px_6px_rgba(227,6,19,0.4)] ring-1 ring-white/30">
-                <svg width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M12 7v6" stroke="#e30613" strokeWidth="2.6" strokeLinecap="round" /><circle cx="12" cy="16.6" r="1.35" fill="#e30613" /></svg>
-                <span className="text-[9.5px] font-extrabold tracking-wide">{t.minCoinsBadge}</span>
+              <div className="pointer-events-none absolute -top-2 left-1/2 z-10 flex h-4 -translate-x-1/2 items-center justify-center gap-1 whitespace-nowrap rounded-[5px] bg-[#e30613] px-1.5 text-white">
+                <svg width="11" height="11" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M12 7v6" stroke="#e30613" strokeWidth="2.6" strokeLinecap="round" /><circle cx="12" cy="16.6" r="1.35" fill="#e30613" /></svg>
+                <span className="text-[9.5px] font-extrabold">{t.minCoinsBadge}</span>
               </div>
             ) : freeShipAvailable ? (
               <div
-                className="pointer-events-none absolute -top-2.5 left-0 right-0 z-10 flex items-center justify-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-br from-[#1eae52] to-[#12813c] px-2 py-[3px] text-white ring-1 ring-white/30"
-                style={{ animation: "freeShipIn .3s cubic-bezier(.2,.9,.3,1) both, freeShipPulse 2.4s ease-in-out infinite" }}
+                className="pointer-events-none absolute -top-2 left-1/2 z-10 flex h-4 -translate-x-1/2 items-center justify-center gap-1 whitespace-nowrap rounded-[5px] bg-gradient-to-br from-[#1eae52] to-[#12813c] px-1.5 text-white"
+                style={{ animation: "freeShipIn .3s cubic-bezier(.2,.9,.3,1) both" }}
               >
-                <svg width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M7.5 12.5l3 3 6-6.5" stroke="#12813c" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                <span className="text-[9.5px] font-extrabold tracking-wide">{t.freeShippingQuota(FREE_SHIP_QUOTA)}</span>
+                <svg width="10" height="10" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M7.5 12.5l3 3 6-6.5" stroke="#12813c" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                <span className="text-[9px] font-extrabold">{t.freeShippingQuota(FREE_SHIP_QUOTA)}</span>
               </div>
             ) : (
               <div
-                className="pointer-events-none absolute -top-2.5 left-0 right-0 z-10 flex items-center justify-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-br from-[#ffcf33] to-[#f5a623] px-2 py-[3px] text-[#3a2a00] ring-1 ring-black/10"
+                className="pointer-events-none absolute -top-2 left-1/2 z-10 flex h-4 -translate-x-1/2 items-center justify-center gap-1 whitespace-nowrap rounded-[5px] bg-gradient-to-br from-[#ffcf33] to-[#f5a623] px-1.5 text-[#3a2a00]"
                 style={{ animation: "freeShipIn .3s cubic-bezier(.2,.9,.3,1) both" }}
               >
-                <span className="text-[9.5px] font-extrabold tracking-wide">{t.paidShipBadge}</span>
+                <span className="text-[9px] font-extrabold">{t.paidShipBadge}</span>
               </div>
             )}
             <button
               onClick={ship}
-              className="w-full rounded-xl py-3 text-[14px] font-extrabold text-white transition active:scale-[0.98]"
+              className="flex h-9 w-full items-center justify-center rounded-lg text-[14px] font-extrabold text-white transition active:scale-[0.98]"
               style={{ background: canShip ? "#f5670a" : "#c9ced6" }}
             >
               {t.requestShipping}
@@ -2322,14 +2775,15 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
           <button
             onClick={() => { if (selected.size > 0) setExchangeOpen(true); }}
             disabled={selected.size === 0}
-            className="rounded-xl border-2 border-[#D10005] bg-white py-3 text-[14px] font-extrabold text-[#D10005] active:scale-[0.98] disabled:opacity-40"
+            className="h-9 rounded-lg border-2 border-[#D10005] bg-white text-[14px] font-extrabold text-[#D10005] active:scale-[0.98] disabled:opacity-40"
           >
             {t.exchange}
           </button>
         </div>
         )}
-        <p className="mt-1.5 text-center text-[10.5px] leading-tight text-[#8a9099]">{freeShipAvailable ? t.shipSelectHint : t.shipSelectHintPaid}</p>
+        <p className="mx-auto mt-3 max-w-[330px] text-center text-[9.5px] leading-[11px] text-[#8a9099]">{freeShipAvailable ? t.shipSelectHint : t.shipSelectHintPaid}</p>
       </div>
+      )}
 
       {toast && (
         <div className="pointer-events-none absolute inset-x-0 bottom-28 z-[70] flex justify-center px-4">
@@ -2382,11 +2836,13 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
 
             <div className="px-4 pb-4 pt-3.5">
               <h3 className="text-center text-[19px] font-extrabold tracking-tight text-[#D10005]">{t.drawLimitTitle}</h3>
-              <p className="mx-auto mt-1.5 max-w-[300px] text-center text-[12px] leading-relaxed text-[#5c626b]">{t.drawLimitBody}</p>
+              <p className="mx-auto mt-1.5 max-w-[300px] text-center text-[12px] leading-relaxed text-[#0F0F0F]">{t.drawLimitBody}</p>
 
+              {/* Secondary CTA per the design: full width, 39px tall, 6px
+                  radius, 2px outline in 60%-opacity ink. */}
               <button
                 onClick={() => setLimitOpen(false)}
-                className="mt-3.5 w-full rounded-[14px] border-[1.5px] border-[#b5b8bd] bg-white py-3.5 text-[15px] font-bold text-[#6b7075] active:scale-[0.98]"
+                className="mt-3.5 flex h-[39px] w-full items-center justify-center rounded-md border-2 border-[rgba(7,7,7,0.6)] bg-white text-[17px] font-bold leading-none text-[rgba(7,7,7,0.6)] active:scale-[0.98]"
               >
                 {t.drawLimitClose}
               </button>
@@ -2394,7 +2850,7 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onClose, onHome, o
               {otherOripa.length > 0 && (
                 <>
                   <div className="my-3.5 border-t border-dashed border-black/20" />
-                  <p className="mb-2.5 text-center text-[12px] font-bold text-[#8a9099]">{t.drawOtherOripa}</p>
+                  <p className="mb-2.5 text-center text-[12px] font-bold text-[#0F0F0F]">{t.drawOtherOripa}</p>
                   <div className="relative px-8">
                     {(() => {
                       const other = otherOripa[otherIdx % otherOripa.length];
@@ -2515,7 +2971,7 @@ function BottomNav({ screen, t, onNavigate }: { screen: Screen; t: Dict; onNavig
   const activeKey: Screen =
     screen === "myLoot"
       ? "prizeHistory"
-      : screen === "prizeHistory" || screen === "purchaseHistory" || screen === "shippingAddress" || screen === "profile"
+      : screen === "prizeHistory" || screen === "purchaseHistory" || screen === "shippingAddress" || screen === "profile" || screen === "refer"
       ? "mypage"
       : screen;
   return (
@@ -2544,8 +3000,9 @@ function BottomNav({ screen, t, onNavigate }: { screen: Screen; t: Dict; onNavig
 
 /* ── LandingPage ──────────────────────────────────────────────────────── */
 // Logged-out lobby (V1 homepage): auth header + search + banner placeholder +
-// category-filtered card sections. Card taps prompt sign-up.
-function LandingPage({ lang, onSignUp, onLogin }: { lang: Lang; onSignUp: () => void; onLogin: () => void }) {
+// category-filtered card sections. A visitor can browse any pack page; only a
+// draw CTA asks them to log in.
+function LandingPage({ lang, onSignUp, onLogin, onOpenDraw, onRequireLogin }: { lang: Lang; onSignUp: () => void; onLogin: () => void; onOpenDraw: (item: OripaItem) => void; onRequireLogin: (item: OripaItem) => void }) {
   const t = STR[lang];
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<Record<string, boolean>>({});
@@ -2560,13 +3017,15 @@ function LandingPage({ lang, onSignUp, onLogin }: { lang: Lang; onSignUp: () => 
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
       <AuthHeader lang={lang} onSignUp={onSignUp} onLogin={onLogin} />
 
-      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
-        <div className="px-3 pb-4 pt-3"><PromoCarousel /></div>
+      <FeedScroller>
+        <div className="px-3 pb-4 pt-3"><PromoCarousel onOpenSlide={(s) => onOpenDraw(bannerPack(s))} /></div>
 
-        <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={applyLobby} onToggleApplied={toggleApplied} onClearAll={clearAll} onView={onSignUp} />
+        {/* Card art opens the pack page; its inline draw CTAs need an account,
+            so they route to login and come back to the same pack. */}
+        <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={applyLobby} onToggleApplied={toggleApplied} onClearAll={clearAll} onOpenDraw={onOpenDraw} onRequestDraw={(item) => onRequireLogin(item)} />
 
         <SiteFooter t={t} />
-      </div>
+      </FeedScroller>
     </div>
   );
 }
@@ -2676,7 +3135,7 @@ function pad(n: number) {
 }
 function fmtDate(ts: number) {
   const d = new Date(ts);
-  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+  return `${d.getUTCFullYear()}/${pad(d.getUTCMonth() + 1)}/${pad(d.getUTCDate())}`;
 }
 function expiresAt(wonAt: number) {
   return wonAt + SHIP_WINDOW_DAYS * DAY;
@@ -2698,7 +3157,7 @@ function CoinChip({ value, strong = false }: { value: number; strong?: boolean }
       className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-bold"
       style={{
         background: strong ? "#FFF1CF" : "#FFF6E3",
-        color: "#B5740A",
+        color: "#0F0F0F",
         fontSize: strong ? 14 : 12,
       }}
     >
@@ -2880,9 +3339,9 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
     tabScrollRef.current?.scrollTo({ top: 0 });
   }, [tab]);
 
-  // Lazy loading for the won list: reveal a batch at a time as the user
-  // scrolls near the bottom (no "Load more" button). Sized so both screens
-  // load several more sets, giving a real "fetching history" feel.
+  // Lazy loading, shared by all three tabs: reveal a batch at a time as the
+  // user scrolls near the bottom (no "Load more" button). Sized so both
+  // screens load several more sets, giving a real "fetching history" feel.
   const WON_PAGE = lootMode ? 4 : 6;
   const [wonVisible, setWonVisible] = useState(WON_PAGE);
   const [wonLoading, setWonLoading] = useState(false);
@@ -2972,18 +3431,18 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
   const filterActive = category !== "all" || rarityFilter !== "all" || q.length > 0;
   function clearFilters() { setCategory("all"); setRarityFilter("all"); setQuery(""); setListSelected(new Set()); }
 
-  // Paged slice of the won list + scroll-driven "load more".
+  // Paged slice of the active tab + scroll-driven "load more".
   const pagedWon = displayedWon.slice(0, wonVisible);
-  const wonHasMore = wonVisible < displayedWon.length;
-  function onWonScroll(e: React.UIEvent<HTMLDivElement>) {
-    if (tab !== "won") return;
+  const tabTotal = tab === "won" ? displayedWon.length : tab === "waiting" ? waiting.length : shipped.length;
+  const wonHasMore = wonVisible < tabTotal;
+  function onTabScroll(e: React.UIEvent<HTMLDivElement>) {
     const el = e.currentTarget;
-    if (wonBusy.current || wonVisible >= displayedWon.length) return;
+    if (wonBusy.current || wonVisible >= tabTotal) return;
     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 160) {
       wonBusy.current = true;
       setWonLoading(true);
       setTimeout(() => {
-        setWonVisible((v) => Math.min(v + WON_PAGE, displayedWon.length));
+        setWonVisible((v) => Math.min(v + WON_PAGE, tabTotal));
         setWonLoading(false);
         wonBusy.current = false;
       }, 450);
@@ -2996,13 +3455,19 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
   // mascot, message and a go-to-gacha CTA. Used both when the whole screen is
   // empty and when the won list becomes empty at runtime.
   const emptyContent = (
-    <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 py-16">
-      <img src="/refer-mascot.png" alt="" className="mb-5 h-44 w-44 object-contain" />
-      <p className="text-center text-[14px] leading-relaxed text-[#9aa0a8]">{t.winEmptyTitle}</p>
-      <p className="mt-1 max-w-[300px] text-center text-[14px] leading-relaxed text-[#9aa0a8]">{t.winEmptySub}</p>
+    <div className="flex min-h-0 flex-1 flex-col items-center justify-center py-16">
+      <img src="/prize-character-wave.webp" alt="" className="mb-5 h-48 w-48 object-contain" />
+      {/* 14px on half-opacity ink (#0F0F0F80), two centred lines. */}
+      <p className="max-w-[334px] text-center text-[14px] leading-[17px] text-[#0F0F0F80]">
+        {lootMode ? t.lootEmptyTitle : t.winEmptyTitle}
+        <br />
+        {lootMode ? t.lootEmptySub : t.winEmptySub}
+      </p>
+      {/* Primary button per the design: fills its container up to 386px, fixed
+          39px tall with an 8px radius. */}
       <button
         onClick={onGoGacha ?? onHome}
-        className="mt-7 w-full max-w-[360px] rounded-xl bg-[#D10005] py-3.5 text-[15px] font-extrabold tracking-wide text-white shadow-[0_6px_18px_rgba(230,0,18,0.35)] active:scale-[0.99]"
+        className="mt-7 flex h-[39px] w-full max-w-[386px] items-center justify-center rounded-lg bg-[#D10005] text-[16px] font-extrabold leading-none text-white active:scale-[0.99]"
       >
         {t.winEmptyCta}
       </button>
@@ -3044,14 +3509,14 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
           <h2 className="text-[20px] font-bold text-[#1d2129]">{screenTitle}</h2>
         </div>
 
-        {/* Won/Waiting/Shipped tabs. Winning History is a pure audit of what the
+        {/* Selection-state tabs. Winning History is a pure audit of what the
             customer has won, so the tabs are hidden there; My Loot keeps them. */}
         {lootMode && (
         <div className="flex border-b border-black/10 bg-white px-2">
           {([
-            { key: "won", label: t.tabWon },
-            { key: "waiting", label: t.tabWaiting },
-            { key: "shipped", label: t.tabShipped },
+            { key: "won", label: t.itemsTabNotSelected },
+            { key: "waiting", label: t.itemsTabPending },
+            { key: "shipped", label: t.itemsTabShipped },
           ] as { key: PrizeTab; label: string }[]).map((tb) => {
             const active = tab === tb.key;
             return (
@@ -3060,11 +3525,13 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                 onClick={() => setTab(tb.key)}
                 className="relative flex-1 pb-2.5 pt-1 text-center"
               >
-                <span className={`text-[12px] font-bold ${active ? "text-[#D10005]" : "text-[#8a9099]"}`}>
+                {/* Every tab label stays ink in the design — the red underline and
+                    the filled count pill carry the active state. */}
+                <span className="text-[12px] font-bold text-[#0F0F0F]">
                   {tb.label}
                 </span>
                 <span
-                  className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${active ? "bg-[#D10005] text-white" : "bg-black/[0.07] text-[#8a9099]"}`}
+                  className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${active ? "bg-[#D10005] text-white" : "bg-black/[0.07] text-[#0F0F0F]"}`}
                 >
                   {counts[tb.key]}
                 </span>
@@ -3076,7 +3543,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
         )}
       </header>
 
-      <div ref={tabScrollRef} onScroll={onWonScroll} className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
+      <div ref={tabScrollRef} onScroll={onTabScroll} className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
 
         {tab === "won" && (
           won.length === 0 ? (
@@ -3085,7 +3552,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
             <>
               <div className="sticky top-0 z-10 flex items-stretch border-b border-black/10 bg-white">
                 <button onClick={() => setFilterOpen(true)} className="flex flex-1 items-center justify-center gap-2 py-3 text-[14px] font-extrabold text-[#1d2129] active:bg-black/[0.03]">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><circle cx="7" cy="8" r="2" /><circle cx="16" cy="16" r="2" /><path d="M9 8h11M4 8h1M15 16h5M4 16h9" /></svg>
+                  <FilterIcon size={18} />
                   {LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"].narrowDown}
                   {filterActive && <span className="flex h-[8px] w-[8px] rounded-full bg-[#D10005]" />}
                 </button>
@@ -3118,18 +3585,20 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                           <div className="flex items-start justify-between gap-2">
                             <img src={`/prize-tag-${rarityTier(p.rarity)}.png`} alt={t.prizeTier(rarityTier(p.rarity))} className="h-[24px] w-auto shrink-0 object-contain" draggable={false} />
                             {lootMode && (
-                              <span className="flex shrink-0 items-center gap-1 text-[11px] font-bold" style={{ color: isSel ? "#FF7A1A" : "#8a9099" }}>
+                              <span className="flex shrink-0 items-center gap-1 text-[11px] font-bold" style={{ color: isSel ? "#FF7A1A" : "#0F0F0F" }}>
                                 {isSel ? t.itemsSelected : t.itemsNotSelected}
                                 <svg width="15" height="15" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill={isSel ? "#FF7A1A" : "#c9ced6"} /><path d="M6 10l3 3 5-5" stroke="white" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
                               </span>
                             )}
                           </div>
-                          <p className="mt-1.5 text-[14px] font-bold leading-tight text-[#1d2129]">{locName(p, lang)}</p>
-                          <p className="mt-1 line-clamp-2 text-[10px] font-normal leading-relaxed text-[#8a9099]">{locDesc(p, lang)}</p>
-                          <p className="mt-1 text-[11px] font-semibold text-[#8a9099]">{lootMode ? `${t.itemsExchangeDate}${fmtDate(expiresAt(p.wonAt))}` : `${t.itemsDateWon}${fmtDate(p.wonAt)}`}</p>
+                          <p className="mt-1.5 text-[14px] font-bold leading-tight text-[#0F0F0F]">{locName(p, lang)}</p>
+                          {/* Description and date share one spec: 10px regular
+                              on a 100% line height, no letter spacing. */}
+                          <p className="mt-1 line-clamp-2 text-[10px] font-normal leading-none tracking-normal text-[#0F0F0F]">{locDesc(p, lang)}</p>
+                          <p className="mt-1.5 text-[10px] font-normal leading-none tracking-normal text-[#0F0F0F]">{lootMode ? `${t.itemsExchangePeriod}${fmtDate(expiresAt(p.wonAt))}` : `${t.itemsDateWon}${fmtDate(p.wonAt)}`}</p>
                           <div className="mt-auto flex items-center justify-center gap-1.5 rounded-xl border border-black/10 bg-white pt-2 pb-2" style={{ marginTop: 8 }}>
                             <CoinIcon size={18} />
-                            <span className="text-[18px] font-bold text-[#1d2129]">{p.coinValue.toLocaleString()}</span>
+                            <span className="text-[18px] font-bold text-[#0F0F0F]">{p.coinValue.toLocaleString()}</span>
                           </div>
                         </div>
                       </div>
@@ -3137,10 +3606,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                   })}
                 </div>
                 {wonHasMore ? (
-                  <div className="flex items-center justify-center gap-2 py-6 text-[12px] font-semibold text-[#8a9099]">
-                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#D10005] border-t-transparent" />
-                    {t.loadingMore}
-                  </div>
+                  <LoadingMoreRow t={t} />
                 ) : (
                   <div className="-mx-3 mt-3"><SiteFooter t={t} /></div>
                 )}
@@ -3148,17 +3614,17 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
             </>
           )
         )}
-        {tab === "waiting" && <WaitingTab prizes={waiting} t={t} lang={lang} />}
-        {tab === "shipped" && <ShippedTab prizes={shipped} onCopy={(c) => pushToast(t.toastCopied(c))} t={t} lang={lang} />}
+        {tab === "waiting" && <WaitingTab prizes={waiting} t={t} lang={lang} visible={wonVisible} page={WON_PAGE} hasMore={wonHasMore} />}
+        {tab === "shipped" && <ShippedTab prizes={shipped} onCopy={(c) => pushToast(t.toastCopied(c))} t={t} lang={lang} visible={wonVisible} page={WON_PAGE} hasMore={wonHasMore} />}
       </div>
 
       {lootMode && tab === "won" && won.length > 0 && (
         <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2.5 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
-          <style>{`@keyframes mlBadgeIn{from{opacity:0;transform:translateY(-6px) scale(.9)}to{opacity:1;transform:translateY(0)}}@keyframes mlBadgePulse{0%,100%{box-shadow:0 3px 8px rgba(18,129,60,0.45)}50%{box-shadow:0 3px 14px rgba(18,129,60,0.75)}}`}</style>
+          <style>{`@keyframes mlBadgeIn{from{opacity:0;transform:translateY(-6px) scale(.9)}to{opacity:1;transform:none}}`}</style>
           {/* Selection summary + bulk actions */}
-          <div className="mb-2 flex items-center justify-between">
+          <div className="mb-4 flex items-center justify-between">
             <span className="flex items-center gap-1.5">
-              <CoinIcon size={20} />
+              <CoinIcon size={26} />
               <span className="text-[18px] font-extrabold text-[#1d2129]">{listTotal.toLocaleString()}</span>
             </span>
             <div className="flex items-center gap-4 text-[13px] font-bold">
@@ -3167,32 +3633,32 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
             </div>
           </div>
           {listSelected.size > 0 && (
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-2 gap-2">
             {/* Request Shipping on the left (POC placement). */}
             <div className="relative">
-              {/* Three states; badge spans the full CTA width like a ribbon:
+              {/* Three states; the badge is a compact tag straddling the CTA's top edge:
                   - red "min coins" while the selection is short of the threshold
                   - green "free shipping" once eligible AND free quota remains
                   - amber "standard shipping fee" once eligible with no free quota */}
               {!listCanShip ? (
-                <div className="pointer-events-none absolute -top-2.5 left-0 right-0 z-10 flex items-center justify-center gap-1 whitespace-nowrap rounded-full bg-[#e30613] px-2.5 py-[3px] text-white shadow-[0_2px_6px_rgba(227,6,19,0.4)] ring-1 ring-white/30">
-                  <svg width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M12 7v6" stroke="#e30613" strokeWidth="2.6" strokeLinecap="round" /><circle cx="12" cy="16.6" r="1.35" fill="#e30613" /></svg>
-                  <span className="text-[9.5px] font-extrabold tracking-wide">{t.minCoinsBadge}</span>
+                <div className="pointer-events-none absolute -top-2 left-1/2 z-10 flex h-4 -translate-x-1/2 items-center justify-center gap-1 whitespace-nowrap rounded-[5px] bg-[#e30613] px-1.5 text-white">
+                  <svg width="11" height="11" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M12 7v6" stroke="#e30613" strokeWidth="2.6" strokeLinecap="round" /><circle cx="12" cy="16.6" r="1.35" fill="#e30613" /></svg>
+                  <span className="text-[9.5px] font-extrabold">{t.minCoinsBadge}</span>
                 </div>
               ) : freeShipAvailable ? (
                 <div
-                  className="pointer-events-none absolute -top-2.5 left-0 right-0 z-10 flex items-center justify-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-br from-[#1eae52] to-[#12813c] px-2.5 py-[3px] text-white ring-1 ring-white/30"
-                  style={{ animation: "mlBadgeIn .3s cubic-bezier(.2,.9,.3,1) both, mlBadgePulse 2.4s ease-in-out infinite" }}
+                  className="pointer-events-none absolute -top-2 left-1/2 z-10 flex h-4 -translate-x-1/2 items-center justify-center gap-1 whitespace-nowrap rounded-[5px] bg-gradient-to-br from-[#1eae52] to-[#12813c] px-1.5 text-white"
+                  style={{ animation: "mlBadgeIn .3s cubic-bezier(.2,.9,.3,1) both" }}
                 >
-                  <svg width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M7.5 12.5l3 3 6-6.5" stroke="#12813c" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                  <span className="text-[9.5px] font-extrabold tracking-wide">{t.freeShippingQuota(FREE_SHIP_QUOTA)}</span>
+                  <svg width="10" height="10" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M7.5 12.5l3 3 6-6.5" stroke="#12813c" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  <span className="text-[9px] font-extrabold">{t.freeShippingQuota(FREE_SHIP_QUOTA)}</span>
                 </div>
               ) : (
                 <div
-                  className="pointer-events-none absolute -top-2.5 left-0 right-0 z-10 flex items-center justify-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-br from-[#ffcf33] to-[#f5a623] px-2.5 py-[3px] text-[#3a2a00] ring-1 ring-black/10"
+                  className="pointer-events-none absolute -top-2 left-1/2 z-10 flex h-4 -translate-x-1/2 items-center justify-center gap-1 whitespace-nowrap rounded-[5px] bg-gradient-to-br from-[#ffcf33] to-[#f5a623] px-1.5 text-[#3a2a00]"
                   style={{ animation: "mlBadgeIn .3s cubic-bezier(.2,.9,.3,1) both" }}
                 >
-                  <span className="text-[9.5px] font-extrabold tracking-wide">{t.paidShipBadge}</span>
+                  <span className="text-[9px] font-extrabold">{t.paidShipBadge}</span>
                 </div>
               )}
               <button
@@ -3202,7 +3668,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                   if (onRequestKyc && !onRequestKyc()) return;
                   setListShipOpen(true);
                 }}
-                className="w-full rounded-xl py-3 text-[14px] font-extrabold text-white transition active:scale-[0.98]"
+                className="flex h-9 w-full items-center justify-center rounded-lg text-[14px] font-extrabold text-white transition active:scale-[0.98]"
                 style={{ background: listCanShip ? "#f5670a" : "#c9ced6" }}
               >
                 {t.requestShipping}
@@ -3211,14 +3677,14 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
             {/* Exchange on the right — opens the confirmation dialog. */}
             <button
               onClick={() => { if (listSelected.size === 0) { pushToast(t.toastSelectFirst); return; } setListExchangeOpen(true); }}
-              className="rounded-xl border-2 py-3 text-[14px] font-extrabold transition active:scale-[0.98]"
+              className="h-9 rounded-lg border-2 text-[14px] font-extrabold transition active:scale-[0.98]"
               style={{ borderColor: "#f5670a", color: "#1d2129", background: "#fff" }}
             >
               {t.exchange}
             </button>
           </div>
           )}
-          <p className="mt-2 text-center text-[10.5px] leading-tight text-[#8a9099]">{freeShipAvailable ? t.shipSelectHint : t.shipSelectHintPaid}</p>
+          <p className="mx-auto mt-3 max-w-[330px] text-center text-[9.5px] leading-[11px] text-[#8a9099]">{freeShipAvailable ? t.shipSelectHint : t.shipSelectHintPaid}</p>
         </div>
       )}
 
@@ -3290,67 +3756,103 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
   );
 }
 
-function WaitingTab({ prizes, t, lang }: { prizes: WaitingPrize[]; t: Dict; lang: Lang }) {
+// Bottom-of-list spinner shared by the three My Loot tabs so paging feels the
+// same wherever the player is.
+function LoadingMoreRow({ t }: { t: Dict }) {
+  return (
+    <div className="flex items-center justify-center gap-2 py-6 text-[12px] font-semibold text-[#8a9099]">
+      <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#D10005] border-t-transparent" />
+      {t.loadingMore}
+    </div>
+  );
+}
+
+function WaitingTab({ prizes, t, lang, visible, page, hasMore }: { prizes: WaitingPrize[]; t: Dict; lang: Lang; visible: number; page: number; hasMore: boolean }) {
   if (prizes.length === 0) {
     return <EmptyState icon="📦" title={t.waitingEmptyTitle} subtitle={t.waitingEmptySub} />;
   }
   return (
     <div className="px-3 pb-4 pt-3">
       <div className="space-y-2.5">
-        {prizes.map((p) => (
-          <div key={p.id} className="flex gap-3 rounded-2xl bg-white p-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
-            <PrizeArt rarity={p.rarity} />
+        {prizes.slice(0, visible).map((p, i) => (
+          <div key={p.id} className="animate-fade-slide flex gap-3 rounded-2xl bg-white p-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.05)]" style={{ animationDelay: `${(i % page) * 45}ms` }}>
+            <PrizeArt rarity={p.rarity} size={104} />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[14px] font-bold text-[#1d2129]">{locName(p, lang)}</p>
-              <p className="truncate text-[10px] font-normal text-[#8a9099]">{locDesc(p, lang)}</p>
-              <p className="mt-1 text-[11px] text-[#8a9099]">{t.requested(fmtDate(p.requestedAt))}</p>
+              <img src={`/prize-tag-${rarityTier(p.rarity)}.png`} alt={t.prizeTier(rarityTier(p.rarity))} className="h-[24px] w-auto object-contain" draggable={false} />
+              <p className="mt-1.5 truncate text-[14px] font-bold text-[#0F0F0F]">{locName(p, lang)}</p>
+              <p className="truncate text-[10px] font-normal text-[#0F0F0F]">{locDesc(p, lang)}</p>
+              <p className="mt-1 text-[11px] text-[#0F0F0F]">{t.requested(fmtDate(p.requestedAt))}</p>
               <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-[#FFF3E0] px-2 py-0.5 text-[10.5px] font-semibold text-[#C9701B]">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#f5670a]" /> {t.preparing}
               </span>
-              <div className="mt-1.5">
-                <CoinChip value={p.coinValue} />
+              <div className="mt-1.5 flex h-6 w-fit items-center gap-2 rounded-lg bg-[rgba(255,223,147,0.5)] px-[18px]">
+                <CoinIcon size={15} />
+                <span className="text-[15px] font-bold leading-none text-[#0F0F0F]">{p.coinValue.toLocaleString()}</span>
               </div>
             </div>
           </div>
         ))}
       </div>
-      <p className="mt-3 px-1 text-center text-[10.5px] text-[#a2a8b0]">{t.waitingFooter}</p>
-      <div className="-mx-3 mt-4"><SiteFooter t={t} /></div>
+      {hasMore ? (
+        <LoadingMoreRow t={t} />
+      ) : (
+        <>
+          <p className="mt-3 px-1 text-center text-[10.5px] text-[#a2a8b0]">{t.waitingFooter}</p>
+          <div className="-mx-3 mt-4"><SiteFooter t={t} /></div>
+        </>
+      )}
     </div>
   );
 }
 
-function ShippedTab({ prizes, onCopy, t, lang }: { prizes: ShippedPrize[]; onCopy: (code: string) => void; t: Dict; lang: Lang }) {
+function ShippedTab({ prizes, onCopy, t, lang, visible, page, hasMore }: { prizes: ShippedPrize[]; onCopy: (code: string) => void; t: Dict; lang: Lang; visible: number; page: number; hasMore: boolean }) {
   if (prizes.length === 0) {
     return <EmptyState icon="✅" title={t.shippedEmptyTitle} subtitle={t.shippedEmptySub} />;
   }
   return (
     <div className="px-3 pb-4 pt-3">
       <div className="space-y-2.5">
-        {prizes.map((p) => (
-          <div key={p.id} className="flex gap-3 rounded-2xl bg-white p-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
-            <PrizeArt rarity={p.rarity} />
+        {prizes.slice(0, visible).map((p, i) => (
+          <div key={p.id} className="animate-fade-slide flex gap-3 rounded-2xl bg-white p-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.05)]" style={{ animationDelay: `${(i % page) * 45}ms` }}>
+            <PrizeArt rarity={p.rarity} size={104} />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[14px] font-bold text-[#1d2129]">{locName(p, lang)}</p>
-              <p className="truncate text-[10px] font-normal text-[#8a9099]">{locDesc(p, lang)}</p>
-              <p className="mt-1 text-[11px] text-[#8a9099]">{t.requested(fmtDate(p.requestedAt))}</p>
+              <img src={`/prize-tag-${rarityTier(p.rarity)}.png`} alt={t.prizeTier(rarityTier(p.rarity))} className="h-[24px] w-auto object-contain" draggable={false} />
+              <p className="mt-1.5 truncate text-[14px] font-bold text-[#0F0F0F]">{locName(p, lang)}</p>
+              <p className="truncate text-[10px] font-normal text-[#0F0F0F]">{locDesc(p, lang)}</p>
+              <p className="mt-1 text-[11px] text-[#0F0F0F]">{t.requested(fmtDate(p.requestedAt))}</p>
               <div className="mt-1 flex items-center gap-1.5 rounded-lg bg-[#f1f3f6] px-2 py-1">
-                <span className="text-[10px] font-semibold text-[#8a9099]">{t.tracking}</span>
-                <span className="text-[11px] font-bold tracking-wide text-[#1d2129]">{p.tracking}</span>
+                <span className="text-[10px] font-semibold text-[#0F0F0F]">{t.tracking}</span>
+                <span className="text-[11px] font-bold tracking-wide text-[#0F0F0F]">{p.tracking}</span>
                 <button onClick={() => onCopy(p.tracking)} className="ml-auto text-[#D10005]" aria-label={t.copyAria}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="2" /><path d="M5 15V5a2 2 0 012-2h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
                 </button>
               </div>
-              <div className="mt-1.5">
-                <CoinChip value={p.coinValue} />
+              <div className="mt-1.5 flex h-6 w-fit items-center gap-2 rounded-lg bg-[rgba(255,223,147,0.5)] px-[18px]">
+                <CoinIcon size={15} />
+                <span className="text-[15px] font-bold leading-none text-[#0F0F0F]">{p.coinValue.toLocaleString()}</span>
               </div>
             </div>
           </div>
         ))}
       </div>
-      <div className="-mx-3 mt-4"><SiteFooter t={t} /></div>
+      {hasMore ? <LoadingMoreRow t={t} /> : <div className="-mx-3 mt-4"><SiteFooter t={t} /></div>}
     </div>
   );
+}
+
+// Design icons for the address steps. The exported art already carries its own
+// padding, and the edit/add glyphs are ink at partial strength in the design,
+// hence the opacities.
+function AddressHomeIcon() {
+  return <img src="/icon-address-home.png" alt="" aria-hidden="true" draggable={false} className="h-[21px] w-[22px] shrink-0 object-contain" />;
+}
+
+function AddressEditIcon() {
+  return <img src="/icon-address-edit.png" alt="" aria-hidden="true" draggable={false} className="h-6 w-6 shrink-0 object-contain opacity-50" />;
+}
+
+function AddressAddIcon() {
+  return <img src="/icon-address-add.png" alt="" aria-hidden="true" draggable={false} className="h-5 w-5 shrink-0 object-contain opacity-60" />;
 }
 
 /* ── Shipping request flow (bottom-sheet) ────────────────────────────── */
@@ -3377,13 +3879,17 @@ function ShippingFlow({
 }) {
   // Shipping badge shown over the primary CTA on the address + confirm steps.
   const shipBadge = (
-    <div
-      className={`pointer-events-none absolute -top-2.5 left-0 right-0 z-10 flex items-center justify-center gap-1 whitespace-nowrap rounded-full px-2 py-[3px] ring-1 ${freeShipAvailable ? "bg-gradient-to-br from-[#1eae52] to-[#12813c] text-white ring-white/30" : "bg-gradient-to-br from-[#ffcf33] to-[#f5a623] text-[#3a2a00] ring-black/10"}`}
-      style={{ animation: "freeShipIn .3s cubic-bezier(.2,.9,.3,1) both" }}
-    >
+    <div className="pointer-events-none absolute top-[-10px] left-0 right-0 z-10 flex justify-center">
       <style>{`@keyframes freeShipIn{from{opacity:0;transform:translateY(-6px) scale(.9)}to{opacity:1;transform:none}}`}</style>
-      {freeShipAvailable && <svg width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M7.5 12.5l3 3 6-6.5" stroke="#12813c" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>}
-      <span className="text-[9.5px] font-extrabold tracking-wide">{freeShipAvailable ? t.freeShippingQuota(FREE_SHIP_QUOTA) : t.paidShipBadge}</span>
+      {/* The design sits the tag on the CTA's top edge at the button's own
+          width, so it never overhangs the corners however long the label. */}
+      <span
+        className={`flex h-4 max-w-full items-center justify-center gap-1 overflow-hidden whitespace-nowrap rounded-[3px] px-1.5 ${freeShipAvailable ? "bg-[#00A63D] text-white" : "bg-[#FDC410] text-[#0F0F0F]"}`}
+        style={{ animation: "freeShipIn .3s cubic-bezier(.2,.9,.3,1) both" }}
+      >
+        {freeShipAvailable && <svg width="10" height="10" viewBox="0 0 24 24" className="shrink-0"><circle cx="12" cy="12" r="10" fill="#fff" /><path d="M7.5 12.5l3 3 6-6.5" stroke="#00A63D" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+        <span className="truncate text-[9px] font-bold leading-none">{freeShipAvailable ? t.freeShippingQuota(FREE_SHIP_QUOTA) : t.paidShipBadge}</span>
+      </span>
     </div>
   );
   const [step, setStep] = useState<"address" | "confirm" | "addNew">(shippingAddresses.length === 0 ? "addNew" : "address");
@@ -3393,6 +3899,7 @@ function ShippingFlow({
   });
 
   const [newForm, setNewForm] = useState<Omit<ShippingAddr, "id" | "isDefault">>(EMPTY_SHIPPING_FORM);
+  const [editId, setEditId] = useState<string | null>(null);
   const [postalTouched, setPostalTouched] = useState(false);
   const [phoneTouched, setPhoneTouched] = useState(false);
   const [zipTouched, setZipTouched] = useState(false);
@@ -3464,7 +3971,19 @@ function ShippingFlow({
     setSearching(false); setCandidates([]);
   }
 
+  // Set while the form is editing an existing address rather than adding one.
+  function openEdit(addr: ShippingAddr) {
+    const { id: _id, isDefault: _isDefault, ...fields } = addr;
+    setEditId(addr.id);
+    setNewForm(fields);
+    setPostalTouched(false); setPhoneTouched(false); setZipTouched(false); setStreetNumTouched(false);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    setSearching(false); setCandidates([]);
+    setStep("addNew");
+  }
+
   function openAddNew() {
+    setEditId(null);
     setNewForm({ ...EMPTY_SHIPPING_FORM });
     setPostalTouched(false); setPhoneTouched(false); setZipTouched(false); setStreetNumTouched(false);
     if (searchTimer.current) clearTimeout(searchTimer.current);
@@ -3473,6 +3992,13 @@ function ShippingFlow({
   }
 
   function handleSaveNewAddress() {
+    if (editId) {
+      onShippingAddressesChange(prev => prev.map(a => (a.id === editId ? { ...a, ...newForm } : a)));
+      setAddrId(editId);
+      setEditId(null);
+      setStep("address");
+      return;
+    }
     const isFirst = shippingAddresses.length === 0;
     const newAddr: ShippingAddr = { id: Date.now().toString(36), isDefault: isFirst, ...newForm };
     onShippingAddressesChange(prev => [...prev, newAddr]);
@@ -3487,8 +4013,10 @@ function ShippingFlow({
   function addrPhone(addr: ShippingAddr) { return `${addr.country === "japan" ? "+81" : "+1"} ${addr.phone}`; }
   function addrFlag(addr: ShippingAddr) { return addr.country === "japan" ? "🇯🇵" : "🇺🇸"; }
 
-  const inputCls = "w-full rounded-xl border border-black/15 px-3 py-2.5 text-[13px] text-[#1d2129] outline-none focus:border-[#D10005]";
-  const labelCls = "mb-1 mt-2 block text-[11px] font-semibold text-[#8a9099]";
+  // 182x39 with a 5px radius and a 1px #9D9D9D outline in the design; every
+  // field (inputs, selects, the phone prefix) shares the box.
+  const inputCls = "h-[39px] w-full rounded-[5px] border border-[#9D9D9D] px-3 text-[14px] text-[#0F0F0F] outline-none placeholder:text-[#9D9D9D] focus:border-[#D10005]";
+  const labelCls = "mb-1 mt-2 block text-[11px] font-semibold text-[#000000]";
 
   return (
     <div className="absolute inset-0 z-40 flex items-end" style={{ background: "rgba(0,0,0,0.45)" }} onClick={onClose}>
@@ -3501,7 +4029,10 @@ function ShippingFlow({
 
         {step === "address" && (
           <>
-            <h3 className="mb-2 text-[15px] font-bold text-[#1d2129]">{t.chooseAddress}</h3>
+            <div className="mb-2 flex items-center gap-2">
+              <AddressHomeIcon />
+              <h3 className="text-[15px] font-bold text-[#000000]">{t.chooseAddress}</h3>
+            </div>
             {shippingAddresses.length === 0 ? (
               <p className="mb-3 text-center text-[12.5px] text-[#8a9099]">{t.shippingEmpty}</p>
             ) : (
@@ -3510,27 +4041,39 @@ function ShippingFlow({
                   const sel = addr.id === addrId;
                   const lines = addrDisplayLines(addr);
                   return (
-                    <button
+                    <div
                       key={addr.id}
                       onClick={() => setAddrId(addr.id)}
-                      className="flex w-full items-start gap-2.5 rounded-xl border-2 p-3 text-left"
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setAddrId(addr.id); } }}
+                      className="relative flex w-full items-start gap-2.5 rounded-xl border-2 p-3 text-left"
                       style={{ borderColor: sel ? "#D10005" : "#e5e8ec", background: sel ? "#FFF4F4" : "#fff" }}
                     >
                       <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2" style={{ borderColor: sel ? "#D10005" : "#c9ced6" }}>
                         {sel && <span className="h-2 w-2 rounded-full bg-[#D10005]" />}
                       </span>
-                      <span className="text-[12.5px] leading-relaxed">
+                      <span className="pr-7 text-[12.5px] leading-relaxed">
                         <b className="text-[#1d2129]">{addrFlag(addr)} {addrName(addr)}</b>
-                        {addr.isDefault && <span className="ml-1.5 rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ background: "#22a34a" }}>{t.shippingDefaultLabel}</span>}
+                        {addr.isDefault && <span className="ml-1.5 inline-flex h-4 items-center rounded-[3px] bg-[#00A63D] px-2 align-middle text-[9px] font-bold uppercase text-white">{t.shippingDefaultLabel}</span>}
                         <br />{lines.map((l, i) => <span key={i} className="text-[#5c626b]">{l}<br /></span>)}
                         <span className="text-[#8a9099]">{addrPhone(addr)}</span>
                       </span>
-                    </button>
+                      {/* Pencil opens this address in the form for editing. */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); openEdit(addr); }}
+                        aria-label={t.shippingEditAddress}
+                        className="absolute right-2.5 top-2.5 flex h-6 w-6 items-center justify-center active:opacity-60"
+                      >
+                        <AddressEditIcon />
+                      </button>
+                    </div>
                   );
                 })}
               </div>
             )}
-            <button onClick={openAddNew} className="mt-2 w-full rounded-xl border border-dashed border-black/20 py-2.5 text-[13px] font-bold text-[#5c626b]">
+            <button onClick={openAddNew} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-black/20 py-2.5 text-[13px] font-bold text-[#5c626b]">
+              <AddressAddIcon />
               {t.addNewAddress}
             </button>
             <div className="relative mt-3">
@@ -3555,8 +4098,8 @@ function ShippingFlow({
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
                 </button>
               )}
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M3 11.2 12 4l9 7.2" stroke="#D10005" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><path d="M5 10v9h14v-9" stroke="#D10005" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><path d="M9.5 19v-4.5h5V19" stroke="#D10005" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><path d="M6.5 7.5v-2.2h2.2" stroke="#D10005" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              <h3 className="text-[15px] font-bold text-[#1d2129]">{t.shippingAddNew}</h3>
+              <AddressHomeIcon />
+              <h3 className="text-[15px] font-bold text-[#000000]">{editId ? t.shippingEditAddress : t.shippingAddNew}</h3>
             </div>
 
             <div className="mb-3 flex gap-2">
@@ -3581,8 +4124,8 @@ function ShippingFlow({
                   <option value="japan">{t.shippingJapan}</option>
                   <option value="usa">{t.shippingUSA}</option>
                 </select>
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#8a9099]">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#D10005]">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
                 </span>
               </div>
             </div>
@@ -3602,7 +4145,7 @@ function ShippingFlow({
                         <option value="">{lang === "ja" ? "都道府県" : "Prefecture"}</option>
                         {PREFECTURES_JA.map((ja, i) => <option key={ja} value={ja}>{lang === "ja" ? ja : PREFECTURES_EN[i]}</option>)}
                       </select>
-                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#8a9099]"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg></span>
+                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#D10005]"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg></span>
                     </div>
                   </div>
                 </div>
@@ -3669,7 +4212,7 @@ function ShippingFlow({
                       <option value="">Select State</option>
                       {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
-                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#8a9099]"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg></span>
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#D10005]"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg></span>
                   </div>
                 </div>
                 <div className="mb-3">
@@ -3683,7 +4226,7 @@ function ShippingFlow({
             <div className="mb-4">
               <label className={labelCls}>{t.profilePhone}<span className="ml-0.5 text-[#D10005]">*</span></label>
               <div className="flex items-center gap-2">
-                <div className="flex shrink-0 items-center self-stretch rounded-xl border border-black/15 px-3 text-[13px] text-[#1d2129]">{phonePrefix}</div>
+                <div className="flex h-[39px] shrink-0 items-center rounded-[5px] border border-[#9D9D9D] px-3 text-[14px] text-[#0F0F0F]">{phonePrefix}</div>
                 <div className="flex-1">
                   <input
                     type="tel"
@@ -3711,34 +4254,38 @@ function ShippingFlow({
 
         {step === "confirm" && (
           <>
-            <h3 className="mb-2 text-[15px] font-bold text-[#1d2129]">{t.confirmTitle}</h3>
+            <h3 className="mb-2 text-[15px] font-bold text-[#000000]">{t.confirmTitle}</h3>
             <div className="rounded-xl bg-[#f1f3f6] p-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.deliverTo}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#000000]">{t.deliverTo}</p>
               {chosen && (
-                <p className="mt-1 text-[12.5px] leading-relaxed text-[#1d2129]">
+                <p className="mt-1 text-[12.5px] leading-relaxed text-[#000000]">
                   <b>{addrFlag(chosen)} {addrName(chosen)}</b><br />
-                  {addrDisplayLines(chosen).map((l, i) => <span key={i} className="text-[#5c626b]">{l}<br /></span>)}
-                  <span className="text-[#8a9099]">{addrPhone(chosen)}</span>
+                  {addrDisplayLines(chosen).map((l, i) => <span key={i}>{l}<br /></span>)}
+                  <span>{addrPhone(chosen)}</span>
                 </p>
               )}
             </div>
-            <p className="mb-1 mt-3 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.prizesCount(prizes.length)}</p>
+            <p className="mb-1 mt-3 text-[11px] font-semibold uppercase tracking-wide text-[#000000]">{t.prizesCount(prizes.length)}</p>
             <div className="space-y-1.5">
               {prizes.map((p) => (
                 <div key={p.id} className="flex items-center gap-2">
                   <PrizeArt rarity={p.rarity} size={32} />
-                  <span className="flex-1 truncate text-[12px] text-[#41464e]">{locName(p, lang)}</span>
+                  <span className="flex-1 truncate text-[12px] text-[#000000]">{locName(p, lang)}</span>
                   <CoinChip value={p.coinValue} />
                 </div>
               ))}
             </div>
             <div className="mt-3 flex items-center justify-between rounded-xl bg-[#FFF6E3] px-3 py-2">
-              <span className="text-[12px] font-semibold text-[#B5740A]">{t.totalValue}</span>
+              <span className="text-[12px] font-semibold text-[#000000]">{t.totalValue}</span>
               <CoinChip value={total} strong />
             </div>
-            <p className="mt-2 text-center text-[11px] text-[#8a9099]">{t.freeShip}</p>
+            {/* The fee only exists once the monthly free quota is spent, and the
+                note below then drops the free-shipping claim, keeping just the
+                delivery estimate. */}
+            {!freeShipAvailable && <p className="mt-2 text-right text-[12px] font-semibold text-[#0F0F0F]">{t.shipFeeLine}</p>}
+            <p className="mt-2 text-center text-[11px] text-[#8a9099]">{freeShipAvailable ? t.freeShip : t.paidShipNote}</p>
             <div className="mt-3 grid grid-cols-2 gap-2">
-              <button onClick={() => setStep("address")} className="rounded-xl border border-black/15 py-2.5 text-[13px] font-bold text-[#5c626b]">{t.back}</button>
+              <button onClick={() => setStep("address")} className="rounded-xl border border-black/15 py-2.5 text-[13px] font-bold text-[#000000]">{t.back}</button>
               <div className="relative">
                 {shipBadge}
                 <button onClick={onConfirm} className="w-full rounded-xl py-2.5 text-[13px] font-bold text-white" style={{ background: "linear-gradient(180deg,#ff8a1f,#f5670a)" }}>{t.requestShippingBtn}</button>
@@ -4074,7 +4621,7 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
                 <div className="flex items-center gap-2 border-b border-black/[0.07] px-3 py-2" style={{ background: addr.isDefault ? "rgba(34,163,74,0.06)" : "#f9fafb" }}>
                   <span className="text-[12px] font-bold text-[#1d2129]">{countryFlag} {t.shippingFormTitle}</span>
                   {addr.isDefault && (
-                    <span className="ml-1 rounded px-1.5 py-0.5 text-[10px] font-bold text-white" style={{ background: "#22a34a" }}>{t.shippingDefaultLabel}</span>
+                    <span className="ml-1 inline-flex h-4 items-center rounded-[3px] bg-[#00A63D] px-2 text-[9px] font-bold uppercase text-white">{t.shippingDefaultLabel}</span>
                   )}
                   <div className="ml-auto flex items-center gap-2">
                     {!addr.isDefault && (
@@ -4128,6 +4675,220 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
   );
 }
 
+/* ── Refer a friend ──────────────────────────────────────────────────────
+   Reached from the My Page "Invite Friends" tile. The member's invite link
+   with its three routes (copy, share sheet, QR overlay), their referral
+   tallies and the reward tiers. */
+// Every control in the link block — the field, Copy, Share Link and QR code —
+// shares this height, as the design draws them.
+const REFER_CTA_H = "h-[34px]";
+const referIcon = (src: string, size: number) => <img src={src} alt="" width={size} height={size} className="shrink-0 object-contain" style={{ width: size, height: size }} draggable={false} />;
+
+/* Share destinations. The POC has nothing to hand the link to, so a target
+   just reports which app would open; "Copy link" behaves like the Copy CTA. */
+type ShareTarget = { key: string; label: string; chip: string; glyph: ReactNode };
+const SHARE_TARGETS: ShareTarget[] = [
+  {
+    key: "line", label: "LINE", chip: "#06C755",
+    glyph: <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M12 3.6c-4.7 0-8.5 3-8.5 6.8 0 3.4 3 6.2 7.1 6.7.27.06.65.18.75.42.09.22.06.55.03.77l-.12.72c-.04.21-.17.84.74.46s4.9-2.89 6.69-4.95c1.23-1.35 1.82-2.72 1.82-4.12 0-3.75-3.81-6.8-8.51-6.8zM8.3 12.5H6.6a.35.35 0 01-.35-.35V9.05c0-.2.16-.35.35-.35s.36.16.36.35v2.74H8.3c.2 0 .35.16.35.36a.35.35 0 01-.35.35zm1.4-.35a.35.35 0 01-.71 0V9.05a.35.35 0 01.71 0v3.1zm3.6 0a.35.35 0 01-.63.21l-1.6-2.16v1.95a.35.35 0 01-.71 0V9.05a.35.35 0 01.63-.21l1.6 2.17V9.05a.35.35 0 01.71 0v3.1zm2.4-1.9c.2 0 .36.16.36.35a.35.35 0 01-.36.36h-1.34v.79h1.34c.2 0 .36.16.36.35a.35.35 0 01-.36.35h-1.7a.35.35 0 01-.35-.35V9.05c0-.2.16-.35.35-.35h1.7c.2 0 .36.16.36.35a.35.35 0 01-.36.36h-1.34v.79h1.34z" /></svg>,
+  },
+  {
+    key: "whatsapp", label: "WhatsApp", chip: "#25D366",
+    glyph: <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M12.04 3.5a8.4 8.4 0 00-7.2 12.72L3.6 20.5l4.4-1.18A8.4 8.4 0 1012.04 3.5zm0 1.7a6.7 6.7 0 015.7 10.24l-.2.32.63 2.3-2.37-.62-.31.18a6.7 6.7 0 01-9.9-8.28A6.7 6.7 0 0112.04 5.2zm-3 3.05c-.15 0-.4.06-.6.28-.2.22-.78.76-.78 1.85s.8 2.15.91 2.3c.11.14 1.54 2.46 3.81 3.35 1.9.75 2.28.6 2.69.56.41-.04 1.32-.54 1.5-1.06.19-.52.19-.97.14-1.06-.06-.09-.2-.14-.42-.25-.22-.11-1.32-.65-1.52-.72-.2-.08-.35-.11-.5.11-.14.22-.57.72-.7.87-.13.15-.26.17-.48.06-.22-.11-.94-.35-1.79-1.1-.66-.59-1.11-1.32-1.24-1.54-.13-.22-.01-.34.1-.45.1-.1.22-.26.33-.39.11-.13.14-.22.22-.37.07-.15.04-.28-.02-.39-.06-.11-.5-1.2-.68-1.65-.18-.43-.36-.37-.5-.38h-.42z" /></svg>,
+  },
+  {
+    key: "messenger", label: "Messenger", chip: "#0084FF",
+    glyph: <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M12 3.2c-4.86 0-8.6 3.56-8.6 8.36 0 2.74 1.22 5.13 3.2 6.7v3.3l2.94-1.62c.78.22 1.61.34 2.46.34 4.86 0 8.6-3.56 8.6-8.36S16.86 3.2 12 3.2zm.9 11.06L10.7 11.9l-4.05 2.36 4.45-4.72 2.24 2.36 4-2.36-4.44 4.72z" /></svg>,
+  },
+  {
+    key: "x", label: "X", chip: "#0F0F0F",
+    glyph: <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M17.53 3h3.02l-6.6 7.54L21.7 21h-6.05l-4.74-6.2L5.48 21H2.46l7.06-8.07L2.3 3h6.2l4.29 5.67L17.53 3zm-1.06 16.2h1.67L7.6 4.7H5.8l10.67 14.5z" /></svg>,
+  },
+  {
+    key: "instagram", label: "Instagram", chip: "linear-gradient(135deg,#F58529,#DD2A7B 55%,#8134AF)",
+    glyph: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.9"><rect x="3.2" y="3.2" width="17.6" height="17.6" rx="5" /><circle cx="12" cy="12" r="4.1" /><circle cx="17.1" cy="6.9" r="1.15" fill="#fff" stroke="none" /></svg>,
+  },
+  {
+    key: "facebook", label: "Facebook", chip: "#1877F2",
+    glyph: <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M13.5 21v-7.4h2.5l.4-2.9h-2.9V8.85c0-.84.24-1.41 1.44-1.41h1.54V4.85c-.27-.04-1.18-.12-2.25-.12-2.23 0-3.75 1.36-3.75 3.85v2.15H8v2.9h2.47V21h3.03z" /></svg>,
+  },
+];
+
+function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: Lang; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void }) {
+  const t = STR[lang];
+  const [toast, setToast] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
+
+  function pushToast(text: string) {
+    setToast(text);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 2400);
+  }
+  function copyLink() {
+    // Clipboard access needs a secure context and permission, and rejects
+    // asynchronously when it has neither; the confirmation shows either way.
+    try {
+      navigator.clipboard?.writeText(t.rafLinkFull).catch(() => {});
+    } catch { /* no clipboard API */ }
+    pushToast(t.rafCopied);
+  }
+
+  const stat = (label: string, icon: ReactNode, value: string) => (
+    <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl bg-white px-2 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.07)]">
+      <p className="text-center text-[13px] font-bold leading-[1.15] text-[#D10005]">{label}</p>
+      <div className="flex items-center gap-1.5">
+        {icon}
+        <span className="text-[16px] font-medium uppercase leading-[100%] text-[#0F0F0F]">{value}</span>
+      </div>
+    </div>
+  );
+
+  const step = (icon: ReactNode, title: ReactNode, desc: string, last = false) => (
+    <div className="flex gap-3">
+      <div className="flex w-[34px] shrink-0 flex-col items-center">
+        <div className="flex h-[34px] w-[34px] items-center justify-center">{icon}</div>
+        {/* Drawn as a 24px rule with a 3px stroke, so it stays that length
+            however tall the step's copy runs. */}
+        {!last && <div className="mt-1 h-[24px] w-[3px] shrink-0 bg-[#D10005]" />}
+      </div>
+      <div className={last ? "pb-1" : "pb-5"}>
+        <p className="text-[15px] font-bold leading-tight text-[#0F0F0F]">{title}</p>
+        <p className="mt-1.5 text-[14px] font-medium leading-[100%] text-[#0F0F0F]">{desc}</p>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex h-full flex-col bg-[#F9F9F9]">
+      <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
+
+      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
+        <div className="px-4 pb-6 pt-4">
+          {/* Title row — back returns to My Page */}
+          <div className="flex items-center gap-2">
+            <button onClick={onBack} aria-label={t.backAria} className="flex h-9 w-9 items-center justify-center text-[#D10005] active:opacity-70">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M20 12H4M10 6l-6 6 6 6" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </button>
+            <h1 className="text-[20px] font-bold text-[#0F0F0F]">{t.rafTitle}</h1>
+          </div>
+
+          {/* Hero */}
+          <div className="mt-2 flex items-center gap-2">
+            <img src="/refer-mascot.png" alt="" className="h-[132px] w-[132px] shrink-0 object-contain" draggable={false} />
+            <div className="min-w-0 flex-1">
+              <p className="text-[14px] font-bold uppercase leading-[100%] text-[#0F0F0F]">{t.rafHeroTitle}</p>
+              <p className="mt-2.5 text-[12px] font-normal uppercase leading-[100%] text-[#0F0F0F]">
+                {t.rafHeroLead}
+                <span className="font-bold text-[#D10005]">{t.rafHeroCoins}</span>
+                {t.rafHeroTail}
+              </p>
+            </div>
+          </div>
+
+          {/* Invite link + its three routes, all sharing one control height */}
+          <div className="mt-3 flex items-center gap-2">
+            <div className={`flex ${REFER_CTA_H} min-w-0 flex-1 items-center truncate rounded-lg border border-[#9d9d9d] bg-white px-3 text-[12px] font-medium text-[#9d9d9d]`}>
+              {t.rafLinkShort}
+            </div>
+            <button onClick={copyLink} className={`flex ${REFER_CTA_H} shrink-0 items-center justify-center rounded-lg px-6 text-[15px] font-bold text-white active:scale-[0.98]`} style={{ background: "#D10005" }}>
+              {t.rafCopy}
+            </button>
+          </div>
+          <button onClick={() => setShareOpen(true)} className={`mt-2.5 flex ${REFER_CTA_H} w-full items-center justify-center rounded-lg bg-[#0A0A0A] text-[15px] font-bold text-white active:bg-[#242424]`}>
+            {t.rafShare}
+          </button>
+          <button onClick={() => setQrOpen(true)} className={`mt-2.5 flex ${REFER_CTA_H} w-full items-center justify-center gap-2 rounded-lg border border-[#e7e7e7] bg-white text-[15px] font-bold text-[#0F0F0F] active:bg-black/[0.03]`}>
+            {referIcon("/refer-qrcode.png", 19)}
+            {t.rafQr}
+          </button>
+
+          {/* Referral tallies */}
+          <h2 className="mb-2 mt-5 text-[15px] font-bold text-[#0F0F0F]">{t.rafMyFriends}</h2>
+          <div className="grid grid-cols-2 gap-2.5">
+            {stat(t.rafInvited, referIcon("/refer-handshake.png", 22), "100")}
+            {stat(t.rafRewardsEarned, <CoinIcon size={20} />, "200,000")}
+            {stat(t.rafQualified1, referIcon("/refer-tier-1.png", 24), "70")}
+            {stat(t.rafQualified2, referIcon("/refer-tier-2.png", 24), "20")}
+          </div>
+
+          {/* Reward tiers */}
+          <h2 className="mb-3 mt-5 text-[15px] font-bold text-[#0F0F0F]">{t.rafHowItWorks}</h2>
+          {step(referIcon("/refer-handshake.png", 30), t.rafStep1Title, t.rafStep1Desc)}
+          {step(
+            referIcon("/refer-tier-1.png", 32),
+            <>{t.rafStepRewardLead}<span className="text-[#D10005]">{t.rafStepRewardCoins}</span> <span className="text-[#D10005]">{t.rafStepRewardBang}</span></>,
+            t.rafStep2Desc,
+          )}
+          {step(
+            referIcon("/refer-tier-2.png", 32),
+            <>{t.rafStepRewardLead}<span className="text-[#D10005]">{t.rafStepRewardCoins}</span> <span className="text-[#D10005]">{t.rafStepRewardBang}</span></>,
+            t.rafStep3Desc,
+            true,
+          )}
+        </div>
+
+        <SiteFooter t={t} />
+      </div>
+
+      {/* Share sheet */}
+      {shareOpen && (
+        <div className="absolute inset-0 z-[60] flex items-end bg-black/60" onClick={() => setShareOpen(false)}>
+          <div className="w-full rounded-t-2xl bg-white px-4 pb-6 pt-3" onClick={(e) => e.stopPropagation()}>
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-black/15" />
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-[15px] font-bold text-[#0F0F0F]">{t.rafShareSheetTitle}</h3>
+              <button onClick={() => setShareOpen(false)} aria-label="Close" className="flex h-8 w-8 items-center justify-center rounded-full text-[#5c626b] active:bg-black/5">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+              </button>
+            </div>
+            <div className="grid grid-cols-4 gap-y-4">
+              {SHARE_TARGETS.map((s) => (
+                <button
+                  key={s.key}
+                  onClick={() => { setShareOpen(false); pushToast(t.rafShareOpening(s.label)); }}
+                  className="flex flex-col items-center gap-1.5 active:opacity-70"
+                >
+                  <span className="flex h-[46px] w-[46px] items-center justify-center rounded-full" style={{ background: s.chip }}>{s.glyph}</span>
+                  <span className="text-[11px] font-medium text-[#41464e]">{s.label}</span>
+                </button>
+              ))}
+              <button onClick={() => { setShareOpen(false); copyLink(); }} className="flex flex-col items-center gap-1.5 active:opacity-70">
+                <span className="flex h-[46px] w-[46px] items-center justify-center rounded-full bg-[#eef0f3]">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#41464e" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.5" /><path d="M6.5 15H5.5A1.5 1.5 0 014 13.5v-8A1.5 1.5 0 015.5 4h8A1.5 1.5 0 0115 5.5v1" /></svg>
+                </span>
+                <span className="text-[11px] font-medium text-[#41464e]">{t.rafShareCopyLink}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QR overlay — closes on the X or on the scrim */}
+      {qrOpen && (
+        <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/70 px-6" onClick={() => setQrOpen(false)}>
+          <div className="relative w-full max-w-[280px] rounded-2xl bg-white px-5 pb-5 pt-11" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setQrOpen(false)} aria-label="Close" className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full text-[#5c626b] active:bg-black/5">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
+            <img src="/refer-qr.svg" alt={t.rafQr} className="mx-auto h-[190px] w-[190px]" draggable={false} />
+            <p className="mt-3 text-center text-[12px] font-medium leading-[1.45] text-[#0F0F0F]">{t.rafQrHint}</p>
+            <p className="mt-1 break-all text-center text-[11px] font-normal text-[#8a9099]">{t.rafLinkShort}</p>
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-6 z-[70] flex justify-center px-6">
+          <div className="animate-fade-slide rounded-full bg-black/85 px-4 py-2.5 text-[13px] font-bold text-white shadow-[0_6px_18px_rgba(0,0,0,0.35)]">{toast}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── My Account ──────────────────────────────────────────────────────────
    Visual layout mirrors the POC's MyPage (profile / balance / rank cards +
    menu grid + account/other sections). Edit profile and Account Settings
@@ -4142,7 +4903,55 @@ const MENU_ICON_IMG: Record<string, string> = {
   faq: "/menu-faq.png",
   contact: "/menu-contact.png",
   notices: "/menu-notices.png",
+  coinHistory: "/menu-coin-history.png",
 };
+
+/* Coins + free points strip. My Page and the Coin History header show the same
+   design block: two equal halves split by a full-height 1px rule, a 14px label
+   over a 24px amount in #0F0F0F, and a plus on the coin side that opens the
+   store. */
+function BalanceStrip({ t, coins, points = 10000, onOpenStore, onOpenHistory }: { t: Dict; coins: number; points?: number; onOpenStore?: () => void; onOpenHistory?: () => void }) {
+  // Both amounts open the ledger wherever one is given, matching the header
+  // pill; the plus stays its own target so it still reaches the store.
+  const amount = (children: React.ReactNode) =>
+    onOpenHistory ? (
+      <button type="button" onClick={onOpenHistory} aria-label={t.coinHistoryTitle} className="flex items-center gap-1.5 transition active:scale-[0.97]">
+        {children}
+      </button>
+    ) : (
+      <div className="flex items-center gap-1.5">{children}</div>
+    );
+  return (
+    <div className="flex items-stretch">
+      <div className="min-w-0 flex-1 pr-4">
+        <p className="text-[14px] font-normal leading-none text-[#0F0F0F]">{t.chOripaCoins}</p>
+        <div className="mt-2.5 flex items-center gap-1.5">
+          {amount(
+            <>
+              <CoinIcon size={24} />
+              <span className="text-[24px] font-bold leading-none text-[#0F0F0F]">{coins.toLocaleString()}</span>
+            </>
+          )}
+          <button onClick={onOpenStore} aria-label={t.addCoinsAria} className="ml-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center transition active:scale-95">
+            <img src="/plus-sign.png" alt="" className="h-full w-full object-contain" draggable={false} />
+          </button>
+        </div>
+      </div>
+      <div className="w-px shrink-0 bg-[#E7E7E7]" />
+      <div className="min-w-0 flex-1 pl-5">
+        <p className="text-[14px] font-normal leading-none text-[#0F0F0F]">{t.chFreePoints}</p>
+        <div className="mt-2.5">
+          {amount(
+            <>
+              <GemIcon size={21} />
+              <span className="text-[24px] font-bold leading-none text-[#0F0F0F]">{points.toLocaleString()}</span>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function myMenuIcon(key: string) {
   const c = "#D10005";
@@ -4150,8 +4959,6 @@ function myMenuIcon(key: string) {
     return <img src={MENU_ICON_IMG[key]} alt="" className="h-[26px] w-[26px] shrink-0 object-contain" />;
   }
   switch (key) {
-    case "coinHistory":
-      return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 1.8" /></svg>;
     case "shippingAddress":
       return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" /><circle cx="12" cy="9" r="2.5" /></svg>;
     case "subscriptions":
@@ -4161,7 +4968,7 @@ function myMenuIcon(key: string) {
   }
 }
 
-function MyPage({ lang, coins, displayName = "Username", onOpenQuest, onOpenPrizeHistory, onOpenMyLoot, onOpenPurchaseHistory, onOpenAnnouncements, onOpenShippingAddress, onOpenProfile, onHome, onLogout, onOpenStore }: { lang: Lang; coins: number; displayName?: string; onOpenQuest: () => void; onOpenPrizeHistory: () => void; onOpenMyLoot: () => void; onOpenPurchaseHistory: () => void; onOpenAnnouncements: () => void; onOpenShippingAddress: () => void; onOpenProfile: () => void; onHome: () => void; onLogout: () => void; onOpenStore?: () => void }) {
+function MyPage({ lang, coins, displayName = "Username", onOpenQuest, onOpenPrizeHistory, onOpenMyLoot, onOpenPurchaseHistory, onOpenAnnouncements, onOpenShippingAddress, onOpenProfile, onOpenRefer, onHome, onLogout, onOpenStore }: { lang: Lang; coins: number; displayName?: string; onOpenQuest: () => void; onOpenPrizeHistory: () => void; onOpenMyLoot: () => void; onOpenPurchaseHistory: () => void; onOpenAnnouncements: () => void; onOpenShippingAddress: () => void; onOpenProfile: () => void; onOpenRefer: () => void; onHome: () => void; onLogout: () => void; onOpenStore?: () => void }) {
   const t = STR[lang];
   const openLegal = useContext(LegalNavContext);
   const openCoinHistory = useContext(CoinHistoryNavContext);
@@ -4183,7 +4990,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenQuest, onOpenPriz
     { key: "history", label: t.mmPrizeHistory, onClick: onOpenPrizeHistory },
     { key: "purchases", label: t.mmPurchases, onClick: onOpenPurchaseHistory },
     { key: "coinHistory", label: t.coinHistoryTitle, onClick: openCoinHistory },
-    { key: "invite", label: t.mmInvite },
+    { key: "invite", label: t.mmInvite, onClick: onOpenRefer },
     { key: "faq", label: t.mmFaq },
     { key: "contact", label: t.mmContact },
     { key: "notices", label: t.mmNotices, onClick: onOpenAnnouncements },
@@ -4208,50 +5015,49 @@ function MyPage({ lang, coins, displayName = "Username", onOpenQuest, onOpenPriz
             <img src="/account-avatar.png" alt="" className="h-[86px] w-[86px] shrink-0 rounded-full object-cover" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[19px] font-extrabold text-[#1d2129]">{displayName.trim() || t.accountName}</p>
-              <p className="mt-0.5 text-[12px] font-normal text-[#8a9099]">{t.mpId} : XXXXXX</p>
-              <button onClick={onOpenProfile} className="mt-2 w-full rounded-lg border-2 border-[#D10005] py-1.5 text-[13px] font-bold text-[#D10005]">{t.mpEditProfile}</button>
+              <p className="mt-0.5 text-[12px] font-normal text-[#0F0F0F]">{t.mpId} : XXXXXX</p>
+              {/* 175x24 with a 1px outline and 6px radius — the design's secondary CTA. */}
+              <button onClick={onOpenProfile} className="mt-2.5 flex h-6 w-[175px] max-w-full items-center justify-center rounded-[6px] border border-[#D10005] text-[14px] font-bold leading-none text-[#D10005] active:bg-[#D10005]/[0.06]">{t.mpEditProfile}</button>
             </div>
           </div>
 
           {/* Balance card */}
-          <div className="mt-3 rounded-2xl bg-white p-4 shadow-[0_1px_4px_rgba(0,0,0,0.08)]">
-            <div className="flex items-stretch">
-              <div className="flex-1 pr-3">
-                <p className="text-[13px] font-normal text-[#5b616b]">{t.mpOripaCoin}</p>
-                <p className="mt-1 flex items-center gap-1.5 text-[22px] font-extrabold text-[#1d2129]">
-                  <CoinIcon size={22} />{coins.toLocaleString()}
-                  <img src="/icons/coin-plus.png" alt="" className="h-5 w-5 object-contain" draggable={false} />
-                </p>
-              </div>
-              <div className="w-px bg-black/10" />
-              <div className="flex-1 pl-4">
-                <p className="text-[13px] font-normal text-[#5b616b]">{t.mpFreePoint}</p>
-                <p className="mt-1 flex items-center gap-1.5 text-[22px] font-extrabold text-[#1d2129]"><GemIcon size={22} />10,000</p>
-              </div>
-            </div>
-            <div className="mt-3 flex items-center justify-end gap-3">
-              <button onClick={openCoinHistory} className="shrink-0 rounded-lg border border-black/25 px-4 py-1.5 text-[13px] font-bold text-[#1d2129] active:bg-black/[0.03]">{t.mpViewDetails}</button>
+          <div className="mt-3 rounded-2xl bg-white px-4 py-4 shadow-[0_1px_4px_rgba(0,0,0,0.08)]">
+            <BalanceStrip t={t} coins={coins} onOpenStore={onOpenStore} onOpenHistory={openCoinHistory} />
+            {/* Ledger link sits under the points column. */}
+            <div className="mt-4 flex items-center justify-end">
+              <button onClick={openCoinHistory} className="flex h-6 w-[146px] max-w-[50%] shrink-0 items-center justify-center rounded-[6px] border border-[#0F0F0F] text-[14px] font-bold leading-none text-[#0F0F0F] active:bg-black/[0.04]">{t.mpViewDetails}</button>
             </div>
           </div>
 
-          {/* Rank card */}
-          <div className="relative mt-3 overflow-hidden rounded-2xl border border-[#eab984] p-4" style={{ background: "linear-gradient(135deg,#fdeeda,#f7dab6)" }}>
-            <span className="inline-block rounded-md px-2.5 py-1 text-[12px] font-bold text-white" style={{ background: "linear-gradient(180deg,#c46a1e,#a5511a)" }}>{t.mpCurrentRank}</span>
-            <div className="mt-2 flex items-center gap-3">
-              <img src="/rank-bronze.png" alt="" className="h-[68px] w-[68px] shrink-0 object-contain" />
+          {/* Rank card — 8px radius inside a 2px #AA5225 outline over a peach
+              vignette, with the badge, rank copy and benefits CTA on one row and
+              the level bar underneath. */}
+          <div
+            className="relative mt-3 overflow-hidden rounded-lg border-2 border-[#AA5225] px-3.5 py-3.5"
+            style={{ backgroundImage: "url(/rank-card-bg.png)", backgroundSize: "cover", backgroundPosition: "center" }}
+          >
+            {/* Flex wrapper so the chip carries no line-height leading. */}
+            <div className="flex">
+              <span className="inline-flex h-[18px] items-center rounded-[4px] bg-[#BA5919] px-2 text-[11px] font-bold leading-none text-white">{t.mpCurrentRank}</span>
+            </div>
+            <div className="mt-4 flex items-center gap-3">
+              <img src="/rank-bronze.png" alt="" className="h-[80px] w-[80px] shrink-0 object-contain" draggable={false} />
               <div className="min-w-0 flex-1">
-                <p className="text-[22px] font-extrabold uppercase tracking-wide text-[#5a3a17]">{t.mpRankBronze}</p>
-                <p className="text-[13px] font-semibold text-[#6b4a23]">{t.mpNextLevel} <span className="text-[20px] font-bold text-[#BA5919]">1,000pt</span></p>
-                <button className="mt-2 w-full rounded-lg bg-[#D10005] py-2 text-[13px] font-bold text-white active:scale-[0.99]">{t.mpRankPerks}</button>
+                <p className="text-[21px] font-extrabold uppercase leading-none text-[#572907]">{t.mpRankBronze}</p>
+                <p className="mt-2 flex items-baseline gap-1.5 text-[13px] font-semibold leading-none text-[#572907]">
+                  {t.mpNextLevel} <span className="text-[20px] font-extrabold leading-none text-[#BA5919]">1,000pt</span>
+                </p>
+                <button className="mt-2 flex h-[29px] w-full items-center justify-center rounded-[6px] bg-[#D10005] text-[14px] font-bold leading-none text-white active:scale-[0.99]">{t.mpRankPerks}</button>
               </div>
             </div>
-            <div className="relative mt-3.5 h-2 w-full rounded-full border border-[#e2c197] bg-[#efe0c6]">
+            <div className="relative mt-3.5 h-[10px] w-full overflow-hidden rounded-full border border-[#D8A87F] bg-[#FBEEDF]">
               <div
-                className="absolute left-0 top-1/2 h-2 -translate-y-1/2 rounded-full"
-                style={{ width: "75%", background: "linear-gradient(180deg,#F5AF78 0%,#F18532 40%,#D56A21 75%,#CC6023 100%)", border: "0.5px solid #934516" }}
+                className="absolute inset-y-0 left-0 rounded-full"
+                style={{ width: "75%", background: "linear-gradient(180deg,#F5A76B 0%,#ED8332 45%,#D16822 100%)", border: "0.5px solid #A34E19" }}
               />
             </div>
-            <p className="mt-1 text-center text-[12px] font-medium text-[#6b4a23]">3,000/4,000</p>
+            <p className="mt-1.5 text-center text-[13px] font-semibold leading-none text-[#572907]">3,000/4,000</p>
           </div>
 
           {/* My Menu grid */}
@@ -4624,39 +5430,22 @@ function CoinHistoryPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
       </div>
 
       <div onScroll={onCoinScroll} className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-3">
-        {/* Balance summary */}
-        <div className="rounded-2xl bg-white p-3 shadow-[0_1px_3px_rgba(0,0,0,0.07)]">
-          <div className="flex items-stretch">
-            <div className="flex-1 pr-3">
-              <p className="text-[20px] font-bold text-[#5c626b]">{t.chOripaCoins}</p>
-              <div className="mt-1 flex items-center gap-2">
-                <CoinIcon size={22} />
-                <span className="text-[25px] font-bold text-[#1d2129]">{coins.toLocaleString()}</span>
-                <button onClick={onOpenStore} aria-label={t.addCoinsAria} className="flex h-[22px] w-[22px] items-center justify-center transition active:scale-95">
-                  <img src="/plus-sign.png" alt="" className="h-full w-full object-contain" draggable={false} />
-                </button>
-              </div>
-            </div>
-            <div className="w-px bg-black/10" />
-            <div className="flex-1 pl-3">
-              <p className="text-[20px] font-bold text-[#5c626b]">{t.chFreePoints}</p>
-              <div className="mt-1 flex items-center gap-2">
-                <GemIcon size={22} />
-                <span className="text-[25px] font-bold text-[#1d2129]">10,000</span>
-              </div>
-            </div>
-          </div>
+        {/* Balance summary — same block as My Page. */}
+        <div className="rounded-2xl bg-white px-4 py-4 shadow-[0_1px_3px_rgba(0,0,0,0.07)]">
+          <BalanceStrip t={t} coins={coins} onOpenStore={onOpenStore} />
         </div>
 
         {/* Note */}
-        <p className="px-1 py-2.5 text-[10px] font-normal text-[#8a9099]">{t.chNote}</p>
+        <p className="px-1 py-2.5 text-[10px] font-normal text-[#0F0F0FCC]">{t.chNote}</p>
 
         {/* Transactions */}
         <div className="space-y-2 pb-6">
           {items.map((tx, i) => {
             const isCoin = tx.currency === "coin";
             const positive = tx.sign === "+";
-            const amountColor = !isCoin ? "#2f6fed" : positive ? "#E8890C" : "#1d2129";
+            // Credits carry their currency's colour — amber for coins, green for
+            // points — while every debit stays ink.
+            const amountColor = !positive ? "#0F0F0F" : isCoin ? "#FF8A00" : "#54AB11";
             const subLabel = sub(tx.kind);
             return (
               <div key={tx.id} className="animate-fade-slide rounded-xl bg-white px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.07)]" style={{ animationDelay: `${(i % PAGE) * 70}ms` }}>
@@ -4666,10 +5455,10 @@ function CoinHistoryPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
                 </div>
                 <div className="mt-1 flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-[14px] font-bold text-[#1d2129]">{title(tx.kind)}</p>
-                    {subLabel && <p className="text-[10px] font-normal text-[#8a9099]">{subLabel}</p>}
-                    {tx.paymentId && <p className="text-[10px] font-normal text-[#8a9099]">{t.chPaymentId}: {tx.paymentId}</p>}
-                    {tx.expires && <p className="text-[10px] font-normal text-[#8a9099]">{t.chExpiresOn} {tx.expires}</p>}
+                    <p className="text-[14px] font-bold text-[#0F0F0F]">{title(tx.kind)}</p>
+                    {subLabel && <p className="text-[10px] font-normal text-[#0F0F0F]">{subLabel}</p>}
+                    {tx.paymentId && <p className="text-[10px] font-normal text-[#0F0F0F]">{t.chPaymentId}: {tx.paymentId}</p>}
+                    {tx.expires && <p className="text-[10px] font-normal text-[#0F0F0F]">{t.chExpiresOn} {tx.expires}</p>}
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5">
                     {isCoin ? <CoinIcon size={18} /> : <GemIcon size={18} />}
@@ -5135,8 +5924,59 @@ function StorePage({
   );
 }
 
-export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, drawCta = "all", onDrawEntryChange }: {
-  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; drawCta?: DrawCta; onDrawEntryChange?: (entry: DrawEntry) => void;
+/* ── Not enough coins ────────────────────────────────────────────────────
+   A paid draw that costs more than the wallet holds stops here first: the
+   shortfall is spelled out before the store is offered, so topping up is a
+   choice rather than something the app does on the user's behalf. */
+function NotEnoughCoinsPopup({ lang, coins, cost, onCharge, onClose }: { lang: Lang; coins: number; cost: number; onCharge: () => void; onClose: () => void }) {
+  const t = STR[lang];
+  const shortBy = Math.max(0, cost - coins);
+  return (
+    <div
+      className="animate-popup-backdrop absolute inset-0 z-[75] flex items-center justify-center p-4 backdrop-blur-[3px]"
+      style={{ background: "rgba(20,8,4,0.45)" }}
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="animate-popup-pop w-full max-w-[340px] rounded-2xl bg-white px-5 pb-5 pt-6 text-center shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+        style={{ fontFamily: "var(--font-noto-sans-jp), system-ui, sans-serif" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-[20px] font-extrabold leading-none text-[#0F0F0F]">{t.noCoinsTitle}</h3>
+        {/* Balance before → after, in the same 39px box the draw popups use. */}
+        <div className="mt-3.5 flex h-[39px] w-full items-center justify-center gap-3 rounded-lg border-2 border-[#e7e7e7] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+          <span className="flex items-center gap-2">
+            <CoinIcon size={30} />
+            <span className="text-[20px] font-extrabold leading-none text-[#0F0F0F]">{coins.toLocaleString()}</span>
+          </span>
+          <BalanceArrow />
+          <span className="flex items-center gap-2">
+            <CoinIcon size={30} />
+            {/* Floors at zero like the confirmation rows; the line below says
+                how far short the wallet is. */}
+            <span className="text-[20px] font-extrabold leading-none text-[#D10005]">{Math.max(0, coins - cost).toLocaleString()}</span>
+          </span>
+        </div>
+        <p className="mx-auto mt-3 max-w-[290px] text-[13px] font-medium leading-[1.45] text-[#D10005]">
+          {t.noCoinsShortPre}
+          <span className="font-extrabold">{t.noCoinsShortAmount(shortBy.toLocaleString())}</span>
+          {t.noCoinsShortPost}
+        </p>
+        <button onClick={onCharge} className="mt-3.5 h-[39px] w-full rounded-lg bg-[#D10005] text-[15px] font-extrabold leading-none text-white active:scale-[0.99]">
+          {t.noCoinsCta}
+        </button>
+        <button onClick={onClose} className="mt-2.5 h-[39px] w-full rounded-lg border-2 border-[#696969] bg-white text-[15px] font-bold leading-none text-[#696969] active:scale-[0.99]">
+          {t.drawLimitClose}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off", multiCurrency = true }: {
+  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean;
 }) {
   const t = STR[lang];
   const [screen, setScreen] = useState<Screen>("landing");
@@ -5157,7 +5997,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
       // Yield once so this isn't a synchronous setState within the effect.
       await Promise.resolve();
       if (!alive) return;
-      const valid: Screen[] = ["landing", "signup", "login", "oripa", "notifications", "prizeHistory", "myLoot", "purchaseHistory", "shippingAddress", "quest", "store", "coinHistory", "mypage", "profile"];
+      const valid: Screen[] = ["landing", "signup", "login", "oripa", "notifications", "prizeHistory", "myLoot", "purchaseHistory", "shippingAddress", "quest", "store", "coinHistory", "mypage", "profile", "refer"];
       const target = new URLSearchParams(window.location.search).get("screen");
       if (target && valid.includes(target as Screen)) setScreen(target as Screen);
     };
@@ -5184,17 +6024,26 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   };
   // Quick Purchase sheet when a paid draw costs more than the wallet balance.
   const [quickPurchase, setQuickPurchase] = useState<QuickPurchasePending | null>(null);
-  const [pendingRunDraw, setPendingRunDraw] = useState<{ count: number; token: number } | null>(null);
+  // Draw interrupted by a top-up: its confirmation re-opens once the receipt
+  // is closed.
+  const [pendingConfirm, setPendingConfirm] = useState<{ count: number; token: number } | null>(null);
+  const [quickPurchasePaid, setQuickPurchasePaid] = useState(false);
+  // Shortfall popup shown before the Quick Purchase sheet; its CTA is what
+  // actually opens the sheet.
+  const [shortfall, setShortfall] = useState<QuickPurchasePending | null>(null);
   const attemptDraw = (count: number, billCount?: number) => {
     const billed = billCount ?? count;
     const cost = billed * DRAW_PRICE;
     if (cost > coins) {
-      setQuickPurchase({ drawCount: count, billCount: billed, cost });
+      setShortfall({ drawCount: count, billCount: billed, cost });
       return false;
     }
     setCoins((c) => c - cost);
     return true;
   };
+  // The draw confirmation states its own shortfall, so its Charge/Top Up CTA
+  // opens the sheet directly instead of repeating it in the shortfall popup.
+  const openTopUpForDraw = (count: number) => setQuickPurchase({ drawCount: count, billCount: count, cost: count * DRAW_PRICE });
   // john.inr@gmail.com → Quick Purchase / cashier show INR + JPY currency picker.
   const intlLocalCurrency: IntlCurrencyInfo | null = (() => {
     try {
@@ -5295,12 +6144,38 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   };
   const toggleLobbyFilter = (k: string) => setLobbyFilters((f) => { const n = { ...f }; if (n[k]) delete n[k]; else n[k] = true; return n; });
   const clearLobbyFilters = () => { setLobbyQuery(""); setLobbyFilters({}); setLobbyPriceMin(0); setLobbyPriceMax(PRICE_MAX); };
-  const goHome = () => setScreen("oripa");
-  // PROD: login/sign-up land straight on the lobby (no onboarding flow).
-  const enterHome = (method?: "line") => {
+  // Returning to the lobby also ends any draw played out over it, so the
+  // results screen can't outlive the tap that leaves it.
+  const goHome = () => { setLobbyDraw(null); setScreen("oripa"); };
+  // Tapping the logo is a fresh start: it drops the selected category, the search
+  // text and any applied filters, and returns to the top of the lobby — what a
+  // user sees right after logging in. Bumping the key remounts the lobby, which
+  // is what clears the category and search state it owns. Back buttons keep using
+  // goHome, which deliberately preserves all of that.
+  const [homeKey, setHomeKey] = useState(0);
+  const resetHome = () => {
+    clearLobbyFilters();
+    homeScroll.current = 0;
+    setHomeKey((k) => k + 1);
+    setLobbyDraw(null);
     setScreen("oripa");
+  };
+  // A visitor sent to authenticate from a pack page (its draw CTA, or the
+  // sign-up / login buttons in its header) is owed that pack back once they're
+  // in, so it is parked here until the auth screen succeeds.
+  const [authReturn, setAuthReturn] = useState<OripaItem | null>(null);
+  // PROD: login/sign-up land straight on the lobby (no onboarding flow), unless
+  // a pack is owed — then they land on it, ready to draw.
+  const enterHome = (method?: "line") => {
+    const pack = authReturn;
+    setAuthReturn(null);
+    if (pack) { setDrawItem(pack); setScreen("drawDetail"); }
+    else setScreen("oripa");
     if (method === "line") setLineLoginToast(true);
   };
+  // Leaving the visitor's pack page for the logged-out lobby drops that debt:
+  // logging in from the landing header belongs on the lobby.
+  const goLanding = () => { setAuthReturn(null); setScreen("landing"); };
   const logout = () => {
     try {
       sessionStorage.removeItem("authData");
@@ -5347,9 +6222,22 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   // Draw screen (gacha pack detail) opens when a lobby pack's Draw / View is
   // tapped; back returns to the lobby.
   const [drawItem, setDrawItem] = useState<OripaItem | null>(null);
-  // Report which lobby CTA opened the draw screen so the dev harness can offer
-  // the CTA variants that belong to that entry point.
-  const openDraw = (item: OripaItem, entry: DrawEntry = "paid") => { setDrawItem(item); onDrawEntryChange?.(entry); setScreen("drawDetail"); };
+  // A lobby card's CTA draws without leaving the lobby: the pack and the
+  // requested draw are held here and handed to a DrawFlow mounted over the feed.
+  const [lobbyDraw, setLobbyDraw] = useState<{ item: OripaItem; request: DrawRequest } | null>(null);
+  // Dropping the held lobby request keeps its DrawFlow from replaying the draw
+  // when the lobby is next mounted.
+  const openDraw = (item: OripaItem) => { setLobbyDraw(null); setDrawItem(item); setScreen("drawDetail"); };
+  // The visitor's read-only view of the same pack page.
+  const openGuestDraw = (item: OripaItem) => { setDrawItem(item); setScreen("guestDraw"); };
+  // Any draw a visitor asks for: hold the pack, then send them to authenticate.
+  const requireAuthForDraw = (item: OripaItem, to: "login" | "signup" = "login") => {
+    setDrawItem(item);
+    setAuthReturn(item);
+    setScreen(to);
+  };
+  const requestLobbyDraw = (item: OripaItem, req: Omit<DrawRequest, "token">) =>
+    setLobbyDraw({ item, request: { ...req, token: Date.now() } });
   // Legal document reader (Terms / Privacy / SCTA), rendered at the app root so
   // it overlays correctly no matter where it's triggered (footer, My Account).
   const [legalDoc, setLegalDoc] = useState<LegalDocKey | null>(null);
@@ -5361,7 +6249,9 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
     if (s === "store") { openStore(); return; }
     // quest tab remains inert.
   };
-  const onLanding = screen === "landing" || screen === "signup" || screen === "login";
+  // Signed-out screens, the visitor's pack page included: no bottom nav, and no
+  // route into the member-only notification or coin-history screens.
+  const onLanding = screen === "landing" || screen === "signup" || screen === "login" || screen === "guestDraw";
   const showNav = !onLanding && !kyc.activeScreen;
   return (
     <NotifNavContext.Provider value={onLanding ? () => {} : openNotifications}>
@@ -5373,11 +6263,39 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             body-only fade/slide-in (headers are excluded per-screen). */}
         <div key={screen} className="h-full">
         {/* Logged-out lobby — V1 homepage layout */}
-        {screen === "landing" && <LandingPage lang={lang} onSignUp={() => setScreen("signup")} onLogin={() => setScreen("login")} />}
+        {screen === "landing" && (
+          <LandingPage
+            lang={lang}
+            onSignUp={() => setScreen("signup")}
+            onLogin={() => setScreen("login")}
+            onOpenDraw={openGuestDraw}
+            onRequireLogin={(item) => requireAuthForDraw(item)}
+          />
+        )}
+        {/* Visitor's pack page: same design, no wallet, CTAs route to auth. */}
+        {screen === "guestDraw" && drawItem && (
+          <DrawDetail
+            key={drawItem.id}
+            lang={lang}
+            item={drawItem}
+            coins={coins}
+            onBack={goLanding}
+            onHome={goLanding}
+            freeShipAvailable={freeShipAvailable}
+            drawScenario={drawScenario}
+            multiCurrency={multiCurrency}
+            shippingAddresses={shippingAddresses}
+            onShippingAddressesChange={setShippingAddresses}
+            guest={{
+              onSignUp: () => requireAuthForDraw(drawItem, "signup"),
+              onLogin: () => requireAuthForDraw(drawItem),
+            }}
+          />
+        )}
         {screen === "signup" && (
           <SignupPage
             lang={lang}
-            onQuit={() => setScreen("landing")}
+            onQuit={goLanding}
             onLogin={() => setScreen("login")}
             onSuccess={() => enterHome()}
           />
@@ -5390,7 +6308,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
           />
         )}
         {/* Logged-in lobby — V2 format */}
-        {screen === "oripa" && <OripaHome lang={lang} coins={coins} onHome={goHome} onOpenStore={openStore} onOpenDraw={openDraw} scrollRef={homeScroll} query={lobbyQuery} filters={lobbyFilters} priceMin={lobbyPriceMin} priceMax={lobbyPriceMax} onApply={applyLobby} onToggleApplied={toggleLobbyFilter} onClearAll={clearLobbyFilters} />}
+        {screen === "oripa" && <OripaHome key={homeKey} lang={lang} coins={coins} onHome={resetHome} onOpenStore={openStore} onOpenDraw={openDraw} onRequestDraw={requestLobbyDraw} scrollRef={homeScroll} query={lobbyQuery} filters={lobbyFilters} priceMin={lobbyPriceMin} priceMax={lobbyPriceMax} onApply={applyLobby} onToggleApplied={toggleLobbyFilter} onClearAll={clearLobbyFilters} />}
         {screen === "drawDetail" && drawItem && (
           <DrawDetail
             key={drawItem.id}
@@ -5398,23 +6316,23 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             item={drawItem}
             coins={coins}
             onBack={goHome}
-            onHome={goHome}
+            onHome={resetHome}
             onOpenStore={openStore}
             onOpenDraw={openDraw}
             freeShipAvailable={freeShipAvailable}
             dailyLimitReached={dailyLimitReached}
             drawScenario={drawScenario}
             multiCurrency={multiCurrency}
-            drawCta={drawCta}
             onResultsChange={onDrawResultsChange}
             shippingAddresses={shippingAddresses}
             onShippingAddressesChange={setShippingAddresses}
             onAttemptPaidDraw={attemptDraw}
-            pendingRunDraw={pendingRunDraw}
-            onPendingRunDrawConsumed={() => setPendingRunDraw(null)}
+            onTopUp={openTopUpForDraw}
+            pendingConfirm={pendingConfirm}
+            onPendingConfirmConsumed={() => setPendingConfirm(null)}
           />
         )}
-        {screen === "notifications" && <NotificationsScreen lang={lang} coins={coins} empty={noHistory} only={notifOnly} onBack={() => setScreen(prevScreen)} onHome={goHome} onOpenStore={openStore} />}
+        {screen === "notifications" && <NotificationsScreen lang={lang} coins={coins} empty={noHistory} only={notifOnly} onBack={() => setScreen(prevScreen)} onHome={resetHome} onOpenStore={openStore} />}
         {screen === "mypage" && (
           <MyPage
             lang={lang}
@@ -5427,7 +6345,8 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onOpenAnnouncements={openAnnouncements}
             onOpenShippingAddress={() => setScreen("shippingAddress")}
             onOpenProfile={() => setScreen("profile")}
-            onHome={goHome}
+            onOpenRefer={() => setScreen("refer")}
+            onHome={resetHome}
             onLogout={logout}
             onOpenStore={openStore}
           />
@@ -5449,7 +6368,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             kyc={kyc}
             onStartKyc={() => { requestKyc("profile"); }}
             chrome={{
-              header: <AppHeader coins={coins} t={t} onHome={goHome} onOpenStore={openStore} />,
+              header: <AppHeader coins={coins} t={t} onHome={resetHome} onOpenStore={openStore} />,
             }}
           />
         )}
@@ -5461,7 +6380,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             shippingAddresses={shippingAddresses}
             onShippingAddressesChange={setShippingAddresses}
             onBack={() => setScreen("mypage")}
-            onHome={goHome}
+            onHome={resetHome}
             empty={false}
             onGoGacha={goHome}
             onRequestKyc={() => requestKyc("prizeHistory")}
@@ -5476,7 +6395,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             shippingAddresses={shippingAddresses}
             onShippingAddressesChange={setShippingAddresses}
             onBack={() => setScreen(lootReturn)}
-            onHome={goHome}
+            onHome={resetHome}
             empty={false}
             onGoGacha={goHome}
             lootMode
@@ -5490,7 +6409,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             lang={lang}
             coins={coins}
             onBack={() => setScreen("mypage")}
-            onHome={goHome}
+            onHome={resetHome}
             empty={noHistory}
             onOpenStore={openStore}
           />
@@ -5502,7 +6421,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             addresses={shippingAddresses}
             onAddressesChange={setShippingAddresses}
             onBack={() => setScreen("mypage")}
-            onHome={goHome}
+            onHome={resetHome}
             onOpenStore={openStore}
           />
         )}
@@ -5513,7 +6432,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             coins={coins}
             setCoins={setCoins}
             onBack={() => setScreen(storeReturn)}
-            onHome={goHome}
+            onHome={resetHome}
             onOpenStore={openStore}
             onRequireKyc={() => requestKyc("purchase")}
             onDrawItem={openDraw}
@@ -5529,21 +6448,31 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             lang={lang}
             coins={coins}
             onBack={() => setScreen(coinHistoryReturn)}
-            onHome={goHome}
+            onHome={resetHome}
             onOpenStore={openStore}
           />
         )}
+        {screen === "refer" && <ReferFriendPage lang={lang} coins={coins} onBack={() => setScreen("mypage")} onHome={resetHome} onOpenStore={openStore} />}
         {screen === "quest" && (
           <QuestScreen
             lang={lang}
             coins={coins}
             setCoins={setCoins}
             onBack={() => setScreen("mypage")}
-            onHome={goHome}
+            onHome={resetHome}
             onOpenStore={openStore}
           />
         )}
         </div>
+        {shortfall && (
+          <NotEnoughCoinsPopup
+            lang={lang}
+            coins={coins}
+            cost={shortfall.cost}
+            onCharge={() => { setQuickPurchase(shortfall); setShortfall(null); }}
+            onClose={() => setShortfall(null)}
+          />
+        )}
         {quickPurchase && (
           <QuickPurchaseFlow
             lang={lang}
@@ -5552,19 +6481,47 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             savedCards={savedCards}
             onSaveCard={promoteSavedCard}
             localCurrency={intlLocalCurrency}
-            onClose={() => setQuickPurchase(null)}
+            // Closing the receipt of a completed purchase returns to the draw
+            // that needed the coins, at its confirmation popup. Closing without
+            // paying just dismisses the sheet.
+            onClose={() => {
+              const pending = quickPurchase;
+              const paid = quickPurchasePaid;
+              setQuickPurchase(null);
+              setQuickPurchasePaid(false);
+              if (paid) setPendingConfirm({ count: pending.drawCount, token: Date.now() });
+            }}
             onPaid={(pkg) => {
               setCoins((c) => c + pkg.coins);
               setPurchasedIds((prev) => [...prev, pkg.id]);
-            }}
-            onDraw={() => {
-              const pending = quickPurchase;
-              setQuickPurchase(null);
-              // Coins were credited on payment success; debit the pending draw cost now.
-              setCoins((c) => Math.max(0, c - pending.cost));
-              setPendingRunDraw({ count: pending.drawCount, token: Date.now() });
+              setQuickPurchasePaid(true);
             }}
             onRequireKyc={() => requestKyc("purchase")}
+          />
+        )}
+        {/* Draws started from a lobby card play out over the feed — the pack
+            page is only reached by tapping a card's artwork. */}
+        {screen === "oripa" && lobbyDraw && (
+          <DrawFlow
+            key={lobbyDraw.item.id}
+            lang={lang}
+            item={lobbyDraw.item}
+            coins={coins}
+            request={lobbyDraw.request}
+            freeShipAvailable={freeShipAvailable}
+            onResultsChange={onDrawResultsChange}
+            shippingAddresses={shippingAddresses}
+            onShippingAddressesChange={setShippingAddresses}
+            dailyLimitReached={dailyLimitReached}
+            drawScenario={drawScenario}
+            multiCurrency={multiCurrency}
+            onHome={resetHome}
+            onOpenStore={openStore}
+            onOpenDraw={openDraw}
+            onAttemptPaidDraw={attemptDraw}
+            onTopUp={openTopUpForDraw}
+            pendingConfirm={pendingConfirm}
+            onPendingConfirmConsumed={() => setPendingConfirm(null)}
           />
         )}
         {legalDoc && <LegalOverlay lang={lang} doc={legalDoc} onClose={() => setLegalDoc(null)} />}

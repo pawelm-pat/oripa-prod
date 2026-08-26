@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import type { DrawCta, DrawEntry, DrawScenario, Lang, Screen } from "./lib/types";
+import { useState } from "react";
+import type { DrawScenario, Lang, Screen } from "./lib/types";
 import { LangToggle, PhoneApp, UpdatePrompt, VersionBadge } from "./components/oripa";
 import { CommentsPanel } from "./components/comments";
 import { DevPanels } from "./components/devpanels";
@@ -28,10 +28,8 @@ export default function Page() {
   // Yes -> "Draw again" shows the Daily Limit Reached popup; No -> it re-opens
   // the draw-confirmation popup.
   const [dailyLimit, setDailyLimit] = useState(false);
-  // Demo control (draw screen only): whether the pack is expired/sold out.
-  // Yes -> confirming a draw shows the "Sold Out" popup, then the draw screen
-  // greys out with no CTAs; No -> normal draw flow.
-  // Demo control (draw screen only): pick a draw scenario.
+  // Demo control (draw screen and lobby): pick a draw scenario. It applies to
+  // every draw, whether it starts on the pack page or from a lobby card CTA.
   //   off      -> normal draw flow
   //   expired  -> Sold Out popup, then greyed-out draw screen
   //   connError-> Connection Error popup (Retry succeeds, Cancel returns)
@@ -40,22 +38,6 @@ export default function Page() {
   // Demo control (draw confirm popup): whether the pack accepts both currencies.
   // Yes -> confirm popup shows coins (top) + free points (below); No -> coins only.
   const [multiCurrency, setMultiCurrency] = useState(true);
-  // Demo control (draw screen only): which CTA row the draw screen shows. The
-  // options on offer depend on how the draw was opened — tapping "Draw" gives
-  // the paid variants, "Free draw" the free ones. Entering a draw resets the
-  // choice to that entry's default.
-  const [drawCta, setDrawCta] = useState<DrawCta>("all");
-  const [drawEntry, setDrawEntry] = useState<DrawEntry>("paid");
-  const handleDrawEntry = useCallback((entry: DrawEntry) => {
-    setDrawEntry(entry);
-    setDrawCta(entry === "free" ? "free" : "all");
-  }, []);
-  // Free trial belongs to the paid group: that variant pairs the free 10 draws
-  // with a second "1 Draw" CTA.
-  const drawCtaOptions: readonly (readonly [string, DrawCta])[] = drawEntry === "free"
-    ? [["Free draw", "free"], ["LINE verification", "freePending"]]
-    : [["Multiple draws", "all"], ["1 Draw", "one"], ["Free trial", "trial"], ["LINE verification", "freePending"]];
-
   function changeKycScenario(value: KycScenario) {
     try { sessionStorage.removeItem(KYC_SESSION_KEY); } catch {}
     setKycScenario(value);
@@ -80,13 +62,16 @@ export default function Page() {
             <>
               <ToggleControl label="Free shipping" value={freeShipping} onChange={setFreeShipping} />
               <ToggleControl label="Address provided" value={addressProvided} onChange={setAddressProvided} />
-              {drawResultsOpen && (
-                <ToggleControl label="Daily limit" value={dailyLimit} onChange={setDailyLimit} />
-              )}
             </>
           )}
-          {/* Draw screen only: pick a draw scenario to simulate. */}
-          {screen === "drawDetail" && !drawResultsOpen && (
+          {/* Reachable before the draw as well, so the limit can be armed on the
+              pack page and hit straight from the results' "Draw again". */}
+          {(screen === "drawDetail" || screen === "oripa" || drawResultsOpen) && (
+            <ToggleControl label="Daily limit" value={dailyLimit} onChange={setDailyLimit} />
+          )}
+          {/* Anywhere a draw can start: the pack page, and the lobby, whose
+              card CTAs open the same confirmation without leaving the feed. */}
+          {(screen === "drawDetail" || screen === "oripa") && !drawResultsOpen && (
             <>
               <SelectControl
                 label="Draw scenario"
@@ -108,12 +93,6 @@ export default function Page() {
                   ["Coins only", "coins"],
                 ]}
               />
-              <SelectControl
-                label={drawEntry === "free" ? "Free draw CTA" : "Draw CTA"}
-                value={drawCta}
-                onChange={setDrawCta}
-                options={drawCtaOptions}
-              />
             </>
           )}
         </div>
@@ -133,8 +112,6 @@ export default function Page() {
                 dailyLimitReached={dailyLimit}
                 drawScenario={drawScenario}
                 multiCurrency={multiCurrency}
-                drawCta={drawCta}
-                onDrawEntryChange={handleDrawEntry}
               />
             </div>
           </div>
@@ -155,8 +132,6 @@ export default function Page() {
           dailyLimitReached={dailyLimit}
           drawScenario={drawScenario}
           multiCurrency={multiCurrency}
-          drawCta={drawCta}
-          onDrawEntryChange={handleDrawEntry}
         />
       </div>
 

@@ -17,7 +17,14 @@ exploration build: only the phone experience ships here.
 
 1. Make the change on `main`.
 2. Bump the version: `node scripts/bump-version.mjs`.
-3. Commit and push: `git push origin main`.
+3. Commit locally.
 
-Deployment is handled by Vercel's Git integration (auto-deploy on push to
-`main`). No custom deploy workflow lives in this repo.
+## Deploying
+
+Production is <https://oripa-prod-psi.vercel.app/>, published by Vercel's Git
+integration on push to `main`. `npm run deploy` tags the release and pushes.
+
+**Never deploy on your own initiative.** Pushing `main` ships to production, so
+an agent must ask the user to confirm and wait for an explicit yes before
+running `npm run deploy` or pushing `main` — even when the change itself was
+requested. Landing work locally (commit, no push) needs no confirmation.

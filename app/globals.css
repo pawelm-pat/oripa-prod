@@ -80,6 +80,49 @@ a {
   }
 }
 
+/* Draw-confirmation sheets: the panel rises and settles on open and sinks
+   back down on dismissal, with the body trailing just behind the panel so
+   the artwork and the balances don't land flat at the same instant. */
+@keyframes drawSheetIn {
+  0% { opacity: 0; transform: translateY(28px) scale(0.965); }
+  55% { opacity: 1; }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes drawSheetOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(16px) scale(0.975); }
+}
+@keyframes drawSheetBodyIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes popupBackdropOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+.animate-sheet-in {
+  animation: drawSheetIn 0.34s cubic-bezier(0.2, 0.75, 0.25, 1) both;
+  will-change: opacity, transform;
+}
+.animate-sheet-out {
+  animation: drawSheetOut 0.18s ease-in both;
+  will-change: opacity, transform;
+}
+.animate-sheet-body {
+  animation: drawSheetBodyIn 0.3s 0.1s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+.animate-popup-backdrop-out {
+  animation: popupBackdropOut 0.18s ease-in both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-sheet-in,
+  .animate-sheet-out,
+  .animate-sheet-body,
+  .animate-popup-backdrop-out {
+    animation: none;
+  }
+}
+
 /* Soft screen-to-screen transition on navigation (body only — header stays put) */
 @keyframes screenIn {
   from {
