@@ -571,11 +571,13 @@ const EN = {
   rafViewMore: "View More Activity",
 
   rafNotesTitle: "Notes & Terms of use",
-  rafNotes: [
-    "Notes & Terms of use for referral friends apply to every reward on this page.",
-    "Rewards are granted once your friend's account passes verification.",
-    "Coins credited through referrals cannot be exchanged for cash.",
-    "OriParrot may withdraw or change this programme at any time.",
+  rafNotesIntro: "Notes & Terms of use for referral friends",
+  rafNotesTerms: [
+    "Rewards are credited once your friend completes registration and their account passes verification.",
+    "The first deposit reward pays both sides once your friend's first coin purchase is confirmed.",
+    "One reward is paid per person, household and device; self-referrals and duplicate accounts do not qualify.",
+    "Coins and points earned through referrals hold no cash value and cannot be withdrawn or transferred.",
+    "OriParrot may change or end this programme at any time. Our full Terms of use apply.",
   ],
 
   qHeroTitle: "Unlock Special Rewards!",
@@ -1705,11 +1707,13 @@ const JA: Dict = {
   rafViewMore: "もっと見る",
 
   rafNotesTitle: "注意事項・利用規約",
-  rafNotes: [
-    "友達紹介の報酬には、注意事項および利用規約が適用されます。",
-    "報酬は友達の本人確認が完了した時点で付与されます。",
-    "紹介で付与されたコインは換金できません。",
-    "オリパロットは本プログラムを予告なく変更・終了する場合があります。",
+  rafNotesIntro: "友達紹介の注意事項・利用規約",
+  rafNotesTerms: [
+    "報酬は、友達の登録完了および本人確認が承認された時点で付与されます。",
+    "初回入金の報酬は、友達の初回コイン購入が確定した時点で双方に付与されます。",
+    "報酬はお一人・一世帯・一端末につき1回のみです。自己紹介や重複アカウントは対象外です。",
+    "紹介で獲得したコイン・ポイントに換金価値はなく、出金や譲渡はできません。",
+    "オリパロットは本プログラムを予告なく変更・終了する場合があります。詳細は利用規約をご確認ください。",
   ],
 
   qHeroTitle: "特別報酬を解放しよう！",

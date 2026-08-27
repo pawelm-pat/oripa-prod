@@ -4687,21 +4687,21 @@ const referIcon = (src: string, size: number) => <img src={src} alt="" width={si
 /* Share destinations under the link. The POC has nothing to hand the link
    to, so a destination just reports which app would open. */
 const X_GLYPH = (
-  <span className="flex h-[19px] w-[19px] shrink-0 items-center justify-center rounded-[5px] bg-[#0F0F0F]">
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="#fff"><path d="M17.53 3h3.02l-6.6 7.54L21.7 21h-6.05l-4.74-6.2L5.48 21H2.46l7.06-8.07L2.3 3h6.2l4.29 5.67L17.53 3zm-1.06 16.2h1.67L7.6 4.7H5.8l10.67 14.5z" /></svg>
+  <span className="flex h-[21px] w-[21px] shrink-0 items-center justify-center rounded-[6px] bg-[#0F0F0F]">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="#fff"><path d="M17.53 3h3.02l-6.6 7.54L21.7 21h-6.05l-4.74-6.2L5.48 21H2.46l7.06-8.07L2.3 3h6.2l4.29 5.67L17.53 3zm-1.06 16.2h1.67L7.6 4.7H5.8l10.67 14.5z" /></svg>
   </span>
 );
 const LINE_GLYPH = (
-  <span className="flex h-[19px] w-[19px] shrink-0 items-center justify-center rounded-[5px] bg-[#06C755]">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="#fff"><path d="M12 3.6c-4.7 0-8.5 3-8.5 6.8 0 3.4 3 6.2 7.1 6.7.27.06.65.18.75.42.09.22.06.55.03.77l-.12.72c-.04.21-.17.84.74.46s4.9-2.89 6.69-4.95c1.23-1.35 1.82-2.72 1.82-4.12 0-3.75-3.81-6.8-8.51-6.8zM8.3 12.5H6.6a.35.35 0 01-.35-.35V9.05c0-.2.16-.35.35-.35s.36.16.36.35v2.74H8.3c.2 0 .35.16.35.36a.35.35 0 01-.35.35zm1.4-.35a.35.35 0 01-.71 0V9.05a.35.35 0 01.71 0v3.1zm3.6 0a.35.35 0 01-.63.21l-1.6-2.16v1.95a.35.35 0 01-.71 0V9.05a.35.35 0 01.63-.21l1.6 2.17V9.05a.35.35 0 01.71 0v3.1zm2.4-1.9c.2 0 .36.16.36.35a.35.35 0 01-.36.36h-1.34v.79h1.34c.2 0 .36.16.36.35a.35.35 0 01-.36.35h-1.7a.35.35 0 01-.35-.35V9.05c0-.2.16-.35.35-.35h1.7c.2 0 .36.16.36.35a.35.35 0 01-.36.36h-1.34v.79h1.34z" /></svg>
+  <span className="flex h-[21px] w-[21px] shrink-0 items-center justify-center rounded-[6px] bg-[#06C755]">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M12 3.6c-4.7 0-8.5 3-8.5 6.8 0 3.4 3 6.2 7.1 6.7.27.06.65.18.75.42.09.22.06.55.03.77l-.12.72c-.04.21-.17.84.74.46s4.9-2.89 6.69-4.95c1.23-1.35 1.82-2.72 1.82-4.12 0-3.75-3.81-6.8-8.51-6.8zM8.3 12.5H6.6a.35.35 0 01-.35-.35V9.05c0-.2.16-.35.35-.35s.36.16.36.35v2.74H8.3c.2 0 .35.16.35.36a.35.35 0 01-.35.35zm1.4-.35a.35.35 0 01-.71 0V9.05a.35.35 0 01.71 0v3.1zm3.6 0a.35.35 0 01-.63.21l-1.6-2.16v1.95a.35.35 0 01-.71 0V9.05a.35.35 0 01.63-.21l1.6 2.17V9.05a.35.35 0 01.71 0v3.1zm2.4-1.9c.2 0 .36.16.36.35a.35.35 0 01-.36.36h-1.34v.79h1.34c.2 0 .36.16.36.35a.35.35 0 01-.36.35h-1.7a.35.35 0 01-.35-.35V9.05c0-.2.16-.35.35-.35h1.7c.2 0 .36.16.36.35a.35.35 0 01-.36.36h-1.34v.79h1.34z" /></svg>
   </span>
 );
 
 function ShareChip({ glyph, label, onClick }: { glyph: ReactNode; label: string; onClick: () => void }) {
   return (
-    <button onClick={onClick} className="flex h-[38px] items-center justify-center gap-1.5 rounded-[10px] border border-[#EDEDED] bg-white px-1 text-[10.5px] font-medium text-[#0F0F0F] shadow-[0_1px_2px_rgba(0,0,0,0.05)] active:bg-black/[0.03]">
+    <button onClick={onClick} className="flex h-[42px] items-center gap-1.5 rounded-[10px] border border-[#EDEDED] bg-white px-2 text-[11.5px] font-medium text-[#0F0F0F] shadow-[0_1px_2px_rgba(0,0,0,0.05)] active:bg-black/[0.03]">
       {glyph}
-      {label}
+      <span className="truncate">{label}</span>
     </button>
   );
 }
@@ -4715,25 +4715,17 @@ const peopleGlyph = (color: string, size = 19) => (
     <path d="M15.8 6.1a2.9 2.9 0 010 5.3M17.1 13.9c2 .6 3.3 2.2 3.3 4.3" />
   </svg>
 );
-const storeGlyph = (color: string) => (
-  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-    <path d="M3.4 5.4h17.2l1 4.2a2.6 2.6 0 01-5.1.6 2.6 2.6 0 01-5.1 0 2.6 2.6 0 01-5.1 0 2.6 2.6 0 01-5.1-.6z" />
-    <path d="M4.7 12.2V19a1 1 0 001 1h12.6a1 1 0 001-1v-6.8" />
-    <path d="M9.9 20v-5.2h4.2V20" />
-  </svg>
-);
-
 /* What has happened on the member's link lately. The first four rows show
    on arrival; "View More Activity" reveals the rest. */
 type ReferActivity = { user: string; deposit: boolean; ago: number; unit: "h" | "d"; avatar: string };
 const REFER_ACTIVITY: ReferActivity[] = [
-  { user: "User123", deposit: false, ago: 2, unit: "h", avatar: "linear-gradient(140deg,#A98BF0,#6C4BD1)" },
-  { user: "User456", deposit: true, ago: 5, unit: "h", avatar: "linear-gradient(140deg,#F4726B,#C42A22)" },
-  { user: "User789", deposit: false, ago: 1, unit: "d", avatar: "linear-gradient(140deg,#54D69B,#189E63)" },
-  { user: "User101", deposit: true, ago: 2, unit: "d", avatar: "linear-gradient(140deg,#FFD34D,#F09819)" },
-  { user: "User202", deposit: false, ago: 3, unit: "d", avatar: "linear-gradient(140deg,#7FB8FF,#2A6FD1)" },
-  { user: "User303", deposit: true, ago: 4, unit: "d", avatar: "linear-gradient(140deg,#FF9EC4,#D1417F)" },
-  { user: "User404", deposit: false, ago: 6, unit: "d", avatar: "linear-gradient(140deg,#9FE0E8,#2A94A8)" },
+  { user: "User123", deposit: false, ago: 2, unit: "h", avatar: "/refer-avatar-2.png" },
+  { user: "User456", deposit: true, ago: 5, unit: "h", avatar: "/refer-avatar-3.png" },
+  { user: "User789", deposit: false, ago: 1, unit: "d", avatar: "/refer-avatar-4.png" },
+  { user: "User101", deposit: true, ago: 2, unit: "d", avatar: "/refer-avatar-1.png" },
+  { user: "User202", deposit: false, ago: 3, unit: "d", avatar: "/refer-avatar-3.png" },
+  { user: "User303", deposit: true, ago: 4, unit: "d", avatar: "/refer-avatar-1.png" },
+  { user: "User404", deposit: false, ago: 6, unit: "d", avatar: "/refer-avatar-2.png" },
 ];
 
 function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: Lang; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void }) {
@@ -4784,7 +4776,7 @@ function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
   );
 
   const step = (n: number, icon: ReactNode, title: string, desc: string) => (
-    <div className="relative z-10 flex items-center gap-2.5 rounded-2xl bg-[#F7F7F8] py-3.5 pl-2.5 pr-3.5">
+    <div className="relative flex items-center gap-2.5 rounded-2xl bg-[#F3F4F6] py-3.5 pl-2.5 pr-3.5">
       <span className="relative z-30 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#D10005] text-[12px] font-bold text-white">{n}</span>
       <span className="flex w-[34px] shrink-0 items-center justify-center">{icon}</span>
       <div className="min-w-0 flex-1">
@@ -4872,10 +4864,10 @@ function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
             <p className="mt-3 text-[13px] font-bold text-[#D10005]">{t.rafLinkLabel}</p>
             {copyRow(t.rafLinkShort, t.rafLinkFull, t.rafCopied)}
             <p className="mt-3.5 text-[13px] font-bold text-[#0F0F0F]">{t.rafShareVia}</p>
-            <div className="mt-1.5 grid grid-cols-3 gap-2">
+            <div className="mt-1.5 grid grid-cols-3 gap-1.5">
               <ShareChip glyph={X_GLYPH} label={t.rafShareX} onClick={() => pushToast(t.rafShareOpening(t.rafShareX))} />
               <ShareChip glyph={LINE_GLYPH} label={t.rafShareLine} onClick={() => pushToast(t.rafShareOpening(t.rafShareLine))} />
-              <ShareChip glyph={referIcon("/refer-qrcode.png", 18)} label={t.rafQr} onClick={() => setQrOpen(true)} />
+              <ShareChip glyph={referIcon("/refer-qrcode.png", 21)} label={t.rafQr} onClick={() => setQrOpen(true)} />
             </div>
           </div>
 
@@ -4895,7 +4887,12 @@ function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
               numbers together, so it sits above the cards it crosses. */}
           <h2 className="mb-2.5 mt-5 text-[15px] font-bold text-[#0F0F0F]">{t.rafHowItWorks}</h2>
           <div className="relative space-y-2.5">
-            <div className="pointer-events-none absolute bottom-[46px] left-[21.5px] top-[46px] z-20 border-l-2 border-dotted border-[#D10005]" />
+            {/* Drawn as the design's rule: a 3px stroke in 13px dashes with
+                12px between them. */}
+            <div
+              className="pointer-events-none absolute bottom-[46px] left-[21px] top-[46px] z-20 w-[3px]"
+              style={{ background: "repeating-linear-gradient(to bottom,#D10005 0 13px,transparent 13px 25px)" }}
+            />
             {step(1, referIcon("/refer-handshake.png", 30), t.rafStep1TitleShort, t.rafStep1DescShort)}
             {step(2, peopleGlyph("#D10005", 30), t.rafStep2Title, t.rafStep2DescNew)}
             {step(3, <CoinIcon size={30} />, t.rafStep3Title, t.rafStep3DescNew)}
@@ -4918,7 +4915,7 @@ function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
                 <span className="mx-auto mt-1 block w-fit rounded-full border border-[#D10005] px-2 py-[1px] text-[8px] font-bold leading-[1.3] text-[#D10005]">{t.rafWelcomeBonus}</span>
               </div>,
             )}
-            {rewardRow(storeGlyph("#D10005"), t.rafRowFirstDeposit, reward("100"), reward("100"))}
+            {rewardRow(referIcon("/refer-store.png", 19), t.rafRowFirstDeposit, reward("100"), reward("100"))}
             {rewardRow(referIcon("/refer-tier-1.png", 19), t.rafRowBronze, reward("100"), reward("100"))}
             {rewardRow(
               <span className="opacity-40">{referIcon("/refer-tier-2.png", 19)}</span>,
@@ -4934,9 +4931,7 @@ function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
           <div className="space-y-2">
             {(allActivity ? REFER_ACTIVITY : REFER_ACTIVITY.slice(0, 4)).map((a) => (
               <div key={a.user} className="flex items-center gap-2.5 rounded-2xl bg-white px-3 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.07)]">
-                <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full" style={{ background: a.avatar }}>
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="#fff"><path d="M12 12a4 4 0 100-8 4 4 0 000 8zm0 1.8c-3.4 0-6.4 1.9-6.4 4.3V20h12.8v-1.9c0-2.4-3-4.3-6.4-4.3z" /></svg>
-                </span>
+                <img src={a.avatar} alt="" className="h-[32px] w-[32px] shrink-0 rounded-full object-contain" draggable={false} />
                 <div className="min-w-0 flex-1">
                   <p className="text-[13px] font-bold leading-tight text-[#0F0F0F]">{a.user}</p>
                   <p className={`mt-0.5 text-[11px] font-medium leading-tight ${a.deposit ? "text-[#D10005]" : "text-[#8a9099]"}`}>
@@ -4969,14 +4964,20 @@ function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
               </span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className={`shrink-0 transition-transform ${notesOpen ? "rotate-180" : ""}`}><path d="M6 9l6 6 6-6" /></svg>
             </button>
-            <ul className="mt-2 space-y-1.5">
-              {(notesOpen ? t.rafNotes : t.rafNotes.slice(0, 1)).map((n, i) => (
-                <li key={i} className="flex gap-1.5 text-[11px] leading-[1.45] text-[#0F0F0F]">
-                  <span className="shrink-0">■</span>
-                  <span className={notesOpen ? "" : "truncate"}>{n}</span>
-                </li>
-              ))}
-            </ul>
+            <p className="mt-2 flex gap-1.5 text-[11px] font-bold leading-[1.45] text-[#0F0F0F]">
+              <span className="shrink-0">■</span>
+              <span className={notesOpen ? "" : "truncate"}>{t.rafNotesIntro}</span>
+            </p>
+            {notesOpen && (
+              <ol className="mt-2 space-y-2">
+                {t.rafNotesTerms.map((n, i) => (
+                  <li key={i} className="flex gap-1.5 text-[11px] leading-[1.5] text-[#0F0F0F]">
+                    <span className="shrink-0 font-bold">{i + 1}.</span>
+                    <span>{n}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
           </div>
         </div>
 
