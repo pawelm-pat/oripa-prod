@@ -4852,7 +4852,7 @@ function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
             {stat(t.rafInvited, referIcon("/refer-handshake.png", 22), "100")}
             {stat(t.rafPendingDeposit, referIcon("/refer-handshake.png", 22), "100")}
             {stat(t.rafQualifiedBronze, referIcon("/refer-tier-1.png", 24), "70")}
-            {stat(t.rafQualifiedSilver, <span className="opacity-40">{referIcon("/refer-tier-2.png", 24)}</span>, t.rafComingSoon, true)}
+            {stat(t.rafQualifiedSilver, referIcon("/refer-tier-2.png", 24), t.rafComingSoon, true)}
           </div>
           <div className="mt-2.5">
             {stat(t.rafTotalRewards, <CoinIcon size={20} />, "200,000")}
@@ -4862,11 +4862,11 @@ function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
               numbers together, so it sits above the cards it crosses. */}
           <h2 className="mb-2.5 mt-5 text-[15px] font-bold text-[#0F0F0F]">{t.rafHowItWorks}</h2>
           <div className="relative space-y-2.5">
-            {/* Drawn as the design's rule: a 4px stroke in 13px dashes with
-                12px between them. */}
+            {/* Drawn as the design's rule: a fine 2px stroke in short dashes
+                with an even gap between them. */}
             <div
-              className="pointer-events-none absolute bottom-[46px] left-[20px] top-[46px] z-20 w-[4px]"
-              style={{ background: "repeating-linear-gradient(to bottom,#D10005 0 13px,transparent 13px 25px)" }}
+              className="pointer-events-none absolute bottom-[46px] left-[21px] top-[46px] z-20 w-[2px]"
+              style={{ background: "repeating-linear-gradient(to bottom,#D10005 0 5px,transparent 5px 11px)" }}
             />
             {step(1, referIcon("/refer-handshake.png", 30), t.rafStep1TitleShort, t.rafStep1DescShort)}
             {step(2, peopleGlyph("#D10005", 30), t.rafStep2Title, t.rafStep2DescNew)}
@@ -4893,7 +4893,7 @@ function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
             {rewardRow(referIcon("/refer-store.png", 19), t.rafRowFirstDeposit, reward("100"), reward("100"))}
             {rewardRow(referIcon("/refer-tier-1.png", 19), t.rafRowBronze, reward("100"), reward("100"))}
             {rewardRow(
-              <span className="opacity-40">{referIcon("/refer-tier-2.png", 19)}</span>,
+              referIcon("/refer-tier-2.png", 19),
               t.rafRowSilver,
               reward(t.rafComingSoon, true),
               reward(t.rafComingSoon, true),
