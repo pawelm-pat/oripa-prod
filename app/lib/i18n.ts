@@ -523,13 +523,8 @@ const EN = {
   rafStep2Desc: "For both Introducer and Friend. Reward on First Time Deposit",
   rafStep3Desc: "For both Introducer and Friend. Reward when Friend moves up User Rank",
 
-  // Banner artwork copy — the referral hero the design draws above the page.
-  rafBannerRibbon: "一緒に楽しもう！",
+  // Alt text for the referral banner artwork.
   rafBannerTitle: "友達紹介",
-  rafBannerLead: "あなたの「",
-  rafBannerPick: "オススメ",
-  rafBannerMid: "」で、",
-  rafBannerTail: "もっと広がる冒険の輪！",
 
   rafPromoLabel: "Your Promo Code",
   rafPromoCode: "ORPLOT 123",
@@ -561,7 +556,7 @@ const EN = {
   rafRowFirstDeposit: "First Deposit",
   rafRowBronze: "Friend Levels Up to Bronze",
   rafRowSilver: "Friend Levels Up to Silver (Coming soon)",
-  rafWelcomeBonus: "Welcome bonus",
+  rafWelcomeBonus: "Welcome Bonus",
 
   rafRecentActivity: "Recent Activity",
   rafActRegistered: "registered",
@@ -1660,12 +1655,7 @@ const JA: Dict = {
   rafStep2Desc: "紹介者と友達の両方に。友達の初回入金で付与されます。",
   rafStep3Desc: "紹介者と友達の両方に。友達のランクアップで付与されます。",
 
-  rafBannerRibbon: "一緒に楽しもう！",
   rafBannerTitle: "友達紹介",
-  rafBannerLead: "あなたの「",
-  rafBannerPick: "オススメ",
-  rafBannerMid: "」で、",
-  rafBannerTail: "もっと広がる冒険の輪！",
 
   rafPromoLabel: "プロモコード",
   rafPromoCode: "ORPLOT 123",

@@ -4699,7 +4699,7 @@ const LINE_GLYPH = (
 
 function ShareChip({ glyph, label, onClick }: { glyph: ReactNode; label: string; onClick: () => void }) {
   return (
-    <button onClick={onClick} className="flex h-[42px] items-center gap-1.5 rounded-[10px] border border-[#EDEDED] bg-white px-2 text-[11.5px] font-medium text-[#0F0F0F] shadow-[0_1px_2px_rgba(0,0,0,0.05)] active:bg-black/[0.03]">
+    <button onClick={onClick} className="flex h-[44px] items-center gap-1.5 rounded-[10px] border border-[#EDEDED] bg-white px-2 text-[11.5px] font-medium text-[#0F0F0F] shadow-[0_1px_2px_rgba(0,0,0,0.05)] active:bg-black/[0.03]">
       {glyph}
       <span className="truncate">{label}</span>
     </button>
@@ -4788,24 +4788,27 @@ function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
 
   // One reward cell: a coin and an amount, or the placeholder the Silver row
   // and the introducer's sign-up cell carry instead.
+  // One reward cell. Coins start at the column edge so every amount in a
+  // column lines up, as the design draws them; the introducer's sign-up cell
+  // carries a centred placeholder instead.
   const reward = (value: string | null, dim = false) => (
-    <div className="flex items-center justify-center gap-1.5">
+    <div className={`flex items-center gap-2 ${value === null ? "justify-center" : ""}`}>
       {value === null ? (
-        <span className="text-[13px] font-bold text-[#C9CBD0]">—</span>
+        <span className="text-[14px] font-bold text-[#C9CBD0]">—</span>
       ) : (
         <>
-          <CoinIcon size={17} />
-          <span className={`text-[13px] font-bold leading-tight ${dim ? "text-[#8a9099]" : "text-[#0F0F0F]"}`}>{value}</span>
+          <CoinIcon size={23} />
+          <span className={`text-[14px] font-bold leading-tight ${dim ? "text-[#8a9099]" : "text-[#0F0F0F]"}`}>{value}</span>
         </>
       )}
     </div>
   );
 
   const rewardRow = (icon: ReactNode, label: string, you: ReactNode, friend: ReactNode, dim = false) => (
-    <div className={`grid grid-cols-[1.2fr_1fr_1fr] items-center gap-1 border-t border-[#EFEFEF] px-2.5 py-3 ${dim ? "bg-[#F2F4F6]" : "bg-white"}`}>
-      <div className="flex items-center gap-1.5">
+    <div className={`grid grid-cols-3 items-center border-t border-[#EFEFEF] py-3 pl-[15px] ${dim ? "bg-[#F2F4F6]" : "bg-white"}`}>
+      <div className="flex items-center gap-2 pr-2">
         {icon}
-        <span className={`text-[11.5px] font-bold leading-[1.25] ${dim ? "text-[#8a9099]" : "text-[#0F0F0F]"}`}>{label}</span>
+        <span className={`text-[13px] font-bold leading-[1.25] ${dim ? "text-[#8a9099]" : "text-[#0F0F0F]"}`}>{label}</span>
       </div>
       {you}
       {friend}
@@ -4820,42 +4823,14 @@ function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
         <div className="px-4 pb-6 pt-4">
           {/* Title row — back returns to My Page */}
           <div className="flex items-center gap-2">
-            <button onClick={onBack} aria-label={t.backAria} className="flex h-9 w-9 items-center justify-center text-[#D10005] active:opacity-70">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M20 12H4M10 6l-6 6 6 6" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            <button onClick={onBack} aria-label={t.backAria} className="flex h-9 w-9 items-center justify-center active:opacity-70">
+              {referIcon("/refer-back.png", 26)}
             </button>
             <h1 className="text-[20px] font-bold text-[#0F0F0F]">{t.rafTitle}</h1>
           </div>
 
           {/* Hero banner */}
-          <div className="relative mt-2 overflow-hidden rounded-xl border border-[#F0E3C8]" style={{ aspectRatio: "358 / 119", background: "linear-gradient(165deg,#FFFDF6 0%,#FDF4E3 55%,#FBEBD4 100%)" }}>
-            <span className="pointer-events-none absolute left-[6%] top-[16%] text-[10px] text-[#EBC97F]">✦</span>
-            <span className="pointer-events-none absolute left-[2%] bottom-[14%] text-[14px] text-[#F0D79B]">✦</span>
-            <span className="pointer-events-none absolute right-[42%] top-[8%] text-[9px] text-[#EBC97F]">✦</span>
-            <span className="pointer-events-none absolute right-[6%] top-[22%] text-[12px] text-[#E9C377]">✦</span>
-            <span className="pointer-events-none absolute right-[18%] bottom-[10%] text-[10px] text-[#F0D79B]">✦</span>
-            <img src="/refer-mascot.png" alt="" className="pointer-events-none absolute -bottom-2 right-0 h-[112%] w-auto object-contain" draggable={false} />
-            <div className="relative flex h-full w-[66%] flex-col items-center justify-center px-2">
-              <span
-                className="bg-[#D5241C] px-4 py-[2px] text-[8.5px] font-bold tracking-wide text-white"
-                style={{ clipPath: "polygon(0 0, 100% 0, 94% 50%, 100% 100%, 0 100%, 6% 50%)" }}
-              >
-                {t.rafBannerRibbon}
-              </span>
-              <p
-                className="mt-0.5 text-[31px] font-black leading-none text-[#D3211A]"
-                style={{ textShadow: "0 1px 0 #fff, 0 2px 3px rgba(255,255,255,0.9)", letterSpacing: "0.02em" }}
-              >
-                {t.rafBannerTitle}
-              </p>
-              <p className="mt-1 text-center text-[8.5px] font-bold leading-[1.4] text-[#3F2C22]">
-                {t.rafBannerLead}
-                <span className="text-[#D3211A]">{t.rafBannerPick}</span>
-                {t.rafBannerMid}
-                <br />
-                {t.rafBannerTail}
-              </p>
-            </div>
-          </div>
+          <img src="/refer-banner.png" alt={t.rafBannerTitle} className="mt-2 w-full rounded-xl" draggable={false} />
 
           {/* Promo code, invite link and the three ways to pass them on */}
           <div className="mt-3 rounded-2xl bg-white p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.07)]">
@@ -4887,10 +4862,10 @@ function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
               numbers together, so it sits above the cards it crosses. */}
           <h2 className="mb-2.5 mt-5 text-[15px] font-bold text-[#0F0F0F]">{t.rafHowItWorks}</h2>
           <div className="relative space-y-2.5">
-            {/* Drawn as the design's rule: a 3px stroke in 13px dashes with
+            {/* Drawn as the design's rule: a 4px stroke in 13px dashes with
                 12px between them. */}
             <div
-              className="pointer-events-none absolute bottom-[46px] left-[21px] top-[46px] z-20 w-[3px]"
+              className="pointer-events-none absolute bottom-[46px] left-[20px] top-[46px] z-20 w-[4px]"
               style={{ background: "repeating-linear-gradient(to bottom,#D10005 0 13px,transparent 13px 25px)" }}
             />
             {step(1, referIcon("/refer-handshake.png", 30), t.rafStep1TitleShort, t.rafStep1DescShort)}
@@ -4901,7 +4876,7 @@ function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
           {/* What each milestone pays the introducer and their friend */}
           <h2 className="mb-2.5 mt-5 text-[15px] font-bold text-[#0F0F0F]">{t.rafRewardBreakdown}</h2>
           <div className="overflow-hidden rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.07)]">
-            <div className="grid grid-cols-[1.2fr_1fr_1fr] gap-1 bg-[#D10005] px-2.5 py-3 text-center text-[11.5px] font-bold leading-[1.2] text-white">
+            <div className="grid grid-cols-3 gap-1 bg-[#D10005] px-1.5 py-3.5 text-center text-[13px] font-bold leading-[1.2] text-white">
               <span>{t.rafColTrigger}</span>
               <span>{t.rafColYouGet}</span>
               <span>{t.rafColFriendGets}</span>
@@ -4910,9 +4885,9 @@ function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
               peopleGlyph("#D10005"),
               t.rafRowRegisters,
               reward(null),
-              <div>
+              <div className="pr-2">
                 {reward("100")}
-                <span className="mx-auto mt-1 block w-fit rounded-full border border-[#D10005] px-2 py-[1px] text-[8px] font-bold leading-[1.3] text-[#D10005]">{t.rafWelcomeBonus}</span>
+                <span className="mt-1.5 flex h-[19px] w-fit items-center rounded-full border border-[#D10005] px-2.5 text-[10px] font-bold leading-none text-[#D10005]">{t.rafWelcomeBonus}</span>
               </div>,
             )}
             {rewardRow(referIcon("/refer-store.png", 19), t.rafRowFirstDeposit, reward("100"), reward("100"))}
