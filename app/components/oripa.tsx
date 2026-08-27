@@ -2326,8 +2326,8 @@ function ExchangeConfirm({ lang, coins, prizes, total, onConfirm, onClose }: { l
           </>
         ) : (
           <>
-            <h3 className="text-[20px] font-bold text-[#1d2129]">{t.exConfirmTitle}</h3>
-            <p className="mx-auto mt-2 max-w-[300px] text-[12px] font-medium leading-relaxed text-[#6b7075]">{t.exConfirmBody}</p>
+            <h3 className="text-[20px] font-bold text-[#0F0F0F]">{t.exConfirmTitle}</h3>
+            <p className="mx-auto mt-2 max-w-[300px] text-[12px] font-medium leading-relaxed text-[#0F0F0FB2]">{t.exConfirmBody}</p>
           </>
         )}
         {/* Card pile: makes it clear how many cards are being exchanged. Shows
@@ -2335,7 +2335,7 @@ function ExchangeConfirm({ lang, coins, prizes, total, onConfirm, onClose }: { l
         <div className="mt-4 flex items-center justify-center gap-2">
           <CardStack prizes={ordered} cardW={46} cardH={62} />
           {prizes.length > 1 && (
-            <span className="text-[12px] font-bold text-[#6b7075]">{t.exCardCount(prizes.length)}</span>
+            <span className={`text-[12px] font-bold ${hasRare ? "text-[#6b7075]" : "text-[#0F0F0FB2]"}`}>{t.exCardCount(prizes.length)}</span>
           )}
         </div>
         {/* Balance before → after (green) */}
@@ -3525,9 +3525,9 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                 onClick={() => setTab(tb.key)}
                 className="relative flex-1 pb-2.5 pt-1 text-center"
               >
-                {/* Every tab label stays ink in the design — the red underline and
-                    the filled count pill carry the active state. */}
-                <span className="text-[12px] font-bold text-[#0F0F0F]">
+                {/* The selected tab's label picks up the same red as its
+                    underline and count pill; the others stay ink. */}
+                <span className={`text-[12px] font-bold ${active ? "text-[#D10005]" : "text-[#0F0F0F]"}`}>
                   {tb.label}
                 </span>
                 <span
