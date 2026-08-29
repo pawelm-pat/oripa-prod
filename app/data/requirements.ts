@@ -51,7 +51,15 @@ const FOOTER_GROUP: ReqGroup = {
     { text: "Privacy policy", sub: ["Opens the Privacy Policy in the legal overlay."] },
     { text: "Legal notice (SCTA)", sub: ["Opens the Specified Commercial Transactions Act notation in the legal overlay."] },
     { text: "Basic Policy Against Anti-Social Forces", sub: ["Opens that policy in the legal overlay."] },
-    { text: "Category chips: Latest, Trending, Pokémon TCG, Limited, Other, All", sub: ["Display only — do nothing (TBC)."] },
+    {
+      text: "Category chips: New, Hot, Pokemon, Limited, Others, All",
+      sub: [
+        "Same labels and behaviour as the lobby's category bar: tapping one opens that category's feed.",
+        "Tapped from another screen, it returns to the lobby (the logged-out landing feed while signed out) with the category open.",
+        "The feed scrolls so the category bar sits at the top — the home hero banner above it is not shown.",
+        "Like the category bar, it also drops any active search or filters.",
+      ],
+    },
     { text: "Follow / social icons: LINE, X, Instagram, Facebook", sub: ["Display only — do nothing (TBC)."] },
     {
       text: "Support & payment info",

@@ -67,6 +67,12 @@ const NotifNavContext = createContext<() => void>(() => {});
 const CoinHistoryNavContext = createContext<() => void>(() => {});
 // Opening a legal document (Terms / Privacy / SCTA) reader from anywhere.
 const LegalNavContext = createContext<(doc: LegalDocKey) => void>(() => {});
+// Picking a category from the footer, which behaves like the lobby's own
+// category bar: it selects the category and parks that bar at the top.
+const CatNavContext = createContext<(key: string) => void>(() => {});
+// A category request travels as a token so the same category tapped twice
+// still re-scrolls the feed.
+type CatRequest = { key: string; token: number };
 
 // Preserve the My Page scroll offset across remounts (each screen change
 // remounts via key={screen}), so returning from a sub-screen keeps position.
@@ -593,8 +599,13 @@ const SOCIAL_ICONS: { key: string; viewBox: string; path: React.ReactNode }[] = 
   },
 ];
 
+// Footer category chips map onto the lobby's category bar, in the order the
+// labels are listed in `ftCats`.
+const FOOTER_CAT_KEYS = ["new", "popular", "pokemon", "limited", "other", "all"];
+
 function SiteFooter({ t }: { t: Dict }) {
   const openLegal = useContext(LegalNavContext);
+  const openCat = useContext(CatNavContext);
   const chip = (label: string) => {
     const doc: LegalDocKey | null = label === t.mpTerms ? "terms" : label === t.mpPrivacy ? "privacy" : label === t.mpLegal ? "legal" : label === t.mpAntisocial ? "antisocial" : null;
     // Height and padding follow the footer button in the design.
@@ -615,7 +626,17 @@ function SiteFooter({ t }: { t: Dict }) {
       <div className="mt-3 flex flex-wrap gap-2.5">{t.ftLinks.map(chip)}</div>
 
       <h4 className="mt-6 text-[14px] font-bold">{t.ftCategories}</h4>
-      <div className="mt-3 flex flex-wrap gap-2.5">{t.ftCats.map(chip)}</div>
+      <div className="mt-3 flex flex-wrap gap-2.5">
+        {t.ftCats.map((label, i) => (
+          <button
+            key={label}
+            onClick={() => openCat(FOOTER_CAT_KEYS[i] ?? "all")}
+            className="inline-flex h-[26px] items-center rounded-full bg-white px-5 text-[12px] font-bold text-[#1d2129] active:bg-white/80"
+          >
+            {label}
+          </button>
+        ))}
+      </div>
 
       <h4 className="mt-6 text-[14px] font-bold">{t.ftFollow}</h4>
       <div className="mt-3 flex items-center gap-3.5">
@@ -829,9 +850,9 @@ function PriceRangeFilter({ label, min, max, onMin, onMax }: { label: string; mi
 
 // V2 lobby feed. `onView` (tap on any card) is inert in the logged-in lobby
 // and routes to Sign-up on the logged-out landing.
-function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll, onView, onOpenDraw, onRequestDraw, showPromo = false }: { t: Dict; lang: Lang; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void; onView?: () => void; onOpenDraw?: (item: OripaItem) => void; onRequestDraw?: (item: OripaItem, req: Omit<DrawRequest, "token">) => void; showPromo?: boolean }) {
+function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll, onView, onOpenDraw, onRequestDraw, catRequest, showPromo = false }: { t: Dict; lang: Lang; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void; onView?: () => void; onOpenDraw?: (item: OripaItem) => void; onRequestDraw?: (item: OripaItem, req: Omit<DrawRequest, "token">) => void; catRequest?: CatRequest | null; showPromo?: boolean }) {
   const L = LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"];
-  const [cat, setCat] = useState("all");
+  const [cat, setCat] = useState(catRequest?.key ?? "all");
   const [searchActive, setSearchActive] = useState(false);
   const [searchHidden, setSearchHidden] = useState(false);
   // Draft filter state edited inside the search/filter dropdown. Nothing here
@@ -1021,6 +1042,38 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
     if (key !== cat) clearEverything();
     setCat(key);
   };
+
+  // A category picked in the footer acts like its twin in the category bar,
+  // then brings that bar to the top of the screen — the feed starts where the
+  // hero banner ends, which is where the lobby's own chips would leave it.
+  const catToken = catRequest?.token;
+  const catSeenRef = useRef(catToken);
+  useEffect(() => {
+    if (!catToken) return;
+    if (catToken !== catSeenRef.current) {
+      catSeenRef.current = catToken;
+      selectCat(catRequest!.key);
+    }
+    const el = rootRef.current;
+    const scroller = el?.closest(".overflow-y-auto") as HTMLElement | null;
+    if (el && scroller) {
+      const top = scroller.scrollTop + el.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+      scroller.scrollTo({ top });
+      // The jump is navigation, not a scroll gesture, so the search bar stays
+      // open. Lock the collapse logic while the expansion and the reflow it
+      // causes settle, then re-anchor it at wherever the feed ended up.
+      searchHiddenRef.current = false;
+      setSearchHidden(false);
+      lastScrollY.current = top;
+      scrollLockRef.current = true;
+      window.setTimeout(() => {
+        scrollLockRef.current = false;
+        lastScrollY.current = scroller.scrollTop;
+      }, 380);
+    }
+    // selectCat is recreated every render; the token guard is what gates this.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catToken]);
 
   const catList: { key: string; label: string }[] = [
     { key: "all", label: t.catAll },
@@ -1334,7 +1387,7 @@ function FeedScroller({ scrollElRef, onScroll, children }: { scrollElRef?: RefOb
   );
 }
 
-function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, onRequestDraw, scrollRef, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll }: { lang: Lang; coins: number; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem) => void; onRequestDraw?: (item: OripaItem, req: Omit<DrawRequest, "token">) => void; scrollRef?: { current: number }; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void }) {
+function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, onRequestDraw, scrollRef, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll, catRequest }: { lang: Lang; coins: number; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem) => void; onRequestDraw?: (item: OripaItem, req: Omit<DrawRequest, "token">) => void; scrollRef?: { current: number }; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void; catRequest?: CatRequest | null }) {
   const t = STR[lang];
   // Preserve the lobby's scroll position across navigation (e.g. opening a draw
   // and coming back) so the user lands where they were, not at the top. The
@@ -1352,7 +1405,7 @@ function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, onRequestDraw
       <FeedScroller scrollElRef={scrollElRef} onScroll={(el) => { if (scrollRef) scrollRef.current = el.scrollTop; }}>
         <HomeHero lang={lang} />
 
-        <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={onApply} onToggleApplied={onToggleApplied} onClearAll={onClearAll} onOpenDraw={onOpenDraw} onRequestDraw={onRequestDraw} showPromo />
+        <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={onApply} onToggleApplied={onToggleApplied} onClearAll={onClearAll} onOpenDraw={onOpenDraw} onRequestDraw={onRequestDraw} catRequest={catRequest} showPromo />
 
         <SiteFooter t={t} />
       </FeedScroller>
@@ -3002,7 +3055,7 @@ function BottomNav({ screen, t, onNavigate }: { screen: Screen; t: Dict; onNavig
 // Logged-out lobby (V1 homepage): auth header + search + banner placeholder +
 // category-filtered card sections. A visitor can browse any pack page; only a
 // draw CTA asks them to log in.
-function LandingPage({ lang, onSignUp, onLogin, onOpenDraw, onRequireLogin }: { lang: Lang; onSignUp: () => void; onLogin: () => void; onOpenDraw: (item: OripaItem) => void; onRequireLogin: (item: OripaItem) => void }) {
+function LandingPage({ lang, onSignUp, onLogin, onOpenDraw, onRequireLogin, catRequest }: { lang: Lang; onSignUp: () => void; onLogin: () => void; onOpenDraw: (item: OripaItem) => void; onRequireLogin: (item: OripaItem) => void; catRequest?: CatRequest | null }) {
   const t = STR[lang];
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<Record<string, boolean>>({});
@@ -3022,7 +3075,7 @@ function LandingPage({ lang, onSignUp, onLogin, onOpenDraw, onRequireLogin }: { 
 
         {/* Card art opens the pack page; its inline draw CTAs need an account,
             so they route to login and come back to the same pack. */}
-        <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={applyLobby} onToggleApplied={toggleApplied} onClearAll={clearAll} onOpenDraw={onOpenDraw} onRequestDraw={(item) => onRequireLogin(item)} />
+        <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={applyLobby} onToggleApplied={toggleApplied} onClearAll={clearAll} onOpenDraw={onOpenDraw} onRequestDraw={(item) => onRequireLogin(item)} catRequest={catRequest} />
 
         <SiteFooter t={t} />
       </FeedScroller>
@@ -6246,6 +6299,10 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   // is what clears the category and search state it owns. Back buttons keep using
   // goHome, which deliberately preserves all of that.
   const [homeKey, setHomeKey] = useState(0);
+  // Category picked from the footer. It reaches the lobby (or the logged-out
+  // landing feed) as a request, so tapping a chip from any screen lands on the
+  // feed with that category open — exactly like its twin in the category bar.
+  const [catRequest, setCatRequest] = useState<CatRequest | null>(null);
   const resetHome = () => {
     clearLobbyFilters();
     homeScroll.current = 0;
@@ -6346,9 +6403,20 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   // route into the member-only notification or coin-history screens.
   const onLanding = screen === "landing" || screen === "signup" || screen === "login" || screen === "guestDraw";
   const showNav = !onLanding && !kyc.activeScreen;
+  // A footer category returns to the feed the visitor belongs on — the landing
+  // page while signed out, the lobby once signed in — and opens that category
+  // there, dropping any search or filters the way the category bar does.
+  const openCategory = (key: string) => {
+    setCatRequest({ key, token: Date.now() });
+    if (onLanding) { goLanding(); return; }
+    clearLobbyFilters();
+    setLobbyDraw(null);
+    setScreen("oripa");
+  };
   return (
     <NotifNavContext.Provider value={onLanding ? () => {} : openNotifications}>
     <CoinHistoryNavContext.Provider value={onLanding ? () => {} : openCoinHistory}>
+    <CatNavContext.Provider value={openCategory}>
     <LegalNavContext.Provider value={setLegalDoc}>
     <div className="flex h-full flex-col bg-[#eef0f3]">
       <div className="relative min-h-0 flex-1">
@@ -6363,6 +6431,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onLogin={() => setScreen("login")}
             onOpenDraw={openGuestDraw}
             onRequireLogin={(item) => requireAuthForDraw(item)}
+            catRequest={catRequest}
           />
         )}
         {/* Visitor's pack page: same design, no wallet, CTAs route to auth. */}
@@ -6401,7 +6470,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
           />
         )}
         {/* Logged-in lobby — V2 format */}
-        {screen === "oripa" && <OripaHome key={homeKey} lang={lang} coins={coins} onHome={resetHome} onOpenStore={openStore} onOpenDraw={openDraw} onRequestDraw={requestLobbyDraw} scrollRef={homeScroll} query={lobbyQuery} filters={lobbyFilters} priceMin={lobbyPriceMin} priceMax={lobbyPriceMax} onApply={applyLobby} onToggleApplied={toggleLobbyFilter} onClearAll={clearLobbyFilters} />}
+        {screen === "oripa" && <OripaHome key={homeKey} lang={lang} coins={coins} onHome={resetHome} onOpenStore={openStore} onOpenDraw={openDraw} onRequestDraw={requestLobbyDraw} scrollRef={homeScroll} query={lobbyQuery} filters={lobbyFilters} priceMin={lobbyPriceMin} priceMax={lobbyPriceMax} onApply={applyLobby} onToggleApplied={toggleLobbyFilter} onClearAll={clearLobbyFilters} catRequest={catRequest} />}
         {screen === "drawDetail" && drawItem && (
           <DrawDetail
             key={drawItem.id}
@@ -6629,6 +6698,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
       {showNav && <BottomNav screen={screen} t={t} onNavigate={navigate} />}
     </div>
     </LegalNavContext.Provider>
+    </CatNavContext.Provider>
     </CoinHistoryNavContext.Provider>
     </NotifNavContext.Provider>
   );
