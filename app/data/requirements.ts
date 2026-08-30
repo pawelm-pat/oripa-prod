@@ -457,7 +457,15 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
           "Each item shows a date, title and body; shipping items also show a tracking number line.",
           "Unread items are highlighted with a red accent and a 'New' (新着) badge.",
           { text: "Tapping an unread item", sub: ["Marks it read (styling updates); there is no further navigation."] },
-          "Empty state shows 'No notifications' (通知がありません).",
+          {
+            text: "Swiping an item to the left",
+            sub: [
+              "Uncovers a red Delete (削除) bin on the right; tapping it removes the notification from the list and from the tab's unread count.",
+              "Only one item is open at a time; tapping the item again, or swiping it back, closes the bin without deleting.",
+              "Deletions last for the visit only (sample data is restored on reload).",
+            ],
+          },
+          "Empty state shows the mascot with 'No notifications' (通知がありません), matching the card screens — including once every item in the tab has been deleted.",
         ],
         tbc: ["Items do not deep-link anywhere.", "Reading items does not clear the header bell badge.", "Content is sample data."],
       },

@@ -3086,18 +3086,114 @@ function LandingPage({ lang, onSignUp, onLogin, onOpenDraw, onRequireLogin, catR
 /* ── PhoneApp ─────────────────────────────────────────────────────────── */
 
 
+// A notification that slides to the left to uncover a bin. The row settles
+// either fully open or closed on release, and the swipe that opened it is
+// swallowed so it never reads as a tap on the notification underneath.
+const NOTIF_BIN_W = 76;
+
+function SwipeToDeleteRow({ open, onOpen, onClose, onDelete, deleteLabel, children }: { open: boolean; onOpen: () => void; onClose: () => void; onDelete: () => void; deleteLabel: string; children: React.ReactNode }) {
+  const [drag, setDrag] = useState<number | null>(null);
+  const startRef = useRef<{ x: number; y: number } | null>(null);
+  const axisRef = useRef<"none" | "x" | "y">("none");
+  const swipedRef = useRef(false);
+  const offset = drag ?? (open ? -NOTIF_BIN_W : 0);
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    startRef.current = { x: e.clientX, y: e.clientY };
+    axisRef.current = "none";
+    swipedRef.current = false;
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    const start = startRef.current;
+    if (!start) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    if (axisRef.current === "none") {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      // A mostly-vertical move belongs to the list's own scrolling.
+      axisRef.current = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+      if (axisRef.current === "x") {
+        swipedRef.current = true;
+        e.currentTarget.setPointerCapture(e.pointerId);
+      }
+    }
+    if (axisRef.current !== "x") return;
+    const base = open ? -NOTIF_BIN_W : 0;
+    setDrag(Math.max(-NOTIF_BIN_W, Math.min(0, base + dx)));
+  };
+  const endDrag = () => {
+    if (axisRef.current === "x") {
+      const settled = (drag ?? 0) < -NOTIF_BIN_W / 2;
+      if (settled) onOpen(); else onClose();
+    }
+    startRef.current = null;
+    axisRef.current = "none";
+    setDrag(null);
+  };
+
+  return (
+    <div className="relative overflow-hidden rounded-xl">
+      <button
+        onClick={onDelete}
+        aria-label={deleteLabel}
+        className="absolute inset-y-0 right-0 flex w-[76px] flex-col items-center justify-center gap-1 bg-[#D10005] text-white active:bg-[#b00004]"
+      >
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 7h16M10 4h4M9 7v12M15 7v12M6 7l1 13h10l1-13" />
+        </svg>
+        <span className="text-[11px] font-bold leading-none">{deleteLabel}</span>
+      </button>
+      <div
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onClickCapture={(e) => {
+          // The click that trails a swipe isn't a tap on the notification.
+          if (swipedRef.current) {
+            e.preventDefault();
+            e.stopPropagation();
+            swipedRef.current = false;
+            return;
+          }
+          // While the bin is showing, the next tap just puts the row back.
+          if (open) {
+            e.preventDefault();
+            e.stopPropagation();
+            onClose();
+          }
+        }}
+        className={drag === null ? "transition-transform duration-200" : ""}
+        style={{ transform: `translateX(${offset}px)`, touchAction: "pan-y" }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function NotificationsScreen({ lang, coins, empty = false, only, onBack, onHome, onOpenStore }: { lang: Lang; coins: number; empty?: boolean; only?: "you" | "notice"; onBack: () => void; onHome: () => void; onOpenStore?: () => void }) {
   const t = STR[lang];
   const [tab, setTab] = useState<"you" | "notice">(only ?? "you");
   // Locally track which notifications have been opened (reset per visit).
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
+  // Notifications deleted by swiping them away (kept for this visit only).
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+  // Only one row shows its bin at a time.
+  const [swipedId, setSwipedId] = useState<string | null>(null);
   const isUnread = (it: NotifItem) => !empty && !!it.unread && !readIds.has(it.id);
   const markRead = (id: string) => setReadIds((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
-  const unreadCount = (l: NotifItem[]) => l.filter(isUnread).length;
+  const deleteNotif = (id: string) => {
+    setSwipedId((cur) => (cur === id ? null : cur));
+    setDeletedIds((prev) => new Set(prev).add(id));
+  };
+  const alive = (l: NotifItem[]) => l.filter((it) => !deletedIds.has(it.id));
+  const unreadCount = (l: NotifItem[]) => alive(l).filter(isUnread).length;
   const youUnread = unreadCount(NOTIF_YOU);
   const noticeUnread = unreadCount(NOTIF_NOTICE);
 
-  const list = tab === "you" ? NOTIF_YOU : NOTIF_NOTICE;
+  const list = alive(tab === "you" ? NOTIF_YOU : NOTIF_NOTICE);
   const title = tab === "you" ? t.notifTabYou : t.notifTabNotice;
   return (
     <div className="flex h-full flex-col bg-[#eef0f3]">
@@ -3141,14 +3237,26 @@ function NotificationsScreen({ lang, coins, empty = false, only, onBack, onHome,
 
       <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto bg-[#eef0f3]">
         {empty || list.length === 0 ? (
-          <p className="py-28 text-center text-[14px] text-[#9aa0a8]">{t.notifEmpty}</p>
+          /* Same mascot-and-message treatment the card screens use when their
+             list runs out. */
+          <div className="flex flex-col items-center py-16">
+            <img src="/prize-character-wave.webp" alt="" className="mb-5 h-48 w-48 object-contain" />
+            <p className="max-w-[334px] text-center text-[14px] leading-[17px] text-[#0F0F0F80]">{t.notifEmpty}</p>
+          </div>
         ) : (
           <div className="space-y-2.5 px-3 py-3">
             {list.map((it) => {
               const un = isUnread(it);
               return (
-                <button
+                <SwipeToDeleteRow
                   key={it.id}
+                  open={swipedId === it.id}
+                  onOpen={() => setSwipedId(it.id)}
+                  onClose={() => setSwipedId((cur) => (cur === it.id ? null : cur))}
+                  onDelete={() => deleteNotif(it.id)}
+                  deleteLabel={t.notifDelete}
+                >
+                <button
                   onClick={() => un && markRead(it.id)}
                   className={`relative w-full overflow-hidden rounded-xl border px-4 py-3 text-left transition ${un ? "border-[#f1c4c4] bg-[#fff5f5]" : "border-black/10 bg-white"}`}
                 >
@@ -3166,6 +3274,7 @@ function NotificationsScreen({ lang, coins, empty = false, only, onBack, onHome,
                   <p className={`mt-0.5 text-[10px] font-normal leading-relaxed ${un ? "text-[#6b7078]" : "text-[#8a9099]"}`}>{lang === "ja" ? it.bodyJa : it.body}</p>
                   {it.tracking && <p className="mt-0.5 text-[10px] font-normal text-[#8a9099]">{lang === "ja" ? "追跡番号：" : "Tracking number: "}{it.tracking}</p>}
                 </button>
+                </SwipeToDeleteRow>
               );
             })}
           </div>
