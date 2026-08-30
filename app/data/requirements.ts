@@ -464,7 +464,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
               "Reads and deletions persist while navigating the app and are restored on reload (sample data).",
             ],
           },
-          "Empty state shows the mascot with 'No notifications' (通知がありません), matching the card screens — including once every item in the tab has been deleted.",
+          "Empty state shows the mascot with 'No notifications' (通知がありません), or 'No announcements' (お知らせがありません) on the Announcements tab, matching the card screens — including once every item in the tab has been deleted.",
         ],
         tbc: ["Items do not deep-link anywhere.", "Content is sample data."],
       },

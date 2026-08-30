@@ -3242,7 +3242,7 @@ function NotificationsScreen({ lang, coins, empty = false, only, readIds, delete
              list runs out. */
           <div className="flex flex-col items-center py-16">
             <img src="/prize-character-wave.webp" alt="" className="mb-5 h-48 w-48 object-contain" />
-            <p className="max-w-[334px] text-center text-[14px] leading-[17px] text-[#0F0F0F80]">{t.notifEmpty}</p>
+            <p className="max-w-[334px] text-center text-[14px] leading-[17px] text-[#0F0F0F80]">{tab === "notice" ? t.notifEmptyNotice : t.notifEmpty}</p>
           </div>
         ) : (
           <div className="space-y-2.5 px-3 py-3">
