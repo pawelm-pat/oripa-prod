@@ -3091,7 +3091,7 @@ function LandingPage({ lang, onSignUp, onLogin, onOpenDraw, onRequireLogin, catR
 // swallowed so it never reads as a tap on the notification underneath.
 const NOTIF_BIN_W = 76;
 
-function SwipeToDeleteRow({ open, removing, onOpen, onClose, onDelete, deleteLabel, children }: { open: boolean; removing: boolean; onOpen: () => void; onClose: () => void; onDelete: () => void; deleteLabel: string; children: React.ReactNode }) {
+function SwipeToDeleteRow({ open, removing, entering = false, onEntered, onOpen, onClose, onDelete, deleteLabel, children }: { open: boolean; removing: boolean; /** Just delivered: unfold into the list instead of appearing at full height. */ entering?: boolean; onEntered?: () => void; onOpen: () => void; onClose: () => void; onDelete: () => void; deleteLabel: string; children: React.ReactNode }) {
   const [drag, setDrag] = useState<number | null>(null);
   // A deleted row slides out and folds up, so the list closes the gap instead
   // of the rows below jumping. Pin the height first, then collapse from it.
@@ -3107,6 +3107,13 @@ function SwipeToDeleteRow({ open, removing, onOpen, onClose, onDelete, deleteLab
     });
     return () => cancelAnimationFrame(id);
   }, [removing]);
+  // The entrance is a CSS animation, so it only has to be claimed once —
+  // after that the row is an ordinary member of the list.
+  useEffect(() => {
+    if (entering) onEntered?.();
+    // Deliberately mount-only: a re-render must not replay the entrance.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const startRef = useRef<{ x: number; y: number } | null>(null);
   const axisRef = useRef<"none" | "x" | "y">("none");
   const swipedRef = useRef(false);
@@ -3147,7 +3154,7 @@ function SwipeToDeleteRow({ open, removing, onOpen, onClose, onDelete, deleteLab
   };
 
   return (
-    <div ref={foldRef} className="overflow-hidden pb-2.5 transition-all duration-300 ease-out">
+    <div ref={foldRef} className={`grid overflow-hidden pb-2.5 transition-all duration-300 ease-out ${entering ? "animate-notif-in" : ""}`}>
     <div className={`relative overflow-hidden rounded-xl transition-transform duration-300 ease-out ${removing ? "-translate-x-6" : ""}`}>
       <button
         onClick={onDelete}
@@ -3215,10 +3222,14 @@ function NotificationsScreen({ lang, coins, empty = false, only, sent, readIds, 
   // Anything the harness delivered sits above the seeded feed.
   const youAll = [...(sent?.you ?? []), ...NOTIF_YOU];
   const noticeAll = [...(sent?.notice ?? []), ...NOTIF_NOTICE];
+  // Everything present when the screen opened is "already there"; whatever
+  // turns up afterwards unfolds into the list on its first render.
+  const [seenIds] = useState<Set<string>>(() => new Set([...youAll, ...noticeAll].map((n) => n.id)));
   const youUnread = unreadCount(youAll);
   const noticeUnread = unreadCount(noticeAll);
 
   const list = alive(tab === "you" ? youAll : noticeAll);
+  const listEmpty = empty || list.length === 0;
   const title = tab === "you" ? t.notifTabYou : t.notifTabNotice;
   return (
     <div className="flex h-full flex-col bg-[#eef0f3]">
@@ -3261,19 +3272,21 @@ function NotificationsScreen({ lang, coins, empty = false, only, sent, readIds, 
       </header>
 
       <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto bg-[#eef0f3]">
-        {empty || list.length === 0 ? (
-          /* Same mascot-and-message treatment the card screens use when their
-             list runs out, grown open so it fills the space the last row left
-             behind instead of appearing on top of it. */
-          <div className="animate-empty-grow grid">
-            <div className="overflow-hidden">
-              <div className="animate-fade-slide flex flex-col items-center py-16">
-                <img src="/prize-character-wave.webp" alt="" className="mb-5 h-48 w-48 object-contain" />
-                <p className="max-w-[334px] text-center text-[14px] leading-[17px] text-[#0F0F0F80]">{tab === "notice" ? t.notifEmptyNotice : t.notifEmpty}</p>
-              </div>
+        {/* Same mascot-and-message treatment the card screens use when their
+            list runs out. It stays mounted and folds either way, so it grows
+            into the space the last deleted row left and folds back out of the
+            way as a freshly delivered one arrives. */}
+        <div
+          className={`grid transition-all duration-[420ms] ease-[cubic-bezier(0.2,0.75,0.25,1)] ${listEmpty ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+        >
+          <div className="overflow-hidden">
+            <div className="flex flex-col items-center py-16">
+              <img src="/prize-character-wave.webp" alt="" className="mb-5 h-48 w-48 object-contain" />
+              <p className="max-w-[334px] text-center text-[14px] leading-[17px] text-[#0F0F0F80]">{tab === "notice" ? t.notifEmptyNotice : t.notifEmpty}</p>
             </div>
           </div>
-        ) : (
+        </div>
+        {!listEmpty && (
           <div className="px-3 pb-0.5 pt-3">
             {list.map((it) => {
               const un = isUnread(it);
@@ -3282,6 +3295,8 @@ function NotificationsScreen({ lang, coins, empty = false, only, sent, readIds, 
                   key={it.id}
                   open={swipedId === it.id}
                   removing={removingId === it.id}
+                  entering={!seenIds.has(it.id)}
+                  onEntered={() => seenIds.add(it.id)}
                   onOpen={() => setSwipedId(it.id)}
                   onClose={() => setSwipedId((cur) => (cur === it.id ? null : cur))}
                   onDelete={() => deleteNotif(it.id)}

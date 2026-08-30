@@ -179,6 +179,32 @@ a {
   }
 }
 
+/* A newly delivered notification unfolds into the list — the mirror of the
+   fold-away a deleted row plays. No fill mode: once it finishes the row is
+   back on its own styles, so a later delete can still animate it. */
+@keyframes notifIn {
+  from {
+    grid-template-rows: 0fr;
+    padding-bottom: 0;
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  to {
+    grid-template-rows: 1fr;
+    padding-bottom: 0.625rem;
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.animate-notif-in {
+  animation: notifIn 0.38s cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-notif-in {
+    animation: none;
+  }
+}
+
 /* Home hero speech bubble (shown on character tap) */
 @keyframes heroBubbleIn {
   from {
