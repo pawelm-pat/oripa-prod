@@ -98,6 +98,10 @@ export type OripaItem = {
 // simulated connection error, or insufficient remaining stock.
 export type DrawScenario = "off" | "expired" | "connError" | "stock";
 
+// Error-page demo scenario (dev harness): while one is armed, the next
+// navigation lands on that error page instead of the screen asked for.
+export type ErrorScenario = "off" | "notFound" | "maintenance";
+
 // Which CTA row a pack offers, both on its lobby card and on its draw screen.
 //   all         -> paid: Draw ×1 / Draw ×10 / Custom draw
 //   one         -> paid: single full-width "1 Draw"

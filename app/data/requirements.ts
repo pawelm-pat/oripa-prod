@@ -305,6 +305,16 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
     groups: [
       APP_HEADER_GROUP,
       {
+        title: "Error pages (demo control)",
+        items: [
+          "The 'Errors' control in the harness arms one of two error pages; the options are exclusive, and 'Off' restores normal navigation.",
+          "While one is armed, the next navigation anywhere in the app — bottom nav, footer links, cards, in-page links — lands on that page instead of the screen asked for. Both pages take over the whole frame, bottom nav included, and sit above the site footer.",
+          { text: "Page not found", sub: ["Mascot with a question mark, 'The page you are looking for might have been moved, deleted, or doesn't exist.' and a 'Back to Home' CTA that opens the lobby."] },
+          { text: "Under maintenance", sub: ["Mascot in a hard hat, the scheduled-maintenance notice and apology, and a 'Refresh Page' CTA that continues to the page the user was originally opening."] },
+        ],
+        tbc: ["Demo only — nothing in the app raises these pages on its own."],
+      },
+      {
         title: "Banner",
         items: [
           "Promotional banner carousel (7 slides, auto-rotates every 5 seconds).",

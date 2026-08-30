@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { DrawScenario, Lang, Screen } from "./lib/types";
+import type { DrawScenario, ErrorScenario, Lang, Screen } from "./lib/types";
 import { LangToggle, PhoneApp, UpdatePrompt, VersionBadge } from "./components/oripa";
 import { CommentsPanel } from "./components/comments";
 import { DevPanels } from "./components/devpanels";
@@ -43,6 +43,9 @@ export default function Page() {
   // from an emptied notification centre. It re-arms itself once the item lands,
   // so each send is one click.
   const [sendNotifications, setSendNotifications] = useState(false);
+  // Demo control (any screen): arm an error page. While one is armed the next
+  // navigation lands on it instead of the screen that was asked for.
+  const [errorScenario, setErrorScenario] = useState<ErrorScenario>("off");
   function changeKycScenario(value: KycScenario) {
     try { sessionStorage.removeItem(KYC_SESSION_KEY); } catch {}
     setKycScenario(value);
@@ -103,6 +106,16 @@ export default function Page() {
               />
             </>
           )}
+          <SelectControl
+            label="Errors"
+            value={errorScenario}
+            onChange={setErrorScenario}
+            options={[
+              ["Off", "off"],
+              ["Page not found", "notFound"],
+              ["Under maintenance", "maintenance"],
+            ]}
+          />
         </div>
         <div className="rounded-[2.6rem] border border-white/12 bg-[#1b1c22] p-3 shadow-[0_35px_90px_rgba(0,0,0,0.55)]">
           <div className="rounded-[2.1rem] border border-white/8 bg-black p-2">
@@ -122,6 +135,7 @@ export default function Page() {
                 multiCurrency={multiCurrency}
                 sendNotifications={sendNotifications}
                 onNotificationSent={() => setSendNotifications(false)}
+                errorScenario={errorScenario}
               />
             </div>
           </div>
@@ -144,6 +158,7 @@ export default function Page() {
           multiCurrency={multiCurrency}
           sendNotifications={sendNotifications}
           onNotificationSent={() => setSendNotifications(false)}
+          errorScenario={errorScenario}
         />
       </div>
 

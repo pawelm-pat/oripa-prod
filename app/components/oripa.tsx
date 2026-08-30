@@ -9,6 +9,7 @@ import type {
   DrawCta,
   DrawRequest,
   DrawScenario,
+  ErrorScenario,
   OripaItem,
   Rarity,
   Screen,
@@ -3083,6 +3084,45 @@ function LandingPage({ lang, onSignUp, onLogin, onOpenDraw, onRequireLogin, catR
 
         <SiteFooter t={t} />
       </FeedScroller>
+    </div>
+  );
+}
+
+/* ── Error pages (dev harness scenarios) ──────────────────────────────────
+   Dead-end pages the harness can arm: the next navigation lands here instead
+   of the screen the user asked for. Both are a centred column over the site
+   footer, with a single CTA out — home for the 404, and the page that was
+   actually wanted for the maintenance notice. */
+function ErrorScreen({ t, variant, onHome, onRetry }: { t: Dict; variant: "notFound" | "maintenance"; onHome: () => void; onRetry: () => void }) {
+  const notFound = variant === "notFound";
+  return (
+    <div className="flex h-full flex-col bg-white">
+      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
+        <div className="flex flex-col items-center px-4 pb-9 pt-14">
+          <h1 className="max-w-[320px] text-center text-[34px] font-extrabold uppercase leading-[1.16] tracking-[-0.01em] text-[#0F0F0F]">
+            {notFound ? t.errNotFoundTitle : t.errMaintTitle}
+          </h1>
+          <img
+            src={notFound ? "/error-notfound.png" : "/error-maintenance.png"}
+            alt=""
+            className="mt-3 h-[182px] w-auto select-none object-contain"
+            draggable={false}
+          />
+          <p className="mt-4 max-w-[340px] text-center text-[12px] leading-[15px] text-[#0F0F0F]">
+            {notFound ? t.errNotFoundBody : t.errMaintBody}
+          </p>
+          {!notFound && (
+            <p className="mt-4 max-w-[340px] text-center text-[12px] leading-[15px] text-[#0F0F0F]">{t.errMaintBody2}</p>
+          )}
+          <button
+            onClick={notFound ? onHome : onRetry}
+            className="mt-5 h-[38px] w-full rounded-md bg-[#D10005] text-[15px] font-bold text-white active:scale-[0.99]"
+          >
+            {notFound ? t.errNotFoundCta : t.errMaintCta}
+          </button>
+        </div>
+        <SiteFooter t={t} />
+      </div>
     </div>
   );
 }
@@ -6280,12 +6320,22 @@ function NotEnoughCoinsPopup({ lang, coins, cost, onCharge, onClose }: { lang: L
   );
 }
 
-export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, sendNotifications = false, onNotificationSent }: {
-  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; /** Dev harness: deliver one fresh unread notification or announcement. */ sendNotifications?: boolean; /** Fired once the item has been delivered, so the harness can re-arm its toggle. */ onNotificationSent?: () => void;
+export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, sendNotifications = false, onNotificationSent, errorScenario = "off" }: {
+  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; /** Dev harness: deliver one fresh unread notification or announcement. */ sendNotifications?: boolean; /** Fired once the item has been delivered, so the harness can re-arm its toggle. */ onNotificationSent?: () => void; /** Dev harness: swallow the next navigation and show this error page instead. */ errorScenario?: ErrorScenario;
 }) {
   const t = STR[lang];
-  const [screen, setScreen] = useState<Screen>("landing");
+  const [screen, setScreenRaw] = useState<Screen>("landing");
   const [prevScreen, setPrevScreen] = useState<Screen>("oripa");
+  // Dev harness: with an error scenario armed, the next navigation is swallowed
+  // and its destination remembered — the maintenance page's CTA goes on to it,
+  // the 404's goes home. Every route in the app runs through `setScreen`, so
+  // arming this catches the bottom nav, the footer and in-page links alike.
+  const [errorTarget, setErrorTarget] = useState<Screen | null>(null);
+  const errorPage = errorScenario !== "off" && errorTarget ? errorScenario : null;
+  const setScreen = (next: Screen) => {
+    if (errorScenario !== "off" && next !== screen) { setErrorTarget(next); return; }
+    setScreenRaw(next);
+  };
   const [lineLoginToast, setLineLoginToast] = useState(false);
   // Surface the active screen so the review comments panel can scope itself.
   useEffect(() => { onScreenChange?.(screen); }, [screen, onScreenChange]);
@@ -6304,7 +6354,9 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
       if (!alive) return;
       const valid: Screen[] = ["landing", "signup", "login", "oripa", "notifications", "prizeHistory", "myLoot", "purchaseHistory", "shippingAddress", "quest", "store", "coinHistory", "mypage", "profile", "refer"];
       const target = new URLSearchParams(window.location.search).get("screen");
-      if (target && valid.includes(target as Screen)) setScreen(target as Screen);
+      // Straight to the requested screen: a deep link is where the session
+      // starts, not a navigation an armed error scenario should swallow.
+      if (target && valid.includes(target as Screen)) setScreenRaw(target as Screen);
     };
     applyDeepLink();
     return () => {
@@ -6609,7 +6661,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
     <CoinHistoryNavContext.Provider value={onLanding ? () => {} : openCoinHistory}>
     <CatNavContext.Provider value={openCategory}>
     <LegalNavContext.Provider value={setLegalDoc}>
-    <div className="flex h-full flex-col bg-[#eef0f3]">
+    <div className="relative flex h-full flex-col bg-[#eef0f3]">
       <div className="relative min-h-0 flex-1">
         {/* Keyed on `screen` so each navigation remounts and replays the
             body-only fade/slide-in (headers are excluded per-screen). */}
@@ -6887,6 +6939,18 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
         <KycOverlay lang={lang} state={kyc} setState={setKyc} onExit={exitKycToLobby} onContextReturn={returnFromKyc} />
       </div>
       {showNav && <BottomNav screen={screen} t={t} onNavigate={navigate} />}
+      {/* The error page owns the whole frame — bottom nav included — since its
+          CTA is the only way on from here. */}
+      {errorPage && (
+        <div className="absolute inset-0 z-[95]">
+          <ErrorScreen
+            t={t}
+            variant={errorPage}
+            onHome={() => { setErrorTarget(null); setScreenRaw("oripa"); }}
+            onRetry={() => { const target = errorTarget; setErrorTarget(null); if (target) setScreenRaw(target); }}
+          />
+        </div>
+      )}
     </div>
     </LegalNavContext.Provider>
     </CatNavContext.Provider>

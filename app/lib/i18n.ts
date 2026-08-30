@@ -184,6 +184,15 @@ const EN = {
   notifTabNotice: "Announcements",
   notifEmpty: "No notifications",
   notifEmptyNotice: "No announcements",
+
+  // Error pages (dev harness scenarios)
+  errNotFoundTitle: "Page not found!",
+  errNotFoundBody: "The page you are looking for might have been moved, deleted, or doesn't exist.",
+  errNotFoundCta: "Back to Home",
+  errMaintTitle: "Under maintenance",
+  errMaintBody: "Thank you for visiting! We are currently performing scheduled maintenance to improve your experience.",
+  errMaintBody2: "We apologize for the inconvenience and appreciate your patience.",
+  errMaintCta: "Refresh Page",
   notifDelete: "Delete",
   notifNew: "New",
   promoBanner: "PROMO BANNER",
@@ -1328,6 +1337,15 @@ const JA: Dict = {
   notifTabNotice: "お知らせ",
   notifEmpty: "通知がありません",
   notifEmptyNotice: "お知らせがありません",
+
+  // Error pages (dev harness scenarios)
+  errNotFoundTitle: "ページが見つかりません",
+  errNotFoundBody: "お探しのページは移動または削除されたか、存在しない可能性があります。",
+  errNotFoundCta: "ホームに戻る",
+  errMaintTitle: "メンテナンス中",
+  errMaintBody: "ご利用ありがとうございます。より快適にご利用いただくため、現在定期メンテナンスを実施しています。",
+  errMaintBody2: "ご不便をおかけしますが、いましばらくお待ちください。",
+  errMaintCta: "ページを更新",
   notifDelete: "削除",
   notifNew: "新着",
   promoBanner: "PROMO BANNER",
