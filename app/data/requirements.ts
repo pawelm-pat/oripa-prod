@@ -308,7 +308,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
         title: "Error pages (demo control)",
         items: [
           "The 'Errors' control in the harness arms one of two error pages; the options are exclusive, and 'Off' restores normal navigation.",
-          "While one is armed, the next navigation anywhere in the app — bottom nav, footer links, cards, in-page links — lands on that page instead of the screen asked for. Both pages keep the app header, drop the bottom navigation and sit above the site footer.",
+          "While one is armed, the next navigation anywhere in the app — bottom nav, footer links, cards, in-page links — lands on that page instead of the screen asked for. Both pages keep the app header and the bottom navigation, and sit above the site footer; tapping a tab from an error page re-points it at that tab.",
           { text: "Page not found", sub: ["Mascot with a question mark, 'The page you are looking for might have been moved, deleted, or doesn't exist.' and a 'Back to Home' CTA that opens the lobby."] },
           { text: "Under maintenance", sub: ["Mascot in a hard hat, the scheduled-maintenance notice and apology, and a 'Refresh Page' CTA that continues to the page the user was originally opening."] },
         ],

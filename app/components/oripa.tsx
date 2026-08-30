@@ -6938,22 +6938,22 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
           </div>
         )}
         <KycOverlay lang={lang} state={kyc} setState={setKyc} onExit={exitKycToLobby} onContextReturn={returnFromKyc} />
+        {/* Covers the screen the user was on, but stops above the bottom nav:
+            the tabs stay reachable while the error page is up. */}
+        {errorPage && (
+          <div className="absolute inset-0 z-[95]">
+            <ErrorScreen
+              t={t}
+              variant={errorPage}
+              coins={coins}
+              onHome={() => { setErrorTarget(null); setScreenRaw("oripa"); }}
+              onRetry={() => { const target = errorTarget; setErrorTarget(null); if (target) setScreenRaw(target); }}
+              onOpenStore={openStore}
+            />
+          </div>
+        )}
       </div>
       {showNav && <BottomNav screen={screen} t={t} onNavigate={navigate} />}
-      {/* The error page owns the whole frame — bottom nav included — since its
-          CTA is the only way on from here. */}
-      {errorPage && (
-        <div className="absolute inset-0 z-[95]">
-          <ErrorScreen
-            t={t}
-            variant={errorPage}
-            coins={coins}
-            onHome={() => { setErrorTarget(null); setScreenRaw("oripa"); }}
-            onRetry={() => { const target = errorTarget; setErrorTarget(null); if (target) setScreenRaw(target); }}
-            onOpenStore={openStore}
-          />
-        </div>
-      )}
     </div>
     </LegalNavContext.Provider>
     </CatNavContext.Provider>
