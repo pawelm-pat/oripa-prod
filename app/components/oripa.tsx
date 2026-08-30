@@ -147,6 +147,10 @@ function BrandLogo({ onClick }: { onClick?: () => void }) {
   return img;
 }
 
+// Counts stop reading at 99; anything past that shows as "99+" so the badge
+// keeps its pill shape.
+const badgeCount = (n: number) => (n > 99 ? "99+" : String(n));
+
 function BellIcon({ label }: { label: string }) {
   const openNotif = useContext(NotifNavContext);
   const unread = useContext(NotifBadgeContext);
@@ -155,7 +159,7 @@ function BellIcon({ label }: { label: string }) {
       {/* 24×24 per design. */}
       <img src="/bell-notification.png" alt="" className="h-6 w-6 object-contain" />
       {unread > 0 && (
-        <span className="absolute -right-0.5 -top-0.5 flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-[#D10005] px-1 text-[9px] font-extrabold leading-none text-white ring-2 ring-white">{unread}</span>
+        <span className="absolute -right-0.5 -top-0.5 flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-[#D10005] px-1 text-[9px] font-extrabold leading-none text-white ring-2 ring-white">{badgeCount(unread)}</span>
       )}
     </button>
   );
@@ -3252,7 +3256,7 @@ function NotificationsScreen({ lang, coins, empty = false, only, sent, readIds, 
                   <span className="flex items-center justify-center gap-1.5">
                     <span className={`text-[14px] font-medium ${active ? "text-[#D10005]" : "text-[#1d2129]"}`}>{tb.label}</span>
                     {tb.count > 0 && (
-                      <span className="flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-[#D10005] px-1 text-[10px] font-extrabold leading-none text-white">{tb.count}</span>
+                      <span className="flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-[#D10005] px-1 text-[10px] font-extrabold leading-none text-white">{badgeCount(tb.count)}</span>
                     )}
                   </span>
                   {active && <span className="absolute inset-x-5 -bottom-px h-[3px] rounded-full bg-[#D10005]" />}
@@ -6276,8 +6280,8 @@ function NotEnoughCoinsPopup({ lang, coins, cost, onCharge, onClose }: { lang: L
   );
 }
 
-export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, sendNotifications = false }: {
-  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; /** Dev harness: keep delivering fresh unread notifications and announcements. */ sendNotifications?: boolean;
+export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, sendNotifications = false, onNotificationSent }: {
+  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; /** Dev harness: deliver one fresh unread notification or announcement. */ sendNotifications?: boolean; /** Fired once the item has been delivered, so the harness can re-arm its toggle. */ onNotificationSent?: () => void;
 }) {
   const t = STR[lang];
   const [screen, setScreen] = useState<Screen>("landing");
@@ -6499,18 +6503,22 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   const deleteNotif = (id: string) => setNotifDeleted((prev) => new Set(prev).add(id));
   // Demo deliveries from the harness toggle, newest first, kept per tab.
   const [sentNotifs, setSentNotifs] = useState<{ you: NotifItem[]; notice: NotifItem[] }>({ you: [], notice: [] });
-  // While the toggle is on a fresh unread item lands every few seconds,
-  // alternating tabs so both the inbox and the announcements fill back up.
+  // Flipping the toggle on delivers exactly one item, alternating between the
+  // inbox and the announcements so repeated sends fill both tabs. The harness
+  // resets the toggle afterwards, leaving it ready for the next one.
   useEffect(() => {
     if (!sendNotifications) return;
-    let seq = 0;
-    const id = window.setInterval(() => {
-      const kind = seq % 2 === 0 ? "you" : "notice";
-      const item = randomNotif(kind, Date.now() + seq);
-      seq += 1;
+    const sent = sentNotifs.you.length + sentNotifs.notice.length;
+    const kind = sent % 2 === 0 ? "you" : "notice";
+    const item = randomNotif(kind, sent);
+    // A frame's delay keeps this off the synchronous render path.
+    const id = requestAnimationFrame(() => {
       setSentNotifs((prev) => ({ ...prev, [kind]: [item, ...prev[kind]] }));
-    }, 2600);
-    return () => window.clearInterval(id);
+      onNotificationSent?.();
+    });
+    return () => cancelAnimationFrame(id);
+    // Only a fresh flip of the toggle sends; re-renders in between must not.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sendNotifications]);
   const notifUnread = noHistory
     ? 0

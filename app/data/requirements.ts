@@ -87,7 +87,7 @@ const APP_HEADER_GROUP: ReqGroup = {
     { text: "Product logo", sub: ["Navigates to the lobby (home)."] },
     { text: "Currency pill (Points + Coins)", sub: ["Shows balances; tapping it opens Coin History."] },
     { text: "Add (+) button", sub: ["Opens the Store."] },
-    { text: "Notifications bell", sub: ["Opens Notifications; the badge counts unread items and drops as they are read or swiped away, disappearing at zero."] },
+    { text: "Notifications bell", sub: ["Opens Notifications; the badge counts unread items and drops as they are read or swiped away, disappearing at zero. Counts above 99 show as '99+', on the bell and on the tab badges."] },
   ],
   tbc: [
     "Points value is a fixed placeholder (10,000); live Points balance is pending.",
@@ -465,7 +465,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
             ],
           },
           "Empty state shows the mascot with 'No notifications' (通知がありません), or 'No announcements' (お知らせがありません) on the Announcements tab, matching the card screens — including once every item in the tab has been deleted.",
-          { text: "Demo control: 'Send new notifications'", sub: ["While on, a fresh unread item arrives every few seconds, alternating between the two tabs, so an emptied notification centre fills back up and the bell badge climbs again."] },
+          { text: "Demo control: 'Send a notification'", sub: ["Each flip to Yes delivers one fresh unread item, alternating between the two tabs, so an emptied notification centre can be filled back up. The item unfolds into the list and the toggle re-arms itself for the next send."] },
         ],
         tbc: ["Items do not deep-link anywhere.", "Content is sample data."],
       },

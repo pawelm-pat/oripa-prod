@@ -38,9 +38,10 @@ export default function Page() {
   // Demo control (draw confirm popup): whether the pack accepts both currencies.
   // Yes -> confirm popup shows coins (top) + free points (below); No -> coins only.
   const [multiCurrency, setMultiCurrency] = useState(true);
-  // Demo control (notification centre): while on, a fresh unread item lands
-  // every few seconds, alternating between the inbox and announcements — the
-  // way back from an emptied notification centre.
+  // Demo control (notification centre): flipping this to Yes delivers a single
+  // unread item, alternating between the inbox and announcements — the way back
+  // from an emptied notification centre. It re-arms itself once the item lands,
+  // so each send is one click.
   const [sendNotifications, setSendNotifications] = useState(false);
   function changeKycScenario(value: KycScenario) {
     try { sessionStorage.removeItem(KYC_SESSION_KEY); } catch {}
@@ -68,10 +69,8 @@ export default function Page() {
               <ToggleControl label="Address provided" value={addressProvided} onChange={setAddressProvided} />
             </>
           )}
-          {/* Stays in the rail once it's on, so deliveries can be stopped from
-              wherever the bell badge was being watched. */}
-          {(screen === "notifications" || sendNotifications) && (
-            <ToggleControl label="Send new notifications" value={sendNotifications} onChange={setSendNotifications} />
+          {screen === "notifications" && (
+            <ToggleControl label="Send a notification" value={sendNotifications} onChange={setSendNotifications} />
           )}
           {/* Reachable before the draw as well, so the limit can be armed on the
               pack page and hit straight from the results' "Draw again". */}
@@ -122,6 +121,7 @@ export default function Page() {
                 drawScenario={drawScenario}
                 multiCurrency={multiCurrency}
                 sendNotifications={sendNotifications}
+                onNotificationSent={() => setSendNotifications(false)}
               />
             </div>
           </div>
@@ -143,6 +143,7 @@ export default function Page() {
           drawScenario={drawScenario}
           multiCurrency={multiCurrency}
           sendNotifications={sendNotifications}
+          onNotificationSent={() => setSendNotifications(false)}
         />
       </div>
 
