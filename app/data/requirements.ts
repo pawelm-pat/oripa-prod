@@ -125,7 +125,7 @@ const NARROW_DOWN_ITEMS: ReqItem[] = [
 ];
 
 const NARROW_DOWN_TBC = [
-  "Quick-filter chips and the sort options are POC placeholders — they thin/reorder the sample list rather than applying real pack attributes (rarity, price, category, stock). Wire to real data.",
+  "The price range filters on each pack's real draw price; the quick-filter chips and sort options are still POC placeholders that thin/reorder the sample list rather than applying real pack attributes (rarity, category, stock). Wire those to real data.",
 ];
 
 // The "Recommended" / themed-lane behaviour of the home feed.
@@ -175,10 +175,10 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
         title: "Oripa Draws",
         items: [
           RECOMMENDED_ITEM,
-          "Oripa cards show tags, artwork, price, remaining stock and remaining time.",
+          "Oripa cards show tags, artwork, price per draw, remaining stock and remaining time. Each pack carries its own price (300–5,000 coins), which is what the pack page and every draw charge.",
           { text: "Draw / Free draw / View", sub: ["All route the visitor to the Sign Up screen (an account is required)."] },
         ],
-        tbc: ["Card artwork uses a shared placeholder image; card price/tags are static placeholders."],
+        tbc: ["Card artwork uses a shared placeholder image; card tags are static placeholders."],
       },
       { title: "Bottom navigation", items: ["Hidden on this screen."] },
       FOOTER_GROUP,
@@ -325,11 +325,11 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
         title: "Oripa Draws",
         items: [
           RECOMMENDED_ITEM,
-          "Cards show tags, artwork, price, remaining stock and remaining time.",
+          "Cards show tags, artwork, price per draw, remaining stock and remaining time. Prices vary per pack (300–5,000 coins).",
           { text: "Draw / Free draw / View", sub: ["Open the Draw screen (pack detail) for the tapped pack."] },
         ],
         tbc: [
-          "Card artwork uses a shared placeholder; price/tags are static placeholders.",
+          "Card artwork uses a shared placeholder; tags are static placeholders.",
         ],
       },
       {
@@ -393,7 +393,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
           { text: "Insufficient coins", sub: ["Opens Quick Purchase (offers → pay → 3DS → success → Draw) instead of navigating to Store."] },
         ],
         validation: [
-          "Draw cost = count × 1,000 coins; coins are debited on confirm when the balance covers it.",
+          "Draw cost = count × the pack's price (300–5,000 coins, shown on the card and pack page); coins are debited on confirm when the balance covers it.",
           "If cost > balance, Quick Purchase opens with neededCoins = cost − balance.",
         ],
       },
@@ -465,6 +465,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
             ],
           },
           "Empty state shows the mascot with 'No notifications' (通知がありません), or 'No announcements' (お知らせがありません) on the Announcements tab, matching the card screens — including once every item in the tab has been deleted.",
+          { text: "Demo control: 'Send new notifications'", sub: ["While on, a fresh unread item arrives every few seconds, alternating between the two tabs, so an emptied notification centre fills back up and the bell badge climbs again."] },
         ],
         tbc: ["Items do not deep-link anywhere.", "Content is sample data."],
       },

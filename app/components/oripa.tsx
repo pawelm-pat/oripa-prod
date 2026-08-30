@@ -25,7 +25,7 @@ import type {
 import { STR, type Dict, locTitle } from "../lib/i18n";
 import { AuthHeader, SignupPage, LoginPage, LineAuthIcon, LineAuthSheet, DEMO_INR_EMAIL } from "./auth";
 import { HOME_SECTIONS, ALL_ORIPA } from "../data/lobby";
-import { NOTIF_YOU, NOTIF_NOTICE, NOTIF_UNREAD_TOTAL } from "../data/notifications";
+import { NOTIF_YOU, NOTIF_NOTICE, NOTIF_UNREAD_TOTAL, randomNotif } from "../data/notifications";
 import { LEGAL, type LegalDocKey } from "../data/legal";
 import {
   CATEGORIES,
@@ -239,15 +239,15 @@ function TagPill({ children, variant }: { children: React.ReactNode; variant: "r
 // block with 8px side padding holding two 40px rows 3px apart. The point mark is
 // narrower than the coin, so both sit right-aligned in a 36px column and the
 // prices beside them start on the same edge.
-function PriceStack({ t, showPoint }: { t: Dict; showPoint: boolean }) {
+function PriceStack({ t, showPoint, price = DRAW_PRICE }: { t: Dict; showPoint: boolean; price?: number }) {
   const row = (icon: React.ReactNode) => (
     <span className="flex h-10 items-center gap-[8.5px]">
       <span className="flex w-9 shrink-0 justify-end">{icon}</span>
-      {/* No thousands separator here: the design draws "1000/1回", and a comma's
+      {/* No thousands separator here: the design draws "1000/draw", and a comma's
           tail would sit in the gap the red rule needs. */}
       <span className="flex items-baseline border-b-[3px] border-[#D10005] pb-[3px]">
-        <span className="text-[21px] font-extrabold leading-none text-[#1d2129]">{DRAW_PRICE}</span>
-        <PerDrawMark height={14.5} alt={t.perDraw} />
+        <span className="text-[21px] font-extrabold leading-none text-[#1d2129]">{price}</span>
+        <span className="ml-[1px] text-[14px] font-extrabold leading-none text-[#1d2129]">{t.perDraw}</span>
       </span>
     </span>
   );
@@ -278,22 +278,6 @@ function FilterIcon({ size = 18 }: { size?: number }) {
     <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
       <path d="M3.5 2.5h17a1 1 0 0 1 1 1v3.3l-6.9 5.8v7.9a1 1 0 0 1-1 1h-3.2a1 1 0 0 1-1-1v-7.9L2.5 6.8V3.5a1 1 0 0 1 1-1Z" />
     </svg>
-  );
-}
-
-// The "per draw" suffix beside a price is a design asset rather than text. It
-// sits on the price's baseline at ~95% of its cap height, per the design.
-function PerDrawMark({ height, alt }: { height: number; alt: string }) {
-  return (
-    <img
-      src="/per-draw.png"
-      alt={alt}
-      width={57}
-      height={30}
-      draggable={false}
-      className="ml-[1.5px] w-auto shrink-0 select-none"
-      style={{ height, WebkitUserDrag: "none" } as React.CSSProperties}
-    />
   );
 }
 
@@ -334,7 +318,7 @@ function OripaCard({ item, t, onView, onRequestDraw }: { item: OripaItem; t: Dic
       {!inactive && <div className="bg-[#1d1d1d] px-3 py-1 text-center text-[11px] font-bold text-white">{t.periodLabel("2026/01/01")}</div>}
       <div className="flex items-stretch px-3 py-2.5">
         <div className="flex items-center border-r border-dashed border-black/20 pr-3">
-          <PriceStack t={t} showPoint={item.gem} />
+          <PriceStack t={t} showPoint={item.gem} price={packPrice(item)} />
         </div>
         <div className="flex flex-1 flex-col justify-center gap-1 pl-3">
           {inactive ? (
@@ -1092,8 +1076,16 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
   }
   function transform(list: OripaItem[]): OripaItem[] {
     let arr = applyQuery(list.slice());
-    const activeCount = filterCount + (priceActive ? 1 : 0);
-    if (activeCount) arr = arr.filter((_, i) => i % (activeCount + 1) !== 0);
+    // Price range reads each pack's own draw price; a max at the slider ceiling
+    // means "and above", so it stops capping.
+    if (priceActive) {
+      arr = arr.filter((it) => {
+        const p = packPrice(it);
+        return p >= priceMin && (priceMax >= PRICE_TOP || p <= priceMax);
+      });
+    }
+    // Tag filters have no data behind them, so they thin the feed instead.
+    if (filterCount) arr = arr.filter((_, i) => i % (filterCount + 1) !== 0);
     return arr;
   }
 
@@ -1420,7 +1412,9 @@ function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, onRequestDraw
    Opened from the lobby when a pack's Draw / View is tapped. Shows the pack
    banner, remaining/period, and the prize line-up by tier (1st = UR / holo,
    2nd = SR / gold, 3rd = N / silver), with a sticky draw CTA. */
-const DRAW_PRICE = 1000; // coins per single draw (mirrors the lobby card price)
+const DRAW_PRICE = 1000; // coins per single draw where a pack doesn't set its own
+// Packs price their own draws; the constant is the fallback.
+const packPrice = (item?: Pick<OripaItem, "price">) => item?.price ?? DRAW_PRICE;
 // Free-point balance shown as the "before" value in the draw-confirmation
 // popup (mirrors the static free-point figure shown across the app).
 const DRAW_FREE_POINTS = 10000;
@@ -1537,6 +1531,8 @@ function DrawTierCard({ rarity, large = false }: { rarity: Rarity; large?: boole
    draw by passing a `request`; it renders nothing while idle. */
 function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, onHome, onOpenStore, onOpenDraw, onAttemptPaidDraw, onTopUp, pendingConfirm, onPendingConfirmConsumed }: { lang: Lang; item: OripaItem; coins: number; request: DrawRequest | null; soldOut?: boolean; /** The sold-out popup was dismissed, so the host can latch its greyed state. */ onSoldOut?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem) => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** The confirmation's Charge/Top Up CTA: open the store for a draw the wallet can't cover. */ onTopUp?: (count: number) => void; /** After Quick Purchase success, host re-opens this count's confirmation. */ pendingConfirm?: { count: number; token: number } | null; onPendingConfirmConsumed?: () => void }) {
   const t = STR[lang];
+  // What one draw of this pack costs, in coins or in points.
+  const price = packPrice(item);
   // Opens a stored legal document (T&Cs, etc.) in the shared overlay.
   const openLegal = useContext(LegalNavContext);
   // Draw demo scenarios (dev harness): expired pack, connection error, or
@@ -1656,7 +1652,7 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
       runDraw(count);
       return;
     }
-    if (coins < DRAW_PRICE * count) { pushToast(t.drawInsufficient); return; }
+    if (coins < price * count) { pushToast(t.drawInsufficient); return; }
     runDraw(count);
   }
 
@@ -1672,7 +1668,7 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
   // applies, and it never lands below 1 so the popup keeps a drawable count.
   const maxAffordableQty = () => {
     const balance = payCurrency === "points" ? DRAW_FREE_POINTS : coins;
-    return Math.min(MAX_CUSTOM_DRAW, Math.max(1, Math.floor(balance / DRAW_PRICE)));
+    return Math.min(MAX_CUSTOM_DRAW, Math.max(1, Math.floor(balance / price)));
   };
 
   // A tapped CTA (lobby card or pack page) arrives as a request; the token
@@ -1702,7 +1698,7 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
       runDraw(customQty);
       return;
     }
-    if (coins < DRAW_PRICE * customQty) { pushToast(t.drawInsufficient); return; }
+    if (coins < price * customQty) { pushToast(t.drawInsufficient); return; }
     runDraw(customQty);
   }
 
@@ -1711,7 +1707,7 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
   // radio option (highlighted by its border) and only the chosen balance is
   // spent; the other stays greyed out and unchanged.
   function balanceRows(count: number) {
-    const cost = DRAW_PRICE * count;
+    const cost = price * count;
     const rows = [
       { key: "coins" as const, Icon: CoinIcon, balance: coins },
       { key: "points" as const, Icon: GemIcon, balance: DRAW_FREE_POINTS },
@@ -1758,7 +1754,7 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
   // becomes the store, so topping up stays a choice. Coin packages grant free
   // points too, so a points shortfall leads to the same place.
   const shortfallFor = (count: number) =>
-    Math.max(0, DRAW_PRICE * count - (payCurrency === "points" ? DRAW_FREE_POINTS : coins));
+    Math.max(0, price * count - (payCurrency === "points" ? DRAW_FREE_POINTS : coins));
   const shortfallNote = (amount: number) => (
     <p className="mx-auto mt-3 max-w-[300px] text-center text-[13px] font-medium leading-[1.45] text-[#D10005]">
       {t.noCoinsShortPre}
@@ -2040,11 +2036,11 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
             {/* 38px pill in the design; it only grows when the cost label wraps. */}
             <div className="mt-4 flex min-h-[38px] items-center justify-center gap-1.5 rounded-lg border border-[#e7e7e7] bg-white px-2 py-1 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
               <CoinIcon size={26} />
-              <span className="text-[20px] font-bold leading-none text-[#0F0F0F]">{(DRAW_PRICE * stockReqCount).toLocaleString()}</span>
+              <span className="text-[20px] font-bold leading-none text-[#0F0F0F]">{(price * stockReqCount).toLocaleString()}</span>
               <span className="text-[10px] font-bold leading-tight text-[#878787]">{t.stockDrawCost(stockReqCount)}</span>
               <BalanceArrow height={15} />
               <CoinIcon size={26} />
-              <span className="text-[20px] font-bold leading-none text-[#D10005]">{(DRAW_PRICE * STOCK_LEFT).toLocaleString()}</span>
+              <span className="text-[20px] font-bold leading-none text-[#D10005]">{(price * STOCK_LEFT).toLocaleString()}</span>
             </div>
             {/* Both CTAs are 39px tall with a 6px radius per the button specs. */}
             <button
@@ -2102,6 +2098,7 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
 // Drawing itself is delegated to DrawFlow, the same flow a lobby card opens.
 function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, onOpenDraw, onAttemptPaidDraw, onTopUp, pendingConfirm, onPendingConfirmConsumed, guest }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; onOpenDraw?: (item: OripaItem) => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** The confirmation's Charge/Top Up CTA: open the store for a draw the wallet can't cover. */ onTopUp?: (count: number) => void; /** After Quick Purchase success, host re-opens this count's confirmation. */ pendingConfirm?: { count: number; token: number } | null; onPendingConfirmConsumed?: () => void; /** Signed-out visitor: the page is browsable, but any draw CTA asks for an account. */ guest?: { onSignUp: () => void; onLogin: () => void } }) {
   const t = STR[lang];
+  const price = packPrice(item);
   const openLegal = useContext(LegalNavContext);
   const [cautionOpen, setCautionOpen] = useState(false);
   // What the tapped CTA asked the flow to open.
@@ -2168,7 +2165,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
           <div className="flex items-stretch gap-4">
             {/* Left: price per draw (coin + optional free point), red-underlined */}
             <div className="flex items-center">
-              <PriceStack t={t} showPoint={multiCurrency} />
+              <PriceStack t={t} showPoint={multiCurrency} price={price} />
             </div>
 
             {/* Dashed vertical divider */}
@@ -3192,7 +3189,7 @@ function SwipeToDeleteRow({ open, removing, onOpen, onClose, onDelete, deleteLab
   );
 }
 
-function NotificationsScreen({ lang, coins, empty = false, only, readIds, deletedIds, onRead, onDelete, onBack, onHome, onOpenStore }: { lang: Lang; coins: number; empty?: boolean; only?: "you" | "notice"; readIds: Set<string>; deletedIds: Set<string>; onRead: (id: string) => void; onDelete: (id: string) => void; onBack: () => void; onHome: () => void; onOpenStore?: () => void }) {
+function NotificationsScreen({ lang, coins, empty = false, only, sent, readIds, deletedIds, onRead, onDelete, onBack, onHome, onOpenStore }: { lang: Lang; coins: number; empty?: boolean; only?: "you" | "notice"; /** Demo deliveries from the harness toggle, newest first. */ sent?: { you: NotifItem[]; notice: NotifItem[] }; readIds: Set<string>; deletedIds: Set<string>; onRead: (id: string) => void; onDelete: (id: string) => void; onBack: () => void; onHome: () => void; onOpenStore?: () => void }) {
   const t = STR[lang];
   const [tab, setTab] = useState<"you" | "notice">(only ?? "you");
   // Only one row shows its bin at a time.
@@ -3215,10 +3212,13 @@ function NotificationsScreen({ lang, coins, empty = false, only, readIds, delete
   };
   const alive = (l: NotifItem[]) => l.filter((it) => !deletedIds.has(it.id));
   const unreadCount = (l: NotifItem[]) => alive(l).filter(isUnread).length;
-  const youUnread = unreadCount(NOTIF_YOU);
-  const noticeUnread = unreadCount(NOTIF_NOTICE);
+  // Anything the harness delivered sits above the seeded feed.
+  const youAll = [...(sent?.you ?? []), ...NOTIF_YOU];
+  const noticeAll = [...(sent?.notice ?? []), ...NOTIF_NOTICE];
+  const youUnread = unreadCount(youAll);
+  const noticeUnread = unreadCount(noticeAll);
 
-  const list = alive(tab === "you" ? NOTIF_YOU : NOTIF_NOTICE);
+  const list = alive(tab === "you" ? youAll : noticeAll);
   const title = tab === "you" ? t.notifTabYou : t.notifTabNotice;
   return (
     <div className="flex h-full flex-col bg-[#eef0f3]">
@@ -6261,8 +6261,8 @@ function NotEnoughCoinsPopup({ lang, coins, cost, onCharge, onClose }: { lang: L
   );
 }
 
-export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off", multiCurrency = true }: {
-  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean;
+export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, sendNotifications = false }: {
+  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; /** Dev harness: keep delivering fresh unread notifications and announcements. */ sendNotifications?: boolean;
 }) {
   const t = STR[lang];
   const [screen, setScreen] = useState<Screen>("landing");
@@ -6317,9 +6317,11 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   // Shortfall popup shown before the Quick Purchase sheet; its CTA is what
   // actually opens the sheet.
   const [shortfall, setShortfall] = useState<QuickPurchasePending | null>(null);
+  // The pack being drawn: the one open over the lobby, else the pack page's.
+  const drawingPrice = () => packPrice(lobbyDraw?.item ?? drawItem ?? undefined);
   const attemptDraw = (count: number, billCount?: number) => {
     const billed = billCount ?? count;
-    const cost = billed * DRAW_PRICE;
+    const cost = billed * drawingPrice();
     if (cost > coins) {
       setShortfall({ drawCount: count, billCount: billed, cost });
       return false;
@@ -6329,7 +6331,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   };
   // The draw confirmation states its own shortfall, so its Charge/Top Up CTA
   // opens the sheet directly instead of repeating it in the shortfall popup.
-  const openTopUpForDraw = (count: number) => setQuickPurchase({ drawCount: count, billCount: count, cost: count * DRAW_PRICE });
+  const openTopUpForDraw = (count: number) => setQuickPurchase({ drawCount: count, billCount: count, cost: count * drawingPrice() });
   // john.inr@gmail.com → Quick Purchase / cashier show INR + JPY currency picker.
   const intlLocalCurrency: IntlCurrencyInfo | null = (() => {
     try {
@@ -6480,9 +6482,24 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   const [notifDeleted, setNotifDeleted] = useState<Set<string>>(new Set());
   const markNotifRead = (id: string) => setNotifRead((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
   const deleteNotif = (id: string) => setNotifDeleted((prev) => new Set(prev).add(id));
+  // Demo deliveries from the harness toggle, newest first, kept per tab.
+  const [sentNotifs, setSentNotifs] = useState<{ you: NotifItem[]; notice: NotifItem[] }>({ you: [], notice: [] });
+  // While the toggle is on a fresh unread item lands every few seconds,
+  // alternating tabs so both the inbox and the announcements fill back up.
+  useEffect(() => {
+    if (!sendNotifications) return;
+    let seq = 0;
+    const id = window.setInterval(() => {
+      const kind = seq % 2 === 0 ? "you" : "notice";
+      const item = randomNotif(kind, Date.now() + seq);
+      seq += 1;
+      setSentNotifs((prev) => ({ ...prev, [kind]: [item, ...prev[kind]] }));
+    }, 2600);
+    return () => window.clearInterval(id);
+  }, [sendNotifications]);
   const notifUnread = noHistory
     ? 0
-    : [...NOTIF_YOU, ...NOTIF_NOTICE].filter((n) => n.unread && !notifRead.has(n.id) && !notifDeleted.has(n.id)).length;
+    : [...NOTIF_YOU, ...NOTIF_NOTICE, ...sentNotifs.you, ...sentNotifs.notice].filter((n) => n.unread && !notifRead.has(n.id) && !notifDeleted.has(n.id)).length;
   const openNotifications = () => { setNotifOnly(undefined); setPrevScreen((p) => (screen === "notifications" ? p : screen)); setScreen("notifications"); };
   // My Account → Announcements opens the notifications screen in single-tab
   // "notice" mode and returns to My Account on back.
@@ -6645,7 +6662,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onPendingConfirmConsumed={() => setPendingConfirm(null)}
           />
         )}
-        {screen === "notifications" && <NotificationsScreen lang={lang} coins={coins} empty={noHistory} only={notifOnly} readIds={notifRead} deletedIds={notifDeleted} onRead={markNotifRead} onDelete={deleteNotif} onBack={() => setScreen(prevScreen)} onHome={resetHome} onOpenStore={openStore} />}
+        {screen === "notifications" && <NotificationsScreen lang={lang} coins={coins} empty={noHistory} only={notifOnly} sent={sentNotifs} readIds={notifRead} deletedIds={notifDeleted} onRead={markNotifRead} onDelete={deleteNotif} onBack={() => setScreen(prevScreen)} onHome={resetHome} onOpenStore={openStore} />}
         {screen === "mypage" && (
           <MyPage
             lang={lang}

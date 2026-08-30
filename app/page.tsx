@@ -38,6 +38,10 @@ export default function Page() {
   // Demo control (draw confirm popup): whether the pack accepts both currencies.
   // Yes -> confirm popup shows coins (top) + free points (below); No -> coins only.
   const [multiCurrency, setMultiCurrency] = useState(true);
+  // Demo control (notification centre): while on, a fresh unread item lands
+  // every few seconds, alternating between the inbox and announcements — the
+  // way back from an emptied notification centre.
+  const [sendNotifications, setSendNotifications] = useState(false);
   function changeKycScenario(value: KycScenario) {
     try { sessionStorage.removeItem(KYC_SESSION_KEY); } catch {}
     setKycScenario(value);
@@ -63,6 +67,11 @@ export default function Page() {
               <ToggleControl label="Free shipping" value={freeShipping} onChange={setFreeShipping} />
               <ToggleControl label="Address provided" value={addressProvided} onChange={setAddressProvided} />
             </>
+          )}
+          {/* Stays in the rail once it's on, so deliveries can be stopped from
+              wherever the bell badge was being watched. */}
+          {(screen === "notifications" || sendNotifications) && (
+            <ToggleControl label="Send new notifications" value={sendNotifications} onChange={setSendNotifications} />
           )}
           {/* Reachable before the draw as well, so the limit can be armed on the
               pack page and hit straight from the results' "Draw again". */}
@@ -112,6 +121,7 @@ export default function Page() {
                 dailyLimitReached={dailyLimit}
                 drawScenario={drawScenario}
                 multiCurrency={multiCurrency}
+                sendNotifications={sendNotifications}
               />
             </div>
           </div>
@@ -132,6 +142,7 @@ export default function Page() {
           dailyLimitReached={dailyLimit}
           drawScenario={drawScenario}
           multiCurrency={multiCurrency}
+          sendNotifications={sendNotifications}
         />
       </div>
 

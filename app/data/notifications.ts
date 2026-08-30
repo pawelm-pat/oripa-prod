@@ -18,3 +18,45 @@ export const NOTIF_NOTICE: NotifItem[] = [
 // Total unread across both notification lists — powers the bell badge.
 
 export const NOTIF_UNREAD_TOTAL = [...NOTIF_YOU, ...NOTIF_NOTICE].filter((n) => n.unread).length;
+
+/* ── Demo delivery (dev harness) ──────────────────────────────────────────
+   The "Send new notifications" toggle drops fresh unread items into either
+   tab, so the empty state can be filled back up after everything is swiped
+   away. Nothing here is part of the product feed. */
+
+type NotifTemplate = Omit<NotifItem, "id" | "at" | "atJa" | "unread">;
+
+const YOU_TEMPLATES: NotifTemplate[] = [
+  { title: "Prize won!", titleJa: "景品が当選しました！", body: "Congratulations! A new prize has been added to your Prize History.", bodyJa: "おめでとうございます！新しい景品が当選履歴に追加されました。" },
+  { title: "Coins credited", titleJa: "コインを付与しました", body: "1,000 Coins have been added to your balance. They are ready to use on any oripa.", bodyJa: "1,000コインを残高に追加しました。オリパでご利用いただけます。" },
+  { title: "Your item has been shipped", titleJa: "商品を発送しました", body: "Your prize is on its way. Delivery takes up to 14 business days.", bodyJa: "景品を発送しました。お届けまで最大14営業日かかります。", tracking: "AA987654321JP" },
+  { title: "Quest complete", titleJa: "クエストを達成しました", body: "You finished today's quest and unlocked its coin reward.", bodyJa: "本日のクエストを達成し、コイン報酬を獲得しました。" },
+  { title: "Free points expiring soon", titleJa: "フリーポイントの有効期限が近づいています", body: "Some of your free points expire in 3 days. Use them on any oripa before they go.", bodyJa: "一部のフリーポイントは3日後に失効します。お早めにご利用ください。" },
+  { title: "Rank upgraded", titleJa: "ランクがアップしました", body: "You reached Silver rank. Enjoy your new loyalty benefits.", bodyJa: "シルバーランクに到達しました。新しい特典をお楽しみください。" },
+];
+
+const NOTICE_TEMPLATES: NotifTemplate[] = [
+  { title: "New oripa released", titleJa: "新しいオリパが登場しました", body: "A new limited pack is now live in the lobby. Stock is capped, so draw early.", bodyJa: "新しい限定パックがロビーに登場しました。数量限定のためお早めにどうぞ。" },
+  { title: "Scheduled maintenance", titleJa: "メンテナンス実施のお知らせ", body: "We will perform scheduled maintenance tonight from 02:00 to 04:00. Draws will be unavailable during this window.", bodyJa: "本日2:00〜4:00に定期メンテナンスを実施いたします。時間中はガチャをご利用いただけません。" },
+  { title: "Weekend coin campaign", titleJa: "週末コインキャンペーン", body: "Buy coins this weekend and receive a bonus on every package.", bodyJa: "今週末のコイン購入で、すべてのパッケージにボーナスを進呈します。" },
+  { title: "App update available", titleJa: "アプリのアップデートのお知らせ", body: "A new version is available with faster draws and a refreshed My Loot.", bodyJa: "ガチャの高速化とマイルートの刷新を含む新バージョンを公開しました。" },
+  { title: "Support hours changed", titleJa: "サポート受付時間の変更", body: "Our support desk now answers inquiries from 10:00 to 19:00 on weekdays.", bodyJa: "サポート窓口の受付時間を平日10:00〜19:00に変更いたしました。" },
+];
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const pad = (n: number) => String(n).padStart(2, "0");
+
+// A fresh unread notification for the given tab, stamped with the current time.
+export function randomNotif(kind: "you" | "notice", seq: number): NotifItem {
+  const pool = kind === "you" ? YOU_TEMPLATES : NOTICE_TEMPLATES;
+  const tpl = pool[Math.floor(Math.random() * pool.length)];
+  const d = new Date();
+  const time = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return {
+    ...tpl,
+    id: `gen-${kind}-${seq}`,
+    at: `${MONTHS[d.getMonth()]} ${pad(d.getDate())}, ${d.getFullYear()} ${time}`,
+    atJa: `${d.getFullYear()}年${d.getMonth() + 1}月${pad(d.getDate())}日 ${time}`,
+    unread: true,
+  };
+}

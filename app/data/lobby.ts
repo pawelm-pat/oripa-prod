@@ -10,20 +10,20 @@ export const CATEGORIES: Category[] = ["pokemon", "onepiece", "baseball", "footb
 // r1 the full row, r3 a single draw, n1 a free draw, n2 the free trial pair and
 // ja1 the LINE link prompt.
 export const RECOMMENDED_ORIPA: OripaItem[] = [
-  { id: "r1", gem: true, free: false, remaining: 700, total: 1000, endsIn: 30, cta: "all", image: "/card-banner-startdash.webp", title: "Pokémon 151 Special Oripa", titleJa: "ポケモン151スペシャルオリパ" },
-  { id: "r2", gem: false, free: true, remaining: 0, total: 1000, endsIn: 12, expired: true, image: "/oripa-banner-2.png", title: "One Piece Premium Oripa", titleJa: "ワンピース プレミアムオリパ" },
-  { id: "r3", gem: false, free: true, remaining: 880, total: 1000, endsIn: 58, cta: "one", image: "/oripa-banner-3.png", title: "Weiss Schwarz Lucky Draw", titleJa: "ヴァイスシュヴァルツ ラッキードロー" },
+  { id: "r1", gem: true, free: false, remaining: 700, total: 1000, endsIn: 30, price: 1500, cta: "all", image: "/card-banner-startdash.webp", title: "Pokémon 151 Special Oripa", titleJa: "ポケモン151スペシャルオリパ" },
+  { id: "r2", gem: false, free: true, remaining: 0, total: 1000, endsIn: 12, price: 1000, expired: true, image: "/oripa-banner-2.png", title: "One Piece Premium Oripa", titleJa: "ワンピース プレミアムオリパ" },
+  { id: "r3", gem: false, free: true, remaining: 880, total: 1000, endsIn: 58, price: 300, cta: "one", image: "/oripa-banner-3.png", title: "Weiss Schwarz Lucky Draw", titleJa: "ヴァイスシュヴァルツ ラッキードロー" },
 ];
 
 // Sold-out example — the last card in the home feed. Shows the greyed artwork
 // and the "完売しました / Sold Out" label beside the price, which is a separate
 // state from "期限切れ / Expired".
-export const SOLD_OUT_ORIPA: OripaItem = { id: "r4", gem: true, free: false, remaining: 0, total: 1000, endsIn: 0, soldOut: true, image: "/oripa-banner-1.png", title: "Start Dash Pack", titleJa: "スタートダッシュパック" };
+export const SOLD_OUT_ORIPA: OripaItem = { id: "r4", gem: true, free: false, remaining: 0, total: 1000, endsIn: 0, price: 500, soldOut: true, image: "/oripa-banner-1.png", title: "Start Dash Pack", titleJa: "スタートダッシュパック" };
 
 export const LIST_ORIPA: OripaItem[] = [
-  { id: "l1", gem: true, free: false, remaining: 700, total: 1000, endsIn: 30, image: "/oripa-list-1.png", title: "Football Stars Oripa", titleJa: "サッカースター オリパ" },
-  { id: "l2", gem: false, free: true, remaining: 150, total: 1000, endsIn: 8, image: "/oripa-list-2.png", title: "NBA Rookies Draw", titleJa: "NBAルーキー ドロー" },
-  { id: "l3", gem: false, free: true, remaining: 540, total: 1000, endsIn: 44, image: "/oripa-list-3.png", title: "Soccer Premium Pack", titleJa: "サッカー プレミアムパック" },
+  { id: "l1", gem: true, free: false, remaining: 700, total: 1000, endsIn: 30, price: 800, image: "/oripa-list-1.png", title: "Football Stars Oripa", titleJa: "サッカースター オリパ" },
+  { id: "l2", gem: false, free: true, remaining: 150, total: 1000, endsIn: 8, price: 500, image: "/oripa-list-2.png", title: "NBA Rookies Draw", titleJa: "NBAルーキー ドロー" },
+  { id: "l3", gem: false, free: true, remaining: 540, total: 1000, endsIn: 44, price: 1600, image: "/oripa-list-3.png", title: "Soccer Premium Pack", titleJa: "サッカー プレミアムパック" },
 ];
 
 // `cats: []` means the section only appears in the "All" feed.
@@ -35,49 +35,49 @@ export const HOME_SECTIONS: HomeSection[] = [
   { id: "new", titleKey: "secNew", icon: "new", variant: "light", cats: ["new"], items: [
     // Expired example — surfaced below the recommended band; card shows the
     // greyed-out "期限切れ / Expired" state and opens the disabled draw view.
-    { id: "n0", gem: false, free: false, remaining: 0, total: 1000, endsIn: 0, expired: true, image: "/oripa-banner-1.png", title: "Start Dash Pack", titleJa: "スタートダッシュパック" },
-    { id: "n1", gem: false, free: true, remaining: 940, total: 1000, endsIn: 71, cta: "free", image: "/oripa-banner-2.png", title: "Pokémon VSTAR New Arrival", titleJa: "ポケモン VSTAR 新着オリパ" },
-    { id: "n2", gem: true, free: false, remaining: 610, total: 1000, endsIn: 33, cta: "trial", image: "/oripa-list-3.png", title: "Yu-Gi-Oh! Fresh Pack", titleJa: "遊戯王 フレッシュパック" },
+    { id: "n0", gem: false, free: false, remaining: 0, total: 1000, endsIn: 0, price: 500, expired: true, image: "/oripa-banner-1.png", title: "Start Dash Pack", titleJa: "スタートダッシュパック" },
+    { id: "n1", gem: false, free: true, remaining: 940, total: 1000, endsIn: 71, price: 800, cta: "free", image: "/oripa-banner-2.png", title: "Pokémon VSTAR New Arrival", titleJa: "ポケモン VSTAR 新着オリパ" },
+    { id: "n2", gem: true, free: false, remaining: 610, total: 1000, endsIn: 33, price: 1200, cta: "trial", image: "/oripa-list-3.png", title: "Yu-Gi-Oh! Fresh Pack", titleJa: "遊戯王 フレッシュパック" },
   ] },
   { id: "justadded", titleKey: "secJustAdded", icon: "new", variant: "light", cats: ["new"], items: [
-    { id: "ja1", gem: false, free: true, remaining: 990, total: 1000, endsIn: 90, cta: "freePending", image: "/oripa-list-2.png", title: "Dragon Ball Just Added", titleJa: "ドラゴンボール 新登場オリパ" },
-    { id: "ja2", gem: true, free: false, remaining: 870, total: 1000, endsIn: 55, image: "/oripa-banner-3.png", title: "Magic: The Gathering Newcomer", titleJa: "マジック・ザ・ギャザリング 新着" },
+    { id: "ja1", gem: false, free: true, remaining: 990, total: 1000, endsIn: 90, price: 600, cta: "freePending", image: "/oripa-list-2.png", title: "Dragon Ball Just Added", titleJa: "ドラゴンボール 新登場オリパ" },
+    { id: "ja2", gem: true, free: false, remaining: 870, total: 1000, endsIn: 55, price: 2000, image: "/oripa-banner-3.png", title: "Magic: The Gathering Newcomer", titleJa: "マジック・ザ・ギャザリング 新着" },
   ] },
 
   // Hot
   { id: "hot", titleKey: "secHot", icon: "popular", variant: "light", cats: ["popular"], items: [
-    { id: "h1", gem: true, free: false, remaining: 210, total: 1000, endsIn: 9, image: "/oripa-banner-1.png", title: "Charizard ex Hot Draw", titleJa: "リザードンex ホットドロー" },
-    { id: "h2", gem: false, free: true, remaining: 470, total: 1000, endsIn: 22, image: "/oripa-list-1.png", title: "Pikachu Illustrator Hot Pack", titleJa: "ピカチュウ イラストレーター ホットパック" },
+    { id: "h1", gem: true, free: false, remaining: 210, total: 1000, endsIn: 9, price: 3000, image: "/oripa-banner-1.png", title: "Charizard ex Hot Draw", titleJa: "リザードンex ホットドロー" },
+    { id: "h2", gem: false, free: true, remaining: 470, total: 1000, endsIn: 22, price: 1500, image: "/oripa-list-1.png", title: "Pikachu Illustrator Hot Pack", titleJa: "ピカチュウ イラストレーター ホットパック" },
   ] },
   { id: "trending", titleKey: "secTrending", icon: "popular", variant: "light", cats: ["popular"], items: [
-    { id: "tr1", gem: true, free: false, remaining: 300, total: 1000, endsIn: 15, image: "/oripa-list-3.png", title: "Pokémon Trending Oripa", titleJa: "ポケモン トレンドオリパ" },
-    { id: "tr2", gem: false, free: true, remaining: 660, total: 1000, endsIn: 40, image: "/oripa-banner-2.png", title: "One Piece Trending Draw", titleJa: "ワンピース トレンドドロー" },
+    { id: "tr1", gem: true, free: false, remaining: 300, total: 1000, endsIn: 15, price: 1000, image: "/oripa-list-3.png", title: "Pokémon Trending Oripa", titleJa: "ポケモン トレンドオリパ" },
+    { id: "tr2", gem: false, free: true, remaining: 660, total: 1000, endsIn: 40, price: 700, image: "/oripa-banner-2.png", title: "One Piece Trending Draw", titleJa: "ワンピース トレンドドロー" },
   ] },
 
   // Pokémon
   { id: "pkm", titleKey: "secPokemon", icon: "pokemon", variant: "light", cats: ["pokemon"], items: [
-    { id: "p1", gem: true, free: false, remaining: 540, total: 1000, endsIn: 44, image: "/oripa-banner-3.png", title: "Pokémon 151 Oripa", titleJa: "ポケモン151 オリパ" },
-    { id: "p2", gem: false, free: true, remaining: 360, total: 1000, endsIn: 17, image: "/oripa-list-2.png", title: "Pokémon Scarlet & Violet Oripa", titleJa: "ポケモン スカーレット＆バイオレット オリパ" },
+    { id: "p1", gem: true, free: false, remaining: 540, total: 1000, endsIn: 44, price: 1200, image: "/oripa-banner-3.png", title: "Pokémon 151 Oripa", titleJa: "ポケモン151 オリパ" },
+    { id: "p2", gem: false, free: true, remaining: 360, total: 1000, endsIn: 17, price: 900, image: "/oripa-list-2.png", title: "Pokémon Scarlet & Violet Oripa", titleJa: "ポケモン スカーレット＆バイオレット オリパ" },
   ] },
   { id: "pkmclassic", titleKey: "secPokemonClassic", icon: "pokemon", variant: "light", cats: ["pokemon"], items: [
-    { id: "pc1", gem: false, free: true, remaining: 720, total: 1000, endsIn: 48, image: "/oripa-list-1.png", title: "Pokémon Classic Base Set", titleJa: "ポケモン クラシック 基本セット" },
-    { id: "pc2", gem: true, free: false, remaining: 410, total: 1000, endsIn: 20, image: "/oripa-banner-1.png", title: "Pokémon Neo Genesis Oripa", titleJa: "ポケモン ネオジェネシス オリパ" },
+    { id: "pc1", gem: false, free: true, remaining: 720, total: 1000, endsIn: 48, price: 2500, image: "/oripa-list-1.png", title: "Pokémon Classic Base Set", titleJa: "ポケモン クラシック 基本セット" },
+    { id: "pc2", gem: true, free: false, remaining: 410, total: 1000, endsIn: 20, price: 1800, image: "/oripa-banner-1.png", title: "Pokémon Neo Genesis Oripa", titleJa: "ポケモン ネオジェネシス オリパ" },
   ] },
 
   // Limited
   { id: "lim", titleKey: "secLimited", icon: "limited", variant: "light", cats: ["limited"], items: [
-    { id: "li1", gem: true, free: false, remaining: 80, total: 1000, endsIn: 3, image: "/oripa-list-3.png", title: "Limited Charizard UR", titleJa: "限定 リザードンUR" },
-    { id: "li2", gem: true, free: false, remaining: 130, total: 1000, endsIn: 6, image: "/oripa-banner-1.png", title: "Limited Umbreon VMAX", titleJa: "限定 ブラッキーVMAX" },
+    { id: "li1", gem: true, free: false, remaining: 80, total: 1000, endsIn: 3, price: 5000, image: "/oripa-list-3.png", title: "Limited Charizard UR", titleJa: "限定 リザードンUR" },
+    { id: "li2", gem: true, free: false, remaining: 130, total: 1000, endsIn: 6, price: 4000, image: "/oripa-banner-1.png", title: "Limited Umbreon VMAX", titleJa: "限定 ブラッキーVMAX" },
   ] },
   { id: "lastchance", titleKey: "secLastChance", icon: "limited", variant: "light", cats: ["limited"], items: [
-    { id: "lc1", gem: true, free: false, remaining: 25, total: 1000, endsIn: 1, image: "/oripa-banner-2.png", title: "Last Chance Mewtwo", titleJa: "ラストチャンス ミュウツー" },
-    { id: "lc2", gem: false, free: true, remaining: 55, total: 1000, endsIn: 2, image: "/oripa-list-2.png", title: "Last Chance Rayquaza", titleJa: "ラストチャンス レックウザ" },
+    { id: "lc1", gem: true, free: false, remaining: 25, total: 1000, endsIn: 1, price: 3500, image: "/oripa-banner-2.png", title: "Last Chance Mewtwo", titleJa: "ラストチャンス ミュウツー" },
+    { id: "lc2", gem: false, free: true, remaining: 55, total: 1000, endsIn: 2, price: 2200, image: "/oripa-list-2.png", title: "Last Chance Rayquaza", titleJa: "ラストチャンス レックウザ" },
   ] },
 
   // Other
   { id: "oth", titleKey: "secOther", icon: "other", variant: "light", cats: ["other"], items: [
-    { id: "o1", gem: false, free: true, remaining: 720, total: 1000, endsIn: 51, image: "/oripa-list-1.png", title: "Sports Cards Oripa", titleJa: "スポーツカード オリパ" },
-    { id: "o2", gem: false, free: true, remaining: 905, total: 1000, endsIn: 62, image: "/oripa-banner-2.png", title: "Baseball Legends Draw", titleJa: "ベースボール レジェンド ドロー" },
+    { id: "o1", gem: false, free: true, remaining: 720, total: 1000, endsIn: 51, price: 400, image: "/oripa-list-1.png", title: "Sports Cards Oripa", titleJa: "スポーツカード オリパ" },
+    { id: "o2", gem: false, free: true, remaining: 905, total: 1000, endsIn: 62, price: 300, image: "/oripa-banner-2.png", title: "Baseball Legends Draw", titleJa: "ベースボール レジェンド ドロー" },
   ] },
   { id: "list", titleKey: "secList", icon: "other", variant: "light", cats: ["other"], items: [...LIST_ORIPA, SOLD_OUT_ORIPA] },
 ];
