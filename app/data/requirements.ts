@@ -87,11 +87,10 @@ const APP_HEADER_GROUP: ReqGroup = {
     { text: "Product logo", sub: ["Navigates to the lobby (home)."] },
     { text: "Currency pill (Points + Coins)", sub: ["Shows balances; tapping it opens Coin History."] },
     { text: "Add (+) button", sub: ["Opens the Store."] },
-    { text: "Notifications bell", sub: ["Opens Notifications; shows an unread badge when there are unread items."] },
+    { text: "Notifications bell", sub: ["Opens Notifications; the badge counts unread items and drops as they are read or swiped away, disappearing at zero."] },
   ],
   tbc: [
     "Points value is a fixed placeholder (10,000); live Points balance is pending.",
-    "The bell unread badge does not clear when items are read.",
   ],
 };
 
@@ -456,18 +455,18 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
         items: [
           "Each item shows a date, title and body; shipping items also show a tracking number line.",
           "Unread items are highlighted with a red accent and a 'New' (新着) badge.",
-          { text: "Tapping an unread item", sub: ["Marks it read (styling updates); there is no further navigation."] },
+          { text: "Tapping an unread item", sub: ["Marks it read (styling updates) and takes it off the tab badge and the header bell count; there is no further navigation."] },
           {
             text: "Swiping an item to the left",
             sub: [
-              "Uncovers a red Delete (削除) bin on the right; tapping it removes the notification from the list and from the tab's unread count.",
+              "Uncovers a red Delete (削除) bin on the right; tapping it removes the notification from the list, the tab badge and the header bell count.",
               "Only one item is open at a time; tapping the item again, or swiping it back, closes the bin without deleting.",
-              "Deletions last for the visit only (sample data is restored on reload).",
+              "Reads and deletions persist while navigating the app and are restored on reload (sample data).",
             ],
           },
           "Empty state shows the mascot with 'No notifications' (通知がありません), matching the card screens — including once every item in the tab has been deleted.",
         ],
-        tbc: ["Items do not deep-link anywhere.", "Reading items does not clear the header bell badge.", "Content is sample data."],
+        tbc: ["Items do not deep-link anywhere.", "Content is sample data."],
       },
     ],
   },

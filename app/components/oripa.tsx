@@ -63,6 +63,8 @@ import {
 } from "./kyc";
 
 const NotifNavContext = createContext<() => void>(() => {});
+// Unread notifications left in the two lists — what the bell badge counts.
+const NotifBadgeContext = createContext<number>(NOTIF_UNREAD_TOTAL);
 // Tapping the currency balances in the header opens the Coin History screen.
 const CoinHistoryNavContext = createContext<() => void>(() => {});
 // Opening a legal document (Terms / Privacy / SCTA) reader from anywhere.
@@ -147,12 +149,13 @@ function BrandLogo({ onClick }: { onClick?: () => void }) {
 
 function BellIcon({ label }: { label: string }) {
   const openNotif = useContext(NotifNavContext);
+  const unread = useContext(NotifBadgeContext);
   return (
     <button onClick={openNotif} aria-label={label} className="relative flex h-8 w-8 items-center justify-center">
       {/* 24×24 per design. */}
       <img src="/bell-notification.png" alt="" className="h-6 w-6 object-contain" />
-      {NOTIF_UNREAD_TOTAL > 0 && (
-        <span className="absolute -right-0.5 -top-0.5 flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-[#D10005] px-1 text-[9px] font-extrabold leading-none text-white ring-2 ring-white">{NOTIF_UNREAD_TOTAL}</span>
+      {unread > 0 && (
+        <span className="absolute -right-0.5 -top-0.5 flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-[#D10005] px-1 text-[9px] font-extrabold leading-none text-white ring-2 ring-white">{unread}</span>
       )}
     </button>
   );
@@ -3173,20 +3176,18 @@ function SwipeToDeleteRow({ open, onOpen, onClose, onDelete, deleteLabel, childr
   );
 }
 
-function NotificationsScreen({ lang, coins, empty = false, only, onBack, onHome, onOpenStore }: { lang: Lang; coins: number; empty?: boolean; only?: "you" | "notice"; onBack: () => void; onHome: () => void; onOpenStore?: () => void }) {
+function NotificationsScreen({ lang, coins, empty = false, only, readIds, deletedIds, onRead, onDelete, onBack, onHome, onOpenStore }: { lang: Lang; coins: number; empty?: boolean; only?: "you" | "notice"; readIds: Set<string>; deletedIds: Set<string>; onRead: (id: string) => void; onDelete: (id: string) => void; onBack: () => void; onHome: () => void; onOpenStore?: () => void }) {
   const t = STR[lang];
   const [tab, setTab] = useState<"you" | "notice">(only ?? "you");
-  // Locally track which notifications have been opened (reset per visit).
-  const [readIds, setReadIds] = useState<Set<string>>(new Set());
-  // Notifications deleted by swiping them away (kept for this visit only).
-  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   // Only one row shows its bin at a time.
   const [swipedId, setSwipedId] = useState<string | null>(null);
+  // Which notifications have been opened or swiped away is owned by the app
+  // root, so the bell badge counts the same items this screen lists.
   const isUnread = (it: NotifItem) => !empty && !!it.unread && !readIds.has(it.id);
-  const markRead = (id: string) => setReadIds((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
+  const markRead = onRead;
   const deleteNotif = (id: string) => {
     setSwipedId((cur) => (cur === id ? null : cur));
-    setDeletedIds((prev) => new Set(prev).add(id));
+    onDelete(id);
   };
   const alive = (l: NotifItem[]) => l.filter((it) => !deletedIds.has(it.id));
   const unreadCount = (l: NotifItem[]) => alive(l).filter(isUnread).length;
@@ -6442,6 +6443,16 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
     setDisplayName("");
     setScreen("landing");
   };
+  // Notifications the user has opened or swiped away. Owned here so the state
+  // survives the notifications screen's remount and so the header bell counts
+  // what's actually left unread.
+  const [notifRead, setNotifRead] = useState<Set<string>>(new Set());
+  const [notifDeleted, setNotifDeleted] = useState<Set<string>>(new Set());
+  const markNotifRead = (id: string) => setNotifRead((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
+  const deleteNotif = (id: string) => setNotifDeleted((prev) => new Set(prev).add(id));
+  const notifUnread = noHistory
+    ? 0
+    : [...NOTIF_YOU, ...NOTIF_NOTICE].filter((n) => n.unread && !notifRead.has(n.id) && !notifDeleted.has(n.id)).length;
   const openNotifications = () => { setNotifOnly(undefined); setPrevScreen((p) => (screen === "notifications" ? p : screen)); setScreen("notifications"); };
   // My Account → Announcements opens the notifications screen in single-tab
   // "notice" mode and returns to My Account on back.
@@ -6524,6 +6535,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   };
   return (
     <NotifNavContext.Provider value={onLanding ? () => {} : openNotifications}>
+    <NotifBadgeContext.Provider value={notifUnread}>
     <CoinHistoryNavContext.Provider value={onLanding ? () => {} : openCoinHistory}>
     <CatNavContext.Provider value={openCategory}>
     <LegalNavContext.Provider value={setLegalDoc}>
@@ -6603,7 +6615,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onPendingConfirmConsumed={() => setPendingConfirm(null)}
           />
         )}
-        {screen === "notifications" && <NotificationsScreen lang={lang} coins={coins} empty={noHistory} only={notifOnly} onBack={() => setScreen(prevScreen)} onHome={resetHome} onOpenStore={openStore} />}
+        {screen === "notifications" && <NotificationsScreen lang={lang} coins={coins} empty={noHistory} only={notifOnly} readIds={notifRead} deletedIds={notifDeleted} onRead={markNotifRead} onDelete={deleteNotif} onBack={() => setScreen(prevScreen)} onHome={resetHome} onOpenStore={openStore} />}
         {screen === "mypage" && (
           <MyPage
             lang={lang}
@@ -6809,6 +6821,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
     </LegalNavContext.Provider>
     </CatNavContext.Provider>
     </CoinHistoryNavContext.Provider>
+    </NotifBadgeContext.Provider>
     </NotifNavContext.Provider>
   );
 }
