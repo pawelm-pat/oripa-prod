@@ -156,6 +156,29 @@ a {
   animation: slideInLeft 0.28s ease both;
 }
 
+/* Empty state taking over a list that has just been emptied: the panel grows
+   open from nothing (grid row) while the artwork rises into it, so the page
+   settles into the new height instead of snapping. */
+@keyframes emptyGrow {
+  from {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+  to {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+}
+.animate-empty-grow {
+  animation: emptyGrow 0.42s cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-empty-grow {
+    animation: none;
+    grid-template-rows: 1fr;
+  }
+}
+
 /* Home hero speech bubble (shown on character tap) */
 @keyframes heroBubbleIn {
   from {

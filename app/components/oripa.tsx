@@ -3094,8 +3094,22 @@ function LandingPage({ lang, onSignUp, onLogin, onOpenDraw, onRequireLogin, catR
 // swallowed so it never reads as a tap on the notification underneath.
 const NOTIF_BIN_W = 76;
 
-function SwipeToDeleteRow({ open, onOpen, onClose, onDelete, deleteLabel, children }: { open: boolean; onOpen: () => void; onClose: () => void; onDelete: () => void; deleteLabel: string; children: React.ReactNode }) {
+function SwipeToDeleteRow({ open, removing, onOpen, onClose, onDelete, deleteLabel, children }: { open: boolean; removing: boolean; onOpen: () => void; onClose: () => void; onDelete: () => void; deleteLabel: string; children: React.ReactNode }) {
   const [drag, setDrag] = useState<number | null>(null);
+  // A deleted row slides out and folds up, so the list closes the gap instead
+  // of the rows below jumping. Pin the height first, then collapse from it.
+  const foldRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = foldRef.current;
+    if (!el || !removing) return;
+    el.style.maxHeight = `${el.scrollHeight}px`;
+    const id = requestAnimationFrame(() => {
+      el.style.maxHeight = "0px";
+      el.style.opacity = "0";
+      el.style.paddingBottom = "0px";
+    });
+    return () => cancelAnimationFrame(id);
+  }, [removing]);
   const startRef = useRef<{ x: number; y: number } | null>(null);
   const axisRef = useRef<"none" | "x" | "y">("none");
   const swipedRef = useRef(false);
@@ -3136,7 +3150,8 @@ function SwipeToDeleteRow({ open, onOpen, onClose, onDelete, deleteLabel, childr
   };
 
   return (
-    <div className="relative overflow-hidden rounded-xl">
+    <div ref={foldRef} className="overflow-hidden pb-2.5 transition-all duration-300 ease-out">
+    <div className={`relative overflow-hidden rounded-xl transition-transform duration-300 ease-out ${removing ? "-translate-x-6" : ""}`}>
       <button
         onClick={onDelete}
         aria-label={deleteLabel}
@@ -3173,6 +3188,7 @@ function SwipeToDeleteRow({ open, onOpen, onClose, onDelete, deleteLabel, childr
         {children}
       </div>
     </div>
+    </div>
   );
 }
 
@@ -3185,9 +3201,17 @@ function NotificationsScreen({ lang, coins, empty = false, only, readIds, delete
   // root, so the bell badge counts the same items this screen lists.
   const isUnread = (it: NotifItem) => !empty && !!it.unread && !readIds.has(it.id);
   const markRead = onRead;
+  // The row folds away first and leaves the list a beat later, so the panel
+  // shrinks into the gap rather than snapping shut under the remaining rows.
+  const [removingId, setRemovingId] = useState<string | null>(null);
   const deleteNotif = (id: string) => {
+    if (removingId) return;
     setSwipedId((cur) => (cur === id ? null : cur));
-    onDelete(id);
+    setRemovingId(id);
+    window.setTimeout(() => {
+      setRemovingId((cur) => (cur === id ? null : cur));
+      onDelete(id);
+    }, 300);
   };
   const alive = (l: NotifItem[]) => l.filter((it) => !deletedIds.has(it.id));
   const unreadCount = (l: NotifItem[]) => alive(l).filter(isUnread).length;
@@ -3239,19 +3263,25 @@ function NotificationsScreen({ lang, coins, empty = false, only, readIds, delete
       <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto bg-[#eef0f3]">
         {empty || list.length === 0 ? (
           /* Same mascot-and-message treatment the card screens use when their
-             list runs out. */
-          <div className="flex flex-col items-center py-16">
-            <img src="/prize-character-wave.webp" alt="" className="mb-5 h-48 w-48 object-contain" />
-            <p className="max-w-[334px] text-center text-[14px] leading-[17px] text-[#0F0F0F80]">{tab === "notice" ? t.notifEmptyNotice : t.notifEmpty}</p>
+             list runs out, grown open so it fills the space the last row left
+             behind instead of appearing on top of it. */
+          <div className="animate-empty-grow grid">
+            <div className="overflow-hidden">
+              <div className="animate-fade-slide flex flex-col items-center py-16">
+                <img src="/prize-character-wave.webp" alt="" className="mb-5 h-48 w-48 object-contain" />
+                <p className="max-w-[334px] text-center text-[14px] leading-[17px] text-[#0F0F0F80]">{tab === "notice" ? t.notifEmptyNotice : t.notifEmpty}</p>
+              </div>
+            </div>
           </div>
         ) : (
-          <div className="space-y-2.5 px-3 py-3">
+          <div className="px-3 pb-0.5 pt-3">
             {list.map((it) => {
               const un = isUnread(it);
               return (
                 <SwipeToDeleteRow
                   key={it.id}
                   open={swipedId === it.id}
+                  removing={removingId === it.id}
                   onOpen={() => setSwipedId(it.id)}
                   onClose={() => setSwipedId((cur) => (cur === it.id ? null : cur))}
                   onDelete={() => deleteNotif(it.id)}
