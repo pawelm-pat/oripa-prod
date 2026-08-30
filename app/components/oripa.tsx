@@ -3849,6 +3849,13 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
                               on a 100% line height, no letter spacing. */}
                           <p className="mt-1 line-clamp-2 text-[10px] font-normal leading-none tracking-normal text-[#0F0F0F]">{locDesc(p, lang)}</p>
                           <p className="mt-1.5 text-[10px] font-normal leading-none tracking-normal text-[#0F0F0F]">{lootMode ? `${t.itemsExchangePeriod}${fmtDate(expiresAt(p.wonAt))}` : `${t.itemsDateWon}${fmtDate(p.wonAt)}`}</p>
+                          {/* Winning History is an audit view, so each card
+                              also states where the prize ended up. */}
+                          {!lootMode && (
+                            <p className="mt-1.5 text-[10px] font-normal leading-none tracking-normal text-[#0F0F0F]">
+                              {`${t.itemsStatus} ${t.itemsStatusLabels[p.status ?? "notSelected"]}`}
+                            </p>
+                          )}
                           <div className="mt-auto flex items-center justify-center gap-1.5 rounded-xl border border-black/10 bg-white pt-2 pb-2" style={{ marginTop: 8 }}>
                             <CoinIcon size={18} />
                             <span className="text-[18px] font-bold text-[#0F0F0F]">{p.coinValue.toLocaleString()}</span>

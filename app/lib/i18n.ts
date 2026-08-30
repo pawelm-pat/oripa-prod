@@ -1,7 +1,7 @@
 // Bilingual (EN / 日本語) copy for the Oripa PROD skeleton.
 // `EN` is the source of truth; `Dict` is derived from it and `JA` must match.
 
-import type { Category, Lang } from "./types";
+import type { Category, Lang, PrizeStatus } from "./types";
 
 const SHIP_MIN_COINS = 1500;
 const FREE_SHIP_QUOTA = 3;
@@ -163,8 +163,16 @@ const EN = {
   itemsSortLabel: "Sort by highest coin value",
   itemsNotSelected: "Not selected",
   itemsSelected: "Selected",
-  itemsExchangePeriod: "Exchange period:",
-  itemsDateWon: "Date won:",
+  itemsExchangePeriod: "Exchange period: ",
+  itemsDateWon: "Date won: ",
+  itemsStatus: "Status:",
+  itemsStatusLabels: {
+    notSelected: "Not selected",
+    pending: "Pending delivery",
+    shipped: "Shipped",
+    delivered: "Delivery Completed",
+    exchanged: "Exchanged for coins",
+  } as Record<PrizeStatus, string>,
   itemsExchangeDate: "Exchange date:",
   itemsSelectAll: "Select All",
   itemsReset: "Reset",
@@ -1318,6 +1326,14 @@ const JA: Dict = {
   itemsSelected: "選択中",
   itemsExchangePeriod: "交換期限：",
   itemsDateWon: "獲得日：",
+  itemsStatus: "ステータス：",
+  itemsStatusLabels: {
+    notSelected: "未選択",
+    pending: "配送待ち",
+    shipped: "発送済み",
+    delivered: "配送完了",
+    exchanged: "コインに交換済み",
+  } as Record<PrizeStatus, string>,
   itemsExchangeDate: "自動交換日：",
   itemsSelectAll: "全選択",
   itemsReset: "リセット",

@@ -506,6 +506,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
         title: "Prize cards & selection (Won tab)",
         items: [
           "Won cards show artwork, a rarity tag (Ultra / Gold / Silver), a selection toggle, title, description, an exchange-period date and a coin value.",
+          { text: "Delivery status", sub: ["Winning history cards add a 'Status:' line under the won date — Not selected / Pending delivery / Shipped / Delivery Completed / Exchanged for coins — styled like the date (10px regular, #0F0F0F)."] },
           { text: "Tapping a card", sub: ["Toggles selection (selected cards show an orange border)."] },
           { text: "Sticky action bar (appears only when ≥1 prize selected)", sub: ["Reset clears the selection.", "Exchange to Coins converts the selected prizes to coins, removes them from Won and shows a toast.", "Request Shipping first calls requestKyc('prizeHistory'); if verification is incomplete the KYC overlay opens, otherwise the shipping flow (choose/add address → confirm) runs and prizes move to Waiting to Ship."] },
         ],

@@ -69,40 +69,40 @@ export function generateDraw(count: number): WonPrize[] {
 
 export const INITIAL_WON: WonPrize[] = [
   // Pokémon
-  { id: "w1", name: "Pokémon — Charizard UR", nameJa: "ポケモン — リザードン UR", desc: "Holographic 1st edition", descJa: "ホログラフィック 初版", rarity: "UR", coinValue: 50000, wonAt: NOW - 1 * DAY - 3 * 60 * 60 * 1000, category: "pokemon" },
-  { id: "w2", name: "Pokémon — Pikachu SR", nameJa: "ポケモン — ピカチュウ SR", desc: "Foil promo card", descJa: "フォイルプロモ", rarity: "SR", coinValue: 5000, wonAt: NOW - 2 * DAY, category: "pokemon" },
-  { id: "w3", name: "Pokémon — Eevee", nameJa: "ポケモン — イーブイ", desc: "Standard pull", descJa: "通常排出", rarity: "N", coinValue: 500, wonAt: NOW - 6 * DAY - 4 * 60 * 60 * 1000, category: "pokemon" },
+  { id: "w1", name: "Pokémon — Charizard UR", nameJa: "ポケモン — リザードン UR", desc: "Holographic 1st edition", descJa: "ホログラフィック 初版", rarity: "UR", coinValue: 50000, wonAt: NOW - 1 * DAY - 3 * 60 * 60 * 1000, category: "pokemon", status: "delivered" },
+  { id: "w2", name: "Pokémon — Pikachu SR", nameJa: "ポケモン — ピカチュウ SR", desc: "Foil promo card", descJa: "フォイルプロモ", rarity: "SR", coinValue: 5000, wonAt: NOW - 2 * DAY, category: "pokemon", status: "exchanged" },
+  { id: "w3", name: "Pokémon — Eevee", nameJa: "ポケモン — イーブイ", desc: "Standard pull", descJa: "通常排出", rarity: "N", coinValue: 500, wonAt: NOW - 6 * DAY - 4 * 60 * 60 * 1000, category: "pokemon", status: "notSelected" },
   // One Piece
-  { id: "w4", name: "One Piece — Luffy Gear 5 UR", nameJa: "ワンピース — ルフィ ギア5 UR", desc: "Special parallel", descJa: "スペシャルパラレル", rarity: "UR", coinValue: 50000, wonAt: NOW - 2 * DAY - 5 * 60 * 60 * 1000, category: "onepiece" },
-  { id: "w5", name: "One Piece — Zoro SR", nameJa: "ワンピース — ゾロ SR", desc: "Foil edition", descJa: "フォイル版", rarity: "SR", coinValue: 5000, wonAt: NOW - 5 * DAY, category: "onepiece" },
-  { id: "w6", name: "One Piece — Chopper", nameJa: "ワンピース — チョッパー", desc: "Standard card", descJa: "通常カード", rarity: "N", coinValue: 500, wonAt: NOW - 3 * DAY, category: "onepiece" },
+  { id: "w4", name: "One Piece — Luffy Gear 5 UR", nameJa: "ワンピース — ルフィ ギア5 UR", desc: "Special parallel", descJa: "スペシャルパラレル", rarity: "UR", coinValue: 50000, wonAt: NOW - 2 * DAY - 5 * 60 * 60 * 1000, category: "onepiece", status: "shipped" },
+  { id: "w5", name: "One Piece — Zoro SR", nameJa: "ワンピース — ゾロ SR", desc: "Foil edition", descJa: "フォイル版", rarity: "SR", coinValue: 5000, wonAt: NOW - 5 * DAY, category: "onepiece", status: "pending" },
+  { id: "w6", name: "One Piece — Chopper", nameJa: "ワンピース — チョッパー", desc: "Standard card", descJa: "通常カード", rarity: "N", coinValue: 500, wonAt: NOW - 3 * DAY, category: "onepiece", status: "delivered" },
   // Baseball
-  { id: "w7", name: "Baseball — Ohtani Signature SR", nameJa: "野球 — 大谷 サイン SR", desc: "Autograph relic", descJa: "直筆サイン", rarity: "SR", coinValue: 5000, wonAt: NOW - 4 * DAY, category: "baseball" },
-  { id: "w8", name: "Baseball — Rookie Card", nameJa: "野球 — ルーキーカード", desc: "Standard rookie", descJa: "通常ルーキー", rarity: "N", coinValue: 500, wonAt: NOW - 7 * DAY, category: "baseball" },
+  { id: "w7", name: "Baseball — Ohtani Signature SR", nameJa: "野球 — 大谷 サイン SR", desc: "Autograph relic", descJa: "直筆サイン", rarity: "SR", coinValue: 5000, wonAt: NOW - 4 * DAY, category: "baseball", status: "notSelected" },
+  { id: "w8", name: "Baseball — Rookie Card", nameJa: "野球 — ルーキーカード", desc: "Standard rookie", descJa: "通常ルーキー", rarity: "N", coinValue: 500, wonAt: NOW - 7 * DAY, category: "baseball", status: "exchanged" },
   // Football
-  { id: "w9", name: "Football — Messi Icon UR", nameJa: "サッカー — メッシ アイコン UR", desc: "Limited gold", descJa: "限定ゴールド", rarity: "UR", coinValue: 50000, wonAt: NOW - 3 * DAY - 2 * 60 * 60 * 1000, category: "football" },
-  { id: "w10", name: "Football — Team Sticker", nameJa: "サッカー — チームステッカー", desc: "Collectible sticker", descJa: "コレクタブルステッカー", rarity: "N", coinValue: 300, wonAt: NOW - 3 * DAY, category: "football" },
+  { id: "w9", name: "Football — Messi Icon UR", nameJa: "サッカー — メッシ アイコン UR", desc: "Limited gold", descJa: "限定ゴールド", rarity: "UR", coinValue: 50000, wonAt: NOW - 3 * DAY - 2 * 60 * 60 * 1000, category: "football", status: "shipped" },
+  { id: "w10", name: "Football — Team Sticker", nameJa: "サッカー — チームステッカー", desc: "Collectible sticker", descJa: "コレクタブルステッカー", rarity: "N", coinValue: 300, wonAt: NOW - 3 * DAY, category: "football", status: "notSelected" },
   // Additional top-tier (UR) pulls across franchises — surfaced in My Loot.
-  { id: "w11", name: "Pokémon — Mewtwo UR", nameJa: "ポケモン — ミュウツー UR", desc: "Legendary holographic", descJa: "伝説のホログラフィック", rarity: "UR", coinValue: 60000, wonAt: NOW - 8 * DAY, category: "pokemon" },
-  { id: "w12", name: "One Piece — Shanks UR", nameJa: "ワンピース — シャンクス UR", desc: "Red-Hair parallel", descJa: "赤髪パラレル", rarity: "UR", coinValue: 55000, wonAt: NOW - 9 * DAY, category: "onepiece" },
-  { id: "w13", name: "Baseball — Ohtani MVP UR", nameJa: "野球 — 大谷 MVP UR", desc: "MVP gold relic", descJa: "MVPゴールドレリック", rarity: "UR", coinValue: 70000, wonAt: NOW - 10 * DAY, category: "baseball" },
-  { id: "w14", name: "Football — Ronaldo Icon UR", nameJa: "サッカー — ロナウド アイコン UR", desc: "Icon edition parallel", descJa: "アイコン版パラレル", rarity: "UR", coinValue: 65000, wonAt: NOW - 11 * DAY, category: "football" },
+  { id: "w11", name: "Pokémon — Mewtwo UR", nameJa: "ポケモン — ミュウツー UR", desc: "Legendary holographic", descJa: "伝説のホログラフィック", rarity: "UR", coinValue: 60000, wonAt: NOW - 8 * DAY, category: "pokemon", status: "delivered" },
+  { id: "w12", name: "One Piece — Shanks UR", nameJa: "ワンピース — シャンクス UR", desc: "Red-Hair parallel", descJa: "赤髪パラレル", rarity: "UR", coinValue: 55000, wonAt: NOW - 9 * DAY, category: "onepiece", status: "exchanged" },
+  { id: "w13", name: "Baseball — Ohtani MVP UR", nameJa: "野球 — 大谷 MVP UR", desc: "MVP gold relic", descJa: "MVPゴールドレリック", rarity: "UR", coinValue: 70000, wonAt: NOW - 10 * DAY, category: "baseball", status: "notSelected" },
+  { id: "w14", name: "Football — Ronaldo Icon UR", nameJa: "サッカー — ロナウド アイコン UR", desc: "Icon edition parallel", descJa: "アイコン版パラレル", rarity: "UR", coinValue: 65000, wonAt: NOW - 11 * DAY, category: "football", status: "shipped" },
   // Deeper history so both lists lazily load in batches as the user scrolls.
-  { id: "w15", name: "Pokémon — Rayquaza UR", nameJa: "ポケモン — レックウザ UR", desc: "Sky-high holo", descJa: "スカイホログラフィック", rarity: "UR", coinValue: 62000, wonAt: NOW - 12 * DAY, category: "pokemon" },
-  { id: "w16", name: "One Piece — Law UR", nameJa: "ワンピース — ロー UR", desc: "Surgeon parallel", descJa: "サージョンパラレル", rarity: "UR", coinValue: 52000, wonAt: NOW - 13 * DAY, category: "onepiece" },
-  { id: "w17", name: "Baseball — Trout Auto UR", nameJa: "野球 — トラウト直筆 UR", desc: "Autograph gold", descJa: "直筆ゴールド", rarity: "UR", coinValue: 58000, wonAt: NOW - 14 * DAY, category: "baseball" },
-  { id: "w18", name: "Football — Mbappé UR", nameJa: "サッカー — ムバッペ UR", desc: "Future icon", descJa: "フューチャーアイコン", rarity: "UR", coinValue: 54000, wonAt: NOW - 15 * DAY, category: "football" },
-  { id: "w19", name: "Pokémon — Lugia UR", nameJa: "ポケモン — ルギア UR", desc: "Guardian holo", descJa: "ガーディアンホログラフィック", rarity: "UR", coinValue: 60000, wonAt: NOW - 16 * DAY, category: "pokemon" },
-  { id: "w20", name: "One Piece — Ace UR", nameJa: "ワンピース — エース UR", desc: "Flame-Fist parallel", descJa: "火拳パラレル", rarity: "UR", coinValue: 56000, wonAt: NOW - 17 * DAY, category: "onepiece" },
-  { id: "w21", name: "Baseball — Yamamoto UR", nameJa: "野球 — 山本 UR", desc: "Ace gold relic", descJa: "エースゴールドレリック", rarity: "UR", coinValue: 53000, wonAt: NOW - 18 * DAY, category: "baseball" },
-  { id: "w22", name: "Football — Neymar UR", nameJa: "サッカー — ネイマール UR", desc: "Samba icon", descJa: "サンバアイコン", rarity: "UR", coinValue: 51000, wonAt: NOW - 19 * DAY, category: "football" },
-  { id: "w23", name: "Pokémon — Gengar UR", nameJa: "ポケモン — ゲンガー UR", desc: "Shadow holo", descJa: "シャドウホログラフィック", rarity: "UR", coinValue: 57000, wonAt: NOW - 20 * DAY, category: "pokemon" },
-  { id: "w24", name: "Football — Club Badge", nameJa: "サッカー — クラブバッジ", desc: "Collectible badge", descJa: "コレクタブルバッジ", rarity: "N", coinValue: 300, wonAt: NOW - 21 * DAY, category: "football" },
+  { id: "w15", name: "Pokémon — Rayquaza UR", nameJa: "ポケモン — レックウザ UR", desc: "Sky-high holo", descJa: "スカイホログラフィック", rarity: "UR", coinValue: 62000, wonAt: NOW - 12 * DAY, category: "pokemon", status: "pending" },
+  { id: "w16", name: "One Piece — Law UR", nameJa: "ワンピース — ロー UR", desc: "Surgeon parallel", descJa: "サージョンパラレル", rarity: "UR", coinValue: 52000, wonAt: NOW - 13 * DAY, category: "onepiece", status: "delivered" },
+  { id: "w17", name: "Baseball — Trout Auto UR", nameJa: "野球 — トラウト直筆 UR", desc: "Autograph gold", descJa: "直筆ゴールド", rarity: "UR", coinValue: 58000, wonAt: NOW - 14 * DAY, category: "baseball", status: "notSelected" },
+  { id: "w18", name: "Football — Mbappé UR", nameJa: "サッカー — ムバッペ UR", desc: "Future icon", descJa: "フューチャーアイコン", rarity: "UR", coinValue: 54000, wonAt: NOW - 15 * DAY, category: "football", status: "exchanged" },
+  { id: "w19", name: "Pokémon — Lugia UR", nameJa: "ポケモン — ルギア UR", desc: "Guardian holo", descJa: "ガーディアンホログラフィック", rarity: "UR", coinValue: 60000, wonAt: NOW - 16 * DAY, category: "pokemon", status: "shipped" },
+  { id: "w20", name: "One Piece — Ace UR", nameJa: "ワンピース — エース UR", desc: "Flame-Fist parallel", descJa: "火拳パラレル", rarity: "UR", coinValue: 56000, wonAt: NOW - 17 * DAY, category: "onepiece", status: "notSelected" },
+  { id: "w21", name: "Baseball — Yamamoto UR", nameJa: "野球 — 山本 UR", desc: "Ace gold relic", descJa: "エースゴールドレリック", rarity: "UR", coinValue: 53000, wonAt: NOW - 18 * DAY, category: "baseball", status: "delivered" },
+  { id: "w22", name: "Football — Neymar UR", nameJa: "サッカー — ネイマール UR", desc: "Samba icon", descJa: "サンバアイコン", rarity: "UR", coinValue: 51000, wonAt: NOW - 19 * DAY, category: "football", status: "exchanged" },
+  { id: "w23", name: "Pokémon — Gengar UR", nameJa: "ポケモン — ゲンガー UR", desc: "Shadow holo", descJa: "シャドウホログラフィック", rarity: "UR", coinValue: 57000, wonAt: NOW - 20 * DAY, category: "pokemon", status: "notSelected" },
+  { id: "w24", name: "Football — Club Badge", nameJa: "サッカー — クラブバッジ", desc: "Collectible badge", descJa: "コレクタブルバッジ", rarity: "N", coinValue: 300, wonAt: NOW - 21 * DAY, category: "football", status: "shipped" },
   // Low-value UR pulls (< 1,500 coins) so the "shipping not possible" flow
   // (selection under the free-shipping threshold) can be tested in My Loot.
-  { id: "w25", name: "Pokémon — Pikachu Mini UR", nameJa: "ポケモン — ピカチュウ ミニ UR", desc: "Petit holo pull", descJa: "プチホログラフィック", rarity: "UR", coinValue: 800, wonAt: NOW - 22 * DAY, category: "pokemon" },
-  { id: "w26", name: "One Piece — Nami Chibi UR", nameJa: "ワンピース — ナミ ちび UR", desc: "Chibi parallel", descJa: "ちびパラレル", rarity: "UR", coinValue: 1200, wonAt: NOW - 23 * DAY, category: "onepiece" },
-  { id: "w27", name: "Baseball — Mini Relic UR", nameJa: "野球 — ミニレリック UR", desc: "Mini relic card", descJa: "ミニレリックカード", rarity: "UR", coinValue: 500, wonAt: NOW - 24 * DAY, category: "baseball" },
+  { id: "w25", name: "Pokémon — Pikachu Mini UR", nameJa: "ポケモン — ピカチュウ ミニ UR", desc: "Petit holo pull", descJa: "プチホログラフィック", rarity: "UR", coinValue: 800, wonAt: NOW - 22 * DAY, category: "pokemon", status: "pending" },
+  { id: "w26", name: "One Piece — Nami Chibi UR", nameJa: "ワンピース — ナミ ちび UR", desc: "Chibi parallel", descJa: "ちびパラレル", rarity: "UR", coinValue: 1200, wonAt: NOW - 23 * DAY, category: "onepiece", status: "delivered" },
+  { id: "w27", name: "Baseball — Mini Relic UR", nameJa: "野球 — ミニレリック UR", desc: "Mini relic card", descJa: "ミニレリックカード", rarity: "UR", coinValue: 500, wonAt: NOW - 24 * DAY, category: "baseball", status: "notSelected" },
 ];
 
 export const INITIAL_WAITING: WaitingPrize[] = [

@@ -13,6 +13,10 @@ export type SortKey = "coinDesc" | "coinAsc" | "wonNew" | "wonOld" | "expSoon";
 // Prize History tabs.
 export type PrizeTab = "won" | "waiting" | "shipped";
 
+// Delivery state of a won prize, surfaced in the Winning History audit view.
+// Cards with no status yet (fresh draws) read as "notSelected".
+export type PrizeStatus = "notSelected" | "pending" | "shipped" | "delivered" | "exchanged";
+
 export type WonPrize = {
   id: string;
   name: string;
@@ -23,6 +27,7 @@ export type WonPrize = {
   coinValue: number;
   wonAt: number;
   category?: Category;
+  status?: PrizeStatus;
 };
 
 export type WaitingPrize = {
