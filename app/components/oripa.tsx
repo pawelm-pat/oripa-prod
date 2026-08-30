@@ -3093,13 +3093,14 @@ function LandingPage({ lang, onSignUp, onLogin, onOpenDraw, onRequireLogin, catR
    of the screen the user asked for. Both are a centred column over the site
    footer, with a single CTA out — home for the 404, and the page that was
    actually wanted for the maintenance notice. */
-function ErrorScreen({ t, variant, onHome, onRetry }: { t: Dict; variant: "notFound" | "maintenance"; onHome: () => void; onRetry: () => void }) {
+function ErrorScreen({ t, variant, coins, onHome, onRetry, onOpenStore }: { t: Dict; variant: "notFound" | "maintenance"; coins: number; onHome: () => void; onRetry: () => void; onOpenStore?: () => void }) {
   const notFound = variant === "notFound";
   return (
     <div className="flex h-full flex-col bg-white">
+      <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
       <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
-        <div className="flex flex-col items-center px-4 pb-9 pt-14">
-          <h1 className="max-w-[320px] text-center text-[34px] font-extrabold uppercase leading-[1.16] tracking-[-0.01em] text-[#0F0F0F]">
+        <div className="flex flex-col items-center px-4 pb-9 pt-9">
+          <h1 className="max-w-[320px] text-center text-[34px] font-extrabold uppercase leading-[1.16] tracking-[-0.01em] text-[#0F0F0F33]">
             {notFound ? t.errNotFoundTitle : t.errMaintTitle}
           </h1>
           <img
@@ -3108,11 +3109,11 @@ function ErrorScreen({ t, variant, onHome, onRetry }: { t: Dict; variant: "notFo
             className="mt-3 h-[182px] w-auto select-none object-contain"
             draggable={false}
           />
-          <p className="mt-4 max-w-[340px] text-center text-[12px] leading-[15px] text-[#0F0F0F]">
+          <p className="mt-4 max-w-[340px] text-center text-[12px] leading-[15px] text-[#0F0F0F80]">
             {notFound ? t.errNotFoundBody : t.errMaintBody}
           </p>
           {!notFound && (
-            <p className="mt-4 max-w-[340px] text-center text-[12px] leading-[15px] text-[#0F0F0F]">{t.errMaintBody2}</p>
+            <p className="mt-4 max-w-[340px] text-center text-[12px] leading-[15px] text-[#0F0F0F80]">{t.errMaintBody2}</p>
           )}
           <button
             onClick={notFound ? onHome : onRetry}
@@ -6946,8 +6947,10 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
           <ErrorScreen
             t={t}
             variant={errorPage}
+            coins={coins}
             onHome={() => { setErrorTarget(null); setScreenRaw("oripa"); }}
             onRetry={() => { const target = errorTarget; setErrorTarget(null); if (target) setScreenRaw(target); }}
+            onOpenStore={openStore}
           />
         </div>
       )}
