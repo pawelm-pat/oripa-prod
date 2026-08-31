@@ -77,6 +77,27 @@ const CatNavContext = createContext<(key: string) => void>(() => {});
 // still re-scrolls the feed.
 type CatRequest = { key: string; token: number };
 
+// A draw that ends in "Sold Out!" or "Expired" retires that pack for the rest
+// of the session, so the lobby card and its page keep saying so after the
+// player walks away. Keyed by pack id; the harness clears it when the draw
+// scenario goes back to the happy path.
+type PackStatus = "soldOut" | "expired";
+const PackStatusContext = createContext<Record<string, PackStatus>>({});
+const PackRetireContext = createContext<(id: string, status: PackStatus) => void>(() => {});
+function withPackStatus(item: OripaItem, statuses: Record<string, PackStatus>): OripaItem {
+  const status = statuses[item.id];
+  if (!status) return item;
+  return status === "soldOut"
+    ? { ...item, soldOut: true, remaining: 0 }
+    : { ...item, expired: true, remaining: 0 };
+}
+// Cards and the pack page both read the live status rather than the raw
+// catalogue entry.
+function useLivePack(item: OripaItem) {
+  const statuses = useContext(PackStatusContext);
+  return useMemo(() => withPackStatus(item, statuses), [item, statuses]);
+}
+
 // Preserve the My Page scroll offset across remounts (each screen change
 // remounts via key={screen}), so returning from a sub-screen keeps position.
 let myPageScrollTop = 0;
@@ -286,7 +307,9 @@ function FilterIcon({ size = 18 }: { size?: number }) {
   );
 }
 
-function OripaCard({ item, t, onView, onRequestDraw }: { item: OripaItem; t: Dict; onView?: () => void; /** A tapped CTA draws in place; only the banner opens the pack page. */ onRequestDraw?: (req: Omit<DrawRequest, "token">) => void }) {
+function OripaCard({ item: pack, t, onView, onRequestDraw }: { item: OripaItem; t: Dict; onView?: () => void; /** A tapped CTA draws in place; only the banner opens the pack page. */ onRequestDraw?: (req: Omit<DrawRequest, "token">) => void }) {
+  // A pack retired earlier in the session reads as sold out / expired here too.
+  const item = useLivePack(pack);
   const pct = Math.round((item.remaining / item.total) * 100);
   // Expired / sold-out packs: greyed artwork, a status label in place of the
   // stock+countdown, and no Draw CTAs (the card still opens the greyed-out draw
@@ -1557,6 +1580,14 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
   const STOCK_LEFT = 8;
   // "Expired" / "Sold Out" popup, shown when such a pack's draw is confirmed.
   const [expiredPopup, setExpiredPopup] = useState(false);
+  // Dismissing it retires the pack for the session, so the lobby card and the
+  // pack page keep the state after the player leaves.
+  const retirePack = useContext(PackRetireContext);
+  const closeExpiredPopup = () => {
+    setExpiredPopup(false);
+    retirePack(item.id, soldOutScenario ? "soldOut" : "expired");
+    onSoldOut?.();
+  };
   // Connection-error popup (simulated network failure) + the draw count to
   // retry when the user taps Retry.
   const [connErrorPopup, setConnErrorPopup] = useState(false);
@@ -1960,7 +1991,7 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
         <div
           className="animate-popup-backdrop absolute inset-0 z-[65] flex items-center justify-center p-4"
           style={{ background: "rgba(20,8,4,0.62)" }}
-          onClick={() => { setExpiredPopup(false); onSoldOut?.(); }}
+          onClick={closeExpiredPopup}
           role="dialog"
           aria-modal="true"
         >
@@ -1975,7 +2006,7 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
             <h3 className={soldOutScenario ? "mt-4 text-[22px] font-extrabold text-[#1d2129]" : "mt-4 text-[12px] font-medium text-[#1d2129]"}>{soldOutScenario ? t.soldOutTitle : t.expiredTitle}</h3>
             <p className="mx-auto mt-2 max-w-[280px] text-[12px] font-medium leading-relaxed text-[#6b7075]">{soldOutScenario ? t.soldOutBody : t.expiredBody}</p>
             <button
-              onClick={() => { setExpiredPopup(false); onSoldOut?.(); }}
+              onClick={closeExpiredPopup}
               className="mt-5 w-full rounded-[14px] border-[1.5px] border-[#b5b8bd] bg-white py-3.5 text-[15px] font-bold text-[#6b7075] active:scale-[0.98]"
             >
               {t.drawLimitClose}
@@ -2112,8 +2143,10 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
 
 // The pack page: artwork, price / stock, prize line-up and the sticky CTA row.
 // Drawing itself is delegated to DrawFlow, the same flow a lobby card opens.
-function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, onOpenDraw, onAttemptPaidDraw, onTopUp, pendingConfirm, onPendingConfirmConsumed, guest }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; onOpenDraw?: (item: OripaItem) => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** The confirmation's Charge/Top Up CTA: open the store for a draw the wallet can't cover. */ onTopUp?: (count: number) => void; /** After Quick Purchase success, host re-opens this count's confirmation. */ pendingConfirm?: { count: number; token: number } | null; onPendingConfirmConsumed?: () => void; /** Signed-out visitor: the page is browsable, but any draw CTA asks for an account. */ guest?: { onSignUp: () => void; onLogin: () => void } }) {
+function DrawDetail({ lang, item: pack, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, onOpenDraw, onAttemptPaidDraw, onTopUp, pendingConfirm, onPendingConfirmConsumed, guest }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; onOpenDraw?: (item: OripaItem) => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** The confirmation's Charge/Top Up CTA: open the store for a draw the wallet can't cover. */ onTopUp?: (count: number) => void; /** After Quick Purchase success, host re-opens this count's confirmation. */ pendingConfirm?: { count: number; token: number } | null; onPendingConfirmConsumed?: () => void; /** Signed-out visitor: the page is browsable, but any draw CTA asks for an account. */ guest?: { onSignUp: () => void; onLogin: () => void } }) {
   const t = STR[lang];
+  // A pack retired in an earlier draw opens straight into its sold-out state.
+  const item = useLivePack(pack);
   const price = packPrice(item);
   const openLegal = useContext(LegalNavContext);
   const [cautionOpen, setCautionOpen] = useState(false);
@@ -2198,7 +2231,8 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
               </div>
               <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-black/[0.08]"><span className="block h-full rounded-full bg-[#D10005]" style={{ width: `${pct}%` }} /></div>
               {soldOut ? (
-                <p className="mt-2 text-center text-[15px] font-extrabold text-[#D10005]">{t.soldOutLabel}</p>
+                // An expired pack says so here too, matching its lobby card.
+                <p className="mt-2 text-center text-[15px] font-extrabold text-[#D10005]">{!item.soldOut && item.expired ? t.expiredLabel : t.soldOutLabel}</p>
               ) : (
                 <p className="mt-2 flex items-baseline justify-center gap-1 text-[#D10005]">
                   <span className="text-[12px] font-bold">{t.remainingTimeLabel}</span>
@@ -6659,6 +6693,15 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   };
   const requestLobbyDraw = (item: OripaItem, req: Omit<DrawRequest, "token">) =>
     setLobbyDraw({ item, request: { ...req, token: Date.now() } });
+  // Packs retired by a Sold Out / Expired draw. Switching the harness back to
+  // the happy path puts them all back in stock.
+  const [packStatus, setPackStatus] = useState<Record<string, PackStatus>>({});
+  const [statusScenario, setStatusScenario] = useState(drawScenario);
+  if (statusScenario !== drawScenario) {
+    setStatusScenario(drawScenario);
+    if (drawScenario === "off" && Object.keys(packStatus).length > 0) setPackStatus({});
+  }
+  const retirePack = (id: string, status: PackStatus) => setPackStatus((m) => (m[id] === status ? m : { ...m, [id]: status }));
   // Legal document reader (Terms / Privacy / SCTA), rendered at the app root so
   // it overlays correctly no matter where it's triggered (footer, My Account).
   const [legalDoc, setLegalDoc] = useState<LegalDocKey | null>(null);
@@ -6685,6 +6728,8 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
     setScreen("oripa");
   };
   return (
+    <PackStatusContext.Provider value={packStatus}>
+    <PackRetireContext.Provider value={retirePack}>
     <NotifNavContext.Provider value={onLanding ? () => {} : openNotifications}>
     <NotifBadgeContext.Provider value={notifUnread}>
     <CoinHistoryNavContext.Provider value={onLanding ? () => {} : openCoinHistory}>
@@ -6988,6 +7033,8 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
     </CoinHistoryNavContext.Provider>
     </NotifBadgeContext.Provider>
     </NotifNavContext.Provider>
+    </PackRetireContext.Provider>
+    </PackStatusContext.Provider>
   );
 }
 
