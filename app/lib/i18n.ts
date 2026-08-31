@@ -101,11 +101,13 @@ const EN = {
   deliverTo: "Deliver to",
   prizesCount: (n: number) => `${n} prize${n > 1 ? "s" : ""}`,
   totalValue: "Total value",
-  freeShip: "Free shipping · delivery within 14 business days.",
-  // Used once the free quota is gone, so the note keeps the delivery estimate
-  // without claiming shipping is free.
-  paidShipNote: "Delivery within 14 business days.",
+  // Footnote under the confirm CTAs: a quota line that changes with the
+  // free allowance, then the delivery estimate both variants share.
+  freeShip: `Free shipping, ${FREE_SHIP_QUOTA}/${FREE_SHIP_QUOTA} free shipping remaining this month.`,
+  paidShipNote: `(Monthly free quota used 0/${FREE_SHIP_QUOTA}. Shipping fee applies at checkout.)`,
+  shipDeliveryNote: "Delivery within 14 business days.",
   requestShippingBtn: "Request Shipping",
+  payRequestBtn: "Pay & Request",
   toastShipReq: "Shipping requested · delivery within 14 business days",
   requested: (d: string) => `Requested ${d}`,
   preparing: "Preparing shipment",
@@ -1264,9 +1266,11 @@ const JA: Dict = {
   deliverTo: "お届け先",
   prizesCount: (n) => `${n}個の景品`,
   totalValue: "合計価値",
-  freeShip: "送料無料 · 14営業日以内にお届け。",
-  paidShipNote: "14営業日以内にお届け。",
+  freeShip: `送料無料、今月の無料配送はあと${FREE_SHIP_QUOTA}/${FREE_SHIP_QUOTA}回です。`,
+  paidShipNote: `（今月の無料配送を0/${FREE_SHIP_QUOTA}回利用済み。お会計時に送料がかかります。）`,
+  shipDeliveryNote: "14営業日以内にお届け。",
   requestShippingBtn: "発送を依頼",
+  payRequestBtn: "支払って依頼",
   toastShipReq: "発送を依頼しました · 14営業日以内にお届け",
   requested: (d) => `依頼日 ${d}`,
   preparing: "発送準備中",

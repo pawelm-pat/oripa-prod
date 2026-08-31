@@ -1539,7 +1539,7 @@ function DrawTierCard({ rarity, large = false }: { rarity: Rarity; large?: boole
    because a lobby card's CTA opens the same flow without leaving the lobby.
    Hosts mount it as an overlay (the parent must be positioned) and ask for a
    draw by passing a `request`; it renders nothing while idle. */
-function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, onHome, onOpenStore, onOpenDraw, onAttemptPaidDraw, onTopUp, pendingConfirm, onPendingConfirmConsumed }: { lang: Lang; item: OripaItem; coins: number; request: DrawRequest | null; soldOut?: boolean; /** The sold-out popup was dismissed, so the host can latch its greyed state. */ onSoldOut?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem) => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** The confirmation's Charge/Top Up CTA: open the store for a draw the wallet can't cover. */ onTopUp?: (count: number) => void; /** After Quick Purchase success, host re-opens this count's confirmation. */ pendingConfirm?: { count: number; token: number } | null; onPendingConfirmConsumed?: () => void }) {
+function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, onHome, onOpenStore, onOpenDraw, onResetScroll, onAttemptPaidDraw, onTopUp, pendingConfirm, onPendingConfirmConsumed }: { lang: Lang; item: OripaItem; coins: number; request: DrawRequest | null; soldOut?: boolean; /** The sold-out popup was dismissed, so the host can latch its greyed state. */ onSoldOut?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem) => void; /** Send the pack page behind the results back to the top when they close. */ onResetScroll?: () => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** The confirmation's Charge/Top Up CTA: open the store for a draw the wallet can't cover. */ onTopUp?: (count: number) => void; /** After Quick Purchase success, host re-opens this count's confirmation. */ pendingConfirm?: { count: number; token: number } | null; onPendingConfirmConsumed?: () => void }) {
   const t = STR[lang];
   // What one draw of this pack costs, in coins or in points.
   const price = packPrice(item);
@@ -2090,10 +2090,12 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
           // "Draw again" (within the daily limit): close the results and
           // re-open the draw-confirmation popup for the same count. Cancelling
           // it leaves the player on the draw screen; confirming rolls again.
-          onDrawAgain={() => { const c = results?.length ?? 1; setResults(null); setConfirmCount(c); }}
+          // Either way the pack page behind the results starts from the top,
+          // so nobody lands mid-page where they left off before the draw.
+          onDrawAgain={() => { const c = results?.length ?? 1; setResults(null); onResetScroll?.(); setConfirmCount(c); }}
           // Always lands on this pack's info page, including for draws started
           // from a lobby card (which never left the feed).
-          onBackToInfo={() => { setResults(null); onOpenDraw?.(item); }}
+          onBackToInfo={() => { setResults(null); onResetScroll?.(); onOpenDraw?.(item); }}
           onHome={onHome}
           onOpenStore={onOpenStore}
           freeShipAvailable={freeShipAvailable}
@@ -2127,6 +2129,9 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
   // Only this many draws remain in the insufficient-stock scenario.
   const remainingShown = soldOut ? 0 : (drawScenario === "stock" ? 8 : item.remaining);
   const pct = soldOut ? 0 : Math.round((remainingShown / item.total) * 100);
+  // Leaving the draw results (roll again or back to this page) rewinds the
+  // page underneath them.
+  const scrollerRef = useRef<HTMLDivElement>(null);
 
   return (
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
@@ -2148,7 +2153,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
         <h2 className="truncate text-[17px] font-bold text-[#1d2129]">{locTitle(item, lang)}</h2>
       </div>
 
-      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto bg-[#eef0f3]">
+      <div ref={scrollerRef} className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto bg-[#eef0f3]">
         {/* ── Promotional banner ─────────────────────────────────────────
             Fiery radial burst + ray sweep, gold 3D headline, "new-only"
             ribbon, tagline, mascot and a countdown chip. */}
@@ -2298,6 +2303,7 @@ function DrawDetail({ lang, item, coins, onBack, onHome, onOpenStore, freeShipAv
         onHome={onHome}
         onOpenStore={onOpenStore}
         onOpenDraw={onOpenDraw}
+        onResetScroll={() => scrollerRef.current?.scrollTo({ top: 0 })}
         onAttemptPaidDraw={onAttemptPaidDraw}
         onTopUp={onTopUp}
         pendingConfirm={pendingConfirm}
@@ -4549,14 +4555,20 @@ function ShippingFlow({
                 note below then drops the free-shipping claim, keeping just the
                 delivery estimate. */}
             {!freeShipAvailable && <p className="mt-2 text-right text-[12px] font-semibold text-[#0F0F0F]">{t.shipFeeLine}</p>}
-            <p className="mt-2 text-center text-[11px] text-[#8a9099]">{freeShipAvailable ? t.freeShip : t.paidShipNote}</p>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <button onClick={() => setStep("address")} className="rounded-xl border border-black/15 py-2.5 text-[13px] font-bold text-[#000000]">{t.back}</button>
               <div className="relative">
                 {shipBadge}
-                <button onClick={onConfirm} className="w-full rounded-xl py-2.5 text-[13px] font-bold text-white" style={{ background: "linear-gradient(180deg,#ff8a1f,#f5670a)" }}>{t.requestShippingBtn}</button>
+                <button onClick={onConfirm} className="w-full rounded-xl py-2.5 text-[13px] font-bold text-white" style={{ background: "linear-gradient(180deg,#ff8a1f,#f5670a)" }}>{freeShipAvailable ? t.requestShippingBtn : t.payRequestBtn}</button>
               </div>
             </div>
+            {/* Footnote sits under the CTAs in both variants: the quota line
+                changes with the free allowance, the delivery estimate doesn't. */}
+            <p className="mt-3 text-center text-[11px] leading-[15px] text-[#8a9099]">
+              {freeShipAvailable ? t.freeShip : t.paidShipNote}
+              <br />
+              {t.shipDeliveryNote}
+            </p>
           </>
         )}
         </div>

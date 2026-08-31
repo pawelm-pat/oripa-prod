@@ -400,6 +400,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
         items: [
           { text: "Draw ×1 / Draw ×10 / Custom", sub: ["Opens a confirmation sheet; confirming debits coins and shows results."] },
           { text: "Custom draw quantity", sub: ["Opens on 5 draws; +5 Draws / +10 Draws step it up and MAX (100 Draws) fills in 100 when the balance covers them, otherwise the largest affordable count. The stepper caps at 100 and the balance row updates with every change."] },
+          { text: "Leaving the draw results", sub: ["Draw again and Back to info page both rewind this page to the top before it reappears behind them."] },
           "When stock is 0 the CTA shows a 'Sold out' state.",
           { text: "Insufficient coins", sub: ["Opens Quick Purchase (offers → pay → 3DS → success → Draw) instead of navigating to Store."] },
         ],
@@ -509,7 +510,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
           "Won cards show artwork, a rarity tag (Ultra / Gold / Silver), a selection toggle, title, description, an exchange-period date and a coin value.",
           { text: "Delivery status", sub: ["Winning history cards add a 'Status:' line under the won date — Not selected / Pending delivery / Shipped / Delivery Completed / Exchanged for coins — styled like the date (10px regular, #0F0F0F)."] },
           { text: "Tapping a card", sub: ["Toggles selection (selected cards show an orange border)."] },
-          { text: "Sticky action bar (appears only when ≥1 prize selected)", sub: ["Reset clears the selection.", "Exchange to Coins converts the selected prizes to coins, removes them from Won and shows a toast.", "Request Shipping first calls requestKyc('prizeHistory'); if verification is incomplete the KYC overlay opens, otherwise the shipping flow (choose/add address → confirm) runs and prizes move to Waiting to Ship."] },
+          { text: "Sticky action bar (appears only when ≥1 prize selected)", sub: ["Reset clears the selection.", "Exchange to Coins converts the selected prizes to coins, removes them from Won and shows a toast.", "Request Shipping first calls requestKyc('prizeHistory'); if verification is incomplete the KYC overlay opens, otherwise the shipping flow (choose/add address → confirm) runs and prizes move to Waiting to Ship.", "On the confirm step the footnote (free-quota line + 'Delivery within 14 business days.') sits under the Back / request buttons in both variants. Once the free quota is spent the total gains a '+ Shipping Fee: ¥500' line and the CTA reads 'Pay & Request'."] },
         ],
         validation: [
           "Shipping requires a minimum selected coin value. INCONSISTENCY: the hint says 'items totaling 500 coins or more' but the enforced minimum is currently 1,500 — to be confirmed and aligned.",
