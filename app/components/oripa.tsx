@@ -1424,8 +1424,13 @@ const packPrice = (item?: Pick<OripaItem, "price">) => item?.price ?? DRAW_PRICE
 // popup (mirrors the static free-point figure shown across the app).
 const DRAW_FREE_POINTS = 10000;
 const MAX_CUSTOM_DRAW = 100; // cap for the custom-draw quantity stepper
-// +5 / +10 / MAX buttons under the custom-draw stepper.
-const quickAddCls = "flex h-[30px] w-[94px] shrink-0 items-center justify-center whitespace-nowrap rounded-[5px] border-2 border-[#0F0F0F] bg-white text-[14px] font-bold leading-none text-[#0F0F0F] active:scale-95";
+const DEFAULT_CUSTOM_DRAW = 5; // quantity the custom-draw popup opens on
+// +5 / +10 / MAX buttons under the custom-draw stepper. The two increments
+// keep the design's fixed width; MAX takes the rest of the row because its
+// label spells the cap out.
+const quickAddCls = "flex h-[30px] shrink-0 items-center justify-center whitespace-nowrap rounded-[5px] border-2 border-[#0F0F0F] bg-white font-bold leading-none text-[#0F0F0F] active:scale-95";
+const quickAddFixedCls = `${quickAddCls} w-[90px] text-[14px]`;
+const quickAddMaxCls = `${quickAddCls} min-w-0 flex-1 px-1 text-[13px]`;
 
 // Beveled tier plate ("1等 / 2등 / 3등") — gold for 1st/2nd, silver for 3rd,
 // matching the design's metallic name-plates on the dark prize board.
@@ -1572,7 +1577,7 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
   const payCurrency = multiCurrency ? payWith : "coins";
   // Custom-draw popup: quantity stepper (min 1, up to MAX_CUSTOM_DRAW).
   const [customOpen, setCustomOpen] = useState(false);
-  const [customQty, setCustomQty] = useState(1);
+  const [customQty, setCustomQty] = useState(DEFAULT_CUSTOM_DRAW);
   // Dismissing a draw popup keeps it mounted for the length of the exit
   // animation. Confirming a draw skips this so the roll isn't held up.
   const [sheetClosing, setSheetClosing] = useState(false);
@@ -1664,13 +1669,14 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
   function openCustom() {
     if (soldOut) return;
     setSheetClosing(false);
-    setCustomQty(1);
+    setCustomQty(DEFAULT_CUSTOM_DRAW);
     setCustomOpen(true);
   }
   const setQty = (n: number) => setCustomQty(() => Math.min(MAX_CUSTOM_DRAW, Math.max(1, n)));
-  // MAX fills in the largest draw the chosen balance covers, so nobody has to
-  // divide their wallet by the draw price. The stepper's own ceiling still
-  // applies, and it never lands below 1 so the popup keeps a drawable count.
+  // MAX is 100 draws whenever the chosen balance covers them, and the largest
+  // affordable count when it doesn't, so nobody has to divide their wallet by
+  // the draw price. It never lands below 1 so the popup keeps a drawable count
+  // (the balance rows then show the shortfall).
   const maxAffordableQty = () => {
     const balance = payCurrency === "points" ? DRAW_FREE_POINTS : coins;
     return Math.min(MAX_CUSTOM_DRAW, Math.max(1, Math.floor(balance / price)));
@@ -1881,12 +1887,12 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
                 </button>
               </div>
 
-              {/* Quick-add — the design fixes all three to 94x30 with a 10px
-                  gap, so the row keeps its shape whatever the labels read. */}
+              {/* Quick-add — 30px tall on a 10px gap; the increments hold the
+                  design's 94px width and MAX spans what's left. */}
               <div className="mt-3 flex items-center justify-center gap-[10px]">
-                <button onClick={() => setQty(customQty + 5)} className={quickAddCls}>{t.drawCustomAdd(5)}</button>
-                <button onClick={() => setQty(customQty + 10)} className={quickAddCls}>{t.drawCustomAdd(10)}</button>
-                <button onClick={() => setQty(maxAffordableQty())} className={quickAddCls}>{t.drawCustomMax}</button>
+                <button onClick={() => setQty(customQty + 5)} className={quickAddFixedCls}>{t.drawCustomAdd(5)}</button>
+                <button onClick={() => setQty(customQty + 10)} className={quickAddFixedCls}>{t.drawCustomAdd(10)}</button>
+                <button onClick={() => setQty(maxAffordableQty())} className={quickAddMaxCls}>{t.drawCustomMax(MAX_CUSTOM_DRAW)}</button>
               </div>
 
               {/* Balances — same selectable rows as the fixed-count popup */}

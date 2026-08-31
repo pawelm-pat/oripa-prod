@@ -399,6 +399,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
         title: "Draw CTA (sticky)",
         items: [
           { text: "Draw ×1 / Draw ×10 / Custom", sub: ["Opens a confirmation sheet; confirming debits coins and shows results."] },
+          { text: "Custom draw quantity", sub: ["Opens on 5 draws; +5 Draws / +10 Draws step it up and MAX (100 Draws) fills in 100 when the balance covers them, otherwise the largest affordable count. The stepper caps at 100 and the balance row updates with every change."] },
           "When stock is 0 the CTA shows a 'Sold out' state.",
           { text: "Insufficient coins", sub: ["Opens Quick Purchase (offers → pay → 3DS → success → Draw) instead of navigating to Store."] },
         ],
