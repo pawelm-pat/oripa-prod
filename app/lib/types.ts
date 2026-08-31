@@ -101,7 +101,7 @@ export type OripaItem = {
 
 // Draw-screen demo scenario (dev harness): normal, permanently sold out,
 // simulated connection error, or insufficient remaining stock.
-export type DrawScenario = "off" | "expired" | "connError" | "stock";
+export type DrawScenario = "off" | "expired" | "soldOut" | "connError" | "stock";
 
 // Error-page demo scenario (dev harness): while one is armed, the next
 // navigation lands on that error page instead of the screen asked for.

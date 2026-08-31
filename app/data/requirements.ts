@@ -402,6 +402,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
           { text: "Custom draw quantity", sub: ["Opens on 5 draws; +5 Draws / +10 Draws step it up and MAX (100 Draws) fills in 100 when the balance covers them, otherwise the largest affordable count. The stepper caps at 100 and the balance row updates with every change."] },
           { text: "Leaving the draw results", sub: ["Draw again and Back to info page both rewind this page to the top before it reappears behind them."] },
           "When stock is 0 the CTA shows a 'Sold out' state.",
+          { text: "Sold Out (demo control)", sub: ["With the Sold Out draw scenario armed, confirming any draw charges nothing and shows the 'Sold Out!' popup ('This pack has completely sold out due to popular demand! No coins were deducted.'). Closing it drops the pack to 0 remaining, marks it Sold Out and removes its draw CTAs."] },
           { text: "Insufficient coins", sub: ["Opens Quick Purchase (offers → pay → 3DS → success → Draw) instead of navigating to Store."] },
         ],
         validation: [

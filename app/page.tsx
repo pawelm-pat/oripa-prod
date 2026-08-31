@@ -91,6 +91,7 @@ export default function Page() {
                 options={[
                   ["Happy path", "off"],
                   ["Draw expired", "expired"],
+                  ["Sold Out", "soldOut"],
                   ["Connection Error", "connError"],
                   ["Insufficient Stock Left", "stock"],
                 ]}

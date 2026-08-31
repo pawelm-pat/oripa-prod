@@ -1545,14 +1545,17 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
   const price = packPrice(item);
   // Opens a stored legal document (T&Cs, etc.) in the shared overlay.
   const openLegal = useContext(LegalNavContext);
-  // Draw demo scenarios (dev harness): expired pack, connection error, or
-  // insufficient remaining stock.
-  const expired = drawScenario === "expired";
+  // Draw demo scenarios (dev harness): expired pack, sold-out pack, connection
+  // error, or insufficient remaining stock.
+  const soldOutScenario = drawScenario === "soldOut";
+  // Both scenarios stop the draw the same way: nothing is charged, a popup
+  // explains why, and closing it greys the pack out.
+  const expired = drawScenario === "expired" || soldOutScenario;
   const connError = drawScenario === "connError";
   const insufficientStock = drawScenario === "stock";
   // In the insufficient-stock scenario only this many draws remain.
   const STOCK_LEFT = 8;
-  // "Expired" popup, shown when an expired pack's draw is confirmed.
+  // "Expired" / "Sold Out" popup, shown when such a pack's draw is confirmed.
   const [expiredPopup, setExpiredPopup] = useState(false);
   // Connection-error popup (simulated network failure) + the draw count to
   // retry when the user taps Retry.
@@ -1969,8 +1972,8 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
             <div className="mx-auto flex h-[92px] w-[92px] items-center justify-center rounded-full border-[5px] border-[#D10005]">
               <span className="text-[52px] font-black leading-none text-[#D10005]">!</span>
             </div>
-            <h3 className="mt-4 text-[12px] font-medium text-[#1d2129]">{t.expiredTitle}</h3>
-            <p className="mx-auto mt-2 max-w-[280px] text-[12px] font-medium leading-relaxed text-[#6b7075]">{t.expiredBody}</p>
+            <h3 className={soldOutScenario ? "mt-4 text-[22px] font-extrabold text-[#1d2129]" : "mt-4 text-[12px] font-medium text-[#1d2129]"}>{soldOutScenario ? t.soldOutTitle : t.expiredTitle}</h3>
+            <p className="mx-auto mt-2 max-w-[280px] text-[12px] font-medium leading-relaxed text-[#6b7075]">{soldOutScenario ? t.soldOutBody : t.expiredBody}</p>
             <button
               onClick={() => { setExpiredPopup(false); onSoldOut?.(); }}
               className="mt-5 w-full rounded-[14px] border-[1.5px] border-[#b5b8bd] bg-white py-3.5 text-[15px] font-bold text-[#6b7075] active:scale-[0.98]"

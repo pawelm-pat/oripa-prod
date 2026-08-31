@@ -333,6 +333,8 @@ const EN = {
   drawSoldOut: "Sold out",
   expiredTitle: "Expired",
   expiredBody: "This pack expired. No coins were deducted.",
+  soldOutTitle: "Sold Out!",
+  soldOutBody: "This pack has completely sold out due to popular demand! No coins were deducted.",
   // Shown before the store opens when a paid draw costs more than the balance.
   // Split so the shortfall reads in bold inside the sentence.
   noCoinsTitle: "Not enough coins!",
@@ -1492,6 +1494,8 @@ const JA: Dict = {
   drawSoldOut: "完売",
   expiredTitle: "期限切れ",
   expiredBody: "このパックは期限切れです。コインは差し引かれていません。",
+  soldOutTitle: "完売しました！",
+  soldOutBody: "大好評につき、このパックは完売しました。コインは差し引かれていません。",
   noCoinsTitle: "コインが不足しています！",
   noCoinsShortPre: "ガチャを回すには",
   noCoinsShortAmount: (amount: string) => `${amount}コイン`,
