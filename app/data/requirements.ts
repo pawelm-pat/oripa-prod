@@ -934,7 +934,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
         title: "Contact Customer Support directly",
         items: [
           "Card with the warning against false or fraudulent claims and the note that we cannot confirm delivery dates or couriers for an individual prize.",
-          { text: "Inquiry Form", sub: ["Opens the inquiry form page; its back arrow returns here, to the contact card.", "The footer's Customer support chip and its 'Contact Us' link open the same form from any screen."] },
+          { text: "Inquiry Form", sub: ["Opens the inquiry form page; its back arrow returns to the top of this page.", "The footer's Customer support chip and its 'Contact Us' link open the same form from any screen."] },
         ],
       },
       FOOTER_REF_GROUP,
@@ -942,12 +942,12 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
   },
   inquiry: {
     label: "Inquiry form",
-    summary: "Support inquiry form, opened from the FAQ & Support page or from either of the footer's support links. Back returns to whichever screen raised it, scrolled back down to the footer.",
+    summary: "Support inquiry form, opened from the FAQ & Support page or from either of the footer's support links. Back returns to whichever screen raised it — the top of FAQ & Support, or the footer a support link was tapped from.",
     groups: [
       APP_HEADER_GROUP,
       {
         title: "Header",
-        items: ["Back returns to the screen the form was opened from, scrolled to the footer or contact card it was tapped from."],
+        items: ["Back returns to the screen the form was opened from: the top of FAQ & Support when its Inquiry Form button raised the form, or the footer itself when a footer link did."],
       },
       {
         title: "Form",
