@@ -45,8 +45,8 @@ const FOOTER_GROUP: ReqGroup = {
   items: [
     "Sits at the bottom of the page; all footer text is white.",
     "Brand block: product logo, copyright line and a short company blurb.",
-    { text: "About Oripalot", sub: ["Link — currently does nothing (TBC)."] },
-    { text: "Customer support", sub: ["Link — currently does nothing (TBC)."] },
+    { text: "Operator", sub: ["Opens the operator's own site, https://ks-limited.com/, in a new tab."] },
+    { text: "Customer support", sub: ["Opens the support inquiry form over the current screen (see 'FAQ & Support')."] },
     { text: "T&Cs", sub: ["Opens the Terms of Use in the legal overlay (see 'Legal overlay')."] },
     { text: "Privacy policy", sub: ["Opens the Privacy Policy in the legal overlay."] },
     { text: "Legal notice (SCTA)", sub: ["Opens the Specified Commercial Transactions Act notation in the legal overlay."] },
@@ -64,7 +64,7 @@ const FOOTER_GROUP: ReqGroup = {
     {
       text: "Support & payment info",
       sub: [
-        "24/7 online support line.",
+        "24/7 online support line; its 'Contact Us' link opens the support inquiry form.",
         "Japan payment-inquiry line shows the support phone number 050-1724-7952.",
         "Note advising users to use the phone number for their country of residence.",
       ],
@@ -76,7 +76,7 @@ const FOOTER_GROUP: ReqGroup = {
 const FOOTER_REF_GROUP: ReqGroup = {
   title: "Footer",
   items: [
-    "Same global footer as the Home screen — brand block, link groups, legal-document links (open the legal overlay), category chips, social icons and support/payment info (support phone 050-1724-7952). See the Home screen for the full item-by-item breakdown.",
+    "Same global footer as the Home screen — brand block, link groups, legal-document links (open the legal overlay), the Operator link out to https://ks-limited.com/, the two support links that open the inquiry form, category chips, social icons and support/payment info (support phone 050-1724-7952). See the Home screen for the full item-by-item breakdown.",
   ],
 };
 
@@ -934,7 +934,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
         title: "Contact Customer Support directly",
         items: [
           "Card with the warning against false or fraudulent claims and the note that we cannot confirm delivery dates or couriers for an individual prize.",
-          { text: "Inquiry Form", sub: ["Opens the inquiry form over the page as a modal, so closing it returns the visitor to the answer they were reading."] },
+          { text: "Inquiry Form", sub: ["Opens the inquiry form over the page as a modal, so closing it returns the visitor to the answer they were reading.", "The footer's Customer support chip and its 'Contact Us' link raise the same form from any screen."] },
         ],
       },
       {

@@ -74,6 +74,9 @@ const LegalNavContext = createContext<(doc: LegalDocKey) => void>(() => {});
 // Picking a category from the footer, which behaves like the lobby's own
 // category bar: it selects the category and parks that bar at the top.
 const CatNavContext = createContext<(key: string) => void>(() => {});
+// The support inquiry form. It is a modal rather than a screen, so the footer
+// and the FAQ page can both raise it without anyone losing their place.
+const InquiryNavContext = createContext<() => void>(() => {});
 // A category request travels as a token so the same category tapped twice
 // still re-scrolls the feed.
 type CatRequest = { key: string; token: number };
@@ -618,14 +621,27 @@ const SOCIAL_ICONS: { key: string; viewBox: string; path: React.ReactNode }[] = 
 // Footer category chips map onto the lobby's category bar, in the order the
 // labels are listed in `ftCats`.
 const FOOTER_CAT_KEYS = ["new", "popular", "pokemon", "limited", "other", "all"];
+// The operator behind Oripalot; its own site opens in a new tab.
+const OPERATOR_URL = "https://ks-limited.com/";
 
 function SiteFooter({ t }: { t: Dict }) {
   const openLegal = useContext(LegalNavContext);
   const openCat = useContext(CatNavContext);
-  const chip = (label: string) => {
+  const openInquiry = useContext(InquiryNavContext);
+  // The first two chips are the operator's own site and the support desk; the
+  // rest are legal documents shown in the overlay.
+  const chip = (label: string, i: number) => {
     const doc: LegalDocKey | null = label === t.mpTerms ? "terms" : label === t.mpPrivacy ? "privacy" : label === t.mpLegal ? "legal" : label === t.mpAntisocial ? "antisocial" : null;
     // Height and padding follow the footer button in the design.
     const chipClass = "inline-flex h-[26px] items-center rounded-full bg-white px-5 text-[12px] font-bold text-[#1d2129]";
+    if (i === 0) {
+      return (
+        <a key={label} href={OPERATOR_URL} target="_blank" rel="noreferrer" style={{ color: "#1d2129" }} className={`${chipClass} active:bg-white/80`}>{label}</a>
+      );
+    }
+    if (i === 1) {
+      return <button key={label} onClick={openInquiry} className={`${chipClass} active:bg-white/80`}>{label}</button>;
+    }
     return doc ? (
       <button key={label} onClick={() => openLegal(doc)} className={`${chipClass} active:bg-white/80`}>{label}</button>
     ) : (
@@ -639,7 +655,7 @@ function SiteFooter({ t }: { t: Dict }) {
       <p className="mt-3 text-[11px] leading-relaxed text-white">{t.ftBlurb}</p>
 
       <h4 className="mt-6 text-[14px] font-bold">{t.ftAbout}</h4>
-      <div className="mt-3 flex flex-wrap gap-2.5">{t.ftLinks.map(chip)}</div>
+      <div className="mt-3 flex flex-wrap gap-2.5">{t.ftLinks.map((label, i) => chip(label, i))}</div>
 
       <h4 className="mt-6 text-[14px] font-bold">{t.ftCategories}</h4>
       <div className="mt-3 flex flex-wrap gap-2.5">
@@ -665,7 +681,7 @@ function SiteFooter({ t }: { t: Dict }) {
 
       <div className="my-6 h-px bg-white/15" />
       <p className="text-[12px] font-medium leading-relaxed text-white">
-        {t.ftSupport.split(":")[0]}: <span className="underline decoration-white/50">{t.ftSupport.split(":").slice(1).join(":").trim()}</span>
+        {t.ftSupport.split(":")[0]}: <button onClick={openInquiry} className="underline decoration-white/50 active:opacity-70">{t.ftSupport.split(":").slice(1).join(":").trim()}</button>
       </p>
       <p className="mt-4 text-[12px] font-medium leading-relaxed text-white">{t.ftPayInquiry}</p>
       <p className="mt-2 text-[10px] font-medium leading-relaxed text-white">{t.ftPhoneNote}</p>
@@ -5358,12 +5374,9 @@ function FaqSupportPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: La
   const t = STR[lang];
   const cats = FAQ[lang];
   const [open, setOpen] = useState<string | null>(null);
-  const [inquiry, setInquiry] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const openInquiry = useContext(InquiryNavContext);
   const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
   function jumpTo(key: FaqCategoryKey) {
     const scroller = scrollRef.current;
@@ -5452,7 +5465,7 @@ function FaqSupportPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: La
               <p className="mt-2 text-[11px] font-medium leading-[1.45] text-[#0F0F0F]">{t.faqContactWarningBody}</p>
             </div>
             <button
-              onClick={() => setInquiry(true)}
+              onClick={openInquiry}
               className="mt-3 flex h-[44px] w-full items-center justify-center rounded-lg bg-[#D10005] text-[15px] font-bold text-white active:scale-[0.99]"
             >
               {t.faqContactCta}
@@ -5463,25 +5476,6 @@ function FaqSupportPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: La
 
         <SiteFooter t={t} />
       </div>
-
-      {inquiry && (
-        <InquiryFormModal
-          t={t}
-          onClose={() => setInquiry(false)}
-          onSent={() => {
-            setInquiry(false);
-            setToast(t.faqInquirySent);
-            if (toastTimer.current) clearTimeout(toastTimer.current);
-            toastTimer.current = setTimeout(() => setToast(null), 2800);
-          }}
-        />
-      )}
-
-      {toast && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-6 z-[70] flex justify-center px-6">
-          <div className="animate-fade-slide rounded-2xl bg-black/85 px-4 py-2.5 text-center text-[13px] font-bold text-white shadow-[0_6px_18px_rgba(0,0,0,0.35)]">{toast}</div>
-        </div>
-      )}
     </div>
   );
 }
@@ -6688,6 +6682,12 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
     if (errorScenario !== "off" && next !== screen) { setErrorTarget(next); return; }
     setScreenRaw(next);
   };
+  // Support inquiry form. It is raised from the FAQ page and from the footer's
+  // support links, so it lives here and floats over whatever screen is up.
+  const [inquiryOpen, setInquiryOpen] = useState(false);
+  const [inquiryToast, setInquiryToast] = useState(false);
+  const inquiryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (inquiryTimer.current) clearTimeout(inquiryTimer.current); }, []);
   const [lineLoginToast, setLineLoginToast] = useState(false);
   // Surface the active screen so the review comments panel can scope itself.
   useEffect(() => { onScreenChange?.(screen); }, [screen, onScreenChange]);
@@ -7022,6 +7022,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
     <NotifBadgeContext.Provider value={notifUnread}>
     <CoinHistoryNavContext.Provider value={onLanding ? () => {} : openCoinHistory}>
     <CatNavContext.Provider value={openCategory}>
+    <InquiryNavContext.Provider value={() => setInquiryOpen(true)}>
     <LegalNavContext.Provider value={setLegalDoc}>
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
       <div className="relative min-h-0 flex-1">
@@ -7293,6 +7294,23 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
           />
         )}
         {legalDoc && <LegalOverlay lang={lang} doc={legalDoc} onClose={() => setLegalDoc(null)} />}
+        {inquiryOpen && (
+          <InquiryFormModal
+            t={t}
+            onClose={() => setInquiryOpen(false)}
+            onSent={() => {
+              setInquiryOpen(false);
+              setInquiryToast(true);
+              if (inquiryTimer.current) clearTimeout(inquiryTimer.current);
+              inquiryTimer.current = setTimeout(() => setInquiryToast(false), 2600);
+            }}
+          />
+        )}
+        {inquiryToast && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-6 z-[90] flex justify-center px-6">
+            <div className="animate-fade-slide rounded-2xl bg-black/85 px-4 py-2.5 text-center text-[13px] font-bold text-white shadow-[0_6px_18px_rgba(0,0,0,0.35)]">{t.faqInquirySent}</div>
+          </div>
+        )}
         {lineLoginToast && (
           <div className="absolute bottom-4 left-1/2 z-[70] flex -translate-x-1/2 items-center gap-2 rounded-full bg-[#1d2129] px-4 py-2.5 text-[13px] font-semibold text-white shadow-lg">
             <LineAuthIcon size={20} />
@@ -7318,6 +7336,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
       {showNav && <BottomNav screen={screen} t={t} onNavigate={navigate} />}
     </div>
     </LegalNavContext.Provider>
+    </InquiryNavContext.Provider>
     </CatNavContext.Provider>
     </CoinHistoryNavContext.Provider>
     </NotifBadgeContext.Provider>
