@@ -5344,22 +5344,14 @@ function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
    One page for the whole help centre: category chips jump to a section, every
    question opens in place, and the card at the bottom hands the visitor to the
    inquiry form (a modal, so the answers stay behind it). */
+const faqIcon = (src: string) => <img src={src} alt="" width={22} height={22} className="shrink-0 object-contain" style={{ width: 22, height: 22 }} draggable={false} />;
+
 const FAQ_CAT_ICON: Record<FaqCategoryKey, ReactNode> = {
-  account: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D10005" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="3.6" /><path d="M4.5 20a7.5 7.5 0 0115 0" /></svg>
-  ),
-  payment: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D10005" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M5 4l7 8 7-8M7.5 13h9M7.5 16.5h9M12 12v8" /></svg>
-  ),
-  gacha: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="#D10005"><rect x="3.4" y="6.6" width="8.2" height="11.8" rx="1.5" transform="rotate(-16 7.5 12.5)" /><rect x="10.4" y="5.4" width="9" height="13.2" rx="1.6" stroke="#fff" strokeWidth="1.5" /></svg>
-  ),
-  shipping: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D10005" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2.8l8.2 4.3v9.8L12 21.2 3.8 16.9V7.1z" /><path d="M3.9 7.2L12 11.5l8.1-4.3M12 11.5v9.6" /></svg>
-  ),
-  other: (
-    <svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#D10005" /><path d="M9.4 9.2a2.7 2.7 0 015.2.9c0 1.8-2.6 2-2.6 3.6" fill="none" stroke="#fff" strokeWidth="1.9" strokeLinecap="round" /><circle cx="12" cy="17" r="1.3" fill="#fff" /></svg>
-  ),
+  account: faqIcon("/faq-cat-account.png"),
+  payment: faqIcon("/faq-cat-payment.png"),
+  gacha: faqIcon("/faq-cat-gacha.png"),
+  shipping: faqIcon("/faq-cat-shipping.png"),
+  other: faqIcon("/faq-cat-other.png"),
 };
 
 function FaqSupportPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: Lang; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void }) {
@@ -5465,7 +5457,7 @@ function FaqSupportPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: La
             >
               {t.faqContactCta}
             </button>
-            <p className="mt-3 text-[10px] font-normal italic leading-[1.45] text-[#0F0F0F80]">{t.faqContactNote}</p>
+            <p className="mt-3 text-[10px] font-normal leading-[1.45] text-[#0F0F0F]">{t.faqContactNote}</p>
           </div>
         </div>
 
