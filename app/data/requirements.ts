@@ -868,7 +868,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
         items: [
           { text: "Your Promo Code", sub: ["Read-only code with a Copy CTA that writes it to the clipboard and confirms with a 'Code copied' toast."] },
           { text: "Your Referral Link", sub: ["Read-only link with a Copy CTA that writes the full link to the clipboard and confirms with a 'Link copied' toast."] },
-          { text: "Share via", sub: ["X (Twitter) and LINE each report which app would open.", "QR code opens an overlay holding a QR code for the same invite link; it closes on the X in its corner or on a tap outside the code."] },
+          { text: "Share via", sub: ["X (Twitter) and LINE each report which app would open.", "QR code opens the shareable invite card: 友達紹介 banner, the QR beside the member's referral code, the three reasons to share and a Save QR Code button that downloads the code. It closes on the X above its top-right corner or on a tap outside it."] },
         ],
         tbc: ["The code and link are fixed placeholders and no share destination actually hands them over."],
       },

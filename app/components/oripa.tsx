@@ -5274,16 +5274,56 @@ function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
         <SiteFooter t={t} />
       </div>
 
-      {/* QR overlay — closes on the X or on the scrim */}
+      {/* QR overlay — the shareable invite card; closes on the X or the scrim */}
       {qrOpen && (
         <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/70 px-6" onClick={() => setQrOpen(false)}>
-          <div className="relative w-full max-w-[280px] rounded-2xl bg-white px-5 pb-5 pt-11" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setQrOpen(false)} aria-label="Close" className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full text-[#5c626b] active:bg-black/5">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          <div className="relative w-full max-w-[342px]" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setQrOpen(false)} aria-label="Close" className="absolute -top-11 right-0 flex h-9 w-9 items-center justify-center active:opacity-70">
+              <img src="/refer-qr-close.png" alt="" width={30} height={30} draggable={false} />
             </button>
-            <img src="/refer-qr.svg" alt={t.rafQr} className="mx-auto h-[190px] w-[190px]" draggable={false} />
-            <p className="mt-3 text-center text-[12px] font-medium leading-[1.45] text-[#0F0F0F]">{t.rafQrHint}</p>
-            <p className="mt-1 break-all text-center text-[11px] font-normal text-[#8a9099]">{t.rafLinkShort}</p>
+            <div className="overflow-hidden rounded-[18px] border-2 border-[#E9A53C] bg-[#FEF8EE] shadow-[0_18px_50px_rgba(0,0,0,0.45)]">
+              <img src="/refer-qr-banner.webp" alt={t.rafBannerTitle} className="block w-full" draggable={false} />
+
+              <div className="p-3">
+                {/* Code panel — QR beside the member's own referral code */}
+                <div className="flex items-center gap-3 rounded-xl border border-[#F3D39D] bg-white p-2.5">
+                  <img src="/refer-qr.svg" alt={t.rafQr} className="h-[104px] w-[104px] shrink-0 rounded-md border border-[#EFE3CB] p-1" draggable={false} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-bold leading-tight text-[#0F0F0F]">{t.rafQrCodeLabel}</p>
+                    <span className="mt-1.5 inline-flex h-[28px] items-center justify-center rounded-md bg-[#D10005] px-4 text-[13px] font-bold text-white">{t.rafPromoCode}</span>
+                    <p className="mt-1.5 text-[11px] font-medium leading-[1.35] text-[#0F0F0F]">{t.rafQrShareHint}</p>
+                  </div>
+                </div>
+
+                {/* Three reasons to pass the code on */}
+                <div className="mt-2.5 grid grid-cols-3 rounded-xl border border-[#F3D39D] bg-white">
+                  {([
+                    ["/refer-qr-benefit-1.png", t.rafQrPerk1, t.rafQrPerk1Body],
+                    ["/refer-qr-benefit-2.png", t.rafQrPerk2, t.rafQrPerk2Body],
+                    ["/refer-qr-benefit-3.png", t.rafQrPerk3, t.rafQrPerk3Body],
+                  ] as const).map(([icon, title, body], i) => (
+                    <div key={title} className={`flex items-start gap-1 px-1.5 py-2.5 ${i > 0 ? "border-l border-[#F1E5CD]" : ""}`}>
+                      <img src={icon} alt="" width={20} height={20} className="mt-0.5 shrink-0" draggable={false} />
+                      <div className="min-w-0">
+                        <p className="text-[9.5px] font-bold leading-[1.2] text-[#0F0F0F]">{title}</p>
+                        <p className="mt-0.5 text-[8.5px] font-medium leading-[1.25] text-[#0F0F0F]">{body}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Keep the card: the QR downloads as an image */}
+                <a
+                  href="/refer-qr.svg"
+                  download="oripalot-invite-qr.svg"
+                  onClick={() => pushToast(t.rafQrSaved)}
+                  className="mt-2.5 flex h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-[#D10005] text-[16px] font-bold text-white active:scale-[0.98]"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v11m0 0l-4-4m4 4l4-4M4 19h16" /></svg>
+                  {t.rafQrSave}
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       )}
