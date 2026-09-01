@@ -5276,8 +5276,8 @@ function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
 
       {/* QR overlay — the shareable invite card; closes on the X or the scrim */}
       {qrOpen && (
-        <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/70 px-6" onClick={() => setQrOpen(false)}>
-          <div className="relative w-full max-w-[342px]" onClick={(e) => e.stopPropagation()}>
+        <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/70 px-4" onClick={() => setQrOpen(false)}>
+          <div className="relative w-full max-w-[358px]" onClick={(e) => e.stopPropagation()}>
             <button onClick={() => setQrOpen(false)} aria-label="Close" className="absolute -top-11 right-0 flex h-9 w-9 items-center justify-center active:opacity-70">
               <img src="/refer-qr-close.png" alt="" width={30} height={30} draggable={false} />
             </button>
@@ -5302,11 +5302,11 @@ function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
                     ["/refer-qr-benefit-2.png", t.rafQrPerk2, t.rafQrPerk2Body],
                     ["/refer-qr-benefit-3.png", t.rafQrPerk3, t.rafQrPerk3Body],
                   ] as const).map(([icon, title, body], i) => (
-                    <div key={title} className={`flex items-start gap-1 px-1.5 py-2.5 ${i > 0 ? "border-l border-[#F1E5CD]" : ""}`}>
-                      <img src={icon} alt="" width={20} height={20} className="mt-0.5 shrink-0" draggable={false} />
+                    <div key={title} className={`flex items-center gap-1.5 px-1.5 py-2 ${i > 0 ? "border-l border-[#F1E5CD]" : ""}`}>
+                      <img src={icon} alt="" width={28} height={28} className="shrink-0" draggable={false} />
                       <div className="min-w-0">
-                        <p className="text-[9.5px] font-bold leading-[1.2] text-[#0F0F0F]">{title}</p>
-                        <p className="mt-0.5 text-[8.5px] font-medium leading-[1.25] text-[#0F0F0F]">{body}</p>
+                        <p className="text-[9px] font-bold leading-[1.2] text-[#0F0F0F]">{title}</p>
+                        <p className="mt-0.5 text-[8px] font-medium leading-[1.25] text-[#0F0F0F]">{body}</p>
                       </div>
                     </div>
                   ))}
@@ -5317,7 +5317,9 @@ function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
                   href="/refer-qr.svg"
                   download="oripalot-invite-qr.svg"
                   onClick={() => pushToast(t.rafQrSaved)}
-                  className="mt-2.5 flex h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-[#D10005] text-[16px] font-bold text-white active:scale-[0.98]"
+                  // `a { color: inherit }` in globals.css outranks the utility layer.
+                  style={{ color: "#FFFFFF" }}
+                  className="mt-2.5 flex h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-[#D10005] text-[16px] font-bold active:scale-[0.98]"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v11m0 0l-4-4m4 4l4-4M4 19h16" /></svg>
                   {t.rafQrSave}
