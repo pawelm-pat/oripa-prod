@@ -46,7 +46,7 @@ const FOOTER_GROUP: ReqGroup = {
     "Sits at the bottom of the page; all footer text is white.",
     "Brand block: product logo, copyright line and a short company blurb.",
     { text: "Operator", sub: ["Opens the operator's own site, https://ks-limited.com/, in a new tab."] },
-    { text: "Customer support", sub: ["Opens the support inquiry form over the current screen (see 'FAQ & Support')."] },
+    { text: "Customer support", sub: ["Opens the inquiry form page (see 'Inquiry form')."] },
     { text: "T&Cs", sub: ["Opens the Terms of Use in the legal overlay (see 'Legal overlay')."] },
     { text: "Privacy policy", sub: ["Opens the Privacy Policy in the legal overlay."] },
     { text: "Legal notice (SCTA)", sub: ["Opens the Specified Commercial Transactions Act notation in the legal overlay."] },
@@ -64,7 +64,7 @@ const FOOTER_GROUP: ReqGroup = {
     {
       text: "Support & payment info",
       sub: [
-        "24/7 online support line; its 'Contact Us' link opens the support inquiry form.",
+        "24/7 online support line; its 'Contact Us' link opens the inquiry form page.",
         "Japan payment-inquiry line shows the support phone number 050-1724-7952.",
         "Note advising users to use the phone number for their country of residence.",
       ],
@@ -76,7 +76,7 @@ const FOOTER_GROUP: ReqGroup = {
 const FOOTER_REF_GROUP: ReqGroup = {
   title: "Footer",
   items: [
-    "Same global footer as the Home screen — brand block, link groups, legal-document links (open the legal overlay), the Operator link out to https://ks-limited.com/, the two support links that open the inquiry form, category chips, social icons and support/payment info (support phone 050-1724-7952). See the Home screen for the full item-by-item breakdown.",
+    "Same global footer as the Home screen — brand block, link groups, legal-document links (open the legal overlay), the Operator link out to https://ks-limited.com/, the two support links that open the inquiry form page, category chips, social icons and support/payment info (support phone 050-1724-7952). See the Home screen for the full item-by-item breakdown.",
   ],
 };
 
@@ -909,7 +909,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
   },
   faq: {
     label: "FAQ & Support",
-    summary: "Help centre opened from the My Account 'FAQ & Support' tile — FAQ and Support are one destination. Five categories of answers, each question opening in place, and the inquiry form for anything the answers do not cover.",
+    summary: "Help centre opened from the My Account 'FAQ & Support' tile — FAQ and Support are one destination. Five categories of answers, each question opening in place, and the inquiry form page for anything the answers do not cover.",
     groups: [
       APP_HEADER_GROUP,
       {
@@ -934,15 +934,27 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
         title: "Contact Customer Support directly",
         items: [
           "Card with the warning against false or fraudulent claims and the note that we cannot confirm delivery dates or couriers for an individual prize.",
-          { text: "Inquiry Form", sub: ["Opens the inquiry form over the page as a modal, so closing it returns the visitor to the answer they were reading.", "The footer's Customer support chip and its 'Contact Us' link raise the same form from any screen."] },
+          { text: "Inquiry Form", sub: ["Opens the inquiry form page; its back arrow returns here.", "The footer's Customer support chip and its 'Contact Us' link open the same form from any screen."] },
         ],
       },
+      FOOTER_REF_GROUP,
+    ],
+  },
+  inquiry: {
+    label: "Inquiry form",
+    summary: "Support inquiry form, opened from the FAQ & Support page or from either of the footer's support links. Back returns to FAQ & Support.",
+    groups: [
+      APP_HEADER_GROUP,
       {
-        title: "Inquiry form (modal)",
+        title: "Header",
+        items: ["Back returns to FAQ & Support, wherever the form was opened from."],
+      },
+      {
+        title: "Form",
         items: [
           "Inquiry Category select (Payment & Coins, Shipping, Oripa, Account, System Issues, Coupons) and a free-text Inquiry Details field — both required.",
-          "Image File (Optional): up to three attachments, each listed with a remove control and counted against (n/3).",
-          { text: "Send inquiry", sub: ["Enabled once a category and details are given; sending closes the modal and confirms with a toast."] },
+          "Image File (Optional): up to three attachments, each listed with a remove control and counted against (n/3), under the notes on file size and supported formats.",
+          { text: "Send inquiry", sub: ["Enabled once a category and details are given; sending returns to FAQ & Support and confirms with a toast."] },
         ],
         tbc: ["Nothing is submitted anywhere — the form confirms locally."],
       },

@@ -74,8 +74,8 @@ const LegalNavContext = createContext<(doc: LegalDocKey) => void>(() => {});
 // Picking a category from the footer, which behaves like the lobby's own
 // category bar: it selects the category and parks that bar at the top.
 const CatNavContext = createContext<(key: string) => void>(() => {});
-// The support inquiry form. It is a modal rather than a screen, so the footer
-// and the FAQ page can both raise it without anyone losing their place.
+// The support inquiry form, opened from the FAQ page or from either of the
+// footer's support links.
 const InquiryNavContext = createContext<() => void>(() => {});
 // A category request travels as a token so the same category tapped twice
 // still re-scrolls the feed.
@@ -3095,7 +3095,7 @@ function BottomNav({ screen, t, onNavigate }: { screen: Screen; t: Dict; onNavig
   const activeKey: Screen =
     screen === "myLoot"
       ? "prizeHistory"
-      : screen === "prizeHistory" || screen === "purchaseHistory" || screen === "shippingAddress" || screen === "profile" || screen === "refer" || screen === "faq"
+      : screen === "prizeHistory" || screen === "purchaseHistory" || screen === "shippingAddress" || screen === "profile" || screen === "refer" || screen === "faq" || screen === "inquiry"
       ? "mypage"
       : screen;
   return (
@@ -5480,9 +5480,10 @@ function FaqSupportPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: La
   );
 }
 
-/* The inquiry form itself. It opens over the answers instead of taking the
-   visitor to another page, so closing it returns them to where they read. */
-function InquiryFormModal({ t, onClose, onSent }: { t: Dict; onClose: () => void; onSent: () => void }) {
+/* The inquiry form, on its own page. Back returns to FAQ & Support wherever
+   the form was raised from, so the answers are always one tap away. */
+function InquiryPage({ lang, coins, onBack, onHome, onSent, onOpenStore }: { lang: Lang; coins: number; onBack: () => void; onHome: () => void; onSent: () => void; onOpenStore?: () => void }) {
+  const t = STR[lang];
   const [category, setCategory] = useState("");
   const [details, setDetails] = useState("");
   const [files, setFiles] = useState<string[]>([]);
@@ -5491,93 +5492,98 @@ function InquiryFormModal({ t, onClose, onSent }: { t: Dict; onClose: () => void
   const labelCls = "block text-[12px] font-bold text-[#0F0F0F]";
 
   return (
-    <div className="absolute inset-0 z-[80] flex items-end justify-center bg-black/55 px-3 pb-3 pt-8" onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} className="animate-fade-slide flex max-h-full w-full flex-col overflow-hidden rounded-2xl bg-white">
-        <div className="flex shrink-0 items-center justify-between border-b border-[#EFEFEF] px-4 py-3">
-          <h2 className="text-[17px] font-bold text-[#0F0F0F]">{t.faqInquiryTitle}</h2>
-          <button onClick={onClose} aria-label={t.closeAria} className="flex h-7 w-7 items-center justify-center active:opacity-70">
-            <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="#0F0F0F" strokeWidth="2" strokeLinecap="round" /></svg>
-          </button>
-        </div>
+    <div className="flex h-full flex-col bg-[#F1F2F4]">
+      <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
 
-        <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-3.5">
-          <label className={labelCls}>{t.faqInquiryCategory}<span className="ml-0.5 text-[#D10005]">*</span></label>
-          <div className="relative mt-1.5">
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className={`h-[42px] w-full appearance-none rounded-[6px] border border-[#9D9D9D] bg-white px-3 pr-9 text-[14px] outline-none focus:border-[#D10005] ${category ? "text-[#0F0F0F]" : "text-[#9D9D9D]"}`}
-            >
-              <option value="">{t.faqInquiryCategoryPlaceholder}</option>
-              {t.faqInquiryCategories.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D10005" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2"><path d="M5 9l7 7 7-7" /></svg>
+      <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
+        <div className="px-4 pb-6 pt-4">
+          {/* Title row — back returns to FAQ & Support */}
+          <div className="flex items-center gap-2">
+            <button onClick={onBack} aria-label={t.backAria} className="flex h-9 w-9 items-center justify-center active:opacity-70">
+              {referIcon("/refer-back.png", 26)}
+            </button>
+            <h1 className="text-[20px] font-bold text-[#0F0F0F]">{t.faqInquiryTitle}</h1>
           </div>
 
-          <label className={`${labelCls} mt-4`}>{t.faqInquiryDetails}<span className="ml-0.5 text-[#D10005]">*</span></label>
-          <textarea
-            value={details}
-            onChange={(e) => setDetails(e.target.value)}
-            placeholder={t.faqInquiryDetailsPlaceholder}
-            rows={5}
-            className="mt-1.5 w-full resize-none rounded-[6px] border border-[#9D9D9D] px-3 py-2.5 text-[14px] leading-[1.45] text-[#0F0F0F] outline-none placeholder:text-[#9D9D9D] focus:border-[#D10005]"
-          />
-
-          <div className="mt-4 flex items-center justify-between">
-            <label className={labelCls}>{t.faqInquiryImage}</label>
-            <span className="text-[12px] font-medium text-[#0F0F0F80]">({files.length}/3)</span>
-          </div>
-          {files.map((name, i) => (
-            <p key={`${name}-${i}`} className="mt-1.5 flex items-center gap-2 text-[12px] font-medium text-[#0F0F0F]">
-              <span className="truncate">{t.faqInquiryImageNth(i + 1)} — {name}</span>
-              <button onClick={() => setFiles((f) => f.filter((_, k) => k !== i))} aria-label={t.closeAria} className="shrink-0 text-[#D10005]">
-                <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
-              </button>
-            </p>
-          ))}
-          {files.length < 3 && (
-            <>
-              <p className="mt-1.5 text-[12px] font-medium text-[#0F0F0F80]">{t.faqInquiryImageNth(files.length + 1)}</p>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/jpeg,image/png,image/bmp"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) setFiles((prev) => [...prev, f.name].slice(0, 3));
-                  e.target.value = "";
-                }}
-              />
-              <button
-                onClick={() => fileRef.current?.click()}
-                className="mt-1.5 flex h-[42px] w-full items-center justify-center gap-2 rounded-[6px] border border-[#DEDEDE] bg-white text-[14px] font-medium text-[#0F0F0F] active:bg-black/[0.03]"
+          <div className="mt-3 rounded-2xl bg-white p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.07)]">
+            <label className={labelCls}>{t.faqInquiryCategory}<span className="ml-0.5 text-[#D10005]">*</span></label>
+            <div className="relative mt-1.5">
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className={`h-[42px] w-full appearance-none rounded-[6px] border border-[#9D9D9D] bg-white px-3 pr-9 text-[14px] outline-none focus:border-[#D10005] ${category ? "text-[#0F0F0F]" : "text-[#9D9D9D]"}`}
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8a9099" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6.5 18a4 4 0 01-.4-7.98 5.5 5.5 0 0110.7-1.5A4.25 4.25 0 0117.5 18" /><path d="M12 12v6m0-6l-2.4 2.4M12 12l2.4 2.4" /></svg>
-                {t.faqInquirySelectFile}
-              </button>
-            </>
-          )}
+                <option value="">{t.faqInquiryCategoryPlaceholder}</option>
+                {t.faqInquiryCategories.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D10005" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2"><path d="M5 9l7 7 7-7" /></svg>
+            </div>
 
-          <ul className="mt-3.5 space-y-1.5">
-            {t.faqInquiryNotes.map((n) => (
-              <li key={n} className="flex gap-2 text-[11px] font-normal leading-[1.4] text-[#0F0F0F80]">
-                <span className="mt-[6px] h-[3px] w-[3px] shrink-0 rounded-full bg-[#0F0F0F80]" />
-                <span>{n}</span>
-              </li>
+            <label className={`${labelCls} mt-4`}>{t.faqInquiryDetails}<span className="ml-0.5 text-[#D10005]">*</span></label>
+            <textarea
+              value={details}
+              onChange={(e) => setDetails(e.target.value)}
+              placeholder={t.faqInquiryDetailsPlaceholder}
+              rows={6}
+              className="mt-1.5 w-full resize-none rounded-[6px] border border-[#9D9D9D] px-3 py-2.5 text-[14px] leading-[1.45] text-[#0F0F0F] outline-none placeholder:text-[#9D9D9D] focus:border-[#D10005]"
+            />
+
+            <div className="mt-4 flex items-center justify-between">
+              <label className={labelCls}>{t.faqInquiryImage}</label>
+              <span className="text-[12px] font-medium text-[#0F0F0F80]">({files.length}/3)</span>
+            </div>
+            {files.map((name, i) => (
+              <p key={`${name}-${i}`} className="mt-1.5 flex items-center gap-2 text-[12px] font-medium text-[#0F0F0F]">
+                <span className="truncate">{t.faqInquiryImageNth(i + 1)} — {name}</span>
+                <button onClick={() => setFiles((f) => f.filter((_, k) => k !== i))} aria-label={t.closeAria} className="shrink-0 text-[#D10005]">
+                  <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+                </button>
+              </p>
             ))}
-          </ul>
+            {files.length < 3 && (
+              <>
+                <p className="mt-1.5 text-[12px] font-medium text-[#0F0F0F80]">{t.faqInquiryImageNth(files.length + 1)}</p>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/bmp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) setFiles((prev) => [...prev, f.name].slice(0, 3));
+                    e.target.value = "";
+                  }}
+                />
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  className="mt-1.5 flex h-[42px] w-full items-center justify-center gap-2 rounded-[6px] border border-[#DEDEDE] bg-white text-[14px] font-medium text-[#0F0F0F] active:bg-black/[0.03]"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8a9099" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6.5 18a4 4 0 01-.4-7.98 5.5 5.5 0 0110.7-1.5A4.25 4.25 0 0117.5 18" /><path d="M12 12v6m0-6l-2.4 2.4M12 12l2.4 2.4" /></svg>
+                  {t.faqInquirySelectFile}
+                </button>
+              </>
+            )}
+
+            <ul className="mt-3.5 space-y-1.5">
+              {t.faqInquiryNotes.map((n) => (
+                <li key={n} className="flex gap-2 text-[11px] font-normal leading-[1.4] text-[#0F0F0F80]">
+                  <span className="mt-[6px] h-[3px] w-[3px] shrink-0 rounded-full bg-[#0F0F0F80]" />
+                  <span>{n}</span>
+                </li>
+              ))}
+            </ul>
+
+            <button
+              onClick={ready ? onSent : undefined}
+              disabled={!ready}
+              className={`mt-4 flex h-[46px] w-full items-center justify-center rounded-lg text-[15px] font-bold text-white ${ready ? "bg-[#D10005] active:scale-[0.99]" : "bg-[#D10005]/40"}`}
+            >
+              {t.faqInquirySend}
+            </button>
+          </div>
         </div>
 
-        <div className="shrink-0 border-t border-[#EFEFEF] px-4 py-3">
-          <button
-            onClick={ready ? onSent : undefined}
-            disabled={!ready}
-            className={`flex h-[46px] w-full items-center justify-center rounded-lg text-[15px] font-bold text-white ${ready ? "bg-[#D10005] active:scale-[0.99]" : "bg-[#D10005]/40"}`}
-          >
-            {t.faqInquirySend}
-          </button>
-        </div>
+        <SiteFooter t={t} />
       </div>
     </div>
   );
@@ -6682,9 +6688,8 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
     if (errorScenario !== "off" && next !== screen) { setErrorTarget(next); return; }
     setScreenRaw(next);
   };
-  // Support inquiry form. It is raised from the FAQ page and from the footer's
-  // support links, so it lives here and floats over whatever screen is up.
-  const [inquiryOpen, setInquiryOpen] = useState(false);
+  // Sending an inquiry drops the visitor back on FAQ & Support with a
+  // confirmation, so the toast is owned here rather than by the form.
   const [inquiryToast, setInquiryToast] = useState(false);
   const inquiryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (inquiryTimer.current) clearTimeout(inquiryTimer.current); }, []);
@@ -6704,7 +6709,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
       // Yield once so this isn't a synchronous setState within the effect.
       await Promise.resolve();
       if (!alive) return;
-      const valid: Screen[] = ["landing", "signup", "login", "oripa", "notifications", "prizeHistory", "myLoot", "purchaseHistory", "shippingAddress", "quest", "store", "coinHistory", "mypage", "profile", "refer", "faq"];
+      const valid: Screen[] = ["landing", "signup", "login", "oripa", "notifications", "prizeHistory", "myLoot", "purchaseHistory", "shippingAddress", "quest", "store", "coinHistory", "mypage", "profile", "refer", "faq", "inquiry"];
       const target = new URLSearchParams(window.location.search).get("screen");
       // Straight to the requested screen: a deep link is where the session
       // starts, not a navigation an armed error scenario should swallow.
@@ -7022,7 +7027,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
     <NotifBadgeContext.Provider value={notifUnread}>
     <CoinHistoryNavContext.Provider value={onLanding ? () => {} : openCoinHistory}>
     <CatNavContext.Provider value={openCategory}>
-    <InquiryNavContext.Provider value={() => setInquiryOpen(true)}>
+    <InquiryNavContext.Provider value={() => setScreen("inquiry")}>
     <LegalNavContext.Provider value={setLegalDoc}>
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
       <div className="relative min-h-0 flex-1">
@@ -7222,6 +7227,21 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
         )}
         {screen === "refer" && <ReferFriendPage lang={lang} coins={coins} onBack={() => setScreen("mypage")} onHome={resetHome} onOpenStore={openStore} />}
         {screen === "faq" && <FaqSupportPage lang={lang} coins={coins} onBack={() => setScreen("mypage")} onHome={resetHome} onOpenStore={openStore} />}
+        {screen === "inquiry" && (
+          <InquiryPage
+            lang={lang}
+            coins={coins}
+            onBack={() => setScreen("faq")}
+            onHome={resetHome}
+            onOpenStore={openStore}
+            onSent={() => {
+              setScreen("faq");
+              setInquiryToast(true);
+              if (inquiryTimer.current) clearTimeout(inquiryTimer.current);
+              inquiryTimer.current = setTimeout(() => setInquiryToast(false), 2600);
+            }}
+          />
+        )}
         {screen === "quest" && (
           <QuestScreen
             lang={lang}
@@ -7294,18 +7314,6 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
           />
         )}
         {legalDoc && <LegalOverlay lang={lang} doc={legalDoc} onClose={() => setLegalDoc(null)} />}
-        {inquiryOpen && (
-          <InquiryFormModal
-            t={t}
-            onClose={() => setInquiryOpen(false)}
-            onSent={() => {
-              setInquiryOpen(false);
-              setInquiryToast(true);
-              if (inquiryTimer.current) clearTimeout(inquiryTimer.current);
-              inquiryTimer.current = setTimeout(() => setInquiryToast(false), 2600);
-            }}
-          />
-        )}
         {inquiryToast && (
           <div className="pointer-events-none absolute inset-x-0 bottom-6 z-[90] flex justify-center px-6">
             <div className="animate-fade-slide rounded-2xl bg-black/85 px-4 py-2.5 text-center text-[13px] font-bold text-white shadow-[0_6px_18px_rgba(0,0,0,0.35)]">{t.faqInquirySent}</div>
