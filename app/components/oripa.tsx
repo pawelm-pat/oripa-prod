@@ -5480,8 +5480,8 @@ function FaqSupportPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: La
   );
 }
 
-/* The inquiry form, on its own page. Back returns to FAQ & Support wherever
-   the form was raised from, so the answers are always one tap away. */
+/* The inquiry form, on its own page. Back returns to the screen that raised
+   it, scrolled to the footer or the contact card it was tapped from. */
 function InquiryPage({ lang, coins, onBack, onHome, onSent, onOpenStore }: { lang: Lang; coins: number; onBack: () => void; onHome: () => void; onSent: () => void; onOpenStore?: () => void }) {
   const t = STR[lang];
   const [category, setCategory] = useState("");
@@ -6688,11 +6688,37 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
     if (errorScenario !== "off" && next !== screen) { setErrorTarget(next); return; }
     setScreenRaw(next);
   };
-  // Sending an inquiry drops the visitor back on FAQ & Support with a
-  // confirmation, so the toast is owned here rather than by the form.
+  // The inquiry form is reached from the FAQ page and from the footer's two
+  // support links, so leaving it returns to whichever screen raised it —
+  // scrolled back down to the footer the visitor tapped.
+  const [inquiryReturn, setInquiryReturn] = useState<Screen>("faq");
   const [inquiryToast, setInquiryToast] = useState(false);
   const inquiryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const screenBodyRef = useRef<HTMLDivElement>(null);
+  // Restoring the footer runs against a freshly mounted screen whose images
+  // are still settling, so the offset is re-applied for a few frames.
+  const [footerRestore, setFooterRestore] = useState(0);
   useEffect(() => () => { if (inquiryTimer.current) clearTimeout(inquiryTimer.current); }, []);
+  useEffect(() => {
+    if (footerRestore === 0) return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const toBottom = () => {
+      const scrollers = Array.from(screenBodyRef.current?.querySelectorAll<HTMLElement>(".overflow-y-auto") ?? []);
+      const scroller = scrollers.sort((a, b) => b.scrollHeight - a.scrollHeight)[0];
+      if (scroller) scroller.scrollTop = scroller.scrollHeight;
+    };
+    for (const delay of [0, 60, 180, 400]) timers.push(setTimeout(toBottom, delay));
+    return () => timers.forEach(clearTimeout);
+  }, [footerRestore]);
+
+  function openInquiry() {
+    setInquiryReturn((prev) => (screen === "inquiry" ? prev : screen));
+    setScreen("inquiry");
+  }
+  function leaveInquiry() {
+    setScreen(inquiryReturn);
+    setFooterRestore((n) => n + 1);
+  }
   const [lineLoginToast, setLineLoginToast] = useState(false);
   // Surface the active screen so the review comments panel can scope itself.
   useEffect(() => { onScreenChange?.(screen); }, [screen, onScreenChange]);
@@ -7027,13 +7053,13 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
     <NotifBadgeContext.Provider value={notifUnread}>
     <CoinHistoryNavContext.Provider value={onLanding ? () => {} : openCoinHistory}>
     <CatNavContext.Provider value={openCategory}>
-    <InquiryNavContext.Provider value={() => setScreen("inquiry")}>
+    <InquiryNavContext.Provider value={openInquiry}>
     <LegalNavContext.Provider value={setLegalDoc}>
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
       <div className="relative min-h-0 flex-1">
         {/* Keyed on `screen` so each navigation remounts and replays the
             body-only fade/slide-in (headers are excluded per-screen). */}
-        <div key={screen} className="h-full">
+        <div key={screen} ref={screenBodyRef} className="h-full">
         {/* Logged-out lobby — V1 homepage layout */}
         {screen === "landing" && (
           <LandingPage
@@ -7231,11 +7257,11 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
           <InquiryPage
             lang={lang}
             coins={coins}
-            onBack={() => setScreen("faq")}
+            onBack={leaveInquiry}
             onHome={resetHome}
             onOpenStore={openStore}
             onSent={() => {
-              setScreen("faq");
+              leaveInquiry();
               setInquiryToast(true);
               if (inquiryTimer.current) clearTimeout(inquiryTimer.current);
               inquiryTimer.current = setTimeout(() => setInquiryToast(false), 2600);

@@ -934,7 +934,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
         title: "Contact Customer Support directly",
         items: [
           "Card with the warning against false or fraudulent claims and the note that we cannot confirm delivery dates or couriers for an individual prize.",
-          { text: "Inquiry Form", sub: ["Opens the inquiry form page; its back arrow returns here.", "The footer's Customer support chip and its 'Contact Us' link open the same form from any screen."] },
+          { text: "Inquiry Form", sub: ["Opens the inquiry form page; its back arrow returns here, to the contact card.", "The footer's Customer support chip and its 'Contact Us' link open the same form from any screen."] },
         ],
       },
       FOOTER_REF_GROUP,
@@ -942,19 +942,19 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
   },
   inquiry: {
     label: "Inquiry form",
-    summary: "Support inquiry form, opened from the FAQ & Support page or from either of the footer's support links. Back returns to FAQ & Support.",
+    summary: "Support inquiry form, opened from the FAQ & Support page or from either of the footer's support links. Back returns to whichever screen raised it, scrolled back down to the footer.",
     groups: [
       APP_HEADER_GROUP,
       {
         title: "Header",
-        items: ["Back returns to FAQ & Support, wherever the form was opened from."],
+        items: ["Back returns to the screen the form was opened from, scrolled to the footer or contact card it was tapped from."],
       },
       {
         title: "Form",
         items: [
           "Inquiry Category select (Payment & Coins, Shipping, Oripa, Account, System Issues, Coupons) and a free-text Inquiry Details field — both required.",
           "Image File (Optional): up to three attachments, each listed with a remove control and counted against (n/3), under the notes on file size and supported formats.",
-          { text: "Send inquiry", sub: ["Enabled once a category and details are given; sending returns to FAQ & Support and confirms with a toast."] },
+          { text: "Send inquiry", sub: ["Enabled once a category and details are given; sending returns to the screen the form was opened from and confirms with a toast."] },
         ],
         tbc: ["Nothing is submitted anywhere — the form confirms locally."],
       },
