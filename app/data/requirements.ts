@@ -934,7 +934,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
         title: "Contact Customer Support directly",
         items: [
           "Card with the warning against false or fraudulent claims and the note that we cannot confirm delivery dates or couriers for an individual prize.",
-          { text: "Inquiry Form", sub: ["Opens the inquiry form page; its back arrow returns to the top of this page.", "The footer's Customer support chip and its 'Contact Us' link open the same form from any screen."] },
+          { text: "Inquiry Form", sub: ["Opens the inquiry form page; its back arrow returns here, to the contact card it was tapped from.", "The footer's Customer support chip and its 'Contact Us' link open the same form from any screen."] },
         ],
       },
       FOOTER_REF_GROUP,
@@ -942,19 +942,19 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
   },
   inquiry: {
     label: "Inquiry form",
-    summary: "Support inquiry form, opened from the FAQ & Support page or from either of the footer's support links. Back returns to whichever screen raised it — the top of FAQ & Support, or the footer a support link was tapped from.",
+    summary: "Support inquiry form, opened from the FAQ & Support page or from either of the footer's support links. Back returns to whichever screen raised it, at the position it was left.",
     groups: [
       APP_HEADER_GROUP,
       {
         title: "Header",
-        items: ["Back returns to the screen the form was opened from: the top of FAQ & Support when its Inquiry Form button raised the form, or the footer itself when a footer link did."],
+        items: ["Back returns to the screen the form was opened from, at the exact position it was left — the button or footer link that opened the form is back under the visitor's thumb."],
       },
       {
         title: "Form",
         items: [
           "Inquiry Category select (Payment & Coins, Shipping, Oripa, Account, System Issues, Coupons) and a free-text Inquiry Details field — both required.",
           "Image File (Optional): up to three attachments, each listed with a remove control and counted against (n/3), under the notes on file size and supported formats.",
-          { text: "Send inquiry", sub: ["Enabled once a category and details are given; sending returns to the screen the form was opened from and confirms with a toast."] },
+          { text: "Send inquiry", sub: ["Enabled once a category and details are given; sending returns to the screen the form was opened from, at the same position, and confirms with a toast."] },
         ],
         tbc: ["Nothing is submitted anywhere — the form confirms locally."],
       },

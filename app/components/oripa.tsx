@@ -75,9 +75,8 @@ const LegalNavContext = createContext<(doc: LegalDocKey) => void>(() => {});
 // category bar: it selects the category and parks that bar at the top.
 const CatNavContext = createContext<(key: string) => void>(() => {});
 // The support inquiry form, opened from the FAQ page or from either of the
-// footer's support links. Footer callers pass `true` so leaving the form puts
-// them back on the footer they tapped.
-const InquiryNavContext = createContext<(fromFooter?: boolean) => void>(() => {});
+// footer's support links.
+const InquiryNavContext = createContext<() => void>(() => {});
 // A category request travels as a token so the same category tapped twice
 // still re-scrolls the feed.
 type CatRequest = { key: string; token: number };
@@ -641,7 +640,7 @@ function SiteFooter({ t }: { t: Dict }) {
       );
     }
     if (i === 1) {
-      return <button key={label} onClick={() => openInquiry(true)} className={`${chipClass} active:bg-white/80`}>{label}</button>;
+      return <button key={label} onClick={openInquiry} className={`${chipClass} active:bg-white/80`}>{label}</button>;
     }
     return doc ? (
       <button key={label} onClick={() => openLegal(doc)} className={`${chipClass} active:bg-white/80`}>{label}</button>
@@ -682,7 +681,7 @@ function SiteFooter({ t }: { t: Dict }) {
 
       <div className="my-6 h-px bg-white/15" />
       <p className="text-[12px] font-medium leading-relaxed text-white">
-        {t.ftSupport.split(":")[0]}: <button onClick={() => openInquiry(true)} className="underline decoration-white/50 active:opacity-70">{t.ftSupport.split(":").slice(1).join(":").trim()}</button>
+        {t.ftSupport.split(":")[0]}: <button onClick={openInquiry} className="underline decoration-white/50 active:opacity-70">{t.ftSupport.split(":").slice(1).join(":").trim()}</button>
       </p>
       <p className="mt-4 text-[12px] font-medium leading-relaxed text-white">{t.ftPayInquiry}</p>
       <p className="mt-2 text-[10px] font-medium leading-relaxed text-white">{t.ftPhoneNote}</p>
@@ -5466,7 +5465,7 @@ function FaqSupportPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: La
               <p className="mt-2 text-[11px] font-medium leading-[1.45] text-[#0F0F0F]">{t.faqContactWarningBody}</p>
             </div>
             <button
-              onClick={() => openInquiry()}
+              onClick={openInquiry}
               className="mt-3 flex h-[44px] w-full items-center justify-center rounded-lg bg-[#D10005] text-[15px] font-bold text-white active:scale-[0.99]"
             >
               {t.faqContactCta}
@@ -6690,39 +6689,44 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
     setScreenRaw(next);
   };
   // The inquiry form is reached from the FAQ page and from the footer's two
-  // support links, so leaving it returns to whichever screen raised it — and
-  // to the footer itself when that is where it was tapped.
+  // support links, so leaving it returns to whichever screen raised it, at the
+  // exact offset the visitor left — the link they tapped is back under them.
   const [inquiryReturn, setInquiryReturn] = useState<Screen>("faq");
-  const [inquiryFromFooter, setInquiryFromFooter] = useState(false);
   const [inquiryToast, setInquiryToast] = useState(false);
   const inquiryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const screenBodyRef = useRef<HTMLDivElement>(null);
-  // Restoring the footer runs against a freshly mounted screen whose images
-  // are still settling, so the offset is re-applied for a few frames.
-  const [footerRestore, setFooterRestore] = useState(0);
+  // The screen a navigation leaves is unmounted, so its offset is measured on
+  // the way out and re-applied on the way back.
+  const returnScrollTop = useRef(0);
+  const [scrollRestore, setScrollRestore] = useState(0);
+  // The page it lands on is still settling (images, fonts), so the offset is
+  // re-applied for a few frames rather than once.
+  const screenScroller = () => {
+    const scrollers = Array.from(screenBodyRef.current?.querySelectorAll<HTMLElement>(".overflow-y-auto") ?? []);
+    return scrollers.sort((a, b) => b.scrollHeight - a.scrollHeight)[0] ?? null;
+  };
   useEffect(() => () => { if (inquiryTimer.current) clearTimeout(inquiryTimer.current); }, []);
   useEffect(() => {
-    if (footerRestore === 0) return;
+    if (scrollRestore === 0) return;
     const timers: ReturnType<typeof setTimeout>[] = [];
-    const toBottom = () => {
-      const scrollers = Array.from(screenBodyRef.current?.querySelectorAll<HTMLElement>(".overflow-y-auto") ?? []);
-      const scroller = scrollers.sort((a, b) => b.scrollHeight - a.scrollHeight)[0];
-      if (scroller) scroller.scrollTop = scroller.scrollHeight;
+    const apply = () => {
+      const scroller = screenScroller();
+      if (scroller) scroller.scrollTop = Math.min(returnScrollTop.current, scroller.scrollHeight - scroller.clientHeight);
     };
-    for (const delay of [0, 60, 180, 400]) timers.push(setTimeout(toBottom, delay));
+    for (const delay of [0, 60, 180, 400]) timers.push(setTimeout(apply, delay));
     return () => timers.forEach(clearTimeout);
-  }, [footerRestore]);
+  }, [scrollRestore]);
 
-  function openInquiry(fromFooter = false) {
-    setInquiryReturn((prev) => (screen === "inquiry" ? prev : screen));
-    setInquiryFromFooter(fromFooter);
+  function openInquiry() {
+    if (screen !== "inquiry") {
+      setInquiryReturn(screen);
+      returnScrollTop.current = screenScroller()?.scrollTop ?? 0;
+    }
     setScreen("inquiry");
   }
   function leaveInquiry() {
     setScreen(inquiryReturn);
-    // Only a footer caller is put back at the footer; the FAQ page's own CTA
-    // returns to the top of the answers.
-    if (inquiryFromFooter) setFooterRestore((n) => n + 1);
+    setScrollRestore((n) => n + 1);
   }
   const [lineLoginToast, setLineLoginToast] = useState(false);
   // Surface the active screen so the review comments panel can scope itself.
