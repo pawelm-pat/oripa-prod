@@ -28,6 +28,7 @@ import { AuthHeader, SignupPage, LoginPage, LineAuthIcon, LineAuthSheet, DEMO_IN
 import { HOME_SECTIONS, ALL_ORIPA } from "../data/lobby";
 import { NOTIF_YOU, NOTIF_NOTICE, NOTIF_UNREAD_TOTAL, randomNotif } from "../data/notifications";
 import { LEGAL, type LegalDocKey } from "../data/legal";
+import { FAQ, type FaqCategoryKey } from "../data/faq";
 import {
   CATEGORIES,
   DAY,
@@ -3078,7 +3079,7 @@ function BottomNav({ screen, t, onNavigate }: { screen: Screen; t: Dict; onNavig
   const activeKey: Screen =
     screen === "myLoot"
       ? "prizeHistory"
-      : screen === "prizeHistory" || screen === "purchaseHistory" || screen === "shippingAddress" || screen === "profile" || screen === "refer"
+      : screen === "prizeHistory" || screen === "purchaseHistory" || screen === "shippingAddress" || screen === "profile" || screen === "refer" || screen === "faq"
       ? "mypage"
       : screen;
   return (
@@ -5339,6 +5340,263 @@ function ReferFriendPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: L
   );
 }
 
+/* ── FAQ & Support ───────────────────────────────────────────────────────
+   One page for the whole help centre: category chips jump to a section, every
+   question opens in place, and the card at the bottom hands the visitor to the
+   inquiry form (a modal, so the answers stay behind it). */
+const FAQ_CAT_ICON: Record<FaqCategoryKey, ReactNode> = {
+  account: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D10005" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="3.6" /><path d="M4.5 20a7.5 7.5 0 0115 0" /></svg>
+  ),
+  payment: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D10005" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M5 4l7 8 7-8M7.5 13h9M7.5 16.5h9M12 12v8" /></svg>
+  ),
+  gacha: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="#D10005"><rect x="3.4" y="6.6" width="8.2" height="11.8" rx="1.5" transform="rotate(-16 7.5 12.5)" /><rect x="10.4" y="5.4" width="9" height="13.2" rx="1.6" stroke="#fff" strokeWidth="1.5" /></svg>
+  ),
+  shipping: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D10005" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2.8l8.2 4.3v9.8L12 21.2 3.8 16.9V7.1z" /><path d="M3.9 7.2L12 11.5l8.1-4.3M12 11.5v9.6" /></svg>
+  ),
+  other: (
+    <svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#D10005" /><path d="M9.4 9.2a2.7 2.7 0 015.2.9c0 1.8-2.6 2-2.6 3.6" fill="none" stroke="#fff" strokeWidth="1.9" strokeLinecap="round" /><circle cx="12" cy="17" r="1.3" fill="#fff" /></svg>
+  ),
+};
+
+function FaqSupportPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: Lang; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void }) {
+  const t = STR[lang];
+  const cats = FAQ[lang];
+  const [open, setOpen] = useState<string | null>(null);
+  const [inquiry, setInquiry] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
+
+  function jumpTo(key: FaqCategoryKey) {
+    const scroller = scrollRef.current;
+    const el = sectionRefs.current[key];
+    if (!scroller || !el) return;
+    const top = el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - 10;
+    scroller.scrollTo({ top, behavior: "smooth" });
+  }
+
+  return (
+    <div className="relative flex h-full flex-col bg-[#F1F2F4]">
+      <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
+
+      <div ref={scrollRef} className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto">
+        <div className="px-4 pb-6 pt-4">
+          {/* Title row — back returns to My Page */}
+          <div className="flex items-center gap-2">
+            <button onClick={onBack} aria-label={t.backAria} className="flex h-9 w-9 items-center justify-center active:opacity-70">
+              {referIcon("/refer-back.png", 26)}
+            </button>
+            <h1 className="text-[20px] font-bold text-[#0F0F0F]">{t.faqTitle}</h1>
+          </div>
+
+          {/* Category chips jump down to their section */}
+          <div className="mt-3 grid grid-cols-2 gap-2.5">
+            {cats.map((c) => (
+              <button
+                key={c.key}
+                onClick={() => jumpTo(c.key)}
+                className="flex items-center gap-2.5 rounded-xl bg-white px-3 py-3 text-left shadow-[0_1px_3px_rgba(0,0,0,0.07)] active:bg-black/[0.03]"
+              >
+                {FAQ_CAT_ICON[c.key]}
+                <span className="text-[12px] font-bold leading-[1.25] text-[#0F0F0F]">{c.title}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Answers, grouped by category */}
+          {cats.map((c) => (
+            <div key={c.key} ref={(el) => { sectionRefs.current[c.key] = el; }} className="mt-5 scroll-mt-4">
+              <div className="mb-2 flex items-center gap-2">
+                {FAQ_CAT_ICON[c.key]}
+                <h2 className="text-[15px] font-bold text-[#0F0F0F]">{c.title}</h2>
+              </div>
+              <div className="space-y-2">
+                {c.entries.map((e, i) => {
+                  const id = `${c.key}-${i}`;
+                  const isOpen = open === id;
+                  return (
+                    <div key={id} className="overflow-hidden rounded-xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.07)]">
+                      <button
+                        onClick={() => setOpen(isOpen ? null : id)}
+                        aria-expanded={isOpen}
+                        className="flex w-full items-center gap-3 px-3.5 py-3 text-left active:bg-black/[0.02]"
+                      >
+                        <span className="min-w-0 flex-1 text-[13px] font-bold leading-[1.3] text-[#0F0F0F]">{e.q}</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D10005" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className={`shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}><path d="M5 9l7 7 7-7" /></svg>
+                      </button>
+                      <div className={`grid transition-all duration-200 ease-out ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+                        <div className="overflow-hidden">
+                          <div className="space-y-2 px-3.5 pb-3.5">
+                            {e.a.map((p, k) => (
+                              <p key={k} className="text-[12px] font-normal leading-[1.5] text-[#0F0F0FB2]">{p}</p>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+
+          {/* Still stuck — the inquiry form */}
+          <div className="mt-6 rounded-2xl bg-white p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.07)]">
+            <div className="flex items-center gap-2">
+              <img src="/menu-contact.png" alt="" className="h-[22px] w-[22px] shrink-0 object-contain" draggable={false} />
+              <h2 className="text-[14px] font-bold text-[#0F0F0F]">{t.faqContactTitle}</h2>
+            </div>
+            <div className="mt-2.5 rounded-lg bg-[#FDF0F0] px-3 py-2.5">
+              <p className="flex items-start gap-2 text-[12px] font-bold leading-[1.35] text-[#0F0F0F]">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="#0F0F0F" className="mt-[1px] shrink-0"><path d="M12 3l10 17H2L12 3z" /><path d="M11.2 9h1.6v5h-1.6zM11.2 15.4h1.6V17h-1.6z" fill="#FDF0F0" /></svg>
+                {t.faqContactWarning}
+              </p>
+              <p className="mt-2 text-[11px] font-medium leading-[1.45] text-[#0F0F0F]">{t.faqContactWarningBody}</p>
+            </div>
+            <button
+              onClick={() => setInquiry(true)}
+              className="mt-3 flex h-[44px] w-full items-center justify-center rounded-lg bg-[#D10005] text-[15px] font-bold text-white active:scale-[0.99]"
+            >
+              {t.faqContactCta}
+            </button>
+            <p className="mt-3 text-[10px] font-normal italic leading-[1.45] text-[#0F0F0F80]">{t.faqContactNote}</p>
+          </div>
+        </div>
+
+        <SiteFooter t={t} />
+      </div>
+
+      {inquiry && (
+        <InquiryFormModal
+          t={t}
+          onClose={() => setInquiry(false)}
+          onSent={() => {
+            setInquiry(false);
+            setToast(t.faqInquirySent);
+            if (toastTimer.current) clearTimeout(toastTimer.current);
+            toastTimer.current = setTimeout(() => setToast(null), 2800);
+          }}
+        />
+      )}
+
+      {toast && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-6 z-[70] flex justify-center px-6">
+          <div className="animate-fade-slide rounded-2xl bg-black/85 px-4 py-2.5 text-center text-[13px] font-bold text-white shadow-[0_6px_18px_rgba(0,0,0,0.35)]">{toast}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* The inquiry form itself. It opens over the answers instead of taking the
+   visitor to another page, so closing it returns them to where they read. */
+function InquiryFormModal({ t, onClose, onSent }: { t: Dict; onClose: () => void; onSent: () => void }) {
+  const [category, setCategory] = useState("");
+  const [details, setDetails] = useState("");
+  const [files, setFiles] = useState<string[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const ready = category !== "" && details.trim() !== "";
+  const labelCls = "block text-[12px] font-bold text-[#0F0F0F]";
+
+  return (
+    <div className="absolute inset-0 z-[80] flex items-end justify-center bg-black/55 px-3 pb-3 pt-8" onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()} className="animate-fade-slide flex max-h-full w-full flex-col overflow-hidden rounded-2xl bg-white">
+        <div className="flex shrink-0 items-center justify-between border-b border-[#EFEFEF] px-4 py-3">
+          <h2 className="text-[17px] font-bold text-[#0F0F0F]">{t.faqInquiryTitle}</h2>
+          <button onClick={onClose} aria-label={t.closeAria} className="flex h-7 w-7 items-center justify-center active:opacity-70">
+            <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="#0F0F0F" strokeWidth="2" strokeLinecap="round" /></svg>
+          </button>
+        </div>
+
+        <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-3.5">
+          <label className={labelCls}>{t.faqInquiryCategory}<span className="ml-0.5 text-[#D10005]">*</span></label>
+          <div className="relative mt-1.5">
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className={`h-[42px] w-full appearance-none rounded-[6px] border border-[#9D9D9D] bg-white px-3 pr-9 text-[14px] outline-none focus:border-[#D10005] ${category ? "text-[#0F0F0F]" : "text-[#9D9D9D]"}`}
+            >
+              <option value="">{t.faqInquiryCategoryPlaceholder}</option>
+              {t.faqInquiryCategories.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D10005" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2"><path d="M5 9l7 7 7-7" /></svg>
+          </div>
+
+          <label className={`${labelCls} mt-4`}>{t.faqInquiryDetails}<span className="ml-0.5 text-[#D10005]">*</span></label>
+          <textarea
+            value={details}
+            onChange={(e) => setDetails(e.target.value)}
+            placeholder={t.faqInquiryDetailsPlaceholder}
+            rows={5}
+            className="mt-1.5 w-full resize-none rounded-[6px] border border-[#9D9D9D] px-3 py-2.5 text-[14px] leading-[1.45] text-[#0F0F0F] outline-none placeholder:text-[#9D9D9D] focus:border-[#D10005]"
+          />
+
+          <div className="mt-4 flex items-center justify-between">
+            <label className={labelCls}>{t.faqInquiryImage}</label>
+            <span className="text-[12px] font-medium text-[#0F0F0F80]">({files.length}/3)</span>
+          </div>
+          {files.map((name, i) => (
+            <p key={`${name}-${i}`} className="mt-1.5 flex items-center gap-2 text-[12px] font-medium text-[#0F0F0F]">
+              <span className="truncate">{t.faqInquiryImageNth(i + 1)} — {name}</span>
+              <button onClick={() => setFiles((f) => f.filter((_, k) => k !== i))} aria-label={t.closeAria} className="shrink-0 text-[#D10005]">
+                <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+              </button>
+            </p>
+          ))}
+          {files.length < 3 && (
+            <>
+              <p className="mt-1.5 text-[12px] font-medium text-[#0F0F0F80]">{t.faqInquiryImageNth(files.length + 1)}</p>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/jpeg,image/png,image/bmp"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) setFiles((prev) => [...prev, f.name].slice(0, 3));
+                  e.target.value = "";
+                }}
+              />
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="mt-1.5 flex h-[42px] w-full items-center justify-center gap-2 rounded-[6px] border border-[#DEDEDE] bg-white text-[14px] font-medium text-[#0F0F0F] active:bg-black/[0.03]"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8a9099" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6.5 18a4 4 0 01-.4-7.98 5.5 5.5 0 0110.7-1.5A4.25 4.25 0 0117.5 18" /><path d="M12 12v6m0-6l-2.4 2.4M12 12l2.4 2.4" /></svg>
+                {t.faqInquirySelectFile}
+              </button>
+            </>
+          )}
+
+          <ul className="mt-3.5 space-y-1.5">
+            {t.faqInquiryNotes.map((n) => (
+              <li key={n} className="flex gap-2 text-[11px] font-normal leading-[1.4] text-[#0F0F0F80]">
+                <span className="mt-[6px] h-[3px] w-[3px] shrink-0 rounded-full bg-[#0F0F0F80]" />
+                <span>{n}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="shrink-0 border-t border-[#EFEFEF] px-4 py-3">
+          <button
+            onClick={ready ? onSent : undefined}
+            disabled={!ready}
+            className={`flex h-[46px] w-full items-center justify-center rounded-lg text-[15px] font-bold text-white ${ready ? "bg-[#D10005] active:scale-[0.99]" : "bg-[#D10005]/40"}`}
+          >
+            {t.faqInquirySend}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── My Account ──────────────────────────────────────────────────────────
    Visual layout mirrors the POC's MyPage (profile / balance / rank cards +
    menu grid + account/other sections). Edit profile and Account Settings
@@ -5418,7 +5676,7 @@ function myMenuIcon(key: string) {
   }
 }
 
-function MyPage({ lang, coins, displayName = "Username", onOpenQuest, onOpenPrizeHistory, onOpenMyLoot, onOpenPurchaseHistory, onOpenAnnouncements, onOpenShippingAddress, onOpenProfile, onOpenRefer, onHome, onLogout, onOpenStore }: { lang: Lang; coins: number; displayName?: string; onOpenQuest: () => void; onOpenPrizeHistory: () => void; onOpenMyLoot: () => void; onOpenPurchaseHistory: () => void; onOpenAnnouncements: () => void; onOpenShippingAddress: () => void; onOpenProfile: () => void; onOpenRefer: () => void; onHome: () => void; onLogout: () => void; onOpenStore?: () => void }) {
+function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onOpenMyLoot, onOpenPurchaseHistory, onOpenAnnouncements, onOpenShippingAddress, onOpenProfile, onOpenRefer, onOpenFaq, onHome, onLogout, onOpenStore }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenMyLoot: () => void; onOpenPurchaseHistory: () => void; onOpenAnnouncements: () => void; onOpenShippingAddress: () => void; onOpenProfile: () => void; onOpenRefer: () => void; onOpenFaq: () => void; onHome: () => void; onLogout: () => void; onOpenStore?: () => void }) {
   const t = STR[lang];
   const openLegal = useContext(LegalNavContext);
   const openCoinHistory = useContext(CoinHistoryNavContext);
@@ -5430,19 +5688,16 @@ function MyPage({ lang, coins, displayName = "Username", onOpenQuest, onOpenPriz
     if (el) el.scrollTop = myPageScrollTop;
   }, []);
 
-  // "items" (My Loot), "history" (Prize History), "purchases" (Purchase
-  // History), "notices" (Announcements) and "shippingAddress" navigate. Every
-  // other row renders but is inert (no onClick) — those screens are not ported
-  // into PROD yet.
+  // Every row navigates. Quests is hidden for now — the chain is still being
+  // designed — and FAQ and Support are one row, as the help centre answers
+  // both from the same page.
   const menu: { key: string; label: string; onClick?: () => void }[] = [
-    { key: "quest", label: t.mmQuest, onClick: onOpenQuest },
     { key: "items", label: t.mmItems, onClick: onOpenMyLoot },
     { key: "history", label: t.mmPrizeHistory, onClick: onOpenPrizeHistory },
     { key: "purchases", label: t.mmPurchases, onClick: onOpenPurchaseHistory },
     { key: "coinHistory", label: t.coinHistoryTitle, onClick: openCoinHistory },
     { key: "invite", label: t.mmInvite, onClick: onOpenRefer },
-    { key: "faq", label: t.mmFaq },
-    { key: "contact", label: t.mmContact },
+    { key: "faq", label: t.mmFaqSupport, onClick: onOpenFaq },
     { key: "notices", label: t.mmNotices, onClick: onOpenAnnouncements },
     { key: "shippingAddress", label: t.mmShippingAddress, onClick: onOpenShippingAddress },
   ];
@@ -6457,7 +6712,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
       // Yield once so this isn't a synchronous setState within the effect.
       await Promise.resolve();
       if (!alive) return;
-      const valid: Screen[] = ["landing", "signup", "login", "oripa", "notifications", "prizeHistory", "myLoot", "purchaseHistory", "shippingAddress", "quest", "store", "coinHistory", "mypage", "profile", "refer"];
+      const valid: Screen[] = ["landing", "signup", "login", "oripa", "notifications", "prizeHistory", "myLoot", "purchaseHistory", "shippingAddress", "quest", "store", "coinHistory", "mypage", "profile", "refer", "faq"];
       const target = new URLSearchParams(window.location.search).get("screen");
       // Straight to the requested screen: a deep link is where the session
       // starts, not a navigation an armed error scenario should swallow.
@@ -6713,9 +6968,8 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   // back returns to wherever it was opened from.
   const [coinHistoryReturn, setCoinHistoryReturn] = useState<Screen>("oripa");
   const openCoinHistory = () => { setCoinHistoryReturn((p) => (screen === "coinHistory" ? p : screen)); setScreen("coinHistory"); };
-  // Quest (pack-purchase chain) is reached from the My Page "Quests" menu row;
-  // back returns to My Page.
-  const openQuest = () => setScreen("quest");
+  // Quest (pack-purchase chain) has no entry point while the chain is hidden;
+  // the screen still renders when it is restored from the URL.
   // Draw screen (gacha pack detail) opens when a lobby pack's Draw / View is
   // tapped; back returns to the lobby.
   const [drawItem, setDrawItem] = useState<OripaItem | null>(null);
@@ -6859,7 +7113,6 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             lang={lang}
             coins={coins}
             displayName={displayName}
-            onOpenQuest={openQuest}
             onOpenPrizeHistory={() => setScreen("prizeHistory")}
             onOpenMyLoot={openMyLoot}
             onOpenPurchaseHistory={() => setScreen("purchaseHistory")}
@@ -6867,6 +7120,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onOpenShippingAddress={() => setScreen("shippingAddress")}
             onOpenProfile={() => setScreen("profile")}
             onOpenRefer={() => setScreen("refer")}
+            onOpenFaq={() => setScreen("faq")}
             onHome={resetHome}
             onLogout={logout}
             onOpenStore={openStore}
@@ -6974,6 +7228,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
           />
         )}
         {screen === "refer" && <ReferFriendPage lang={lang} coins={coins} onBack={() => setScreen("mypage")} onHome={resetHome} onOpenStore={openStore} />}
+        {screen === "faq" && <FaqSupportPage lang={lang} coins={coins} onBack={() => setScreen("mypage")} onHome={resetHome} onOpenStore={openStore} />}
         {screen === "quest" && (
           <QuestScreen
             lang={lang}

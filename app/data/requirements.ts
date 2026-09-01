@@ -907,4 +907,46 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
       FOOTER_REF_GROUP,
     ],
   },
+  faq: {
+    label: "FAQ & Support",
+    summary: "Help centre opened from the My Account 'FAQ & Support' tile — FAQ and Support are one destination. Five categories of answers, each question opening in place, and the inquiry form for anything the answers do not cover.",
+    groups: [
+      APP_HEADER_GROUP,
+      {
+        title: "Header",
+        items: ["Back returns to My Account."],
+      },
+      {
+        title: "Category chips",
+        items: [
+          "Member Registration & Account, Coin Payment, Using Oripa & Gacha, Prize Shipping & Delivery and Troubleshooting & Others.",
+          "Tapping a chip scrolls the page down to that category's answers.",
+        ],
+      },
+      {
+        title: "Answers",
+        items: [
+          "Each category lists its questions as rows with a chevron; tapping a row opens its answer and closes whichever row was open.",
+        ],
+        tbc: ["The answers are working copy pending the client's final help-centre text."],
+      },
+      {
+        title: "Contact Customer Support directly",
+        items: [
+          "Card with the warning against false or fraudulent claims and the note that we cannot confirm delivery dates or couriers for an individual prize.",
+          { text: "Inquiry Form", sub: ["Opens the inquiry form over the page as a modal, so closing it returns the visitor to the answer they were reading."] },
+        ],
+      },
+      {
+        title: "Inquiry form (modal)",
+        items: [
+          "Inquiry Category select (Payment & Coins, Shipping, Oripa, Account, System Issues, Coupons) and a free-text Inquiry Details field — both required.",
+          "Image File (Optional): up to three attachments, each listed with a remove control and counted against (n/3).",
+          { text: "Send inquiry", sub: ["Enabled once a category and details are given; sending closes the modal and confirms with a toast."] },
+        ],
+        tbc: ["Nothing is submitted anywhere — the form confirms locally."],
+      },
+      FOOTER_REF_GROUP,
+    ],
+  },
 };

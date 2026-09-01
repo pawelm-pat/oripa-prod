@@ -175,4 +175,6 @@ export type Screen =
   | "mypage"
   | "profile"
   // Invite friends: the referral link, its share routes and the reward tiers.
-  | "refer";
+  | "refer"
+  // FAQ & Support: the answer library plus the inquiry form modal.
+  | "faq";
