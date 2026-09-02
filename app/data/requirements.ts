@@ -60,7 +60,7 @@ const FOOTER_GROUP: ReqGroup = {
         "Like the category bar, it also drops any active search or filters.",
       ],
     },
-    { text: "Follow / social icons: LINE, X, Instagram, Facebook", sub: ["Display only — do nothing (TBC)."] },
+    { text: "Follow / social icons: LINE, X", sub: ["Display only — do nothing (TBC).", "Instagram and Facebook are hidden until those accounts are live."] },
     {
       text: "Support & payment info",
       sub: [

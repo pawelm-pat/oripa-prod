@@ -595,6 +595,10 @@ function LegalOverlay({ lang, doc, onClose }: { lang: Lang; doc: LegalDocKey; on
   );
 }
 
+// Instagram and Facebook are held back until those accounts are live; their
+// icons stay in the list so they can be shown again in one line.
+const FOOTER_SOCIALS = ["line", "x"];
+
 const SOCIAL_ICONS: { key: string; viewBox: string; path: React.ReactNode }[] = [
   {
     key: "line",
@@ -672,7 +676,7 @@ function SiteFooter({ t }: { t: Dict }) {
 
       <h4 className="mt-6 text-[14px] font-bold">{t.ftFollow}</h4>
       <div className="mt-3 flex items-center gap-3.5">
-        {SOCIAL_ICONS.map(({ key, path, viewBox }) => (
+        {SOCIAL_ICONS.filter(({ key }) => FOOTER_SOCIALS.includes(key)).map(({ key, path, viewBox }) => (
           <span key={key} className="flex h-11 w-11 items-center justify-center rounded-full bg-black ring-1 ring-white/25">
             <svg width="20" height="20" viewBox={viewBox} fill="#fff">{path}</svg>
           </span>
