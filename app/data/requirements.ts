@@ -46,7 +46,7 @@ const FOOTER_GROUP: ReqGroup = {
     "Sits at the bottom of the page; all footer text is white.",
     "Brand block: product logo, copyright line and a short company blurb.",
     { text: "Operator", sub: ["Opens the operator's own site, https://ks-limited.com/, in a new tab."] },
-    { text: "Customer support", sub: ["Opens the FAQ & Support page (see 'FAQ & Support')."] },
+    { text: "Customer support", sub: ["Opens the FAQ & Support page (see 'FAQ & Support').", "Tapped in that page's own footer it scrolls back up to the top of the answers."] },
     { text: "T&Cs", sub: ["Opens the Terms of Use in the legal overlay (see 'Legal overlay')."] },
     { text: "Privacy policy", sub: ["Opens the Privacy Policy in the legal overlay."] },
     { text: "Legal notice (SCTA)", sub: ["Opens the Specified Commercial Transactions Act notation in the legal overlay."] },

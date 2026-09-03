@@ -6715,7 +6715,14 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   }, [scrollRestore]);
 
   function openHelp(next: "faq" | "inquiry") {
-    if (screen !== next) helpReturn.current.push({ screen, top: screenScroller()?.scrollTop ?? 0 });
+    // Tapped from the footer of the page it points at: there is nowhere to go,
+    // so take the visitor back up to the top of it instead.
+    if (screen === next) {
+      const scroller = screenScroller();
+      if (scroller) scroller.scrollTop = 0;
+      return;
+    }
+    helpReturn.current.push({ screen, top: screenScroller()?.scrollTop ?? 0 });
     setScreen(next);
   }
   function leaveHelp(fallback: Screen) {
