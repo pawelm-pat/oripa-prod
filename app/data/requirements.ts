@@ -46,7 +46,7 @@ const FOOTER_GROUP: ReqGroup = {
     "Sits at the bottom of the page; all footer text is white.",
     "Brand block: product logo, copyright line and a short company blurb.",
     { text: "Operator", sub: ["Opens the operator's own site, https://ks-limited.com/, in a new tab."] },
-    { text: "Customer support", sub: ["Opens the inquiry form page (see 'Inquiry form')."] },
+    { text: "Customer support", sub: ["Opens the FAQ & Support page (see 'FAQ & Support')."] },
     { text: "T&Cs", sub: ["Opens the Terms of Use in the legal overlay (see 'Legal overlay')."] },
     { text: "Privacy policy", sub: ["Opens the Privacy Policy in the legal overlay."] },
     { text: "Legal notice (SCTA)", sub: ["Opens the Specified Commercial Transactions Act notation in the legal overlay."] },
@@ -61,14 +61,6 @@ const FOOTER_GROUP: ReqGroup = {
       ],
     },
     { text: "Follow / social icons: LINE, X", sub: ["Display only — do nothing (TBC).", "Instagram and Facebook are hidden until those accounts are live."] },
-    {
-      text: "Support & payment info",
-      sub: [
-        "24/7 online support line; its 'Contact Us' link opens the inquiry form page.",
-        "Japan payment-inquiry line shows the support phone number 050-1724-7952.",
-        "Note advising users to use the phone number for their country of residence.",
-      ],
-    },
   ],
 };
 
@@ -76,7 +68,7 @@ const FOOTER_GROUP: ReqGroup = {
 const FOOTER_REF_GROUP: ReqGroup = {
   title: "Footer",
   items: [
-    "Same global footer as the Home screen — brand block, link groups, legal-document links (open the legal overlay), the Operator link out to https://ks-limited.com/, the two support links that open the inquiry form page, category chips, social icons and support/payment info (support phone 050-1724-7952). See the Home screen for the full item-by-item breakdown.",
+    "Same global footer as the Home screen — brand block, link groups, legal-document links (open the legal overlay), the Operator link out to https://ks-limited.com/, the Customer support link into FAQ & Support, category chips and social icons. See the Home screen for the full item-by-item breakdown.",
   ],
 };
 
@@ -909,12 +901,12 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
   },
   faq: {
     label: "FAQ & Support",
-    summary: "Help centre opened from the My Account 'FAQ & Support' tile — FAQ and Support are one destination. Five categories of answers, each question opening in place, and the inquiry form page for anything the answers do not cover.",
+    summary: "Help centre opened from the My Account 'FAQ & Support' tile or the footer's Customer support chip — FAQ and Support are one destination. Five categories of answers, each question opening in place, and the inquiry form page for anything the answers do not cover.",
     groups: [
       APP_HEADER_GROUP,
       {
         title: "Header",
-        items: ["Back returns to My Account."],
+        items: ["Back returns to whichever screen opened the page, at the position it was left."],
       },
       {
         title: "Category chips",
@@ -934,7 +926,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
         title: "Contact Customer Support directly",
         items: [
           "Card with the warning against false or fraudulent claims and the note that we cannot confirm delivery dates or couriers for an individual prize.",
-          { text: "Inquiry Form", sub: ["Opens the inquiry form page; its back arrow returns here, to the contact card it was tapped from.", "The footer's Customer support chip and its 'Contact Us' link open the same form from any screen."] },
+          { text: "Inquiry Form", sub: ["Opens the inquiry form page; its back arrow returns here, to the contact card it was tapped from."] },
         ],
       },
       FOOTER_REF_GROUP,
@@ -942,7 +934,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
   },
   inquiry: {
     label: "Inquiry form",
-    summary: "Support inquiry form, opened from the FAQ & Support page or from either of the footer's support links. Back returns to whichever screen raised it, at the position it was left.",
+    summary: "Support inquiry form, opened from the FAQ & Support page. Back returns to that page, at the position it was left.",
     groups: [
       APP_HEADER_GROUP,
       {

@@ -74,9 +74,9 @@ const LegalNavContext = createContext<(doc: LegalDocKey) => void>(() => {});
 // Picking a category from the footer, which behaves like the lobby's own
 // category bar: it selects the category and parks that bar at the top.
 const CatNavContext = createContext<(key: string) => void>(() => {});
-// The support inquiry form, opened from the FAQ page or from either of the
-// footer's support links.
-const InquiryNavContext = createContext<() => void>(() => {});
+// The help pages: FAQ & Support (opened from the footer and the My Account
+// tile) and the inquiry form it hands over to.
+const HelpNavContext = createContext<(page: "faq" | "inquiry") => void>(() => {});
 // A category request travels as a token so the same category tapped twice
 // still re-scrolls the feed.
 type CatRequest = { key: string; token: number };
@@ -631,7 +631,7 @@ const OPERATOR_URL = "https://ks-limited.com/";
 function SiteFooter({ t }: { t: Dict }) {
   const openLegal = useContext(LegalNavContext);
   const openCat = useContext(CatNavContext);
-  const openInquiry = useContext(InquiryNavContext);
+  const openHelp = useContext(HelpNavContext);
   // The first two chips are the operator's own site and the support desk; the
   // rest are legal documents shown in the overlay.
   const chip = (label: string, i: number) => {
@@ -644,7 +644,7 @@ function SiteFooter({ t }: { t: Dict }) {
       );
     }
     if (i === 1) {
-      return <button key={label} onClick={openInquiry} className={`${chipClass} active:bg-white/80`}>{label}</button>;
+      return <button key={label} onClick={() => openHelp("faq")} className={`${chipClass} active:bg-white/80`}>{label}</button>;
     }
     return doc ? (
       <button key={label} onClick={() => openLegal(doc)} className={`${chipClass} active:bg-white/80`}>{label}</button>
@@ -682,13 +682,6 @@ function SiteFooter({ t }: { t: Dict }) {
           </span>
         ))}
       </div>
-
-      <div className="my-6 h-px bg-white/15" />
-      <p className="text-[12px] font-medium leading-relaxed text-white">
-        {t.ftSupport.split(":")[0]}: <button onClick={openInquiry} className="underline decoration-white/50 active:opacity-70">{t.ftSupport.split(":").slice(1).join(":").trim()}</button>
-      </p>
-      <p className="mt-4 text-[12px] font-medium leading-relaxed text-white">{t.ftPayInquiry}</p>
-      <p className="mt-2 text-[10px] font-medium leading-relaxed text-white">{t.ftPhoneNote}</p>
 
       <div className="my-6 h-px bg-white/15" />
       <p className="text-[10px] font-medium leading-relaxed text-white">{t.ftPurchaseNote}</p>
@@ -5378,7 +5371,7 @@ function FaqSupportPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: La
   const t = STR[lang];
   const cats = FAQ[lang];
   const [open, setOpen] = useState<string | null>(null);
-  const openInquiry = useContext(InquiryNavContext);
+  const openHelp = useContext(HelpNavContext);
   const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -5469,7 +5462,7 @@ function FaqSupportPage({ lang, coins, onBack, onHome, onOpenStore }: { lang: La
               <p className="mt-2 text-[11px] font-medium leading-[1.45] text-[#0F0F0F]">{t.faqContactWarningBody}</p>
             </div>
             <button
-              onClick={openInquiry}
+              onClick={() => openHelp("inquiry")}
               className="mt-3 flex h-[44px] w-full items-center justify-center rounded-lg bg-[#D10005] text-[15px] font-bold text-white active:scale-[0.99]"
             >
               {t.faqContactCta}
@@ -6692,10 +6685,10 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
     if (errorScenario !== "off" && next !== screen) { setErrorTarget(next); return; }
     setScreenRaw(next);
   };
-  // The inquiry form is reached from the FAQ page and from the footer's two
-  // support links, so leaving it returns to whichever screen raised it, at the
-  // exact offset the visitor left — the link they tapped is back under them.
-  const [inquiryReturn, setInquiryReturn] = useState<Screen>("faq");
+  // Help pages (FAQ & Support and the inquiry form) are reached from several
+  // places, so each hop records where it came from and how far down that page
+  // was — back then lands on the link that was tapped, not at the top.
+  const helpReturn = useRef<{ screen: Screen; top: number }[]>([]);
   const [inquiryToast, setInquiryToast] = useState(false);
   const inquiryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const screenBodyRef = useRef<HTMLDivElement>(null);
@@ -6721,15 +6714,14 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
     return () => timers.forEach(clearTimeout);
   }, [scrollRestore]);
 
-  function openInquiry() {
-    if (screen !== "inquiry") {
-      setInquiryReturn(screen);
-      returnScrollTop.current = screenScroller()?.scrollTop ?? 0;
-    }
-    setScreen("inquiry");
+  function openHelp(next: "faq" | "inquiry") {
+    if (screen !== next) helpReturn.current.push({ screen, top: screenScroller()?.scrollTop ?? 0 });
+    setScreen(next);
   }
-  function leaveInquiry() {
-    setScreen(inquiryReturn);
+  function leaveHelp(fallback: Screen) {
+    const from = helpReturn.current.pop();
+    returnScrollTop.current = from?.top ?? 0;
+    setScreen(from?.screen ?? fallback);
     setScrollRestore((n) => n + 1);
   }
   const [lineLoginToast, setLineLoginToast] = useState(false);
@@ -6913,6 +6905,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   // feed with that category open — exactly like its twin in the category bar.
   const [catRequest, setCatRequest] = useState<CatRequest | null>(null);
   const resetHome = () => {
+    helpReturn.current = [];
     clearLobbyFilters();
     homeScroll.current = 0;
     setHomeKey((k) => k + 1);
@@ -7039,6 +7032,8 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   const [legalDoc, setLegalDoc] = useState<LegalDocKey | null>(null);
   // Bottom-nav navigation: Oripa (lobby), My Loot, Store and My Account tabs are live.
   const navigate = (s: Screen) => {
+    // Leaving through the tabs abandons the help trail rather than stacking it.
+    helpReturn.current = [];
     if (s === "oripa") { goHome(); return; }
     if (s === "mypage") { setScreen("mypage"); return; }
     if (s === "prizeHistory") { openMyLoot(); return; }
@@ -7066,7 +7061,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
     <NotifBadgeContext.Provider value={notifUnread}>
     <CoinHistoryNavContext.Provider value={onLanding ? () => {} : openCoinHistory}>
     <CatNavContext.Provider value={openCategory}>
-    <InquiryNavContext.Provider value={openInquiry}>
+    <HelpNavContext.Provider value={openHelp}>
     <LegalNavContext.Provider value={setLegalDoc}>
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
       <div className="relative min-h-0 flex-1">
@@ -7157,7 +7152,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onOpenShippingAddress={() => setScreen("shippingAddress")}
             onOpenProfile={() => setScreen("profile")}
             onOpenRefer={() => setScreen("refer")}
-            onOpenFaq={() => setScreen("faq")}
+            onOpenFaq={() => openHelp("faq")}
             onHome={resetHome}
             onLogout={logout}
             onOpenStore={openStore}
@@ -7265,16 +7260,16 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
           />
         )}
         {screen === "refer" && <ReferFriendPage lang={lang} coins={coins} onBack={() => setScreen("mypage")} onHome={resetHome} onOpenStore={openStore} />}
-        {screen === "faq" && <FaqSupportPage lang={lang} coins={coins} onBack={() => setScreen("mypage")} onHome={resetHome} onOpenStore={openStore} />}
+        {screen === "faq" && <FaqSupportPage lang={lang} coins={coins} onBack={() => leaveHelp("mypage")} onHome={resetHome} onOpenStore={openStore} />}
         {screen === "inquiry" && (
           <InquiryPage
             lang={lang}
             coins={coins}
-            onBack={leaveInquiry}
+            onBack={() => leaveHelp("faq")}
             onHome={resetHome}
             onOpenStore={openStore}
             onSent={() => {
-              leaveInquiry();
+              leaveHelp("faq");
               setInquiryToast(true);
               if (inquiryTimer.current) clearTimeout(inquiryTimer.current);
               inquiryTimer.current = setTimeout(() => setInquiryToast(false), 2600);
@@ -7383,7 +7378,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
       {showNav && <BottomNav screen={screen} t={t} onNavigate={navigate} />}
     </div>
     </LegalNavContext.Provider>
-    </InquiryNavContext.Provider>
+    </HelpNavContext.Provider>
     </CatNavContext.Provider>
     </CoinHistoryNavContext.Provider>
     </NotifBadgeContext.Provider>
