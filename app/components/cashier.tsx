@@ -261,7 +261,7 @@ export function PurchaseFlow({
   const [expiry, setExpiry] = useState("");
   const [cvc, setCvc] = useState("");
   const [cardName, setCardName] = useState("");
-  const [country, setCountry] = useState("Japan");
+  const [country] = useState("Japan");
   const [authCode, setAuthCode] = useState("");
   const [showMyCards, setShowMyCards] = useState(false);
   const [deleteConfirmIdx, setDeleteConfirmIdx] = useState<number | null>(null);
@@ -291,7 +291,6 @@ export function PurchaseFlow({
         setBillingLastName(lastAddr.lastName);
         setBillingAddress1(lastAddr.address1);
         setBillingAddress2(lastAddr.address2);
-        setCountry(lastAddr.country);
         setBillingCity(lastAddr.city);
         setBillingState(lastAddr.state);
         setBillingZip(lastAddr.zip);
@@ -378,12 +377,6 @@ export function PurchaseFlow({
   const payDisabled = isNewCard && (!cardNumValid || !expiryValid || !billingComplete || !cardNameLatinOk);
   const statePlaceholder = isJapan ? (lang === "ja" ? "都道府県" : "Prefecture") : t.checkoutBillingStatePh;
   const zipPlaceholder = isJapan ? "NNN-NNNN" : t.checkoutBillingZipPh;
-  function handleBillingCountryChange(c: string) {
-    setCountry(c);
-    setBillingState("");
-    setBillingZip("");
-    setBillingEditMode(true);
-  }
   function handleBillingZipChange(v: string) {
     if (isJapan) {
       const digits = v.replace(/\D/g, "").slice(0, 7);
@@ -426,13 +419,7 @@ export function PurchaseFlow({
       </p>
       <input value={billingAddress2} onChange={(e) => setBillingAddress2(e.target.value)} placeholder={t.checkoutBillingAddress2Ph} className={inputCls} />
       <div className="grid grid-cols-2 gap-2">
-        <div className="relative">
-          <select value={country} onChange={(e) => handleBillingCountryChange(e.target.value)} className={selectCls}>
-            <option>Japan</option>
-            <option>United States</option>
-          </select>
-          {chevronSvg}
-        </div>
+        <div className={`${selectCls} cursor-default bg-[#eef0f3] text-[#5c626b]`} aria-readonly="true">{country}</div>
         <input value={billingCity} onChange={(e) => setBillingCity(e.target.value)} placeholder={t.checkoutBillingCityPh} className={inputCls} />
       </div>
       <div className="grid grid-cols-2 gap-2">
@@ -916,7 +903,10 @@ export function PurchaseFlow({
 
     const latinErrorCls = "mt-1 block text-[11px] text-[#D10005]";
     const latinInputCls = (invalid: boolean) =>
-      `${inputCls} bg-[#f5f6f8] ${invalid ? "border-[#D10005] focus:border-[#D10005]" : ""}`;
+      `${inputCls} bg-white ${invalid ? "border-[#D10005] focus:border-[#D10005]" : ""}`;
+    const addCardInputCls = `${inputCls} bg-white`;
+    const requiredMark = <span className="text-[#e60012]">*</span>;
+    const fieldLabel = "mb-1 text-[10px] font-bold uppercase tracking-wide text-[#5c626b]";
     const renderV1BillingFields = () => {
       const firstInvalid = hasNonLatinName(billingFirstName);
       const lastInvalid = hasNonLatinName(billingLastName);
@@ -927,46 +917,41 @@ export function PurchaseFlow({
       <div className="flex flex-col gap-2.5">
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutBillingFirstNamePh}</p>
+            <p className={fieldLabel}>{t.checkoutBillingFirstNameLabel}</p>
             <input value={billingFirstName} onChange={(e) => setBillingFirstName(e.target.value)} placeholder={t.checkoutBillingFirstNamePh} aria-invalid={firstInvalid} className={latinInputCls(firstInvalid)} />
             {firstInvalid && <span className={latinErrorCls}>{t.checkoutLatinNameError}</span>}
           </div>
           <div>
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutBillingLastNamePh}</p>
+            <p className={fieldLabel}>{t.checkoutBillingLastNameLabel}</p>
             <input value={billingLastName} onChange={(e) => setBillingLastName(e.target.value)} placeholder={t.checkoutBillingLastNamePh} aria-invalid={lastInvalid} className={latinInputCls(lastInvalid)} />
             {lastInvalid && <span className={latinErrorCls}>{t.checkoutLatinNameError}</span>}
           </div>
         </div>
         <div>
-          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutAddressLine1Label}</p>
+          <p className={fieldLabel}>{t.checkoutBillingAddress1Label}{requiredMark}</p>
           <input value={billingAddress1} onChange={(e) => setBillingAddress1(e.target.value)} placeholder={t.checkoutBillingAddress1StreetPh} aria-invalid={addr1Invalid} className={latinInputCls(addr1Invalid)} />
           {addr1Invalid && <span className={latinErrorCls}>{t.checkoutLatinAddressError}</span>}
         </div>
         <div>
-          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">
-            {t.checkoutAddressLine2Label} <span className="font-medium normal-case tracking-normal text-[#b0b6bf]">{t.checkoutOptional}</span>
-          </p>
+          <p className={fieldLabel}>{t.checkoutBillingAddress2Label}</p>
           <input value={billingAddress2} onChange={(e) => setBillingAddress2(e.target.value)} placeholder={t.checkoutBillingAddress2AptPh} aria-invalid={addr2Invalid} className={latinInputCls(addr2Invalid)} />
           {addr2Invalid && <span className={latinErrorCls}>{t.checkoutLatinAddressError}</span>}
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutCountryFieldLabel}</p>
+            <p className={fieldLabel}>{t.checkoutCountryFieldLabel}</p>
             <div className="relative">
-              <select value={country} onChange={(e) => handleBillingCountryChange(e.target.value)} className={`${selectCls} bg-[#f5f6f8]`}>
-                <option>Japan</option>
-                <option>United States</option>
-              </select>
+              <div className={`${selectCls} pointer-events-none bg-white pr-8`} aria-readonly="true">{country}</div>
               {chevronSvg}
             </div>
           </div>
           <div>
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutBillingStateRegionPh}</p>
+            <p className={fieldLabel}>{t.checkoutStateLabel}</p>
             <div className="relative">
               <select
                 value={billingState}
                 onChange={(e) => setBillingState(e.target.value)}
-                className={`${selectCls} bg-[#f5f6f8]`}
+                className={`${selectCls} bg-white`}
                 style={{ color: billingState ? "#1d2129" : "#b0b6bf" }}
               >
                 <option value="">{statePlaceholder}</option>
@@ -981,13 +966,13 @@ export function PurchaseFlow({
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutCityLabel}</p>
+            <p className={fieldLabel}>{t.checkoutBillingCityLabel}</p>
             <input value={billingCity} onChange={(e) => setBillingCity(e.target.value)} placeholder={t.checkoutBillingCityPh.replace("*", "")} aria-invalid={cityInvalid} className={latinInputCls(cityInvalid)} />
             {cityInvalid && <span className={latinErrorCls}>{t.checkoutLatinNameError}</span>}
           </div>
           <div>
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutZipPostalLabel}</p>
-            <input value={billingZip} onChange={(e) => handleBillingZipChange(e.target.value)} placeholder={zipPlaceholder} className={`${inputCls} bg-[#f5f6f8]`} />
+            <p className={fieldLabel}>{t.checkoutBillingZipLabel}</p>
+            <input value={billingZip} onChange={(e) => handleBillingZipChange(e.target.value)} placeholder={zipPlaceholder} className={addCardInputCls} />
           </div>
         </div>
       </div>
@@ -1108,86 +1093,66 @@ export function PurchaseFlow({
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-28 pt-4" style={{ background: "#f5f6f8" }}>
-            <div className="mb-3 rounded-2xl border border-[#e2e5ea] bg-white p-4">
-              <div className="mb-3 flex items-center gap-2">
-                <svg width="18" height="14" viewBox="0 0 36 24" fill="none"><rect width="36" height="24" rx="3" fill={v1SelectGreen} /><rect x="2" y="8" width="32" height="4" fill="white" opacity="0.85" /><rect x="2" y="16" width="8" height="4" rx="1" fill="white" opacity="0.85" /></svg>
-                <p className="text-[15px] font-bold text-[#1d2129]">{t.checkoutCardInfo}</p>
-              </div>
-              <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutCardNumberLabel}</p>
-              <div className="relative mb-3">
-                <input
-                  value={cardNum}
-                  onChange={(e) => handleCardNumChange(e.target.value)}
-                  placeholder="1234 5678 9012 3456"
-                  inputMode="numeric"
-                  autoComplete="cc-number"
-                  maxLength={19}
-                  className={`${inputCls} bg-[#f5f6f8] pr-10 ${cardNum && !cardNumValid ? "text-red-500" : ""}`}
-                />
-                <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" width="22" height="16" viewBox="0 0 36 24" fill="none"><rect width="36" height="24" rx="3" fill="#c9ced6" /><rect x="2" y="8" width="32" height="4" fill="#8a9099" /><rect x="2" y="16" width="8" height="4" rx="1" fill="#8a9099" /></svg>
-              </div>
-              <div className="mb-3 grid grid-cols-2 gap-2">
-                <div>
-                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutExpiryDateLabel}</p>
-                  <input
-                    value={expiry}
-                    onChange={(e) => handleExpiryChange(e.target.value)}
-                    placeholder="MM / YY"
-                    maxLength={5}
-                    className={`${inputCls} bg-[#f5f6f8] ${expiry && !expiryValid ? "text-red-500" : ""}`}
-                  />
-                </div>
-                <div>
-                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutCvvCvcLabel}</p>
-                  <input
-                    value={cvc}
-                    onChange={(e) => setCvc(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                    placeholder="***"
-                    className={`${inputCls} bg-[#f5f6f8]`}
-                  />
-                </div>
-              </div>
-              <div>
-                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutCardNameLabel}</p>
-                <input
-                  value={cardName}
-                  onChange={(e) => handleCardNameChange(e.target.value)}
-                  placeholder={t.checkoutCardNameAsAppearsPh}
-                  maxLength={30}
-                  aria-invalid={hasNonLatinName(cardName)}
-                  className={latinInputCls(hasNonLatinName(cardName))}
-                />
-                {hasNonLatinName(cardName) && <span className={latinErrorCls}>{t.checkoutLatinNameError}</span>}
+            <div className="mb-3 flex items-center gap-2">
+              <p className="text-[12px] font-medium text-[#5c626b]">{t.checkoutAcceptedCards}</p>
+              <div className="flex flex-nowrap items-center gap-1">
+                {(["visa", "mastercard"] as const).map((b) => (
+                  <AcceptedCardBadge key={b} brand={b} />
+                ))}
               </div>
             </div>
 
-            <div className="rounded-2xl border border-[#e2e5ea] bg-white p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.2 7-11a7 7 0 10-14 0c0 5.8 7 11 7 11z" stroke={v1SelectGreen} strokeWidth="2" /><circle cx="12" cy="10" r="2.5" stroke={v1SelectGreen} strokeWidth="2" /></svg>
-                  <p className="text-[15px] font-bold text-[#1d2129]">{t.checkoutBillingAddress}</p>
-                </div>
-                {billingComplete && (
-                  <button
-                    type="button"
-                    onClick={() => setBillingEditMode((v) => !v)}
-                    className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-black/5"
-                    aria-label="Edit billing address"
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke="#5c626b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke="#5c626b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  </button>
-                )}
+            <div className="mb-3 rounded-2xl border border-[#e2e5ea] bg-white p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <svg width="18" height="14" viewBox="0 0 36 24" fill="none"><rect width="36" height="24" rx="3" fill="#e60012" /><rect x="2" y="8" width="32" height="4" fill="white" opacity="0.9" /><rect x="2" y="16" width="8" height="4" rx="1" fill="white" opacity="0.9" /></svg>
+                <p className="text-[15px] font-bold text-[#1d2129]">{t.checkoutCardInfo}</p>
               </div>
-              {billingComplete && !billingEditMode ? (
-                <div className="space-y-0.5">
-                  <p className="text-[13px] text-[#1d2129]">{billingFirstName} {billingLastName}</p>
-                  <p className="text-[13px] text-[#1d2129]">{billingAddress1}{billingAddress2 ? `, ${billingAddress2}` : ""}</p>
-                  <p className="text-[13px] text-[#1d2129]">{billingCity}, {billingState} {billingZip}</p>
-                  <p className="text-[13px] text-[#1d2129]">{country}</p>
-                </div>
-              ) : (
-                renderV1BillingFields()
-              )}
+              <div className="relative mb-2.5">
+                <input
+                  value={cardNum}
+                  onChange={(e) => handleCardNumChange(e.target.value)}
+                  placeholder={t.checkoutCardNumberInputPh}
+                  inputMode="numeric"
+                  autoComplete="cc-number"
+                  maxLength={19}
+                  className={`${addCardInputCls} pr-10 ${cardNum && !cardNumValid ? "text-red-500" : ""}`}
+                />
+                <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" width="22" height="16" viewBox="0 0 36 24" fill="none"><rect width="36" height="24" rx="3" fill="#c9ced6" /><rect x="2" y="8" width="32" height="4" fill="#8a9099" /><rect x="2" y="16" width="8" height="4" rx="1" fill="#8a9099" /></svg>
+              </div>
+              <div className="mb-2.5 grid grid-cols-2 gap-2">
+                <input
+                  value={expiry}
+                  onChange={(e) => handleExpiryChange(e.target.value)}
+                  placeholder="MM/YY"
+                  maxLength={5}
+                  className={`${addCardInputCls} ${expiry && !expiryValid ? "text-red-500" : ""}`}
+                />
+                <input
+                  value={cvc}
+                  onChange={(e) => setCvc(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  placeholder="CVV"
+                  className={addCardInputCls}
+                />
+              </div>
+              <input
+                value={cardName}
+                onChange={(e) => handleCardNameChange(e.target.value)}
+                placeholder={t.checkoutNameOnCardPh}
+                maxLength={30}
+                aria-invalid={hasNonLatinName(cardName)}
+                className={latinInputCls(hasNonLatinName(cardName))}
+              />
+              {hasNonLatinName(cardName)
+                ? <span className={latinErrorCls}>{t.checkoutLatinNameError}</span>
+                : <p className="mt-1.5 text-[11px] text-[#8a9099]">{t.checkoutNameOnCardHint}</p>}
+            </div>
+
+            <div className="rounded-2xl border border-[#e2e5ea] bg-white p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.2 7-11a7 7 0 10-14 0c0 5.8 7 11 7 11z" stroke="#e60012" strokeWidth="2" /><circle cx="12" cy="10" r="2.5" stroke="#e60012" strokeWidth="2" /></svg>
+                <p className="text-[15px] font-bold text-[#1d2129]">{t.checkoutBillingAddress}</p>
+              </div>
+              {renderV1BillingFields()}
             </div>
           </div>
 
