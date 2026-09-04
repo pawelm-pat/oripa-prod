@@ -6877,9 +6877,8 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
     }));
     return false;
   };
-  const exitKycToLobby = () => {
+  const dismissKyc = () => {
     setKyc((current) => ({ ...current, activeScreen: null }));
-    setScreen("oripa");
   };
   const [notifOnly, setNotifOnly] = useState<"you" | "notice" | undefined>(undefined);
   // Lobby scroll offset, tracked live and restored whenever the lobby remounts,
@@ -6983,23 +6982,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   // Store (coin purchase) can be opened from the header "+" button or the
   // bottom-nav Store tab; back returns to wherever it was opened from.
   const [storeReturn, setStoreReturn] = useState<Screen>("oripa");
-  // Bumped only on successful POI+POA completion so Store remounts without the
-  // in-progress checkout / payment overlay that triggered KYC.
-  const [storeResetToken, setStoreResetToken] = useState(0);
   const openStore = () => { setStoreReturn((p) => (screen === "store" ? p : screen)); setScreen("store"); };
-  const returnFromKyc = (_context: KycEntryContext, completed: boolean) => {
-    setKyc((current) => ({ ...current, activeScreen: null }));
-    // Resume in-place quick purchase sheet instead of bouncing to the store.
-    if (_context === "purchase" && quickPurchase) return;
-    // Happy path only: clear pending purchase resume and open a clean Store.
-    // Review / attention / cancel / exit keep using onExit and are unchanged.
-    if (completed) {
-      setStoreResetToken((token) => token + 1);
-      openStore();
-    } else {
-      setScreen("oripa");
-    }
-  };
   // Coin History opens when the currency balances in the header are tapped;
   // back returns to wherever it was opened from.
   const [coinHistoryReturn, setCoinHistoryReturn] = useState<Screen>("oripa");
@@ -7241,7 +7224,6 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
         )}
         {screen === "store" && (
           <StorePage
-            key={storeResetToken}
             lang={lang}
             coins={coins}
             setCoins={setCoins}
@@ -7366,7 +7348,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             {t.authLineLoginSuccess as string}
           </div>
         )}
-        <KycOverlay lang={lang} state={kyc} setState={setKyc} onExit={exitKycToLobby} onContextReturn={returnFromKyc} />
+        <KycOverlay lang={lang} state={kyc} setState={setKyc} onExit={dismissKyc} onContextReturn={dismissKyc} />
         {/* Covers the screen the user was on, but stops above the bottom nav:
             the tabs stay reachable while the error page is up. */}
         {errorPage && (
