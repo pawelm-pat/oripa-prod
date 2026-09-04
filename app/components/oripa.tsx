@@ -1527,10 +1527,15 @@ function DrawCtaRow({ variant, t, onRequest, compact = false }: { variant: DrawC
 // declared so the space is reserved on the very first paint — otherwise the
 // content below snaps down when the file lands — and the image fades in once
 // decoded, including when it comes straight from cache.
+// `shrink-0` is load-bearing: the banner sits in the draw popups' flex column,
+// which is capped at max-h-full. Without it flexbox steals height from the
+// banner whenever the body below grows (the quantity stepper changes the body
+// height), so the art visibly jitters between quantities instead of holding
+// its aspect ratio.
 function PackBanner({ src, alt, width, height, priority = false }: { src: string; alt: string; width: number; height: number; priority?: boolean }) {
   const [ready, setReady] = useState(false);
   return (
-    <span className="relative block w-full overflow-hidden bg-[#20222a]" style={{ aspectRatio: `${width} / ${height}` }}>
+    <span className="relative block w-full shrink-0 overflow-hidden bg-[#20222a]" style={{ aspectRatio: `${width} / ${height}` }}>
       {!ready && <span className="animate-pulse absolute inset-0 bg-gradient-to-br from-[#2b2e38] via-[#20222a] to-[#2b2e38]" />}
       <img
         ref={(el) => { if (el?.complete) setReady(true); }}
