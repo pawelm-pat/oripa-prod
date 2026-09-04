@@ -5665,7 +5665,7 @@ function myMenuIcon(key: string) {
   }
 }
 
-function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onOpenMyLoot, onOpenPurchaseHistory, onOpenAnnouncements, onOpenShippingAddress, onOpenProfile, onOpenRefer, onOpenFaq, onHome, onLogout, onOpenStore }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenMyLoot: () => void; onOpenPurchaseHistory: () => void; onOpenAnnouncements: () => void; onOpenShippingAddress: () => void; onOpenProfile: () => void; onOpenRefer: () => void; onOpenFaq: () => void; onHome: () => void; onLogout: () => void; onOpenStore?: () => void }) {
+function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onOpenMyLoot, onOpenPurchaseHistory, onOpenAnnouncements, onOpenProfile, onOpenRefer, onOpenFaq, onHome, onLogout, onOpenStore }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenMyLoot: () => void; onOpenPurchaseHistory: () => void; onOpenAnnouncements: () => void; onOpenProfile: () => void; onOpenRefer: () => void; onOpenFaq: () => void; onHome: () => void; onLogout: () => void; onOpenStore?: () => void }) {
   const t = STR[lang];
   const openLegal = useContext(LegalNavContext);
   const openCoinHistory = useContext(CoinHistoryNavContext);
@@ -5688,7 +5688,6 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
     { key: "invite", label: t.mmInvite, onClick: onOpenRefer },
     { key: "faq", label: t.mmFaqSupport, onClick: onOpenFaq },
     { key: "notices", label: t.mmNotices, onClick: onOpenAnnouncements },
-    { key: "shippingAddress", label: t.mmShippingAddress, onClick: onOpenShippingAddress },
   ];
 
   const linkRow = (label: string, onClick?: () => void) => (
@@ -7139,7 +7138,6 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onOpenMyLoot={openMyLoot}
             onOpenPurchaseHistory={() => setScreen("purchaseHistory")}
             onOpenAnnouncements={openAnnouncements}
-            onOpenShippingAddress={() => setScreen("shippingAddress")}
             onOpenProfile={() => setScreen("profile")}
             onOpenRefer={() => setScreen("refer")}
             onOpenFaq={() => openHelp("faq")}
