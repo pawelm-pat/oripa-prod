@@ -7002,6 +7002,16 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   // Dropping the held lobby request keeps its DrawFlow from replaying the draw
   // when the lobby is next mounted.
   const openDraw = (item: OripaItem) => { setLobbyDraw(null); setDrawItem(item); setScreen("drawDetail"); };
+  // A held lobby request belongs to the lobby tap that made it. DrawFlow only
+  // renders on the lobby, so it unmounts when another screen takes over and
+  // remounts on return — with its handled-token state reset, it would re-apply
+  // the request and reopen the draw popup. Dropping the request on the way out
+  // means coming back (from My Loot, say) shows the lobby as the user left it.
+  const [lobbyDrawScreen, setLobbyDrawScreen] = useState(screen);
+  if (lobbyDrawScreen !== screen) {
+    setLobbyDrawScreen(screen);
+    if (screen !== "oripa" && lobbyDraw) setLobbyDraw(null);
+  }
   // The visitor's read-only view of the same pack page.
   const openGuestDraw = (item: OripaItem) => { setDrawItem(item); setScreen("guestDraw"); };
   // Any draw a visitor asks for: hold the pack, then send them to authenticate.
