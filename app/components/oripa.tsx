@@ -4179,10 +4179,6 @@ function AddressEditIcon() {
   return <img src="/icon-address-edit.png" alt="" aria-hidden="true" draggable={false} className="h-6 w-6 shrink-0 object-contain opacity-50" />;
 }
 
-function AddressAddIcon() {
-  return <img src="/icon-address-add.png" alt="" aria-hidden="true" draggable={false} className="h-5 w-5 shrink-0 object-contain opacity-60" />;
-}
-
 /* ── Shipping request flow (bottom-sheet) ────────────────────────────── */
 function ShippingFlow({
   prizes,
@@ -4310,15 +4306,6 @@ function ShippingFlow({
     setStep("addNew");
   }
 
-  function openAddNew() {
-    setEditId(null);
-    setNewForm({ ...EMPTY_SHIPPING_FORM });
-    setPostalTouched(false); setPhoneTouched(false); setZipTouched(false); setStreetNumTouched(false);
-    if (searchTimer.current) clearTimeout(searchTimer.current);
-    setSearching(false); setCandidates([]);
-    setStep("addNew");
-  }
-
   function handleSaveNewAddress() {
     if (editId) {
       onShippingAddressesChange(prev => prev.map(a => (a.id === editId ? { ...a, ...newForm } : a)));
@@ -4378,9 +4365,6 @@ function ShippingFlow({
                       className="relative flex w-full items-start gap-2.5 rounded-xl border-2 p-3 text-left"
                       style={{ borderColor: sel ? "#D10005" : "#e5e8ec", background: sel ? "#FFF4F4" : "#fff" }}
                     >
-                      <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2" style={{ borderColor: sel ? "#D10005" : "#c9ced6" }}>
-                        {sel && <span className="h-2 w-2 rounded-full bg-[#D10005]" />}
-                      </span>
                       <span className="pr-7 text-[12.5px] leading-relaxed">
                         <b className="text-[#1d2129]">{addrFlag(addr)} {addrName(addr)}</b>
                         {addr.isDefault && <span className="ml-1.5 inline-flex h-4 items-center rounded-[3px] bg-[#00A63D] px-2 align-middle text-[9px] font-bold uppercase text-white">{t.shippingDefaultLabel}</span>}
@@ -4400,10 +4384,6 @@ function ShippingFlow({
                 })}
               </div>
             )}
-            <button onClick={openAddNew} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-black/20 py-2.5 text-[13px] font-bold text-[#5c626b]">
-              <AddressAddIcon />
-              {t.addNewAddress}
-            </button>
             <div className="relative mt-3">
               {chosen && shipBadge}
               <button
