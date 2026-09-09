@@ -4555,7 +4555,10 @@ function ShippingFlow({
               className="mt-1 w-full rounded-xl py-3 text-[14px] font-bold text-white disabled:opacity-40"
               style={{ background: "linear-gradient(180deg,#ff2233,#D10005)" }}
             >
-              {t.shippingRegister}
+              {/* Editing the saved address carries on with the shipping request,
+                  so the CTA reads Continue; only a first-time address is a
+                  Register. */}
+              {editId ? t.continueBtn : t.shippingRegister}
             </button>
           </>
         )}
