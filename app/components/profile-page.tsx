@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Lang, ShippingCountry } from "../lib/types";
 import { STR, type Dict } from "../lib/i18n";
+import { GoogleAuthIcon, LineAuthIcon } from "./auth";
+import { CalendarDateField } from "./calendar-date-field";
 import { PREFECTURES_EN, PREFECTURES_JA, US_STATES } from "../data/prizes";
 import type { KycState } from "./kyc";
 
@@ -10,193 +12,22 @@ import type { KycState } from "./kyc";
    Ported from the POC ProfilePage. Both My Account CTAs open this screen.
    Accordion sections: Account ID, Personal Information, Social Connect,
    Change Password, Communication Preferences, plus Account Verifications
-   (ID / Payment Method / Document Upload) with Jumio + KYC + phone OTP. */
+   (ID / Document Upload) with KYC + phone OTP. */
 
 export type ProfilePageChrome = {
   header: ReactNode;
 };
 
-function CrownEmblem({ size = 96 }: { size?: number }) {
+export const PROFILE_AVATAR_KEY = "profileAvatar";
+
+export function ProfileAvatar({ src, size }: { src?: string | null; size: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" className="shrink-0" aria-hidden>
-      <circle cx="50" cy="50" r="50" fill="#c8061a" />
-      <circle cx="50" cy="50" r="44" fill="none" stroke="#fff" strokeOpacity="0.25" strokeWidth="1.5" />
-      {/* wings */}
-      <path d="M50 40c-9-7-20-9-29-6 4 6 12 11 22 12M50 40c9-7 20-9 29-6-4 6-12 11-22 12" fill="#fff" opacity="0.92" />
-      {/* crown */}
-      <path d="M38 30l4 6 8-9 8 9 4-6 1.5 9h-27z" fill="#fff" />
-      {/* O */}
-      <text x="50" y="72" textAnchor="middle" fontSize="40" fontWeight="900" fontStyle="italic" fill="#fff">O</text>
-    </svg>
-  );
-}
-
-/* ── DobPickerModal ────────────────────────────────────────────────────── */
-function DobPickerModal({ lang, onConfirm, onClose }: {
-  lang: Lang; onConfirm: (isoDate: string) => void; onClose: () => void;
-}) {
-  const t = STR[lang];
-  const YEARS_PER_PAGE = 12;
-  const MAX_YEAR = 2010;
-  const MIN_YEAR = 1931;
-
-  const [step, setStep] = useState<"year" | "month" | "day">("year");
-  const [selYear, setSelYear] = useState<number | null>(null);
-  const [selMonth, setSelMonth] = useState<number | null>(null);
-  const [selDay, setSelDay] = useState<number | null>(null);
-  const [yearPageStart, setYearPageStart] = useState(1980);
-
-  const MONTH_SHORT = lang === "ja"
-    ? ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"]
-    : ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const MONTH_FULL = lang === "ja"
-    ? MONTH_SHORT
-    : ["January","February","March","April","May","June","July","August","September","October","November","December"];
-
-  const displayText = () => {
-    if (!selYear) return "";
-    if (!selMonth) return String(selYear);
-    if (!selDay) return lang === "ja" ? `${selYear}年${selMonth}月` : `${selYear}, ${MONTH_FULL[selMonth - 1]}`;
-    return lang === "ja"
-      ? `${selYear}年${selMonth}月${selDay}日`
-      : `${MONTH_SHORT[selMonth - 1]} ${selDay}, ${selYear}`;
-  };
-
-  const daysInMonth = selYear && selMonth ? new Date(selYear, selMonth, 0).getDate() : 31;
-
-  const headerLabel = step === "year"
-    ? `${yearPageStart}–${Math.min(yearPageStart + YEARS_PER_PAGE - 1, MAX_YEAR)}`
-    : step === "month"
-    ? String(selYear)
-    : `${MONTH_SHORT[(selMonth ?? 1) - 1]} ${selYear}`;
-
-  const onBack = () => {
-    if (step === "year") {
-      setYearPageStart(p => Math.max(MIN_YEAR, p - YEARS_PER_PAGE));
-    } else if (step === "month") {
-      setStep("year");
-      setSelMonth(null);
-      setSelDay(null);
-    } else {
-      setStep("month");
-      setSelDay(null);
-    }
-  };
-
-  const onForward = () => {
-    if (step === "year") {
-      if (yearPageStart + YEARS_PER_PAGE <= MAX_YEAR) setYearPageStart(p => p + YEARS_PER_PAGE);
-    } else if (step === "month" && selYear) {
-      if (selYear < MAX_YEAR) { setSelYear(selYear + 1); setSelMonth(null); setSelDay(null); }
-    } else if (step === "day" && selYear && selMonth) {
-      const nextMonth = selMonth === 12 ? 1 : selMonth + 1;
-      const nextYear = selMonth === 12 ? selYear + 1 : selYear;
-      if (nextYear <= MAX_YEAR) { setSelMonth(nextMonth); setSelYear(nextYear); setSelDay(null); }
-    }
-  };
-
-  const years = Array.from({ length: YEARS_PER_PAGE }, (_, i) => yearPageStart + i)
-    .filter(y => y <= MAX_YEAR);
-
-  const navBtn = "flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-[#f0f2f5] active:bg-[#e5e8ec]";
-  const gridBtn = "rounded-xl py-2.5 text-[14px] font-medium transition-colors";
-  const gridSel = "bg-[#1d2129] text-white";
-  const gridDef = "text-[#1d2129] hover:bg-[#f0f2f5]";
-
-  return (
-    <div className="absolute inset-0 z-50 flex items-end"
-         style={{ background: "rgba(0,0,0,0.45)" }}
-         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="w-full rounded-t-2xl bg-white shadow-2xl">
-        {/* Header bar */}
-        <div className="flex items-center justify-between border-b border-black/8 px-4 py-3">
-          <button onClick={onClose} className="text-[14px] text-[#5c626b]">{t.authDobPickerCancel}</button>
-          <span className="text-[15px] font-bold text-[#1d2129]">{t.authDobLabel}</span>
-          <div className="w-14" />
-        </div>
-
-        <div className="px-4 pt-4 pb-5">
-          {/* Progressive selection display */}
-          <div className="mb-3 flex items-center justify-between rounded-xl border border-[#e5e8ec] px-3 py-2.5">
-            <span className={`text-[14px] ${displayText() ? "text-[#1d2129]" : "text-[#bbbec4]"}`}>
-              {displayText() || (lang === "ja" ? "生年月日を選択" : "Select your date of birth")}
-            </span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a9099" strokeWidth="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
-            </svg>
-          </div>
-
-          {/* Calendar card */}
-          <div className="rounded-xl border border-[#e5e8ec] overflow-hidden">
-            {/* Navigation row */}
-            <div className="flex items-center justify-between border-b border-[#f0f2f5] px-3 py-2.5">
-              <button onClick={onBack} className={navBtn}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5c626b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M15 18l-6-6 6-6" />
-                </svg>
-              </button>
-              <span className="text-[15px] font-bold text-[#1d2129]">{headerLabel}</span>
-              <button onClick={onForward} className={navBtn}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5c626b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Grid area */}
-            <div className="px-3 py-3">
-              {step === "year" && (
-                <div className="grid grid-cols-3 gap-2">
-                  {years.map(y => (
-                    <button key={y}
-                            onClick={() => { setSelYear(y); setSelMonth(null); setSelDay(null); setStep("month"); }}
-                            className={`${gridBtn} ${selYear === y ? gridSel : gridDef}`}>
-                      {y}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {step === "month" && (
-                <div className="grid grid-cols-3 gap-2">
-                  {MONTH_SHORT.map((m, i) => (
-                    <button key={m}
-                            onClick={() => { setSelMonth(i + 1); setSelDay(null); setStep("day"); }}
-                            className={`${gridBtn} ${selMonth === i + 1 ? gridSel : gridDef}`}>
-                      {m}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {step === "day" && (
-                <>
-                  <div className="grid grid-cols-7 gap-1">
-                    {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(d => (
-                      <button key={d}
-                              onClick={() => setSelDay(d)}
-                              className={`flex aspect-square items-center justify-center rounded-full text-[13px] font-medium transition-colors
-                                ${selDay === d ? "bg-[#1d2129] text-white" : "text-[#1d2129] hover:bg-[#f0f2f5]"}`}>
-                        {d}
-                      </button>
-                    ))}
-                  </div>
-                  {selDay !== null && (
-                    <div className="mt-3 flex justify-end">
-                      <button
-                        onClick={() => onConfirm(`${selYear}-${String(selMonth).padStart(2, "0")}-${String(selDay).padStart(2, "0")}`)}
-                        className="rounded-xl bg-[#D10005] px-5 py-2 text-[14px] font-bold text-white">
-                        {t.authDobPickerDone}
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <img
+      src={src || "/oripa-emblem.png"}
+      alt=""
+      className="shrink-0 rounded-full object-cover"
+      style={{ width: size, height: size }}
+    />
   );
 }
 
@@ -538,215 +369,8 @@ function VeriffSuccessOverlay({ type, idDone, addrDone, t, onDismiss }: {
 void VeriffModalScreen;
 void VeriffSuccessOverlay;
 
-
-type JumioStrings = {
-  jumioStartTitle: string; jumioStartDesc: string; jumioStartBullets: string[];
-  jumioNext: string; jumioUploadCardTitle: string; jumioUploadCardDesc: string;
-  jumioCaptureImage: string; jumioUploadFile: string;
-  jumioPageUploaded: string; jumioProcessingTitle: string; jumioFinishing: string;
-};
-
-type JumioStep = "start" | "upload" | "scan" | "processing";
-
-function JumioLogo() {
-  return (
-    <svg width="72" height="22" viewBox="0 0 90 22">
-      <text x="0" y="16" fontSize="14" fontWeight="800" fill="#1d2129" fontFamily="system-ui,sans-serif">jumio</text>
-      <circle cx="82" cy="11" r="8" fill="#D10005" />
-      <path d="M78.5 11l2.5 2.5 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-    </svg>
-  );
-}
-
-function JumioPaymentModal({ t, onClose, onComplete }: {
-  t: JumioStrings; onClose: () => void; onComplete: () => void;
-}) {
-  const [step, setStep] = useState<JumioStep>("start");
-  const [frontUploaded, setFrontUploaded] = useState(false);
-
-  useEffect(() => {
-    if (step !== "processing") return;
-    const timer = setTimeout(() => { onComplete(); }, 2200);
-    return () => clearTimeout(timer);
-  }, [step, onComplete]);
-
-  if (step === "processing") {
-    return (
-      <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white">
-        <div className="flex gap-2 mb-6">
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="h-3 w-3 rounded-full"
-              style={{ background: "#22c55e", animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite` }}
-            />
-          ))}
-        </div>
-        <h2 className="text-[18px] font-bold text-[#1d2129] mb-1">{t.jumioProcessingTitle}</h2>
-        <p className="text-[13px] text-[#8a9099]">{t.jumioFinishing}</p>
-        <style>{`@keyframes bounce { 0%,80%,100%{transform:scale(0.8);opacity:0.5} 40%{transform:scale(1.2);opacity:1} }`}</style>
-      </div>
-    );
-  }
-
-  if (step === "scan") {
-    return (
-      <div className="absolute inset-0 z-50 flex flex-col bg-white">
-        <div className="flex items-center justify-between px-4 pt-5 pb-3 shrink-0">
-          <button onClick={() => setStep("upload")} className="flex h-8 w-8 items-center justify-center text-[#5c626b]">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          </button>
-          <JumioLogo />
-          <div className="w-8" />
-        </div>
-
-        <div className="px-5 pt-2 pb-3 shrink-0 border-b border-[#e5e8ec]">
-          <h2 className="text-[16px] font-bold text-[#1d2129]">{t.jumioUploadCardTitle}</h2>
-          <p className="text-[11px] text-[#5c626b] mt-0.5 leading-relaxed">{t.jumioUploadCardDesc}</p>
-        </div>
-
-        <div className="flex flex-1 flex-col items-center justify-center px-5 gap-4">
-          {/* Front card slot */}
-          <button
-            onClick={() => setFrontUploaded(true)}
-            className="w-full h-36 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-colors"
-            style={{ borderColor: frontUploaded ? "#22c55e" : "#e5e8ec", background: frontUploaded ? "#f0fdf4" : "#f9fafb" }}
-          >
-            {frontUploaded ? (
-              <>
-                <svg width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13" fill="#22c55e" /><path d="M8 14l4 4 8-8" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
-                <span className="text-[12px] font-semibold text-[#22c55e]">Front uploaded</span>
-              </>
-            ) : (
-              <>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8a9099" strokeWidth="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
-                <span className="text-[12px] text-[#8a9099]">Front of card</span>
-              </>
-            )}
-          </button>
-          {/* Back card slot */}
-          <div className="w-full h-36 rounded-xl border-2 border-dashed border-[#e5e8ec] bg-[#f9fafb] flex flex-col items-center justify-center gap-2">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8a9099" strokeWidth="1.5"><polyline points="16 16 12 12 8 16" /><line x1="12" y1="12" x2="12" y2="21" /><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" /></svg>
-            <span className="text-[12px] text-[#8a9099]">Back of card</span>
-          </div>
-
-          {frontUploaded && (
-            <p className="text-[12px] font-semibold text-[#22c55e]">{t.jumioPageUploaded}</p>
-          )}
-        </div>
-
-        <div className="shrink-0 px-5 pb-8 pt-3">
-          <button
-            onClick={() => { if (frontUploaded) setStep("processing"); }}
-            className="w-full rounded-xl py-4 text-[15px] font-bold text-white transition-opacity"
-            style={{ background: "#22c55e", opacity: frontUploaded ? 1 : 0.45 }}
-          >
-            {t.jumioNext}
-          </button>
-          <p className="mt-2 text-center text-[10px] text-[#8a9099]">Powered by <span className="font-bold">Jumio</span></p>
-        </div>
-      </div>
-    );
-  }
-
-  if (step === "upload") {
-    return (
-      <div className="absolute inset-0 z-50 flex flex-col bg-white">
-        <div className="flex items-center justify-between px-4 pt-5 pb-3 shrink-0">
-          <button onClick={() => setStep("start")} className="flex h-8 w-8 items-center justify-center text-[#5c626b]">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          </button>
-          <JumioLogo />
-          <div className="w-8" />
-        </div>
-
-        <div className="px-5 pt-2 pb-3 shrink-0 border-b border-[#e5e8ec]">
-          <h2 className="text-[16px] font-bold text-[#1d2129]">{t.jumioUploadCardTitle}</h2>
-          <p className="text-[11px] text-[#5c626b] mt-0.5 leading-relaxed">{t.jumioUploadCardDesc}</p>
-        </div>
-
-        <div className="flex flex-1 flex-col justify-center px-5 gap-3">
-          <button
-            onClick={() => setStep("scan")}
-            className="flex items-center gap-4 rounded-xl border border-[#e5e8ec] bg-white px-4 py-4 text-left shadow-sm active:bg-[#f9fafb]"
-          >
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#f4f5f7]">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1d2129" strokeWidth="1.7"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
-            </div>
-            <span className="text-[14px] font-semibold text-[#1d2129]">{t.jumioCaptureImage}</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a9099" strokeWidth="2" className="ml-auto"><path d="M9 18l6-6-6-6" /></svg>
-          </button>
-          <button
-            onClick={() => setStep("scan")}
-            className="flex items-center gap-4 rounded-xl border border-[#e5e8ec] bg-white px-4 py-4 text-left shadow-sm active:bg-[#f9fafb]"
-          >
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#f4f5f7]">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1d2129" strokeWidth="1.7"><polyline points="16 16 12 12 8 16" /><line x1="12" y1="12" x2="12" y2="21" /><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" /></svg>
-            </div>
-            <span className="text-[14px] font-semibold text-[#1d2129]">{t.jumioUploadFile}</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a9099" strokeWidth="2" className="ml-auto"><path d="M9 18l6-6-6-6" /></svg>
-          </button>
-        </div>
-
-        <div className="shrink-0 px-5 pb-8 pt-3">
-          <p className="text-center text-[10px] text-[#8a9099]">Powered by <span className="font-bold">Jumio</span></p>
-        </div>
-      </div>
-    );
-  }
-
-  /* step === "start" */
-  return (
-    <div className="absolute inset-0 z-50 flex flex-col bg-white">
-      <div className="flex items-center justify-between px-4 pt-5 pb-3 shrink-0">
-        <div className="w-8" />
-        <JumioLogo />
-        <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full text-[#5c626b]">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /></svg>
-        </button>
-      </div>
-
-      <div className="flex flex-1 flex-col px-6 pt-3 overflow-y-auto">
-        {/* Globe icon */}
-        <div className="flex justify-center mb-5">
-          <svg width="80" height="80" viewBox="0 0 80 80">
-            <circle cx="40" cy="40" r="36" fill="#e8f4fd" stroke="#bee3f8" strokeWidth="1.5" />
-            <ellipse cx="40" cy="40" rx="15" ry="36" fill="none" stroke="#90cdf4" strokeWidth="1.5" />
-            <line x1="4" y1="40" x2="76" y2="40" stroke="#90cdf4" strokeWidth="1.5" />
-            <path d="M9 24 Q40 32 71 24" fill="none" stroke="#90cdf4" strokeWidth="1.5" />
-            <path d="M9 56 Q40 48 71 56" fill="none" stroke="#90cdf4" strokeWidth="1.5" />
-          </svg>
-        </div>
-        <h2 className="text-[20px] font-bold text-[#1d2129] mb-2">{t.jumioStartTitle}</h2>
-        <p className="text-[13px] leading-relaxed text-[#5c626b] mb-5">{t.jumioStartDesc}</p>
-        <ul className="space-y-3">
-          {(t.jumioStartBullets as string[]).map((bullet, i) => (
-            <li key={i} className="flex items-start gap-3">
-              <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#22c55e]">
-                <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              </div>
-              <span className="text-[13px] text-[#1d2129]">{bullet}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="shrink-0 px-5 pb-8 pt-4">
-        <button
-          onClick={() => setStep("upload")}
-          className="w-full rounded-xl py-4 text-[15px] font-bold text-white"
-          style={{ background: "#22c55e" }}
-        >
-          {t.jumioNext}
-        </button>
-        <p className="mt-2 text-center text-[10px] text-[#8a9099]">Powered by <span className="font-bold">Jumio</span></p>
-      </div>
-    </div>
-  );
-}
-
 /* ── ProfilePage helpers (defined outside to prevent focus loss on re-render) ── */
-type AccordionKey = "accountId" | "personalInfo" | "socialLinks" | "accountVerifications" | "idVerification" | "paymentMethod" | "documentUpload" | "changePassword" | "notifications";
+type AccordionKey = "accountId" | "personalInfo" | "socialLinks" | "accountVerifications" | "idVerification" | "documentUpload" | "changePassword" | "notifications";
 
 function GreenCheck() {
   return (
@@ -814,7 +438,6 @@ function Field({ label, value, onChange, onBlur, half = false, required = false,
 
 
 function PrefectureSelect({ value, onChange, label, lang }: { value: string; onChange: (val: string) => void; label: string; lang: Lang }) {
-  const filled = value.trim().length > 0;
   const names = lang === "ja" ? PREFECTURES_JA : PREFECTURES_EN;
   const placeholder = lang === "ja" ? "都道府県" : "Prefecture";
   return (
@@ -829,8 +452,8 @@ function PrefectureSelect({ value, onChange, label, lang }: { value: string; onC
           <option value="">{placeholder}</option>
           {PREFECTURES_JA.map((ja, i) => <option key={ja} value={ja}>{names[i]}</option>)}
         </select>
-        <span className="pointer-events-none absolute right-2 text-[#8a9099]">
-          {filled ? <GreenCheck /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>}
+        <span className="pointer-events-none absolute right-2 text-[#D10005]">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
         </span>
       </div>
     </div>
@@ -1010,7 +633,7 @@ function PhoneVerifyModal({ lang, phone, onClose, onVerified }: {
 function USStateSelect({ value, onChange, label }: { value: string; onChange: (val: string) => void; label: string }) {
   const filled = value.trim().length > 0;
   return (
-    <div className="w-full">
+    <div className="min-w-0 flex-1">
       <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{label}<span className="ml-0.5 text-[#D10005]">*</span></label>
       <div className="relative flex items-center">
         <select
@@ -1036,6 +659,10 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
 
   // Form state
   const [displayNameSaved, setDisplayNameSaved] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(() => {
+    try { return sessionStorage.getItem(PROFILE_AVATAR_KEY); } catch { return null; }
+  });
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   type ProfileForm = {
     lastName: string; firstName: string; lastNameKana: string; firstNameKana: string;
     email: string; dob: string; phone: string;
@@ -1097,15 +724,11 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
   const postalError = postalTouched && form.postalCode.length > 0 && !postalValid ? "NNN-NNNN" : "";
   const zipError = zipTouched && form.zipCode.length > 0 && !zipValid ? "5 digits required" : "";
   const addressValid = form.country === "japan"
-    ? postalValid && !!form.prefecture && form.city.trim().length > 0
-    : form.cityStreetNumber.trim().length > 0 && !!form.state && zipValid;
-  const canSave = !!(emailValid && form.dob && addressValid && (form.phone.length === 0 || phoneValid));
+    ? postalValid && !!form.prefecture && form.city.trim().length > 0 && form.cityStreetNumber.trim().length > 0
+    : form.cityStreetNumber.trim().length > 0 && form.city.trim().length > 0 && !!form.state && zipValid;
+  const namesValid = !!(form.lastName.trim() && form.firstName.trim() && form.lastNameKana.trim() && form.firstNameKana.trim());
+  const canSave = !!(namesValid && emailValid && form.dob && addressValid && (form.phone.length === 0 || phoneValid));
   const countryLabel = form.country === "usa" ? t.shippingUSA : t.shippingJapan;
-  const [showDobPicker, setShowDobPicker] = useState(false);
-  const [paymentMethodType, setPaymentMethodType] = useState("");
-  const [paymentCardNumber, setPaymentCardNumber] = useState("");
-  const [showJumioModal, setShowJumioModal] = useState(false);
-  const [verifiedCards, setVerifiedCards] = useState<Record<string, boolean>>({});
   const [passwords, setPasswords] = useState({ old: "", newPw: "", repeat: "" });
   const [pwChanged, setPwChanged] = useState(false);
   const [prefs, setPrefs] = useState({ email: true, push: false, sms: false });
@@ -1150,7 +773,7 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
   }
 
   function chooseProfileCandidate(c: { prefecture: string; city: string; streetNumber: string }) {
-    persistForm((f) => ({ ...f, prefecture: c.prefecture, city: c.city, streetNumber: c.streetNumber }));
+    persistForm((f) => ({ ...f, prefecture: c.prefecture, city: c.city, cityStreetNumber: c.streetNumber }));
     if (searchTimer.current) clearTimeout(searchTimer.current);
     setCandidates([]);
     setSearching(false);
@@ -1174,24 +797,14 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
     }
   }
 
-  const formatDob = (iso: string) => {
-    if (!iso) return "";
-    const [y, m, d] = iso.split("-");
-    if (lang === "ja") return `${y}年${Number(m)}月${Number(d)}日`;
-    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    return `${months[Number(m) - 1]} ${Number(d)}, ${y}`;
-  };
-
   function handleInfoSave() {
     if (!canSave) return;
     setInfoSaved(true);
   }
 
   const socialProviders = [
-    { name: "LINE", icon: <svg width="22" height="22" viewBox="0 0 40 40"><rect width="40" height="40" rx="8" fill="#06C755" /><text x="20" y="27" textAnchor="middle" fontSize="20" fill="white" fontWeight="bold">L</text></svg> },
-    { name: "Google", icon: <svg width="22" height="22" viewBox="0 0 40 40"><rect width="40" height="40" rx="8" fill="white" stroke="#e5e8ec" strokeWidth="1.5" /><text x="20" y="27" textAnchor="middle" fontSize="18" fontWeight="bold" fill="#4285F4">G</text></svg> },
-    { name: "Facebook", icon: <svg width="22" height="22" viewBox="0 0 40 40"><rect width="40" height="40" rx="8" fill="#1877F2" /><text x="20" y="28" textAnchor="middle" fontSize="22" fontWeight="bold" fill="white">f</text></svg> },
-    { name: "Apple", icon: <svg width="22" height="22" viewBox="0 0 40 40"><rect width="40" height="40" rx="8" fill="#1d2129" /><text x="20" y="27" textAnchor="middle" fontSize="18" fill="white"></text></svg> },
+    { name: "LINE", icon: <LineAuthIcon size={22} /> },
+    { name: "Google", icon: <GoogleAuthIcon size={22} /> },
   ];
 
   type SectionDef = { key: AccordionKey; label: string; required?: boolean; badge?: { label: string; bg: string }; content: ReactNode };
@@ -1202,9 +815,40 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
       label: t.profileAccountId,
       content: (
         <div className="px-4 pb-4">
-          <p className="mb-3 text-[13px] font-semibold text-[#8a9099]">xxxxxx</p>
-          <div className="flex justify-center mb-4">
-            <CrownEmblem size={72} />
+          <div className="mb-5 flex justify-center">
+            <div className="relative h-20 w-20">
+              <ProfileAvatar src={avatarUrl} size={80} />
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/bmp,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (!file || !file.type.startsWith("image/")) return;
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    const next = typeof reader.result === "string" ? reader.result : "";
+                    if (!next) return;
+                    setAvatarUrl(next);
+                    try { sessionStorage.setItem(PROFILE_AVATAR_KEY, next); } catch {}
+                  };
+                  reader.readAsDataURL(file);
+                }}
+              />
+              <button
+                type="button"
+                aria-label={t.profileEditPhoto}
+                onClick={() => avatarInputRef.current?.click()}
+                className="absolute -right-7 bottom-1 flex h-6 w-6 items-center justify-center text-[#D10005]"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 3H6a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3v-6" />
+                  <path d="M18.1 2.9a2.1 2.1 0 0 1 3 3L11.5 15.5 8 16.5l1-3.5z" />
+                </svg>
+              </button>
+            </div>
           </div>
           <div className="w-full">
             <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{t.profileDisplayName}<span className="ml-0.5 text-[#D10005]">*</span></label>
@@ -1218,13 +862,15 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
               {displayName.trim() && <span className="absolute right-2"><GreenCheck /></span>}
             </div>
           </div>
-          <button
-            onClick={() => setDisplayNameSaved(true)}
-            className="mt-3 w-full rounded-xl py-3 text-[14px] font-bold text-white transition"
-            style={{ background: displayNameSaved ? "#22c55e" : "#D10005" }}
-          >
-            {displayNameSaved ? t.profileSaved : t.profileSave}
-          </button>
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={() => setDisplayNameSaved(true)}
+              className="rounded-lg px-6 py-2.5 text-[13px] font-bold text-white transition"
+              style={{ background: displayNameSaved ? "#22c55e" : "#D10005" }}
+            >
+              {displayNameSaved ? t.profileSaved : t.profileSave}
+            </button>
+          </div>
         </div>
       ),
     },
@@ -1233,53 +879,60 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
       label: t.profilePersonalInfo,
       content: (
         <div className="px-4 pb-4">
-          <div>
+          <div className="flex gap-2">
+            <Field label={t.profileLastName} value={form.lastName} onChange={(v) => setField("lastName", v)} half required placeholder={t.profilePlaceholder} />
+            <Field label={t.profileFirstName} value={form.firstName} onChange={(v) => setField("firstName", v)} half required placeholder={t.profilePlaceholder} />
+          </div>
+          <div className="mt-2 flex gap-2">
+            <Field label={t.profileLastNameKana} value={form.lastNameKana} onChange={(v) => setField("lastNameKana", v)} half required placeholder={t.profilePlaceholder} />
+            <Field label={t.profileFirstNameKana} value={form.firstNameKana} onChange={(v) => setField("firstNameKana", v)} half required placeholder={t.profilePlaceholder} />
+          </div>
+          <div className="mt-2">
             <Field label={t.profileEmail} value={form.email} onChange={() => {}} required type="email" placeholder={t.profilePlaceholder} valid={form.email.length > 0 && emailValid} readOnly />
           </div>
           <div className="mt-2">
-            <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{t.profileDob}</label>
-            <button
-              type="button"
-              onClick={() => setShowDobPicker(true)}
-              className="relative w-full rounded-lg border py-2.5 text-left text-[13px] outline-none transition"
-              style={{ paddingLeft: "36px", paddingRight: form.dob ? "32px" : "10px", borderColor: form.dob ? "#d1d5db" : "#e5e8ec", background: "white" }}
-            >
-              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#8a9099]">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
-              </span>
-              <span className={form.dob ? "text-[#1d2129]" : "text-[#bbbec4]"}>{form.dob ? formatDob(form.dob) : t.profilePlaceholder}</span>
-              {form.dob && (
-                <span className="absolute right-2 top-1/2 -translate-y-1/2"><GreenCheck /></span>
-              )}
-            </button>
+            <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{t.profilePhone}</label>
+            <div className={`flex overflow-hidden rounded-lg border bg-white ${phoneError ? "border-[#D10005]" : "border-[#e5e8ec]"}`}>
+              <span className="shrink-0 px-3 py-2.5 text-[13px] font-semibold text-[#1d2129]">{form.country === "usa" ? "+1" : "+81"}</span>
+              <div className="w-px shrink-0 self-stretch bg-[#e5e8ec]" />
+              <input
+                type="tel"
+                value={form.phone}
+                onChange={(e) => setField("phone", e.target.value.replace(/\D/g, "").slice(0, 10))}
+                onBlur={() => setPhoneTouched(true)}
+                placeholder={t.profilePhone}
+                className="min-w-0 flex-1 border-0 bg-transparent py-2.5 pl-3 pr-3 text-[13px] text-[#1d2129] placeholder:text-[#bbbec4] outline-none"
+              />
+            </div>
+            {phoneError && <p className="mt-1 text-[10px] text-[#D10005]">{phoneError}</p>}
           </div>
           <div className="mt-2">
-            <Field label={t.profilePhone} value={form.phone} onChange={(v) => { setField("phone", v.replace(/\D/g, "").slice(0, 10)); }} onBlur={() => setPhoneTouched(true)} type="tel" placeholder={t.profilePlaceholder} valid={phoneValid && phoneVerified} error={phoneError} />
-            {!phoneVerified && (
-              <div className="mt-1 flex justify-end">
-                <button
-                  onClick={() => { if (phoneValid) setShowPhoneVerifyModal(true); }}
-                  disabled={!phoneValid}
-                  className="text-[11px] font-bold underline"
-                  style={{ color: phoneValid ? "#D10005" : "#bbbec4" }}
-                >
-                  {t.profileVerifyPhone as string}
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Country (read-only) */}
-          <div className="mt-2">
-            <Field label={t.shippingCountry} value={countryLabel} onChange={() => {}} required placeholder="" readOnly />
+            <CalendarDateField
+              lang={lang}
+              label={t.profileDob}
+              required
+              value={form.dob}
+              onChange={(iso) => setField("dob", iso)}
+              placeholder={t.profilePlaceholder}
+            />
           </div>
 
           {/* Japan address fields */}
           {form.country === "japan" && (
             <>
+              <div className="mt-2">
+                <Field label={t.profileAddress} value={form.cityStreetNumber} onChange={(v) => setField("cityStreetNumber", v)} required placeholder={t.profilePlaceholder} />
+              </div>
+              <div className="mt-2">
+                <Field label={t.profileAddressLine2} value={form.apartment} onChange={(v) => setField("apartment", v)} placeholder={t.profilePlaceholder} />
+              </div>
               <div className="mt-2 flex gap-2">
-                <Field label={t.profilePostalCode} value={form.postalCode} onChange={setPostalCode} onBlur={() => setPostalTouched(true)} half required placeholder="NNN-NNNN" valid={postalValid && form.postalCode.length > 0} error={postalError} />
+                <Field label={t.shippingCountry} value={countryLabel} onChange={() => {}} half required placeholder="" readOnly />
                 <PrefectureSelect value={form.prefecture} onChange={(v) => setField("prefecture", v)} label={t.profilePrefecture} lang={lang} />
+              </div>
+              <div className="mt-2 flex gap-2">
+                <Field label={t.profileCity} value={form.city} onChange={(v) => setField("city", v)} half required placeholder={t.profilePlaceholder} />
+                <Field label={t.profilePostalCode} value={form.postalCode} onChange={setPostalCode} onBlur={() => setPostalTouched(true)} half required placeholder={t.profilePostalCode} valid={postalValid && form.postalCode.length > 0} error={postalError} />
               </div>
               {!searching && candidates.length === 0 && (
                 <p className="mt-1 mb-1 text-[10.5px] text-[#a2a8b0]">{t.postcodeHint}</p>
@@ -1312,12 +965,6 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
                   </div>
                 </div>
               )}
-              <div className="mt-2">
-                <Field label={t.profileAddress} value={form.city} onChange={(v) => setField("city", v)} required placeholder={lang === "ja" ? "住所" : "Address"} />
-              </div>
-              <div className="mt-2">
-                <Field label={t.profileAddressLine2} value={form.streetNumber} onChange={(v) => setField("streetNumber", v)} placeholder={lang === "ja" ? "住所2行目（任意）" : "Address line 2 (optional)"} />
-              </div>
             </>
           )}
 
@@ -1325,28 +972,33 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
           {form.country === "usa" && (
             <>
               <div className="mt-2">
-                <Field label={t.profileAddress} value={form.cityStreetNumber} onChange={(v) => setField("cityStreetNumber", v)} required placeholder="e.g. 123 Main St, Springfield" />
+                <Field label={t.profileAddress} value={form.cityStreetNumber} onChange={(v) => setField("cityStreetNumber", v)} required placeholder={t.profilePlaceholder} />
               </div>
               <div className="mt-2">
-                <Field label={t.profileAddressLine2} value={form.streetNumber} onChange={(v) => setField("streetNumber", v)} placeholder="Address line 2 (optional)" />
+                <Field label={t.profileAddressLine2} value={form.apartment} onChange={(v) => setField("apartment", v)} placeholder={t.profilePlaceholder} />
               </div>
-              <div className="mt-2">
+              <div className="mt-2 flex gap-2">
+                <Field label={t.shippingCountry} value={countryLabel} onChange={() => {}} half required placeholder="" readOnly />
                 <USStateSelect value={form.state} onChange={(v) => setField("state", v)} label={t.shippingState} />
               </div>
-              <div className="mt-2">
-                <Field label={t.shippingZipCode} value={form.zipCode} onChange={(v) => setField("zipCode", v.replace(/\D/g, "").slice(0, 5))} onBlur={() => setZipTouched(true)} required placeholder="e.g. 90210" valid={zipValid && form.zipCode.length > 0} error={zipError} />
+              <div className="mt-2 flex gap-2">
+                <Field label={t.profileCity} value={form.city} onChange={(v) => setField("city", v)} half required placeholder={t.profilePlaceholder} />
+                <Field label={t.shippingZipCode} value={form.zipCode} onChange={(v) => setField("zipCode", v.replace(/\D/g, "").slice(0, 5))} onBlur={() => setZipTouched(true)} half required placeholder="e.g. 90210" valid={zipValid && form.zipCode.length > 0} error={zipError} />
               </div>
             </>
           )}
 
-          <button
-            onClick={handleInfoSave}
-            disabled={!canSave}
-            className="mt-3 w-full rounded-xl py-3 text-[14px] font-bold text-white transition"
-            style={{ background: infoSaved ? "#22c55e" : "#D10005", opacity: canSave || infoSaved ? 1 : 0.45 }}
-          >
-            {infoSaved ? t.profileSaved : t.profileSave}
-          </button>
+          <p className="mt-4 text-[12px] leading-relaxed text-[#1d2129]">{t.profileSaveNote}</p>
+          <div className="mt-3 flex justify-end">
+            <button
+              onClick={handleInfoSave}
+              disabled={!canSave}
+              className="rounded-xl px-5 py-2.5 text-[13px] font-bold text-white transition"
+              style={{ background: infoSaved ? "#22c55e" : "#D10005", opacity: canSave || infoSaved ? 1 : 0.45 }}
+            >
+              {infoSaved ? t.profileSaved : t.profileSave}
+            </button>
+          </div>
         </div>
       ),
     },
@@ -1441,88 +1093,6 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
       ),
     },
     {
-      key: "paymentMethod",
-      label: t.profilePaymentMethod,
-      content: (
-        <div className="px-4 pb-4">
-          {/* Payment method dropdown */}
-          <div className="w-full">
-            <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{t.profilePaymentMethodField}<span className="ml-0.5 text-[#D10005]">*</span></label>
-            <div className="relative">
-              <select
-                value={paymentMethodType}
-                onChange={(e) => { setPaymentMethodType(e.target.value); setPaymentCardNumber(""); }}
-                className="w-full appearance-none rounded-lg border border-[#e5e8ec] bg-white py-2.5 pl-3 pr-10 text-[13px] text-[#1d2129] outline-none"
-              >
-                <option value="">{t.profilePlaceholder}</option>
-                <option value="card">Card</option>
-              </select>
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#8a9099]">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>
-              </span>
-            </div>
-          </div>
-          {/* Card number dropdown — shown when card is selected */}
-          {paymentMethodType === "card" && (
-            <div className="mt-3 w-full">
-              <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{t.profileCardNumber}<span className="ml-0.5 text-[#D10005]">*</span></label>
-              <div className="relative">
-                <select
-                  value={paymentCardNumber}
-                  onChange={(e) => setPaymentCardNumber(e.target.value)}
-                  className="w-full appearance-none rounded-lg border border-[#e5e8ec] bg-white py-2.5 pl-3 pr-10 text-[13px] text-[#1d2129] outline-none"
-                >
-                  <option value="">{t.profileSelectCard}</option>
-                  <option value="card1">**** **** **** 1111</option>
-                  <option value="card2">**** **** **** 4242</option>
-                  <option value="card3">**** **** **** 9876</option>
-                </select>
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#8a9099]">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>
-                </span>
-              </div>
-              {paymentCardNumber && (
-                <div className="mt-2 flex items-center gap-2 rounded-lg bg-[#f4f5f7] px-3 py-2">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5c626b" strokeWidth="1.5"><rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>
-                  <span className="text-[12px] font-semibold text-[#1d2129]">
-                    {paymentCardNumber === "card1" ? "****1111" : paymentCardNumber === "card2" ? "****4242" : "****9876"}
-                  </span>
-                  <span className="ml-auto">
-                    <svg width="14" height="14" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill="#22c55e" /><path d="M6 10l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-          <ul className="mt-3 space-y-1.5">
-            {(t.profilePaymentBullets as string[]).map((bullet, i) => (
-              <li key={i} className="flex items-start gap-2 text-[11px] text-[#5c626b]">
-                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#5c626b]" />
-                {bullet}
-              </li>
-            ))}
-          </ul>
-          {paymentCardNumber && verifiedCards[paymentCardNumber] && (
-            <div className="mt-3 flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#22c55e]" />
-              <span className="text-[12px] font-semibold text-[#22c55e]">{t.profileVerifiedCard}</span>
-            </div>
-          )}
-          <button
-            onClick={() => {
-              const canSubmit = paymentMethodType && (paymentMethodType !== "card" || paymentCardNumber) && !verifiedCards[paymentCardNumber];
-              if (canSubmit) setShowJumioModal(true);
-            }}
-            className="mt-4 w-full rounded-xl py-3 text-[14px] font-bold text-white transition-opacity"
-            style={{ background: "#D10005", opacity: (paymentMethodType && (paymentMethodType !== "card" || paymentCardNumber) && !verifiedCards[paymentCardNumber]) ? 1 : 0.5, cursor: verifiedCards[paymentCardNumber] ? "not-allowed" : "pointer" }}
-          >
-            {t.profileSubmitProof}
-          </button>
-          <p className="mt-3 text-center text-[11px] leading-relaxed text-[#8a9099]">{t.profileKycNote}</p>
-        </div>
-      ),
-    },
-    {
       key: "documentUpload",
       label: t.profileDocumentUpload,
       content: (
@@ -1546,13 +1116,15 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
           <PwField label={t.profileOldPassword} value={passwords.old} onChange={(v) => { setPasswords((p) => ({ ...p, old: v })); setPwChanged(false); }} />
           <PwField label={t.profileNewPassword} value={passwords.newPw} onChange={(v) => { setPasswords((p) => ({ ...p, newPw: v })); setPwChanged(false); }} />
           <PwField label={t.profileRepeatPassword} value={passwords.repeat} onChange={(v) => { setPasswords((p) => ({ ...p, repeat: v })); setPwChanged(false); }} />
-          <button
-            onClick={() => { if (passwords.newPw && passwords.newPw === passwords.repeat) { setPwChanged(true); setPasswords({ old: "", newPw: "", repeat: "" }); } }}
-            className="w-full rounded-xl py-3 text-[14px] font-bold text-white transition"
-            style={{ background: pwChanged ? "#22c55e" : "#D10005" }}
-          >
-            {pwChanged ? t.profileSaved : t.profileChangePasswordBtn}
-          </button>
+          <div className="flex justify-end">
+            <button
+              onClick={() => { if (passwords.newPw && passwords.newPw === passwords.repeat) { setPwChanged(true); setPasswords({ old: "", newPw: "", repeat: "" }); } }}
+              className="rounded-xl px-5 py-2.5 text-[13px] font-bold text-white transition"
+              style={{ background: pwChanged ? "#22c55e" : "#D10005" }}
+            >
+              {pwChanged ? t.profileSaved : t.profileChangePasswordBtn}
+            </button>
+          </div>
         </div>
       ),
     },
@@ -1598,16 +1170,6 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
           }}
         />
       )}
-      {/* Jumio payment verification modal */}
-      {showJumioModal && (
-        <div className="absolute inset-0 z-50">
-          <JumioPaymentModal
-            t={t}
-            onClose={() => setShowJumioModal(false)}
-            onComplete={() => { setShowJumioModal(false); setVerifiedCards((prev) => ({ ...prev, [paymentCardNumber]: true })); }}
-          />
-        </div>
-      )}
       {/* Document upload sub-page */}
       {showDocUploadPage && (
         <div className="absolute inset-0 z-40">
@@ -1635,13 +1197,16 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
       </div>
 
       <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-3 space-y-2">
-        {sections.filter((s) => !["idVerification", "paymentMethod", "documentUpload"].includes(s.key)).map((sec) => (
-          <div key={sec.key} className="overflow-hidden rounded-xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.07)]">
+        {sections.filter((s) => !["idVerification", "documentUpload"].includes(s.key)).map((sec) => (
+          <div key={sec.key} className={`${sec.key === "personalInfo" || sec.key === "accountId" ? "overflow-visible" : "overflow-hidden"} rounded-xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.07)]`}>
             <button
               onClick={() => toggle(sec.key)}
               className="flex w-full items-center gap-2 px-4 py-3.5 text-left"
             >
-              <span className="flex-1 text-[14px] font-semibold text-[#1d2129]">{sec.label}</span>
+              <span className="flex min-w-0 flex-1 items-center gap-3">
+                <span className="text-[14px] font-semibold text-[#1d2129]">{sec.label}</span>
+                {sec.key === "accountId" && <span className="text-[13px] font-semibold text-[#8a9099]">xxxxxx</span>}
+              </span>
               {sec.badge && (
                 <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ background: sec.badge.bg }}>{sec.badge.label}</span>
               )}
@@ -1653,7 +1218,7 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
                 <path d="M6 9l6 6 6-6" />
               </svg>
             </button>
-            {open === sec.key && <div className="border-t border-black/[0.06] pt-3">{sec.content}</div>}
+            {open === sec.key && <div className={sec.key === "accountId" ? "pt-1" : "border-t border-black/[0.06] pt-3"}>{sec.content}</div>}
           </div>
         ))}
         {/* Account Verifications group */}
@@ -1673,7 +1238,7 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
           </button>
           {accVerifOpen && (
             <div className="border-t border-black/[0.06] pt-2 pb-2 px-3 space-y-2">
-              {sections.filter((s) => ["idVerification", "paymentMethod", "documentUpload"].includes(s.key)).map((sec) => (
+              {sections.filter((s) => ["idVerification", "documentUpload"].includes(s.key)).map((sec) => (
                 <div key={sec.key} className="overflow-hidden rounded-xl bg-[#f8f9fa] border border-[#e5e8ec]">
                   <button
                     onClick={() => toggle(sec.key)}
@@ -1698,10 +1263,6 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
           )}
         </div>
       </div>
-      {showDobPicker && (
-        <DobPickerModal lang={lang} onClose={() => setShowDobPicker(false)}
-                        onConfirm={(iso) => { setField("dob", iso); setShowDobPicker(false); }} />
-      )}
     </div>
   );
 }

@@ -54,7 +54,7 @@ import {
 import { StorePage as StorePageView, type PointPackage } from "./store-page";
 import { PurchaseFlow, CashierLegalContext, type SavedCard } from "./cashier";
 import { QuickPurchaseFlow, type QuickPurchasePending, type QuickSavedCard, type IntlCurrencyInfo } from "./quick-purchase";
-import { ProfilePage } from "./profile-page";
+import { PROFILE_AVATAR_KEY, ProfileAvatar, ProfilePage } from "./profile-page";
 import {
   KycOverlay,
   KYC_SESSION_KEY,
@@ -5658,6 +5658,10 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
   const openLegal = useContext(LegalNavContext);
   const openCoinHistory = useContext(CoinHistoryNavContext);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  useEffect(() => {
+    try { setAvatarUrl(sessionStorage.getItem(PROFILE_AVATAR_KEY)); } catch { setAvatarUrl(null); }
+  }, []);
   // Restore the last scroll offset when re-entering My Page (e.g. after going
   // back from a sub-screen) instead of jumping to the top.
   useEffect(() => {
@@ -5693,7 +5697,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
         <div className="px-3 py-4">
           {/* Profile card */}
           <div className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-[0_1px_4px_rgba(0,0,0,0.08)]">
-            <img src="/account-avatar.png" alt="" className="h-[86px] w-[86px] shrink-0 rounded-full object-cover" />
+            <ProfileAvatar src={avatarUrl} size={86} />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[19px] font-extrabold text-[#1d2129]">{displayName.trim() || t.accountName}</p>
               <p className="mt-0.5 text-[12px] font-normal text-[#0F0F0F]">{t.mpId} : XXXXXX</p>
@@ -6830,6 +6834,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
           lastNameKana: profile.lastNameKana || base.details.lastNameKana,
           firstNameKana: profile.firstNameKana || base.details.firstNameKana,
           email: profile.email || auth.email || base.details.email,
+          phone: profile.phone || auth.phone || base.details.phone,
           dob: profile.dob || auth.dob || base.details.dob,
           postalCode: profile.postalCode || base.details.postalCode,
           prefecture: profile.prefecture || profile.state || base.details.prefecture,

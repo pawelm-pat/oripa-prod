@@ -41,9 +41,13 @@ export function GoogleAuthIcon({ size = 22 }: { size?: number }) {
 
 export function LineAuthIcon({ size = 22 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 40 40">
-      <rect width="40" height="40" rx="8" fill="#06C755" />
-      <text x="20" y="28" textAnchor="middle" fontSize="22" fill="white" fontWeight="bold">L</text>
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
+      <rect width="24" height="24" rx="5.5" fill="#06C755" />
+      <path
+        fill="#fff"
+        transform="translate(2.35 3.35) scale(0.805)"
+        d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629"
+      />
     </svg>
   );
 }
@@ -779,9 +783,6 @@ function SignupPasswordField({ lang, password, onChange, onBlur, error, showPass
   return (
     <SignupFormField label={t.authPasswordLabel as string} required error={error}>
       <div className="relative">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8a9099]">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 018 0v3" /></svg>
-        </span>
         <input
           type={showPassword ? "text" : "password"}
           value={password}
@@ -789,7 +790,7 @@ function SignupPasswordField({ lang, password, onChange, onBlur, error, showPass
           onBlur={onBlur}
           placeholder={t.authPasswordPlaceholder as string}
           className={authFieldCls(!!error)}
-          style={{ paddingLeft: "36px", paddingRight: "40px" }}
+          style={{ paddingLeft: "14px", paddingRight: "40px" }}
         />
         <button type="button" onClick={onToggleShow} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8a9099]">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -820,7 +821,7 @@ function SignupCountryField({ lang, country, onChange }: {
         >
           {AUTH_COUNTRIES.map(c => (
             <option key={c.code} value={c.code}>
-              {c.flag} {lang === "ja" ? c.nameJa : c.nameEn}
+              {lang === "ja" ? c.nameJa : c.nameEn}
             </option>
           ))}
         </select>
@@ -1655,8 +1656,7 @@ export function SignupPage({ lang, onLogin, onQuit, onSuccess, initialEmailVerif
         <div className="h-[48px] w-full" style={{ background: "repeating-conic-gradient(#d1d5db 0% 25%, white 0% 50%) 0 0 / 20px 20px" }} />
 
         <div className="px-4 py-4">
-          <div className="relative rounded-2xl border border-[#e5e8ec] bg-white px-4 pb-5 pt-12 space-y-4">
-            <button type="button" onClick={requestRegistrationExit} className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full text-[24px] text-[#8a9099] hover:bg-[#f5f6f8]" aria-label={t.authGoogleCancel as string}>×</button>
+          <div className="rounded-2xl border border-[#e5e8ec] bg-white px-4 py-5 space-y-4">
             <AuthRegisterMethodButtons
               lang={lang}
               active={registerMethod}
@@ -1667,20 +1667,15 @@ export function SignupPage({ lang, onLogin, onQuit, onSuccess, initialEmailVerif
             <AuthOrEmailDivider label={t.authOrUseEmail as string} />
 
             <SignupFormField label={t.authEmailLabel as string} required error={emailTouched ? emailFieldError : ""}>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8a9099]">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 4-6 8-6s8 2 8 6" /></svg>
-                </span>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  onBlur={() => setEmailTouched(true)}
-                  placeholder={t.authEmailPlaceholder as string}
-                  className={authFieldCls(!!(emailTouched && emailFieldError))}
-                  style={{ paddingLeft: "36px", paddingRight: "14px" }}
-                />
-              </div>
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                onBlur={() => setEmailTouched(true)}
+                placeholder={t.authEmailPlaceholder as string}
+                className={authFieldCls(!!(emailTouched && emailFieldError))}
+                style={{ paddingLeft: "14px", paddingRight: "14px" }}
+              />
             </SignupFormField>
 
             <SignupPasswordField
