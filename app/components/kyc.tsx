@@ -2,6 +2,7 @@
 
 import { type Dispatch, type ReactNode, type SetStateAction, useState } from "react";
 import { PREFECTURES_EN, PREFECTURES_JA } from "../data/prizes";
+import { CalendarDateField } from "./calendar-date-field";
 
 export type KycEntryContext = "purchase" | "prizeHistory" | "profile";
 export type KycStatus = "notStarted" | "inProgress" | "approved" | "needsAttention";
@@ -322,15 +323,14 @@ function KycDetailsFields({ c, lang, details, onChange }: { c: KycCopy; lang: "e
         <input value={details.phone ?? ""} onChange={(event) => onChange({ ...details, phone: event.target.value.replace(/\D/g, "").slice(0, 10) })} placeholder={c.fields.phone} className="min-w-0 flex-1 border-0 bg-transparent py-2.5 pl-3 pr-3 text-[13px] text-[#1d2129] placeholder:text-[#bbbec4] outline-none" />
       </div>
     </label>
-    <label className="block">
-      <span className={labelClass}>{c.fields.dob}{required}</span>
-      <div className="relative">
-        <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[#8a9099]">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
-        </span>
-        <input type="date" value={details.dob} onChange={(event) => onChange({ ...details, dob: event.target.value })} className={`${inputClass} pl-9`} />
-      </div>
-    </label>
+    <CalendarDateField
+      lang={lang}
+      label={c.fields.dob}
+      required
+      value={details.dob}
+      onChange={(iso) => onChange({ ...details, dob: iso })}
+      placeholder={placeholder}
+    />
     <label className="block"><span className={labelClass}>{c.addressLabel}{required}</span><input value={details.street} onChange={(event) => onChange({ ...details, street: event.target.value })} placeholder={placeholder} className={inputClass} /></label>
     <label className="block"><span className={labelClass}>{c.addressLine2Label}</span><input value={details.apartment} onChange={(event) => onChange({ ...details, apartment: event.target.value })} placeholder={placeholder} className={inputClass} /></label>
     <div className="flex gap-2">

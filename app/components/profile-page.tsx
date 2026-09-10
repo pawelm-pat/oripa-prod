@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Lang, ShippingCountry } from "../lib/types";
 import { STR, type Dict } from "../lib/i18n";
 import { GoogleAuthIcon, LineAuthIcon } from "./auth";
+import { CalendarDateField } from "./calendar-date-field";
 import { PREFECTURES_EN, PREFECTURES_JA, US_STATES } from "../data/prizes";
 import type { KycState } from "./kyc";
 
@@ -29,175 +30,6 @@ function CrownEmblem({ size = 96 }: { size?: number }) {
       {/* O */}
       <text x="50" y="72" textAnchor="middle" fontSize="40" fontWeight="900" fontStyle="italic" fill="#fff">O</text>
     </svg>
-  );
-}
-
-/* ── DobPickerModal ────────────────────────────────────────────────────── */
-function DobPickerModal({ lang, onConfirm, onClose }: {
-  lang: Lang; onConfirm: (isoDate: string) => void; onClose: () => void;
-}) {
-  const t = STR[lang];
-  const YEARS_PER_PAGE = 12;
-  const MAX_YEAR = 2010;
-  const MIN_YEAR = 1931;
-
-  const [step, setStep] = useState<"year" | "month" | "day">("year");
-  const [selYear, setSelYear] = useState<number | null>(null);
-  const [selMonth, setSelMonth] = useState<number | null>(null);
-  const [selDay, setSelDay] = useState<number | null>(null);
-  const [yearPageStart, setYearPageStart] = useState(1980);
-
-  const MONTH_SHORT = lang === "ja"
-    ? ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"]
-    : ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const MONTH_FULL = lang === "ja"
-    ? MONTH_SHORT
-    : ["January","February","March","April","May","June","July","August","September","October","November","December"];
-
-  const displayText = () => {
-    if (!selYear) return "";
-    if (!selMonth) return String(selYear);
-    if (!selDay) return lang === "ja" ? `${selYear}年${selMonth}月` : `${selYear}, ${MONTH_FULL[selMonth - 1]}`;
-    return lang === "ja"
-      ? `${selYear}年${selMonth}月${selDay}日`
-      : `${MONTH_SHORT[selMonth - 1]} ${selDay}, ${selYear}`;
-  };
-
-  const daysInMonth = selYear && selMonth ? new Date(selYear, selMonth, 0).getDate() : 31;
-
-  const headerLabel = step === "year"
-    ? `${yearPageStart}–${Math.min(yearPageStart + YEARS_PER_PAGE - 1, MAX_YEAR)}`
-    : step === "month"
-    ? String(selYear)
-    : `${MONTH_SHORT[(selMonth ?? 1) - 1]} ${selYear}`;
-
-  const onBack = () => {
-    if (step === "year") {
-      setYearPageStart(p => Math.max(MIN_YEAR, p - YEARS_PER_PAGE));
-    } else if (step === "month") {
-      setStep("year");
-      setSelMonth(null);
-      setSelDay(null);
-    } else {
-      setStep("month");
-      setSelDay(null);
-    }
-  };
-
-  const onForward = () => {
-    if (step === "year") {
-      if (yearPageStart + YEARS_PER_PAGE <= MAX_YEAR) setYearPageStart(p => p + YEARS_PER_PAGE);
-    } else if (step === "month" && selYear) {
-      if (selYear < MAX_YEAR) { setSelYear(selYear + 1); setSelMonth(null); setSelDay(null); }
-    } else if (step === "day" && selYear && selMonth) {
-      const nextMonth = selMonth === 12 ? 1 : selMonth + 1;
-      const nextYear = selMonth === 12 ? selYear + 1 : selYear;
-      if (nextYear <= MAX_YEAR) { setSelMonth(nextMonth); setSelYear(nextYear); setSelDay(null); }
-    }
-  };
-
-  const years = Array.from({ length: YEARS_PER_PAGE }, (_, i) => yearPageStart + i)
-    .filter(y => y <= MAX_YEAR);
-
-  const navBtn = "flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-[#f0f2f5] active:bg-[#e5e8ec]";
-  const gridBtn = "rounded-xl py-2.5 text-[14px] font-medium transition-colors";
-  const gridSel = "bg-[#1d2129] text-white";
-  const gridDef = "text-[#1d2129] hover:bg-[#f0f2f5]";
-
-  return (
-    <div className="absolute inset-0 z-50 flex items-end"
-         style={{ background: "rgba(0,0,0,0.45)" }}
-         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="w-full rounded-t-2xl bg-white shadow-2xl">
-        {/* Header bar */}
-        <div className="flex items-center justify-between border-b border-black/8 px-4 py-3">
-          <button onClick={onClose} className="text-[14px] text-[#5c626b]">{t.authDobPickerCancel}</button>
-          <span className="text-[15px] font-bold text-[#1d2129]">{t.authDobLabel}</span>
-          <div className="w-14" />
-        </div>
-
-        <div className="px-4 pt-4 pb-5">
-          {/* Progressive selection display */}
-          <div className="mb-3 flex items-center justify-between rounded-xl border border-[#e5e8ec] px-3 py-2.5">
-            <span className={`text-[14px] ${displayText() ? "text-[#1d2129]" : "text-[#bbbec4]"}`}>
-              {displayText() || (lang === "ja" ? "生年月日を選択" : "Select your date of birth")}
-            </span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a9099" strokeWidth="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
-            </svg>
-          </div>
-
-          {/* Calendar card */}
-          <div className="rounded-xl border border-[#e5e8ec] overflow-hidden">
-            {/* Navigation row */}
-            <div className="flex items-center justify-between border-b border-[#f0f2f5] px-3 py-2.5">
-              <button onClick={onBack} className={navBtn}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5c626b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M15 18l-6-6 6-6" />
-                </svg>
-              </button>
-              <span className="text-[15px] font-bold text-[#1d2129]">{headerLabel}</span>
-              <button onClick={onForward} className={navBtn}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5c626b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Grid area */}
-            <div className="px-3 py-3">
-              {step === "year" && (
-                <div className="grid grid-cols-3 gap-2">
-                  {years.map(y => (
-                    <button key={y}
-                            onClick={() => { setSelYear(y); setSelMonth(null); setSelDay(null); setStep("month"); }}
-                            className={`${gridBtn} ${selYear === y ? gridSel : gridDef}`}>
-                      {y}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {step === "month" && (
-                <div className="grid grid-cols-3 gap-2">
-                  {MONTH_SHORT.map((m, i) => (
-                    <button key={m}
-                            onClick={() => { setSelMonth(i + 1); setSelDay(null); setStep("day"); }}
-                            className={`${gridBtn} ${selMonth === i + 1 ? gridSel : gridDef}`}>
-                      {m}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {step === "day" && (
-                <>
-                  <div className="grid grid-cols-7 gap-1">
-                    {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(d => (
-                      <button key={d}
-                              onClick={() => setSelDay(d)}
-                              className={`flex aspect-square items-center justify-center rounded-full text-[13px] font-medium transition-colors
-                                ${selDay === d ? "bg-[#1d2129] text-white" : "text-[#1d2129] hover:bg-[#f0f2f5]"}`}>
-                        {d}
-                      </button>
-                    ))}
-                  </div>
-                  {selDay !== null && (
-                    <div className="mt-3 flex justify-end">
-                      <button
-                        onClick={() => onConfirm(`${selYear}-${String(selMonth).padStart(2, "0")}-${String(selDay).padStart(2, "0")}`)}
-                        className="rounded-xl bg-[#D10005] px-5 py-2 text-[14px] font-bold text-white">
-                        {t.authDobPickerDone}
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -895,7 +727,6 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
   const namesValid = !!(form.lastName.trim() && form.firstName.trim() && form.lastNameKana.trim() && form.firstNameKana.trim());
   const canSave = !!(namesValid && emailValid && form.dob && addressValid && (form.phone.length === 0 || phoneValid));
   const countryLabel = form.country === "usa" ? t.shippingUSA : t.shippingJapan;
-  const [showDobPicker, setShowDobPicker] = useState(false);
   const [passwords, setPasswords] = useState({ old: "", newPw: "", repeat: "" });
   const [pwChanged, setPwChanged] = useState(false);
   const [prefs, setPrefs] = useState({ email: true, push: false, sms: false });
@@ -963,14 +794,6 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
       setCandidates([]);
     }
   }
-
-  const formatDob = (iso: string) => {
-    if (!iso) return "";
-    const [y, m, d] = iso.split("-");
-    if (lang === "ja") return `${y}年${Number(m)}月${Number(d)}日`;
-    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    return `${months[Number(m) - 1]} ${Number(d)}, ${y}`;
-  };
 
   function handleInfoSave() {
     if (!canSave) return;
@@ -1049,18 +872,14 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
             {phoneError && <p className="mt-1 text-[10px] text-[#D10005]">{phoneError}</p>}
           </div>
           <div className="mt-2">
-            <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{t.profileDob}<span className="ml-0.5 text-[#D10005]">*</span></label>
-            <button
-              type="button"
-              onClick={() => setShowDobPicker(true)}
-              className="relative w-full rounded-lg border py-2.5 text-left text-[13px] outline-none transition"
-              style={{ paddingLeft: "36px", paddingRight: "10px", borderColor: form.dob ? "#d1d5db" : "#e5e8ec", background: "white" }}
-            >
-              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#8a9099]">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
-              </span>
-              <span className={form.dob ? "text-[#1d2129]" : "text-[#bbbec4]"}>{form.dob ? formatDob(form.dob) : t.profilePlaceholder}</span>
-            </button>
+            <CalendarDateField
+              lang={lang}
+              label={t.profileDob}
+              required
+              value={form.dob}
+              onChange={(iso) => setField("dob", iso)}
+              placeholder={t.profilePlaceholder}
+            />
           </div>
 
           {/* Japan address fields */}
@@ -1344,7 +1163,7 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
 
       <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-3 space-y-2">
         {sections.filter((s) => !["idVerification", "documentUpload"].includes(s.key)).map((sec) => (
-          <div key={sec.key} className="overflow-hidden rounded-xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.07)]">
+          <div key={sec.key} className={`${sec.key === "personalInfo" ? "overflow-visible" : "overflow-hidden"} rounded-xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.07)]`}>
             <button
               onClick={() => toggle(sec.key)}
               className="flex w-full items-center gap-2 px-4 py-3.5 text-left"
@@ -1406,10 +1225,6 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
           )}
         </div>
       </div>
-      {showDobPicker && (
-        <DobPickerModal lang={lang} onClose={() => setShowDobPicker(false)}
-                        onConfirm={(iso) => { setField("dob", iso); setShowDobPicker(false); }} />
-      )}
     </div>
   );
 }
