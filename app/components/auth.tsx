@@ -779,9 +779,6 @@ function SignupPasswordField({ lang, password, onChange, onBlur, error, showPass
   return (
     <SignupFormField label={t.authPasswordLabel as string} required error={error}>
       <div className="relative">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8a9099]">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 018 0v3" /></svg>
-        </span>
         <input
           type={showPassword ? "text" : "password"}
           value={password}
@@ -789,7 +786,7 @@ function SignupPasswordField({ lang, password, onChange, onBlur, error, showPass
           onBlur={onBlur}
           placeholder={t.authPasswordPlaceholder as string}
           className={authFieldCls(!!error)}
-          style={{ paddingLeft: "36px", paddingRight: "40px" }}
+          style={{ paddingLeft: "14px", paddingRight: "40px" }}
         />
         <button type="button" onClick={onToggleShow} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8a9099]">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -820,7 +817,7 @@ function SignupCountryField({ lang, country, onChange }: {
         >
           {AUTH_COUNTRIES.map(c => (
             <option key={c.code} value={c.code}>
-              {c.flag} {lang === "ja" ? c.nameJa : c.nameEn}
+              {lang === "ja" ? c.nameJa : c.nameEn}
             </option>
           ))}
         </select>
@@ -1655,8 +1652,7 @@ export function SignupPage({ lang, onLogin, onQuit, onSuccess, initialEmailVerif
         <div className="h-[48px] w-full" style={{ background: "repeating-conic-gradient(#d1d5db 0% 25%, white 0% 50%) 0 0 / 20px 20px" }} />
 
         <div className="px-4 py-4">
-          <div className="relative rounded-2xl border border-[#e5e8ec] bg-white px-4 pb-5 pt-12 space-y-4">
-            <button type="button" onClick={requestRegistrationExit} className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full text-[24px] text-[#8a9099] hover:bg-[#f5f6f8]" aria-label={t.authGoogleCancel as string}>×</button>
+          <div className="rounded-2xl border border-[#e5e8ec] bg-white px-4 py-5 space-y-4">
             <AuthRegisterMethodButtons
               lang={lang}
               active={registerMethod}
@@ -1667,20 +1663,15 @@ export function SignupPage({ lang, onLogin, onQuit, onSuccess, initialEmailVerif
             <AuthOrEmailDivider label={t.authOrUseEmail as string} />
 
             <SignupFormField label={t.authEmailLabel as string} required error={emailTouched ? emailFieldError : ""}>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8a9099]">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 4-6 8-6s8 2 8 6" /></svg>
-                </span>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  onBlur={() => setEmailTouched(true)}
-                  placeholder={t.authEmailPlaceholder as string}
-                  className={authFieldCls(!!(emailTouched && emailFieldError))}
-                  style={{ paddingLeft: "36px", paddingRight: "14px" }}
-                />
-              </div>
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                onBlur={() => setEmailTouched(true)}
+                placeholder={t.authEmailPlaceholder as string}
+                className={authFieldCls(!!(emailTouched && emailFieldError))}
+                style={{ paddingLeft: "14px", paddingRight: "14px" }}
+              />
             </SignupFormField>
 
             <SignupPasswordField
