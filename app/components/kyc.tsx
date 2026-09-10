@@ -111,7 +111,7 @@ const COPY: Record<"en" | "ja", KycCopy> = {
     searchAddressPh: "Search your address", enterAddressManually: "Enter address manually",
     searchDifferentAddress: "Search a different address",
     nameLatinError: "Please enter in alphabet (A–Z).",
-    addressLabel: "Address", addressLine2Label: "Address line 2 (optional)",
+    addressLabel: "Address line 1", addressLine2Label: "Address line 2 (optional)",
   },
   ja: {
     close: "閉じる", requiredTitle: "本人確認が必要です", requiredBody: "この操作を続けるには、アカウントの本人確認を完了してください。",
@@ -156,7 +156,7 @@ const COPY: Record<"en" | "ja", KycCopy> = {
     searchAddressPh: "住所を検索", enterAddressManually: "住所を手入力する",
     searchDifferentAddress: "別の住所を検索",
     nameLatinError: "アルファベット（A–Z）で入力してください。",
-    addressLabel: "住所", addressLine2Label: "住所2行目（任意）",
+    addressLabel: "住所1行目", addressLine2Label: "住所2行目（任意）",
   },
 };
 
@@ -308,8 +308,6 @@ function KycDetailsFields({ c, lang, details, onChange }: { c: KycCopy; lang: "e
   const kanaField = (key: "lastNameKana" | "firstNameKana") => (
     <label key={key} className="min-w-0 flex-1"><span className={labelClass}>{c.fields[key]}{required}</span><input value={details[key]} onChange={(event) => onChange({ ...details, [key]: event.target.value })} placeholder={placeholder} className={inputClass} /></label>
   );
-  const cityStreet = [details.city, details.street].filter(Boolean).join(", ");
-  const streetApartment = [details.streetNumber, details.apartment].filter(Boolean).join(" / ");
   const dial = details.country === "United States" ? "+1" : "+81";
 
   return <div className="mt-4 space-y-2">
@@ -333,12 +331,10 @@ function KycDetailsFields({ c, lang, details, onChange }: { c: KycCopy; lang: "e
         <input type="date" value={details.dob} onChange={(event) => onChange({ ...details, dob: event.target.value })} className={`${inputClass} pl-9`} />
       </div>
     </label>
-    <div>
-      <span className={labelClass}>{c.fields.country}{required}</span>
-      <div aria-readonly="true" className={readOnlyClass}>{details.country || "Japan"}</div>
-    </div>
+    <label className="block"><span className={labelClass}>{c.addressLabel}{required}</span><input value={details.street} onChange={(event) => onChange({ ...details, street: event.target.value })} placeholder={placeholder} className={inputClass} /></label>
+    <label className="block"><span className={labelClass}>{c.addressLine2Label}</span><input value={details.apartment} onChange={(event) => onChange({ ...details, apartment: event.target.value })} placeholder={placeholder} className={inputClass} /></label>
     <div className="flex gap-2">
-      <label className="min-w-0 flex-1"><span className={labelClass}>{c.fields.postalCode}{required}</span><input value={details.postalCode} onChange={(event) => onChange({ ...details, postalCode: event.target.value })} placeholder={c.fields.postalCode} className={inputClass} /></label>
+      <label className="min-w-0 flex-1"><span className={labelClass}>{c.fields.country}{required}</span><div aria-readonly="true" className={readOnlyClass}>{details.country || "Japan"}</div></label>
       <label className="min-w-0 flex-1">
         <span className={labelClass}>{c.fields.prefecture}{required}</span>
         <div className="relative">
@@ -352,8 +348,10 @@ function KycDetailsFields({ c, lang, details, onChange }: { c: KycCopy; lang: "e
         </div>
       </label>
     </div>
-    <label className="block"><span className={labelClass}>{c.addressLabel}{required}</span><input value={cityStreet} onChange={(event) => onChange({ ...details, city: event.target.value, street: "" })} placeholder={placeholder} className={inputClass} /></label>
-    <label className="block"><span className={labelClass}>{c.addressLine2Label}</span><input value={streetApartment} onChange={(event) => onChange({ ...details, streetNumber: event.target.value, apartment: "" })} placeholder={placeholder} className={inputClass} /></label>
+    <div className="flex gap-2">
+      <label className="min-w-0 flex-1"><span className={labelClass}>{c.fields.city}{required}</span><input value={details.city} onChange={(event) => onChange({ ...details, city: event.target.value })} placeholder={placeholder} className={inputClass} /></label>
+      <label className="min-w-0 flex-1"><span className={labelClass}>{c.fields.postalCode}{required}</span><input value={details.postalCode} onChange={(event) => onChange({ ...details, postalCode: event.target.value })} placeholder={c.fields.postalCode} className={inputClass} /></label>
+    </div>
   </div>;
 }
 
@@ -399,7 +397,7 @@ export function KycOverlay({ lang, state, setState, onExit, onContextReturn }: {
   }
 
   const namesValid = isLatinName(state.details.lastName) && isLatinName(state.details.firstName) && state.details.lastNameKana.trim().length > 0 && state.details.firstNameKana.trim().length > 0;
-  if (screen === "details") return <div className="absolute inset-0 z-[120] overflow-y-auto bg-black/55 px-4 py-5"><div className={`${card} mx-auto px-6`}><XButton label={c.close} onClick={onExit} /><OripalotLogo /><h2 className="mt-4 text-[20px] font-black text-[#1d2129]">{c.detailsTitle}</h2><p className="mt-1 text-[11px] text-[#3157A4]">{c.detailsBody}</p><h3 className="mt-3 text-[12px] font-black text-[#1D2129]">{lang === "ja" ? "個人情報" : "Personal Information"}</h3><KycDetailsFields c={c} lang={lang} details={state.details} onChange={(details) => update({ details })} /><div className="mt-4 flex justify-end"><button type="button" disabled={!namesValid} onClick={() => namesValid && update({ activeScreen: "beforeStart" })} className="rounded-xl bg-[#e60012] px-5 py-2.5 text-[13px] font-extrabold text-white disabled:cursor-not-allowed disabled:bg-[#FFB4B8]">{c.continue}</button></div><p className="mt-2 text-center text-[9px] text-[#3157A4]">♙ {lang === "ja" ? "安全な暗号化で情報を保護します。" : "We use secure encryption to protect your information."}</p></div></div>;
+  if (screen === "details") return <div className="absolute inset-0 z-[120] overflow-y-auto bg-black/55 px-4 py-5"><div className={`${card} mx-auto px-6`}><XButton label={c.close} onClick={onExit} /><OripalotLogo /><h2 className="mt-4 text-[20px] font-black text-[#1d2129]">{c.detailsTitle}</h2><p className="mt-1 text-[11px] text-[#1d2129]">{c.detailsBody}</p><h3 className="mt-3 text-[12px] font-black text-[#1D2129]">{lang === "ja" ? "個人情報" : "Personal Information"}</h3><KycDetailsFields c={c} lang={lang} details={state.details} onChange={(details) => update({ details })} /><div className="mt-4 flex justify-end"><button type="button" disabled={!namesValid} onClick={() => namesValid && update({ activeScreen: "beforeStart" })} className="rounded-xl bg-[#e60012] px-5 py-2.5 text-[13px] font-extrabold text-white disabled:cursor-not-allowed disabled:bg-[#FFB4B8]">{c.continue}</button></div><p className="mt-2 text-center text-[9px] text-[#3157A4]">♙ {lang === "ja" ? "安全な暗号化で情報を保護します。" : "We use secure encryption to protect your information."}</p></div></div>;
 
   if (screen === "required") return <div className="absolute inset-0 z-[120] flex items-center justify-center bg-black/55 px-5"><div className={card}><XButton label={c.close} onClick={onExit} /><OripalotLogo /><div className="mx-auto mt-5 flex justify-center"><VerificationBadge /></div><h2 className="mt-3 text-center text-[19px] font-black text-[#1d2129]">{c.requiredTitle}</h2><p className="mt-2 text-center text-[12px] leading-relaxed text-[#69717a]">{c.requiredBody}</p><button onClick={() => update({ activeScreen: "details" })} className={`${redButton} mt-5`}>{c.start}</button><p className="mt-3 text-center text-[10px] text-[#8a9099] underline">{c.support}</p></div></div>;
 
