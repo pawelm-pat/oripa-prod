@@ -803,7 +803,7 @@ function PhoneVerifyModal({ lang, phone, onClose, onVerified }: {
 function USStateSelect({ value, onChange, label }: { value: string; onChange: (val: string) => void; label: string }) {
   const filled = value.trim().length > 0;
   return (
-    <div className="w-full">
+    <div className="min-w-0 flex-1">
       <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{label}<span className="ml-0.5 text-[#D10005]">*</span></label>
       <div className="relative flex items-center">
         <select
@@ -890,8 +890,8 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
   const postalError = postalTouched && form.postalCode.length > 0 && !postalValid ? "NNN-NNNN" : "";
   const zipError = zipTouched && form.zipCode.length > 0 && !zipValid ? "5 digits required" : "";
   const addressValid = form.country === "japan"
-    ? postalValid && !!form.prefecture && form.city.trim().length > 0
-    : form.cityStreetNumber.trim().length > 0 && !!form.state && zipValid;
+    ? postalValid && !!form.prefecture && form.city.trim().length > 0 && form.cityStreetNumber.trim().length > 0
+    : form.cityStreetNumber.trim().length > 0 && form.city.trim().length > 0 && !!form.state && zipValid;
   const namesValid = !!(form.lastName.trim() && form.firstName.trim() && form.lastNameKana.trim() && form.firstNameKana.trim());
   const canSave = !!(namesValid && emailValid && form.dob && addressValid && (form.phone.length === 0 || phoneValid));
   const countryLabel = form.country === "usa" ? t.shippingUSA : t.shippingJapan;
@@ -940,7 +940,7 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
   }
 
   function chooseProfileCandidate(c: { prefecture: string; city: string; streetNumber: string }) {
-    persistForm((f) => ({ ...f, prefecture: c.prefecture, city: c.city, streetNumber: c.streetNumber }));
+    persistForm((f) => ({ ...f, prefecture: c.prefecture, city: c.city, cityStreetNumber: c.streetNumber }));
     if (searchTimer.current) clearTimeout(searchTimer.current);
     setCandidates([]);
     setSearching(false);
@@ -1063,17 +1063,22 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
             </button>
           </div>
 
-          {/* Country (read-only) */}
-          <div className="mt-2">
-            <Field label={t.shippingCountry} value={countryLabel} onChange={() => {}} required placeholder="" readOnly />
-          </div>
-
           {/* Japan address fields */}
           {form.country === "japan" && (
             <>
+              <div className="mt-2">
+                <Field label={t.profileAddress} value={form.cityStreetNumber} onChange={(v) => setField("cityStreetNumber", v)} required placeholder={t.profilePlaceholder} />
+              </div>
+              <div className="mt-2">
+                <Field label={t.profileAddressLine2} value={form.apartment} onChange={(v) => setField("apartment", v)} placeholder={t.profilePlaceholder} />
+              </div>
               <div className="mt-2 flex gap-2">
-                <Field label={t.profilePostalCode} value={form.postalCode} onChange={setPostalCode} onBlur={() => setPostalTouched(true)} half required placeholder={t.profilePostalCode} valid={postalValid && form.postalCode.length > 0} error={postalError} />
+                <Field label={t.shippingCountry} value={countryLabel} onChange={() => {}} half required placeholder="" readOnly />
                 <PrefectureSelect value={form.prefecture} onChange={(v) => setField("prefecture", v)} label={t.profilePrefecture} lang={lang} />
+              </div>
+              <div className="mt-2 flex gap-2">
+                <Field label={t.profileCity} value={form.city} onChange={(v) => setField("city", v)} half required placeholder={t.profilePlaceholder} />
+                <Field label={t.profilePostalCode} value={form.postalCode} onChange={setPostalCode} onBlur={() => setPostalTouched(true)} half required placeholder={t.profilePostalCode} valid={postalValid && form.postalCode.length > 0} error={postalError} />
               </div>
               {!searching && candidates.length === 0 && (
                 <p className="mt-1 mb-1 text-[10.5px] text-[#a2a8b0]">{t.postcodeHint}</p>
@@ -1106,12 +1111,6 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
                   </div>
                 </div>
               )}
-              <div className="mt-2">
-                <Field label={t.profileAddress} value={form.city} onChange={(v) => setField("city", v)} required placeholder={t.profilePlaceholder} />
-              </div>
-              <div className="mt-2">
-                <Field label={t.profileAddressLine2} value={form.streetNumber} onChange={(v) => setField("streetNumber", v)} placeholder={t.profilePlaceholder} />
-              </div>
             </>
           )}
 
@@ -1119,16 +1118,18 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
           {form.country === "usa" && (
             <>
               <div className="mt-2">
-                <Field label={t.profileAddress} value={form.cityStreetNumber} onChange={(v) => setField("cityStreetNumber", v)} required placeholder="e.g. 123 Main St, Springfield" />
+                <Field label={t.profileAddress} value={form.cityStreetNumber} onChange={(v) => setField("cityStreetNumber", v)} required placeholder={t.profilePlaceholder} />
               </div>
               <div className="mt-2">
-                <Field label={t.profileAddressLine2} value={form.streetNumber} onChange={(v) => setField("streetNumber", v)} placeholder="Address line 2 (optional)" />
+                <Field label={t.profileAddressLine2} value={form.apartment} onChange={(v) => setField("apartment", v)} placeholder={t.profilePlaceholder} />
               </div>
-              <div className="mt-2">
+              <div className="mt-2 flex gap-2">
+                <Field label={t.shippingCountry} value={countryLabel} onChange={() => {}} half required placeholder="" readOnly />
                 <USStateSelect value={form.state} onChange={(v) => setField("state", v)} label={t.shippingState} />
               </div>
-              <div className="mt-2">
-                <Field label={t.shippingZipCode} value={form.zipCode} onChange={(v) => setField("zipCode", v.replace(/\D/g, "").slice(0, 5))} onBlur={() => setZipTouched(true)} required placeholder="e.g. 90210" valid={zipValid && form.zipCode.length > 0} error={zipError} />
+              <div className="mt-2 flex gap-2">
+                <Field label={t.profileCity} value={form.city} onChange={(v) => setField("city", v)} half required placeholder={t.profilePlaceholder} />
+                <Field label={t.shippingZipCode} value={form.zipCode} onChange={(v) => setField("zipCode", v.replace(/\D/g, "").slice(0, 5))} onBlur={() => setZipTouched(true)} half required placeholder="e.g. 90210" valid={zipValid && form.zipCode.length > 0} error={zipError} />
               </div>
             </>
           )}

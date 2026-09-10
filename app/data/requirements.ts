@@ -793,8 +793,8 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
         items: [
           "Last/first name and katakana name pairs, then read-only email.",
           "Optional phone with country dial prefix (+81 / +1); date of birth picker; country is read-only.",
-          "Japan: postal code lookup (mocked), prefecture, Address, optional Address line 2.",
-          "USA: Address, optional Address line 2, state, 5-digit zip.",
+          "Japan: Address line 1, optional Address line 2, then Country + Prefecture, then City + postal code lookup (mocked).",
+          "USA: Address line 1, optional Address line 2, then Country + state, then City + 5-digit zip.",
           "Support note plus a compact right-aligned Save.",
         ],
         validation: [
