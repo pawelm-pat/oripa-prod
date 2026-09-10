@@ -21,21 +21,13 @@ export type ProfilePageChrome = {
 export const PROFILE_AVATAR_KEY = "profileAvatar";
 
 export function ProfileAvatar({ src, size }: { src?: string | null; size: number }) {
-  if (src) {
-    return <img src={src} alt="" className="shrink-0 rounded-full object-cover" style={{ width: size, height: size }} />;
-  }
   return (
-    <span
-      className="relative shrink-0 overflow-hidden rounded-full bg-[#c8061a]"
+    <img
+      src={src || "/oripa-emblem.png"}
+      alt=""
+      className="shrink-0 rounded-full object-cover"
       style={{ width: size, height: size }}
-      aria-hidden
-    >
-      <img
-        src="/oripa-logo.png"
-        alt=""
-        className="absolute left-[-10%] top-[16%] h-[68%] w-auto max-w-none brightness-0 invert"
-      />
-    </span>
+    />
   );
 }
 
@@ -823,10 +815,9 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
       label: t.profileAccountId,
       content: (
         <div className="px-4 pb-4">
-          <p className="mb-3 text-[13px] font-semibold text-[#8a9099]">xxxxxx</p>
-          <div className="mb-4 flex justify-center">
-            <div className="relative">
-              <ProfileAvatar src={avatarUrl} size={72} />
+          <div className="mb-5 flex justify-center">
+            <div className="relative h-20 w-20">
+              <ProfileAvatar src={avatarUrl} size={80} />
               <input
                 ref={avatarInputRef}
                 type="file"
@@ -850,7 +841,7 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
                 type="button"
                 aria-label={t.profileEditPhoto}
                 onClick={() => avatarInputRef.current?.click()}
-                className="absolute -right-8 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center text-[#D10005]"
+                className="absolute -right-7 bottom-1 flex h-6 w-6 items-center justify-center text-[#D10005]"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 20h9" />
@@ -871,10 +862,10 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
               {displayName.trim() && <span className="absolute right-2"><GreenCheck /></span>}
             </div>
           </div>
-          <div className="mt-3 flex justify-end">
+          <div className="mt-4 flex justify-end">
             <button
               onClick={() => setDisplayNameSaved(true)}
-              className="rounded-xl px-5 py-2.5 text-[13px] font-bold text-white transition"
+              className="rounded-lg px-6 py-2.5 text-[13px] font-bold text-white transition"
               style={{ background: displayNameSaved ? "#22c55e" : "#D10005" }}
             >
               {displayNameSaved ? t.profileSaved : t.profileSave}
@@ -1212,7 +1203,10 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
               onClick={() => toggle(sec.key)}
               className="flex w-full items-center gap-2 px-4 py-3.5 text-left"
             >
-              <span className="flex-1 text-[14px] font-semibold text-[#1d2129]">{sec.label}</span>
+              <span className="flex min-w-0 flex-1 items-center gap-3">
+                <span className="text-[14px] font-semibold text-[#1d2129]">{sec.label}</span>
+                {sec.key === "accountId" && <span className="text-[13px] font-semibold text-[#8a9099]">xxxxxx</span>}
+              </span>
               {sec.badge && (
                 <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ background: sec.badge.bg }}>{sec.badge.label}</span>
               )}
@@ -1224,7 +1218,7 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
                 <path d="M6 9l6 6 6-6" />
               </svg>
             </button>
-            {open === sec.key && <div className="border-t border-black/[0.06] pt-3">{sec.content}</div>}
+            {open === sec.key && <div className={sec.key === "accountId" ? "pt-1" : "border-t border-black/[0.06] pt-3"}>{sec.content}</div>}
           </div>
         ))}
         {/* Account Verifications group */}
