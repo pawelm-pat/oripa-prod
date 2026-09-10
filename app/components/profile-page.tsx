@@ -18,18 +18,24 @@ export type ProfilePageChrome = {
   header: ReactNode;
 };
 
-function CrownEmblem({ size = 96 }: { size?: number }) {
+export const PROFILE_AVATAR_KEY = "profileAvatar";
+
+export function ProfileAvatar({ src, size }: { src?: string | null; size: number }) {
+  if (src) {
+    return <img src={src} alt="" className="shrink-0 rounded-full object-cover" style={{ width: size, height: size }} />;
+  }
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" className="shrink-0" aria-hidden>
-      <circle cx="50" cy="50" r="50" fill="#c8061a" />
-      <circle cx="50" cy="50" r="44" fill="none" stroke="#fff" strokeOpacity="0.25" strokeWidth="1.5" />
-      {/* wings */}
-      <path d="M50 40c-9-7-20-9-29-6 4 6 12 11 22 12M50 40c9-7 20-9 29-6-4 6-12 11-22 12" fill="#fff" opacity="0.92" />
-      {/* crown */}
-      <path d="M38 30l4 6 8-9 8 9 4-6 1.5 9h-27z" fill="#fff" />
-      {/* O */}
-      <text x="50" y="72" textAnchor="middle" fontSize="40" fontWeight="900" fontStyle="italic" fill="#fff">O</text>
-    </svg>
+    <span
+      className="relative shrink-0 overflow-hidden rounded-full bg-[#c8061a]"
+      style={{ width: size, height: size }}
+      aria-hidden
+    >
+      <img
+        src="/oripa-logo.png"
+        alt=""
+        className="absolute left-[-10%] top-[16%] h-[68%] w-auto max-w-none brightness-0 invert"
+      />
+    </span>
   );
 }
 
@@ -661,6 +667,10 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
 
   // Form state
   const [displayNameSaved, setDisplayNameSaved] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(() => {
+    try { return sessionStorage.getItem(PROFILE_AVATAR_KEY); } catch { return null; }
+  });
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   type ProfileForm = {
     lastName: string; firstName: string; lastNameKana: string; firstNameKana: string;
     email: string; dob: string; phone: string;
@@ -814,8 +824,40 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
       content: (
         <div className="px-4 pb-4">
           <p className="mb-3 text-[13px] font-semibold text-[#8a9099]">xxxxxx</p>
-          <div className="flex justify-center mb-4">
-            <CrownEmblem size={72} />
+          <div className="mb-4 flex justify-center">
+            <div className="relative">
+              <ProfileAvatar src={avatarUrl} size={72} />
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/bmp,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (!file || !file.type.startsWith("image/")) return;
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    const next = typeof reader.result === "string" ? reader.result : "";
+                    if (!next) return;
+                    setAvatarUrl(next);
+                    try { sessionStorage.setItem(PROFILE_AVATAR_KEY, next); } catch {}
+                  };
+                  reader.readAsDataURL(file);
+                }}
+              />
+              <button
+                type="button"
+                aria-label={t.profileEditPhoto}
+                onClick={() => avatarInputRef.current?.click()}
+                className="absolute -right-8 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center text-[#D10005]"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </svg>
+              </button>
+            </div>
           </div>
           <div className="w-full">
             <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{t.profileDisplayName}<span className="ml-0.5 text-[#D10005]">*</span></label>
@@ -829,13 +871,15 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
               {displayName.trim() && <span className="absolute right-2"><GreenCheck /></span>}
             </div>
           </div>
-          <button
-            onClick={() => setDisplayNameSaved(true)}
-            className="mt-3 w-full rounded-xl py-3 text-[14px] font-bold text-white transition"
-            style={{ background: displayNameSaved ? "#22c55e" : "#D10005" }}
-          >
-            {displayNameSaved ? t.profileSaved : t.profileSave}
-          </button>
+          <div className="mt-3 flex justify-end">
+            <button
+              onClick={() => setDisplayNameSaved(true)}
+              className="rounded-xl px-5 py-2.5 text-[13px] font-bold text-white transition"
+              style={{ background: displayNameSaved ? "#22c55e" : "#D10005" }}
+            >
+              {displayNameSaved ? t.profileSaved : t.profileSave}
+            </button>
+          </div>
         </div>
       ),
     },
@@ -1163,7 +1207,7 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
 
       <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-3 space-y-2">
         {sections.filter((s) => !["idVerification", "documentUpload"].includes(s.key)).map((sec) => (
-          <div key={sec.key} className={`${sec.key === "personalInfo" ? "overflow-visible" : "overflow-hidden"} rounded-xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.07)]`}>
+          <div key={sec.key} className={`${sec.key === "personalInfo" || sec.key === "accountId" ? "overflow-visible" : "overflow-hidden"} rounded-xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.07)]`}>
             <button
               onClick={() => toggle(sec.key)}
               className="flex w-full items-center gap-2 px-4 py-3.5 text-left"
