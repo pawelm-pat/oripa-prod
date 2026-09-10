@@ -1252,13 +1252,15 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
           <PwField label={t.profileOldPassword} value={passwords.old} onChange={(v) => { setPasswords((p) => ({ ...p, old: v })); setPwChanged(false); }} />
           <PwField label={t.profileNewPassword} value={passwords.newPw} onChange={(v) => { setPasswords((p) => ({ ...p, newPw: v })); setPwChanged(false); }} />
           <PwField label={t.profileRepeatPassword} value={passwords.repeat} onChange={(v) => { setPasswords((p) => ({ ...p, repeat: v })); setPwChanged(false); }} />
-          <button
-            onClick={() => { if (passwords.newPw && passwords.newPw === passwords.repeat) { setPwChanged(true); setPasswords({ old: "", newPw: "", repeat: "" }); } }}
-            className="w-full rounded-xl py-3 text-[14px] font-bold text-white transition"
-            style={{ background: pwChanged ? "#22c55e" : "#D10005" }}
-          >
-            {pwChanged ? t.profileSaved : t.profileChangePasswordBtn}
-          </button>
+          <div className="flex justify-end">
+            <button
+              onClick={() => { if (passwords.newPw && passwords.newPw === passwords.repeat) { setPwChanged(true); setPasswords({ old: "", newPw: "", repeat: "" }); } }}
+              className="rounded-xl px-5 py-2.5 text-[13px] font-bold text-white transition"
+              style={{ background: pwChanged ? "#22c55e" : "#D10005" }}
+            >
+              {pwChanged ? t.profileSaved : t.profileChangePasswordBtn}
+            </button>
+          </div>
         </div>
       ),
     },
