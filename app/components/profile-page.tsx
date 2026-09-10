@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Lang, ShippingCountry } from "../lib/types";
 import { STR, type Dict } from "../lib/i18n";
+import { GoogleAuthIcon, LineAuthIcon } from "./auth";
 import { PREFECTURES_EN, PREFECTURES_JA, US_STATES } from "../data/prizes";
 import type { KycState } from "./kyc";
 
@@ -1188,10 +1189,8 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
   }
 
   const socialProviders = [
-    { name: "LINE", icon: <svg width="22" height="22" viewBox="0 0 40 40"><rect width="40" height="40" rx="8" fill="#06C755" /><text x="20" y="27" textAnchor="middle" fontSize="20" fill="white" fontWeight="bold">L</text></svg> },
-    { name: "Google", icon: <svg width="22" height="22" viewBox="0 0 40 40"><rect width="40" height="40" rx="8" fill="white" stroke="#e5e8ec" strokeWidth="1.5" /><text x="20" y="27" textAnchor="middle" fontSize="18" fontWeight="bold" fill="#4285F4">G</text></svg> },
-    { name: "Facebook", icon: <svg width="22" height="22" viewBox="0 0 40 40"><rect width="40" height="40" rx="8" fill="#1877F2" /><text x="20" y="28" textAnchor="middle" fontSize="22" fontWeight="bold" fill="white">f</text></svg> },
-    { name: "Apple", icon: <svg width="22" height="22" viewBox="0 0 40 40"><rect width="40" height="40" rx="8" fill="#1d2129" /><text x="20" y="27" textAnchor="middle" fontSize="18" fill="white"></text></svg> },
+    { name: "LINE", icon: <LineAuthIcon size={22} /> },
+    { name: "Google", icon: <GoogleAuthIcon size={22} /> },
   ];
 
   type SectionDef = { key: AccordionKey; label: string; required?: boolean; badge?: { label: string; bg: string }; content: ReactNode };

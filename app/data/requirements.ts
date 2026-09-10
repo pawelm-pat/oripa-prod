@@ -806,7 +806,7 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
       },
       {
         title: "Social Connect",
-        items: ["LINE, Google, Facebook, Apple rows; connected state from session auth (LINE/Google)."],
+        items: ["LINE and Google rows with official logos; connected state from session auth (LINE/Google)."],
         tbc: ["Connect / disconnect actions are display-only."],
       },
       {
