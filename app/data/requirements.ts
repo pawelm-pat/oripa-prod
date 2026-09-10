@@ -817,7 +817,6 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
             "Scenarios (desktop control / ?scenario=): happy, identityReview, identityAttention, poaReview, poaAttention, none (skip gating).",
             "PoA step CTA only when identity is approved; attention screens support retry (ID) or locked resubmit (PoA).",
           ] },
-          { text: "Payment Method Verification", sub: ["Select Card + card number, then Jumio-style upload flow; marks the card verified."] },
           { text: "Document Upload", sub: ["Full-page upload with type select, file pick, pending/success overlays and history."] },
         ],
       },

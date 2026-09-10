@@ -11,7 +11,7 @@ import type { KycState } from "./kyc";
    Ported from the POC ProfilePage. Both My Account CTAs open this screen.
    Accordion sections: Account ID, Personal Information, Social Connect,
    Change Password, Communication Preferences, plus Account Verifications
-   (ID / Payment Method / Document Upload) with Jumio + KYC + phone OTP. */
+   (ID / Document Upload) with KYC + phone OTP. */
 
 export type ProfilePageChrome = {
   header: ReactNode;
@@ -539,215 +539,8 @@ function VeriffSuccessOverlay({ type, idDone, addrDone, t, onDismiss }: {
 void VeriffModalScreen;
 void VeriffSuccessOverlay;
 
-
-type JumioStrings = {
-  jumioStartTitle: string; jumioStartDesc: string; jumioStartBullets: string[];
-  jumioNext: string; jumioUploadCardTitle: string; jumioUploadCardDesc: string;
-  jumioCaptureImage: string; jumioUploadFile: string;
-  jumioPageUploaded: string; jumioProcessingTitle: string; jumioFinishing: string;
-};
-
-type JumioStep = "start" | "upload" | "scan" | "processing";
-
-function JumioLogo() {
-  return (
-    <svg width="72" height="22" viewBox="0 0 90 22">
-      <text x="0" y="16" fontSize="14" fontWeight="800" fill="#1d2129" fontFamily="system-ui,sans-serif">jumio</text>
-      <circle cx="82" cy="11" r="8" fill="#D10005" />
-      <path d="M78.5 11l2.5 2.5 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-    </svg>
-  );
-}
-
-function JumioPaymentModal({ t, onClose, onComplete }: {
-  t: JumioStrings; onClose: () => void; onComplete: () => void;
-}) {
-  const [step, setStep] = useState<JumioStep>("start");
-  const [frontUploaded, setFrontUploaded] = useState(false);
-
-  useEffect(() => {
-    if (step !== "processing") return;
-    const timer = setTimeout(() => { onComplete(); }, 2200);
-    return () => clearTimeout(timer);
-  }, [step, onComplete]);
-
-  if (step === "processing") {
-    return (
-      <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white">
-        <div className="flex gap-2 mb-6">
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="h-3 w-3 rounded-full"
-              style={{ background: "#22c55e", animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite` }}
-            />
-          ))}
-        </div>
-        <h2 className="text-[18px] font-bold text-[#1d2129] mb-1">{t.jumioProcessingTitle}</h2>
-        <p className="text-[13px] text-[#8a9099]">{t.jumioFinishing}</p>
-        <style>{`@keyframes bounce { 0%,80%,100%{transform:scale(0.8);opacity:0.5} 40%{transform:scale(1.2);opacity:1} }`}</style>
-      </div>
-    );
-  }
-
-  if (step === "scan") {
-    return (
-      <div className="absolute inset-0 z-50 flex flex-col bg-white">
-        <div className="flex items-center justify-between px-4 pt-5 pb-3 shrink-0">
-          <button onClick={() => setStep("upload")} className="flex h-8 w-8 items-center justify-center text-[#5c626b]">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          </button>
-          <JumioLogo />
-          <div className="w-8" />
-        </div>
-
-        <div className="px-5 pt-2 pb-3 shrink-0 border-b border-[#e5e8ec]">
-          <h2 className="text-[16px] font-bold text-[#1d2129]">{t.jumioUploadCardTitle}</h2>
-          <p className="text-[11px] text-[#5c626b] mt-0.5 leading-relaxed">{t.jumioUploadCardDesc}</p>
-        </div>
-
-        <div className="flex flex-1 flex-col items-center justify-center px-5 gap-4">
-          {/* Front card slot */}
-          <button
-            onClick={() => setFrontUploaded(true)}
-            className="w-full h-36 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-colors"
-            style={{ borderColor: frontUploaded ? "#22c55e" : "#e5e8ec", background: frontUploaded ? "#f0fdf4" : "#f9fafb" }}
-          >
-            {frontUploaded ? (
-              <>
-                <svg width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13" fill="#22c55e" /><path d="M8 14l4 4 8-8" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
-                <span className="text-[12px] font-semibold text-[#22c55e]">Front uploaded</span>
-              </>
-            ) : (
-              <>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8a9099" strokeWidth="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
-                <span className="text-[12px] text-[#8a9099]">Front of card</span>
-              </>
-            )}
-          </button>
-          {/* Back card slot */}
-          <div className="w-full h-36 rounded-xl border-2 border-dashed border-[#e5e8ec] bg-[#f9fafb] flex flex-col items-center justify-center gap-2">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8a9099" strokeWidth="1.5"><polyline points="16 16 12 12 8 16" /><line x1="12" y1="12" x2="12" y2="21" /><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" /></svg>
-            <span className="text-[12px] text-[#8a9099]">Back of card</span>
-          </div>
-
-          {frontUploaded && (
-            <p className="text-[12px] font-semibold text-[#22c55e]">{t.jumioPageUploaded}</p>
-          )}
-        </div>
-
-        <div className="shrink-0 px-5 pb-8 pt-3">
-          <button
-            onClick={() => { if (frontUploaded) setStep("processing"); }}
-            className="w-full rounded-xl py-4 text-[15px] font-bold text-white transition-opacity"
-            style={{ background: "#22c55e", opacity: frontUploaded ? 1 : 0.45 }}
-          >
-            {t.jumioNext}
-          </button>
-          <p className="mt-2 text-center text-[10px] text-[#8a9099]">Powered by <span className="font-bold">Jumio</span></p>
-        </div>
-      </div>
-    );
-  }
-
-  if (step === "upload") {
-    return (
-      <div className="absolute inset-0 z-50 flex flex-col bg-white">
-        <div className="flex items-center justify-between px-4 pt-5 pb-3 shrink-0">
-          <button onClick={() => setStep("start")} className="flex h-8 w-8 items-center justify-center text-[#5c626b]">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          </button>
-          <JumioLogo />
-          <div className="w-8" />
-        </div>
-
-        <div className="px-5 pt-2 pb-3 shrink-0 border-b border-[#e5e8ec]">
-          <h2 className="text-[16px] font-bold text-[#1d2129]">{t.jumioUploadCardTitle}</h2>
-          <p className="text-[11px] text-[#5c626b] mt-0.5 leading-relaxed">{t.jumioUploadCardDesc}</p>
-        </div>
-
-        <div className="flex flex-1 flex-col justify-center px-5 gap-3">
-          <button
-            onClick={() => setStep("scan")}
-            className="flex items-center gap-4 rounded-xl border border-[#e5e8ec] bg-white px-4 py-4 text-left shadow-sm active:bg-[#f9fafb]"
-          >
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#f4f5f7]">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1d2129" strokeWidth="1.7"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
-            </div>
-            <span className="text-[14px] font-semibold text-[#1d2129]">{t.jumioCaptureImage}</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a9099" strokeWidth="2" className="ml-auto"><path d="M9 18l6-6-6-6" /></svg>
-          </button>
-          <button
-            onClick={() => setStep("scan")}
-            className="flex items-center gap-4 rounded-xl border border-[#e5e8ec] bg-white px-4 py-4 text-left shadow-sm active:bg-[#f9fafb]"
-          >
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#f4f5f7]">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1d2129" strokeWidth="1.7"><polyline points="16 16 12 12 8 16" /><line x1="12" y1="12" x2="12" y2="21" /><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" /></svg>
-            </div>
-            <span className="text-[14px] font-semibold text-[#1d2129]">{t.jumioUploadFile}</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a9099" strokeWidth="2" className="ml-auto"><path d="M9 18l6-6-6-6" /></svg>
-          </button>
-        </div>
-
-        <div className="shrink-0 px-5 pb-8 pt-3">
-          <p className="text-center text-[10px] text-[#8a9099]">Powered by <span className="font-bold">Jumio</span></p>
-        </div>
-      </div>
-    );
-  }
-
-  /* step === "start" */
-  return (
-    <div className="absolute inset-0 z-50 flex flex-col bg-white">
-      <div className="flex items-center justify-between px-4 pt-5 pb-3 shrink-0">
-        <div className="w-8" />
-        <JumioLogo />
-        <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full text-[#5c626b]">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /></svg>
-        </button>
-      </div>
-
-      <div className="flex flex-1 flex-col px-6 pt-3 overflow-y-auto">
-        {/* Globe icon */}
-        <div className="flex justify-center mb-5">
-          <svg width="80" height="80" viewBox="0 0 80 80">
-            <circle cx="40" cy="40" r="36" fill="#e8f4fd" stroke="#bee3f8" strokeWidth="1.5" />
-            <ellipse cx="40" cy="40" rx="15" ry="36" fill="none" stroke="#90cdf4" strokeWidth="1.5" />
-            <line x1="4" y1="40" x2="76" y2="40" stroke="#90cdf4" strokeWidth="1.5" />
-            <path d="M9 24 Q40 32 71 24" fill="none" stroke="#90cdf4" strokeWidth="1.5" />
-            <path d="M9 56 Q40 48 71 56" fill="none" stroke="#90cdf4" strokeWidth="1.5" />
-          </svg>
-        </div>
-        <h2 className="text-[20px] font-bold text-[#1d2129] mb-2">{t.jumioStartTitle}</h2>
-        <p className="text-[13px] leading-relaxed text-[#5c626b] mb-5">{t.jumioStartDesc}</p>
-        <ul className="space-y-3">
-          {(t.jumioStartBullets as string[]).map((bullet, i) => (
-            <li key={i} className="flex items-start gap-3">
-              <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#22c55e]">
-                <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              </div>
-              <span className="text-[13px] text-[#1d2129]">{bullet}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="shrink-0 px-5 pb-8 pt-4">
-        <button
-          onClick={() => setStep("upload")}
-          className="w-full rounded-xl py-4 text-[15px] font-bold text-white"
-          style={{ background: "#22c55e" }}
-        >
-          {t.jumioNext}
-        </button>
-        <p className="mt-2 text-center text-[10px] text-[#8a9099]">Powered by <span className="font-bold">Jumio</span></p>
-      </div>
-    </div>
-  );
-}
-
 /* ── ProfilePage helpers (defined outside to prevent focus loss on re-render) ── */
-type AccordionKey = "accountId" | "personalInfo" | "socialLinks" | "accountVerifications" | "idVerification" | "paymentMethod" | "documentUpload" | "changePassword" | "notifications";
+type AccordionKey = "accountId" | "personalInfo" | "socialLinks" | "accountVerifications" | "idVerification" | "documentUpload" | "changePassword" | "notifications";
 
 function GreenCheck() {
   return (
@@ -1103,10 +896,6 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
   const canSave = !!(emailValid && form.dob && addressValid && (form.phone.length === 0 || phoneValid));
   const countryLabel = form.country === "usa" ? t.shippingUSA : t.shippingJapan;
   const [showDobPicker, setShowDobPicker] = useState(false);
-  const [paymentMethodType, setPaymentMethodType] = useState("");
-  const [paymentCardNumber, setPaymentCardNumber] = useState("");
-  const [showJumioModal, setShowJumioModal] = useState(false);
-  const [verifiedCards, setVerifiedCards] = useState<Record<string, boolean>>({});
   const [passwords, setPasswords] = useState({ old: "", newPw: "", repeat: "" });
   const [pwChanged, setPwChanged] = useState(false);
   const [prefs, setPrefs] = useState({ email: true, push: false, sms: false });
@@ -1440,88 +1229,6 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
       ),
     },
     {
-      key: "paymentMethod",
-      label: t.profilePaymentMethod,
-      content: (
-        <div className="px-4 pb-4">
-          {/* Payment method dropdown */}
-          <div className="w-full">
-            <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{t.profilePaymentMethodField}<span className="ml-0.5 text-[#D10005]">*</span></label>
-            <div className="relative">
-              <select
-                value={paymentMethodType}
-                onChange={(e) => { setPaymentMethodType(e.target.value); setPaymentCardNumber(""); }}
-                className="w-full appearance-none rounded-lg border border-[#e5e8ec] bg-white py-2.5 pl-3 pr-10 text-[13px] text-[#1d2129] outline-none"
-              >
-                <option value="">{t.profilePlaceholder}</option>
-                <option value="card">Card</option>
-              </select>
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#8a9099]">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>
-              </span>
-            </div>
-          </div>
-          {/* Card number dropdown — shown when card is selected */}
-          {paymentMethodType === "card" && (
-            <div className="mt-3 w-full">
-              <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{t.profileCardNumber}<span className="ml-0.5 text-[#D10005]">*</span></label>
-              <div className="relative">
-                <select
-                  value={paymentCardNumber}
-                  onChange={(e) => setPaymentCardNumber(e.target.value)}
-                  className="w-full appearance-none rounded-lg border border-[#e5e8ec] bg-white py-2.5 pl-3 pr-10 text-[13px] text-[#1d2129] outline-none"
-                >
-                  <option value="">{t.profileSelectCard}</option>
-                  <option value="card1">**** **** **** 1111</option>
-                  <option value="card2">**** **** **** 4242</option>
-                  <option value="card3">**** **** **** 9876</option>
-                </select>
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#8a9099]">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>
-                </span>
-              </div>
-              {paymentCardNumber && (
-                <div className="mt-2 flex items-center gap-2 rounded-lg bg-[#f4f5f7] px-3 py-2">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5c626b" strokeWidth="1.5"><rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>
-                  <span className="text-[12px] font-semibold text-[#1d2129]">
-                    {paymentCardNumber === "card1" ? "****1111" : paymentCardNumber === "card2" ? "****4242" : "****9876"}
-                  </span>
-                  <span className="ml-auto">
-                    <svg width="14" height="14" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill="#22c55e" /><path d="M6 10l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-          <ul className="mt-3 space-y-1.5">
-            {(t.profilePaymentBullets as string[]).map((bullet, i) => (
-              <li key={i} className="flex items-start gap-2 text-[11px] text-[#5c626b]">
-                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#5c626b]" />
-                {bullet}
-              </li>
-            ))}
-          </ul>
-          {paymentCardNumber && verifiedCards[paymentCardNumber] && (
-            <div className="mt-3 flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#22c55e]" />
-              <span className="text-[12px] font-semibold text-[#22c55e]">{t.profileVerifiedCard}</span>
-            </div>
-          )}
-          <button
-            onClick={() => {
-              const canSubmit = paymentMethodType && (paymentMethodType !== "card" || paymentCardNumber) && !verifiedCards[paymentCardNumber];
-              if (canSubmit) setShowJumioModal(true);
-            }}
-            className="mt-4 w-full rounded-xl py-3 text-[14px] font-bold text-white transition-opacity"
-            style={{ background: "#D10005", opacity: (paymentMethodType && (paymentMethodType !== "card" || paymentCardNumber) && !verifiedCards[paymentCardNumber]) ? 1 : 0.5, cursor: verifiedCards[paymentCardNumber] ? "not-allowed" : "pointer" }}
-          >
-            {t.profileSubmitProof}
-          </button>
-          <p className="mt-3 text-center text-[11px] leading-relaxed text-[#8a9099]">{t.profileKycNote}</p>
-        </div>
-      ),
-    },
-    {
       key: "documentUpload",
       label: t.profileDocumentUpload,
       content: (
@@ -1597,16 +1304,6 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
           }}
         />
       )}
-      {/* Jumio payment verification modal */}
-      {showJumioModal && (
-        <div className="absolute inset-0 z-50">
-          <JumioPaymentModal
-            t={t}
-            onClose={() => setShowJumioModal(false)}
-            onComplete={() => { setShowJumioModal(false); setVerifiedCards((prev) => ({ ...prev, [paymentCardNumber]: true })); }}
-          />
-        </div>
-      )}
       {/* Document upload sub-page */}
       {showDocUploadPage && (
         <div className="absolute inset-0 z-40">
@@ -1634,7 +1331,7 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
       </div>
 
       <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-3 space-y-2">
-        {sections.filter((s) => !["idVerification", "paymentMethod", "documentUpload"].includes(s.key)).map((sec) => (
+        {sections.filter((s) => !["idVerification", "documentUpload"].includes(s.key)).map((sec) => (
           <div key={sec.key} className="overflow-hidden rounded-xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.07)]">
             <button
               onClick={() => toggle(sec.key)}
@@ -1672,7 +1369,7 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
           </button>
           {accVerifOpen && (
             <div className="border-t border-black/[0.06] pt-2 pb-2 px-3 space-y-2">
-              {sections.filter((s) => ["idVerification", "paymentMethod", "documentUpload"].includes(s.key)).map((sec) => (
+              {sections.filter((s) => ["idVerification", "documentUpload"].includes(s.key)).map((sec) => (
                 <div key={sec.key} className="overflow-hidden rounded-xl bg-[#f8f9fa] border border-[#e5e8ec]">
                   <button
                     onClick={() => toggle(sec.key)}
