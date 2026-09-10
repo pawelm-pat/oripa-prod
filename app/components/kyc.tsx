@@ -333,25 +333,23 @@ function KycDetailsFields({ c, lang, details, onChange }: { c: KycCopy; lang: "e
     />
     <label className="block"><span className={labelClass}>{c.addressLabel}{required}</span><input value={details.street} onChange={(event) => onChange({ ...details, street: event.target.value })} placeholder={placeholder} className={inputClass} /></label>
     <label className="block"><span className={labelClass}>{c.addressLine2Label}</span><input value={details.apartment} onChange={(event) => onChange({ ...details, apartment: event.target.value })} placeholder={placeholder} className={inputClass} /></label>
+    <label className="block">
+      <span className={labelClass}>{c.fields.prefecture}{required}</span>
+      <div className="relative">
+        <select value={details.prefecture} onChange={(event) => onChange({ ...details, prefecture: event.target.value })} className={`${inputClass} appearance-none pr-8`}>
+          <option value="">{c.fields.prefecture}</option>
+          {PREFECTURES_EN.map((en, i) => <option key={en} value={en}>{prefectureNames[i]}</option>)}
+        </select>
+        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[#D10005]">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
+        </span>
+      </div>
+    </label>
     <div className="flex gap-2">
-      <label className="min-w-0 flex-1"><span className={labelClass}>{c.fields.country}{required}</span><div aria-readonly="true" className={readOnlyClass}>{details.country || "Japan"}</div></label>
-      <label className="min-w-0 flex-1">
-        <span className={labelClass}>{c.fields.prefecture}{required}</span>
-        <div className="relative">
-          <select value={details.prefecture} onChange={(event) => onChange({ ...details, prefecture: event.target.value })} className={`${inputClass} appearance-none pr-8`}>
-            <option value="">{c.fields.prefecture}</option>
-            {PREFECTURES_EN.map((en, i) => <option key={en} value={en}>{prefectureNames[i]}</option>)}
-          </select>
-          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[#D10005]">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
-          </span>
-        </div>
-      </label>
-    </div>
-    <div className="flex gap-2">
-      <label className="min-w-0 flex-1"><span className={labelClass}>{c.fields.city}{required}</span><input value={details.city} onChange={(event) => onChange({ ...details, city: event.target.value })} placeholder={placeholder} className={inputClass} /></label>
       <label className="min-w-0 flex-1"><span className={labelClass}>{c.fields.postalCode}{required}</span><input value={details.postalCode} onChange={(event) => onChange({ ...details, postalCode: event.target.value })} placeholder={c.fields.postalCode} className={inputClass} /></label>
+      <label className="min-w-0 flex-1"><span className={labelClass}>{c.fields.city}{required}</span><input value={details.city} onChange={(event) => onChange({ ...details, city: event.target.value })} placeholder={placeholder} className={inputClass} /></label>
     </div>
+    <label className="block"><span className={labelClass}>{c.fields.country}{required}</span><div aria-readonly="true" className={readOnlyClass}>{details.country || "Japan"}</div></label>
   </div>;
 }
 

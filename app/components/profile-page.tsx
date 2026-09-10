@@ -926,13 +926,12 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
               <div className="mt-2">
                 <Field label={t.profileAddressLine2} value={form.apartment} onChange={(v) => setField("apartment", v)} placeholder={t.profilePlaceholder} />
               </div>
-              <div className="mt-2 flex gap-2">
-                <Field label={t.shippingCountry} value={countryLabel} onChange={() => {}} half required placeholder="" readOnly />
+              <div className="mt-2">
                 <PrefectureSelect value={form.prefecture} onChange={(v) => setField("prefecture", v)} label={t.profilePrefecture} lang={lang} />
               </div>
               <div className="mt-2 flex gap-2">
-                <Field label={t.profileCity} value={form.city} onChange={(v) => setField("city", v)} half required placeholder={t.profilePlaceholder} />
                 <Field label={t.profilePostalCode} value={form.postalCode} onChange={setPostalCode} onBlur={() => setPostalTouched(true)} half required placeholder={t.profilePostalCode} valid={postalValid && form.postalCode.length > 0} error={postalError} />
+                <Field label={t.profileCity} value={form.city} onChange={(v) => setField("city", v)} half required placeholder={t.profilePlaceholder} />
               </div>
               {!searching && candidates.length === 0 && (
                 <p className="mt-1 mb-1 text-[10.5px] text-[#a2a8b0]">{t.postcodeHint}</p>
@@ -965,6 +964,9 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
                   </div>
                 </div>
               )}
+              <div className="mt-2">
+                <Field label={t.shippingCountry} value={countryLabel} onChange={() => {}} required placeholder="" readOnly />
+              </div>
             </>
           )}
 
@@ -977,13 +979,15 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
               <div className="mt-2">
                 <Field label={t.profileAddressLine2} value={form.apartment} onChange={(v) => setField("apartment", v)} placeholder={t.profilePlaceholder} />
               </div>
-              <div className="mt-2 flex gap-2">
-                <Field label={t.shippingCountry} value={countryLabel} onChange={() => {}} half required placeholder="" readOnly />
+              <div className="mt-2">
                 <USStateSelect value={form.state} onChange={(v) => setField("state", v)} label={t.shippingState} />
               </div>
               <div className="mt-2 flex gap-2">
-                <Field label={t.profileCity} value={form.city} onChange={(v) => setField("city", v)} half required placeholder={t.profilePlaceholder} />
                 <Field label={t.shippingZipCode} value={form.zipCode} onChange={(v) => setField("zipCode", v.replace(/\D/g, "").slice(0, 5))} onBlur={() => setZipTouched(true)} half required placeholder="e.g. 90210" valid={zipValid && form.zipCode.length > 0} error={zipError} />
+                <Field label={t.profileCity} value={form.city} onChange={(v) => setField("city", v)} half required placeholder={t.profilePlaceholder} />
+              </div>
+              <div className="mt-2">
+                <Field label={t.shippingCountry} value={countryLabel} onChange={() => {}} required placeholder="" readOnly />
               </div>
             </>
           )}
