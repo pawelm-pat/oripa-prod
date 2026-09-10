@@ -5,7 +5,7 @@ import type { Category, Lang, PrizeStatus } from "./types";
 
 const SHIP_MIN_COINS = 1500;
 const FREE_SHIP_QUOTA = 3;
-const SHIP_FEE = 500;
+const SHIP_FEE = 300;
 
 type SortKey = "coinDesc" | "coinAsc" | "wonNew" | "wonOld" | "expSoon";
 
