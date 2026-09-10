@@ -6830,6 +6830,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
           lastNameKana: profile.lastNameKana || base.details.lastNameKana,
           firstNameKana: profile.firstNameKana || base.details.firstNameKana,
           email: profile.email || auth.email || base.details.email,
+          phone: profile.phone || auth.phone || base.details.phone,
           dob: profile.dob || auth.dob || base.details.dob,
           postalCode: profile.postalCode || base.details.postalCode,
           prefecture: profile.prefecture || profile.state || base.details.prefecture,

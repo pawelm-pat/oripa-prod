@@ -608,7 +608,6 @@ function Field({ label, value, onChange, onBlur, half = false, required = false,
 
 
 function PrefectureSelect({ value, onChange, label, lang }: { value: string; onChange: (val: string) => void; label: string; lang: Lang }) {
-  const filled = value.trim().length > 0;
   const names = lang === "ja" ? PREFECTURES_JA : PREFECTURES_EN;
   const placeholder = lang === "ja" ? "都道府県" : "Prefecture";
   return (
@@ -623,8 +622,8 @@ function PrefectureSelect({ value, onChange, label, lang }: { value: string; onC
           <option value="">{placeholder}</option>
           {PREFECTURES_JA.map((ja, i) => <option key={ja} value={ja}>{names[i]}</option>)}
         </select>
-        <span className="pointer-events-none absolute right-2 text-[#8a9099]">
-          {filled ? <GreenCheck /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>}
+        <span className="pointer-events-none absolute right-2 text-[#D10005]">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
         </span>
       </div>
     </div>
@@ -893,7 +892,8 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
   const addressValid = form.country === "japan"
     ? postalValid && !!form.prefecture && form.city.trim().length > 0
     : form.cityStreetNumber.trim().length > 0 && !!form.state && zipValid;
-  const canSave = !!(emailValid && form.dob && addressValid && (form.phone.length === 0 || phoneValid));
+  const namesValid = !!(form.lastName.trim() && form.firstName.trim() && form.lastNameKana.trim() && form.firstNameKana.trim());
+  const canSave = !!(namesValid && emailValid && form.dob && addressValid && (form.phone.length === 0 || phoneValid));
   const countryLabel = form.country === "usa" ? t.shippingUSA : t.shippingJapan;
   const [showDobPicker, setShowDobPicker] = useState(false);
   const [passwords, setPasswords] = useState({ old: "", newPw: "", repeat: "" });
@@ -1021,40 +1021,46 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
       label: t.profilePersonalInfo,
       content: (
         <div className="px-4 pb-4">
-          <div>
+          <div className="flex gap-2">
+            <Field label={t.profileLastName} value={form.lastName} onChange={(v) => setField("lastName", v)} half required placeholder={t.profilePlaceholder} />
+            <Field label={t.profileFirstName} value={form.firstName} onChange={(v) => setField("firstName", v)} half required placeholder={t.profilePlaceholder} />
+          </div>
+          <div className="mt-2 flex gap-2">
+            <Field label={t.profileLastNameKana} value={form.lastNameKana} onChange={(v) => setField("lastNameKana", v)} half required placeholder={t.profilePlaceholder} />
+            <Field label={t.profileFirstNameKana} value={form.firstNameKana} onChange={(v) => setField("firstNameKana", v)} half required placeholder={t.profilePlaceholder} />
+          </div>
+          <div className="mt-2">
             <Field label={t.profileEmail} value={form.email} onChange={() => {}} required type="email" placeholder={t.profilePlaceholder} valid={form.email.length > 0 && emailValid} readOnly />
           </div>
           <div className="mt-2">
-            <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{t.profileDob}</label>
+            <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{t.profilePhone}</label>
+            <div className={`flex overflow-hidden rounded-lg border bg-white ${phoneError ? "border-[#D10005]" : "border-[#e5e8ec]"}`}>
+              <span className="shrink-0 px-3 py-2.5 text-[13px] font-semibold text-[#1d2129]">{form.country === "usa" ? "+1" : "+81"}</span>
+              <div className="w-px shrink-0 self-stretch bg-[#e5e8ec]" />
+              <input
+                type="tel"
+                value={form.phone}
+                onChange={(e) => setField("phone", e.target.value.replace(/\D/g, "").slice(0, 10))}
+                onBlur={() => setPhoneTouched(true)}
+                placeholder={t.profilePhone}
+                className="min-w-0 flex-1 border-0 bg-transparent py-2.5 pl-3 pr-3 text-[13px] text-[#1d2129] placeholder:text-[#bbbec4] outline-none"
+              />
+            </div>
+            {phoneError && <p className="mt-1 text-[10px] text-[#D10005]">{phoneError}</p>}
+          </div>
+          <div className="mt-2">
+            <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{t.profileDob}<span className="ml-0.5 text-[#D10005]">*</span></label>
             <button
               type="button"
               onClick={() => setShowDobPicker(true)}
               className="relative w-full rounded-lg border py-2.5 text-left text-[13px] outline-none transition"
-              style={{ paddingLeft: "36px", paddingRight: form.dob ? "32px" : "10px", borderColor: form.dob ? "#d1d5db" : "#e5e8ec", background: "white" }}
+              style={{ paddingLeft: "36px", paddingRight: "10px", borderColor: form.dob ? "#d1d5db" : "#e5e8ec", background: "white" }}
             >
               <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#8a9099]">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
               </span>
               <span className={form.dob ? "text-[#1d2129]" : "text-[#bbbec4]"}>{form.dob ? formatDob(form.dob) : t.profilePlaceholder}</span>
-              {form.dob && (
-                <span className="absolute right-2 top-1/2 -translate-y-1/2"><GreenCheck /></span>
-              )}
             </button>
-          </div>
-          <div className="mt-2">
-            <Field label={t.profilePhone} value={form.phone} onChange={(v) => { setField("phone", v.replace(/\D/g, "").slice(0, 10)); }} onBlur={() => setPhoneTouched(true)} type="tel" placeholder={t.profilePlaceholder} valid={phoneValid && phoneVerified} error={phoneError} />
-            {!phoneVerified && (
-              <div className="mt-1 flex justify-end">
-                <button
-                  onClick={() => { if (phoneValid) setShowPhoneVerifyModal(true); }}
-                  disabled={!phoneValid}
-                  className="text-[11px] font-bold underline"
-                  style={{ color: phoneValid ? "#D10005" : "#bbbec4" }}
-                >
-                  {t.profileVerifyPhone as string}
-                </button>
-              </div>
-            )}
           </div>
 
           {/* Country (read-only) */}
@@ -1066,7 +1072,7 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
           {form.country === "japan" && (
             <>
               <div className="mt-2 flex gap-2">
-                <Field label={t.profilePostalCode} value={form.postalCode} onChange={setPostalCode} onBlur={() => setPostalTouched(true)} half required placeholder="NNN-NNNN" valid={postalValid && form.postalCode.length > 0} error={postalError} />
+                <Field label={t.profilePostalCode} value={form.postalCode} onChange={setPostalCode} onBlur={() => setPostalTouched(true)} half required placeholder={t.profilePostalCode} valid={postalValid && form.postalCode.length > 0} error={postalError} />
                 <PrefectureSelect value={form.prefecture} onChange={(v) => setField("prefecture", v)} label={t.profilePrefecture} lang={lang} />
               </div>
               {!searching && candidates.length === 0 && (
@@ -1101,10 +1107,10 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
                 </div>
               )}
               <div className="mt-2">
-                <Field label={t.profileAddress} value={form.city} onChange={(v) => setField("city", v)} required placeholder={lang === "ja" ? "住所" : "Address"} />
+                <Field label={t.profileAddress} value={form.city} onChange={(v) => setField("city", v)} required placeholder={t.profilePlaceholder} />
               </div>
               <div className="mt-2">
-                <Field label={t.profileAddressLine2} value={form.streetNumber} onChange={(v) => setField("streetNumber", v)} placeholder={lang === "ja" ? "住所2行目（任意）" : "Address line 2 (optional)"} />
+                <Field label={t.profileAddressLine2} value={form.streetNumber} onChange={(v) => setField("streetNumber", v)} placeholder={t.profilePlaceholder} />
               </div>
             </>
           )}
@@ -1127,14 +1133,17 @@ export function ProfilePage({ lang, coins, displayName, onDisplayNameChange, onB
             </>
           )}
 
-          <button
-            onClick={handleInfoSave}
-            disabled={!canSave}
-            className="mt-3 w-full rounded-xl py-3 text-[14px] font-bold text-white transition"
-            style={{ background: infoSaved ? "#22c55e" : "#D10005", opacity: canSave || infoSaved ? 1 : 0.45 }}
-          >
-            {infoSaved ? t.profileSaved : t.profileSave}
-          </button>
+          <p className="mt-4 text-[12px] leading-relaxed text-[#1d2129]">{t.profileSaveNote}</p>
+          <div className="mt-3 flex justify-end">
+            <button
+              onClick={handleInfoSave}
+              disabled={!canSave}
+              className="rounded-xl px-5 py-2.5 text-[13px] font-bold text-white transition"
+              style={{ background: infoSaved ? "#22c55e" : "#D10005", opacity: canSave || infoSaved ? 1 : 0.45 }}
+            >
+              {infoSaved ? t.profileSaved : t.profileSave}
+            </button>
+          </div>
         </div>
       ),
     },

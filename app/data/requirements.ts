@@ -791,17 +791,19 @@ export const SCREEN_REQUIREMENTS: Record<Screen, ScreenReq> = {
       {
         title: "Personal Information",
         items: [
-          "Email and country are read-only (no country dropdown).",
-          "Date of birth (picker), optional phone with Verify OTP.",
+          "Last/first name and katakana name pairs, then read-only email.",
+          "Optional phone with country dial prefix (+81 / +1); date of birth picker; country is read-only.",
           "Japan: postal code lookup (mocked), prefecture, Address, optional Address line 2.",
           "USA: Address, optional Address line 2, state, 5-digit zip.",
+          "Support note plus a compact right-aligned Save.",
         ],
         validation: [
           "Email must match a basic email pattern (not editable).",
+          "Names and katakana names are required.",
           "Phone is optional; when entered must be exactly 10 digits (digits only).",
           "Japan postal code must be NNN-NNNN.",
           "USA zip must be exactly 5 digits.",
-          "Save requires valid email, DOB and a complete address for the selected country (phone not required).",
+          "Save requires names, valid email, DOB and a complete address for the selected country (phone not required).",
         ],
       },
       {
