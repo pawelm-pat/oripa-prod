@@ -572,7 +572,7 @@ function catIcon(key: string, color: string) {
 function LegalOverlay({ lang, doc, onClose }: { lang: Lang; doc: LegalDocKey; onClose: () => void }) {
   const { title, body } = LEGAL[lang][doc];
   return (
-    <div className="absolute inset-0 z-[70] flex items-end justify-center bg-black/60" onClick={onClose}>
+    <div className="absolute inset-0 z-[95] flex items-end justify-center bg-black/60" onClick={onClose}>
       <div className="flex max-h-[86%] w-full flex-col overflow-hidden rounded-t-2xl bg-white" onClick={(e) => e.stopPropagation()}>
         <style>{`.legal-scroll::-webkit-scrollbar{width:7px}.legal-scroll::-webkit-scrollbar-track{background:rgba(0,0,0,0.05);border-radius:9999px}.legal-scroll::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.3);border-radius:9999px}.legal-scroll::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,0.45)}`}</style>
         <div className="flex shrink-0 items-center justify-between border-b border-black/10 px-4 py-3">
@@ -4639,7 +4639,11 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
   const [phoneTouched, setPhoneTouched] = useState(false);
   const [zipTouched, setZipTouched] = useState(false);
   const [streetNumTouched, setStreetNumTouched] = useState(false);
-  const [showDelete, setShowDelete] = useState<string | null>(null);
+  // The form is dirty when it differs from the address as opened, which is
+  // what decides whether Cancel needs to warn before throwing the edit away.
+  const [formBaseline, setFormBaseline] = useState<Omit<ShippingAddr, "id" | "isDefault">>(EMPTY_SHIPPING_FORM);
+  const [confirmUpdate, setConfirmUpdate] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [toast, setToast] = useState<{ text: string; visible: boolean }>({ text: "", visible: false });
   const [searching, setSearching] = useState(false);
   const [candidates, setCandidates] = useState<{ prefecture: string; city: string; streetNumber: string }[]>([]);
@@ -4686,20 +4690,22 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
     setTimeout(() => setToast({ text: "", visible: false }), 4000);
   }
 
-  function openAddForm() {
-    setForm({ ...EMPTY_SHIPPING_FORM });
-    setEditingId(null);
-    setPostalTouched(false);
-    setPhoneTouched(false);
-    setZipTouched(false);
-    setStreetNumTouched(false);
-    if (searchTimer.current) clearTimeout(searchTimer.current);
-    setSearching(false);
-    setCandidates([]);
-    setView("form");
-  }
 
   function openEditForm(addr: ShippingAddr) {
+    setFormBaseline({
+      country: addr.country,
+      lastName: addr.lastName,
+      firstName: addr.firstName,
+      phone: addr.phone,
+      postalCode: addr.postalCode,
+      prefecture: addr.prefecture,
+      city: addr.city,
+      streetNumber: addr.streetNumber,
+      apartment: addr.apartment,
+      cityStreetNumber: addr.cityStreetNumber,
+      state: addr.state,
+      zipCode: addr.zipCode,
+    });
     setForm({
       country: addr.country,
       lastName: addr.lastName,
@@ -4725,6 +4731,22 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
     setView("form");
   }
 
+  const formDirty = (Object.keys(form) as (keyof typeof form)[]).some((k) => (form[k] ?? "") !== (formBaseline[k] ?? ""));
+
+  // Cancel leaves quietly when nothing was touched and warns when it wasn't.
+  function cancelEdit() {
+    if (formDirty) { setConfirmDiscard(true); return; }
+    setEditingId(null);
+    onBack();
+  }
+
+  function discardEdit() {
+    setConfirmDiscard(false);
+    setEditingId(null);
+    setView("main");
+    onBack();
+  }
+
   function handleRegister() {
     if (editingId) {
       setAddresses(prev => prev.map(a => a.id === editingId ? { ...a, ...form } : a));
@@ -4734,26 +4756,11 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
       setAddresses(prev => [...prev, newAddr]);
     }
     setView("main");
-    pushToast(editingId ? t.toastShippingEdited : t.toastShippingAdded);
+    pushToast(editingId ? t.shippingUpdatedToast : t.toastShippingAdded);
     setEditingId(null);
   }
 
-  function handleSetDefault(id: string) {
-    setAddresses(prev => prev.map(a => ({ ...a, isDefault: a.id === id })));
-  }
 
-  function handleDelete(id: string) {
-    setAddresses(prev => {
-      const remaining = prev.filter(a => a.id !== id);
-      const wasDefault = prev.find(a => a.id === id)?.isDefault;
-      if (wasDefault && remaining.length > 0) {
-        remaining[0] = { ...remaining[0], isDefault: true };
-      }
-      return remaining;
-    });
-    setShowDelete(null);
-    pushToast(t.toastShippingDeleted);
-  }
 
   function setPostalCode(v: string) {
     const digits = v.replace(/\D/g, "").slice(0, 7);
@@ -4810,10 +4817,6 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
 
       {view === "form" && (
         <div className="animate-screen-in no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-4">
-          <div className="mb-3 flex gap-2">
-            <Field label={t.profileLastName} value={form.lastName} onChange={(v) => setForm(f => ({ ...f, lastName: v }))} half required placeholder={t.profilePlaceholder} />
-            <Field label={t.profileFirstName} value={form.firstName} onChange={(v) => setForm(f => ({ ...f, firstName: v }))} half required placeholder={t.profilePlaceholder} />
-          </div>
 
           <div className="mb-3">
             <label className="mb-1 block text-[11px] font-semibold text-[#5c626b]">{t.shippingCountry}<span className="ml-0.5 text-[#D10005]">*</span></label>
@@ -4921,8 +4924,11 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
             </div>
           </div>
 
-          <button disabled={!canSubmit} onClick={handleRegister} className="w-full rounded-xl py-3.5 text-[15px] font-bold text-white" style={{ background: canSubmit ? "#D10005" : "#d1d5db", cursor: canSubmit ? "pointer" : "not-allowed" }}>
-            {t.shippingRegister}
+          <button disabled={!canSubmit} onClick={() => setConfirmUpdate(true)} className="w-full rounded-xl py-3.5 text-[15px] font-bold text-white" style={{ background: canSubmit ? "#D10005" : "#d1d5db", cursor: canSubmit ? "pointer" : "not-allowed" }}>
+            {t.shippingUpdate}
+          </button>
+          <button onClick={cancelEdit} className="mt-2.5 w-full rounded-xl border border-[#c9ced6] bg-white py-3.5 text-[15px] font-bold text-[#5c626b]">
+            {t.cancel}
           </button>
         </div>
       )}
@@ -4953,16 +4959,8 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
                     <span className="ml-1 inline-flex h-4 items-center rounded-[3px] bg-[#00A63D] px-2 text-[9px] font-bold uppercase text-white">{t.shippingDefaultLabel}</span>
                   )}
                   <div className="ml-auto flex items-center gap-2">
-                    {!addr.isDefault && (
-                      <button onClick={() => handleSetDefault(addr.id)} className="rounded px-2 py-1 text-[10px] font-bold" style={{ background: "#f0fdf4", color: "#22a34a", border: "1px solid #22a34a" }}>
-                        {t.shippingSetDefault}
-                      </button>
-                    )}
-                    <button onClick={() => openEditForm(addr)} className="flex h-7 w-7 items-center justify-center rounded-full" style={{ background: "#22a34a" }}>
+                    <button onClick={() => openEditForm(addr)} aria-label={t.shippingEditAddress} className="flex h-7 w-7 items-center justify-center rounded-full" style={{ background: "#22a34a" }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                    </button>
-                    <button onClick={() => setShowDelete(addr.id)} className="flex h-7 w-7 items-center justify-center rounded-full" style={{ background: "#D10005" }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" /></svg>
                     </button>
                   </div>
                 </div>
@@ -4977,24 +4975,41 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
             );
           })}
 
-          <button onClick={openAddForm} className="mt-1 w-full rounded-xl border-2 border-[#1d2129] bg-white py-3 text-[14px] font-bold text-[#1d2129]">
-            {t.shippingAddNew}
-          </button>
 
           <div className="-mx-4 mt-4"><SiteFooter t={t} /></div>
         </div>
       )}
 
-      {showDelete && (
+      {/* Update: Continue writes the change, Cancel drops back into the form. */}
+      {confirmUpdate && (
         <div className="absolute inset-0 z-40 flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.45)" }}>
           <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white px-5 py-5">
-            <h2 className="text-center text-[15px] font-bold text-[#1d2129]">{t.shippingDeleteTitle}</h2>
+            <h2 className="text-center text-[15px] font-bold text-[#1d2129]">{t.shippingUpdateConfirmTitle}</h2>
+            <p className="mt-2 text-center text-[12.5px] leading-relaxed text-[#6b7075]">{t.shippingUpdateConfirmBody}</p>
             <div className="mt-4 flex gap-3">
-              <button onClick={() => setShowDelete(null)} className="flex-1 rounded-xl border border-[#e5e8ec] py-3 text-[14px] font-semibold text-[#5c626b]">
+              <button onClick={() => setConfirmUpdate(false)} className="flex-1 rounded-xl border border-[#e5e8ec] py-3 text-[14px] font-semibold text-[#5c626b]">
                 {t.shippingCancel}
               </button>
-              <button onClick={() => handleDelete(showDelete)} className="flex-1 rounded-xl py-3 text-[14px] font-bold text-white" style={{ background: "#D10005" }}>
-                {t.shippingDeleteBtn}
+              <button onClick={() => { setConfirmUpdate(false); handleRegister(); }} className="flex-1 rounded-xl py-3 text-[14px] font-bold text-white" style={{ background: "#D10005" }}>
+                {t.shippingContinue}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel with unsaved edits: Cancel returns to the form, Continue leaves. */}
+      {confirmDiscard && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.45)" }}>
+          <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white px-5 py-5">
+            <h2 className="text-center text-[15px] font-bold text-[#1d2129]">{t.shippingDiscardTitle}</h2>
+            <p className="mt-2 text-center text-[12.5px] leading-relaxed text-[#6b7075]">{t.shippingDiscardBody}</p>
+            <div className="mt-4 flex gap-3">
+              <button onClick={() => setConfirmDiscard(false)} className="flex-1 rounded-xl border border-[#e5e8ec] py-3 text-[14px] font-semibold text-[#5c626b]">
+                {t.shippingCancel}
+              </button>
+              <button onClick={discardEdit} className="flex-1 rounded-xl py-3 text-[14px] font-bold text-white" style={{ background: "#D10005" }}>
+                {t.shippingContinue}
               </button>
             </div>
           </div>
@@ -5665,7 +5680,7 @@ function myMenuIcon(key: string) {
   }
 }
 
-function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onOpenMyLoot, onOpenPurchaseHistory, onOpenAnnouncements, onOpenProfile, onOpenRefer, onOpenFaq, onHome, onLogout, onOpenStore }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenMyLoot: () => void; onOpenPurchaseHistory: () => void; onOpenAnnouncements: () => void; onOpenProfile: () => void; onOpenRefer: () => void; onOpenFaq: () => void; onHome: () => void; onLogout: () => void; onOpenStore?: () => void }) {
+function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onOpenMyLoot, onOpenPurchaseHistory, onOpenAnnouncements, onOpenShippingAddress, onOpenProfile, onOpenRefer, onOpenFaq, onHome, onLogout, onOpenStore }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenMyLoot: () => void; onOpenPurchaseHistory: () => void; onOpenAnnouncements: () => void; onOpenShippingAddress: () => void; onOpenProfile: () => void; onOpenRefer: () => void; onOpenFaq: () => void; onHome: () => void; onLogout: () => void; onOpenStore?: () => void }) {
   const t = STR[lang];
   const openLegal = useContext(LegalNavContext);
   const openCoinHistory = useContext(CoinHistoryNavContext);
@@ -5692,6 +5707,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
     { key: "invite", label: t.mmInvite, onClick: onOpenRefer },
     { key: "faq", label: t.mmFaqSupport, onClick: onOpenFaq },
     { key: "notices", label: t.mmNotices, onClick: onOpenAnnouncements },
+    { key: "shippingAddress", label: t.mmShippingAddress, onClick: onOpenShippingAddress },
   ];
 
   const linkRow = (label: string, onClick?: () => void) => (
@@ -7181,6 +7197,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onOpenMyLoot={openMyLoot}
             onOpenPurchaseHistory={() => setScreen("purchaseHistory")}
             onOpenAnnouncements={openAnnouncements}
+            onOpenShippingAddress={() => setScreen("shippingAddress")}
             onOpenProfile={() => setScreen("profile")}
             onOpenRefer={() => setScreen("refer")}
             onOpenFaq={() => openHelp("faq")}
