@@ -7071,6 +7071,9 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   // Paid shipping: the prize screens hand the fee over here, and their own
   // completion runs only once the cashier reports the payment landed.
   const [shipPayment, setShipPayment] = useState<{ onPaid: () => void } | null>(null);
+  // Beat between the cashier accepting the fee and the prize screen posting its
+  // toast, so the payment visibly settles instead of snapping straight back.
+  const [shipProcessing, setShipProcessing] = useState(false);
   const [offerExpiredPopup, setOfferExpiredPopup] = useState(false);
   const openOfferNotif = () => {
     if (offerExpired) { setOfferExpiredPopup(true); return; }
@@ -7368,6 +7371,12 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             </div>
           </div>
         )}
+        {shipProcessing && (
+          <div className="absolute inset-0 z-[80] flex flex-col items-center justify-center gap-4" style={{ background: "rgba(20,8,4,0.62)" }} role="status" aria-live="polite">
+            <span className="h-11 w-11 animate-spin rounded-full border-[3px] border-white/25 border-t-white" />
+            <p className="text-[15px] font-bold text-white">{STR[lang].paymentProcessing}</p>
+          </div>
+        )}
         {/* Paid shipping fee — the store's own cashier, re-headed with the fee
             and handing straight back on success so the prize screen can post
             its "shipping requested" toast. */}
@@ -7383,7 +7392,12 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
                 onSaveCard={promoteSavedCard}
                 onDeleteCard={(idx) => setSavedCards((prev) => prev.filter((_, i) => i !== idx))}
                 onRequireKyc={() => requestKyc("purchase")}
-                onComplete={() => { const done = shipPayment.onPaid; setShipPayment(null); done(); }}
+                onComplete={() => {
+                  const done = shipPayment.onPaid;
+                  setShipPayment(null);
+                  setShipProcessing(true);
+                  window.setTimeout(() => { setShipProcessing(false); done(); }, 1600);
+                }}
                 onClose={() => setShipPayment(null)}
               />
             </CashierLegalContext.Provider>
