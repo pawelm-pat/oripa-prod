@@ -462,7 +462,7 @@ const EN = {
   mmInvite: "Invite Friends",
   mmFaqSupport: "FAQ & Support",
   mmNotices: "Announcements",
-  mmShippingAddress: "Address",
+  mmShippingAddress: "Shipping Address",
   mmSubscriptions: "Subscriptions",
   cancelSubscription: "Cancel Subscription",
   cancelSubTitle: "Cancel subscription?",

@@ -4229,6 +4229,11 @@ function ShippingFlow({
     </div>
   );
   const [step, setStep] = useState<"address" | "confirm" | "addNew">(shippingAddresses.length === 0 ? "addNew" : "address");
+  // Same guard as the My Page address form: the edit is only confirmed when it
+  // actually differs from the address as opened.
+  const [editBaseline, setEditBaseline] = useState<Omit<ShippingAddr, "id" | "isDefault">>(EMPTY_SHIPPING_FORM);
+  const [sheetConfirmUpdate, setSheetConfirmUpdate] = useState(false);
+  const [sheetConfirmDiscard, setSheetConfirmDiscard] = useState(false);
   const [addrId, setAddrId] = useState<string>(() => {
     const def = shippingAddresses.find(a => a.isDefault);
     return def?.id ?? shippingAddresses[0]?.id ?? "";
@@ -4312,10 +4317,26 @@ function ShippingFlow({
     const { id: _id, isDefault: _isDefault, ...fields } = addr;
     setEditId(addr.id);
     setNewForm(fields);
+    setEditBaseline(fields);
     setPostalTouched(false); setPhoneTouched(false); setZipTouched(false); setStreetNumTouched(false);
     if (searchTimer.current) clearTimeout(searchTimer.current);
     setSearching(false); setCandidates([]);
     setStep("addNew");
+  }
+
+  const editDirty = editId != null && (Object.keys(newForm) as (keyof typeof newForm)[]).some((k) => (newForm[k] ?? "") !== (editBaseline[k] ?? ""));
+
+  // Continue on an untouched edit has nothing to confirm, so it just returns.
+  function submitAddressForm() {
+    if (editId && !editDirty) { setEditId(null); setStep("address"); return; }
+    if (editId) { setSheetConfirmUpdate(true); return; }
+    handleSaveNewAddress();
+  }
+
+  function cancelAddressForm() {
+    if (editDirty) { setSheetConfirmDiscard(true); return; }
+    setEditId(null);
+    setStep("address");
   }
 
   function handleSaveNewAddress() {
@@ -4347,6 +4368,30 @@ function ShippingFlow({
 
   return (
     <div className="absolute inset-0 z-40 flex items-end" style={{ background: "rgba(0,0,0,0.45)" }} onClick={onClose}>
+      {sheetConfirmUpdate && (
+        <div className="absolute inset-0 z-[60] flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.45)" }} onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white px-5 py-5">
+            <h2 className="text-center text-[15px] font-bold text-[#1d2129]">{t.shippingUpdateConfirmTitle}</h2>
+            <p className="mt-2 text-center text-[12.5px] leading-relaxed text-[#6b7075]">{t.shippingUpdateConfirmBody}</p>
+            <div className="mt-4 flex gap-3">
+              <button onClick={() => setSheetConfirmUpdate(false)} className="flex-1 rounded-xl border border-[#e5e8ec] py-3 text-[14px] font-semibold text-[#5c626b]">{t.shippingCancel}</button>
+              <button onClick={() => { setSheetConfirmUpdate(false); handleSaveNewAddress(); }} className="flex-1 rounded-xl py-3 text-[14px] font-bold text-white" style={{ background: "#D10005" }}>{t.shippingContinue}</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {sheetConfirmDiscard && (
+        <div className="absolute inset-0 z-[60] flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.45)" }} onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white px-5 py-5">
+            <h2 className="text-center text-[15px] font-bold text-[#1d2129]">{t.shippingDiscardTitle}</h2>
+            <p className="mt-2 text-center text-[12.5px] leading-relaxed text-[#6b7075]">{t.shippingDiscardBody}</p>
+            <div className="mt-4 flex gap-3">
+              <button onClick={() => setSheetConfirmDiscard(false)} className="flex-1 rounded-xl border border-[#e5e8ec] py-3 text-[14px] font-semibold text-[#5c626b]">{t.shippingCancel}</button>
+              <button onClick={() => { setSheetConfirmDiscard(false); setEditId(null); setStep("address"); }} className="flex-1 rounded-xl py-3 text-[14px] font-bold text-white" style={{ background: "#D10005" }}>{t.shippingContinue}</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="max-h-[88%] w-full overflow-y-auto rounded-t-2xl bg-white px-4 pb-5 pt-3" onClick={(e) => e.stopPropagation()}>
         <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-black/15" />
 
@@ -4563,7 +4608,7 @@ function ShippingFlow({
 
             <button
               disabled={!canAddNew}
-              onClick={handleSaveNewAddress}
+              onClick={submitAddressForm}
               className="mt-1 w-full rounded-xl py-3 text-[14px] font-bold text-white disabled:opacity-40"
               style={{ background: "linear-gradient(180deg,#ff2233,#D10005)" }}
             >
@@ -4572,6 +4617,11 @@ function ShippingFlow({
                   Register. */}
               {editId ? t.continueBtn : t.shippingRegister}
             </button>
+            {shippingAddresses.length > 0 && (
+              <button onClick={cancelAddressForm} className="mt-2 w-full rounded-xl border border-[#c9ced6] bg-white py-3 text-[14px] font-bold text-[#5c626b]">
+                {t.cancel}
+              </button>
+            )}
           </>
         )}
 
@@ -4732,6 +4782,12 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
   }
 
   const formDirty = (Object.keys(form) as (keyof typeof form)[]).some((k) => (form[k] ?? "") !== (formBaseline[k] ?? ""));
+
+  // Nothing edited means nothing to confirm — Update just leaves.
+  function submitEdit() {
+    if (!formDirty) { setEditingId(null); onBack(); return; }
+    setConfirmUpdate(true);
+  }
 
   // Cancel leaves quietly when nothing was touched and warns when it wasn't.
   function cancelEdit() {
@@ -4924,10 +4980,10 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
             </div>
           </div>
 
-          <button disabled={!canSubmit} onClick={() => setConfirmUpdate(true)} className="w-full rounded-xl py-3.5 text-[15px] font-bold text-white" style={{ background: canSubmit ? "#D10005" : "#d1d5db", cursor: canSubmit ? "pointer" : "not-allowed" }}>
+          <button disabled={!canSubmit} onClick={submitEdit} className="w-full rounded-xl py-3 text-[14px] font-bold text-white" style={{ background: canSubmit ? "#D10005" : "#d1d5db", cursor: canSubmit ? "pointer" : "not-allowed" }}>
             {t.shippingUpdate}
           </button>
-          <button onClick={cancelEdit} className="mt-2.5 w-full rounded-xl border border-[#c9ced6] bg-white py-3.5 text-[15px] font-bold text-[#5c626b]">
+          <button onClick={cancelEdit} className="mt-2 w-full rounded-xl border border-[#c9ced6] bg-white py-3 text-[14px] font-bold text-[#5c626b]">
             {t.cancel}
           </button>
         </div>
