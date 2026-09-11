@@ -23,7 +23,7 @@ import type {
   WaitingPrize,
   WonPrize,
 } from "../lib/types";
-import { STR, type Dict, locTitle } from "../lib/i18n";
+import { STR, SHIP_FEE, type Dict, locTitle } from "../lib/i18n";
 import { AuthHeader, SignupPage, LoginPage, LineAuthIcon, LineAuthSheet, DEMO_INR_EMAIL } from "./auth";
 import { HOME_SECTIONS, ALL_ORIPA } from "../data/lobby";
 import { NOTIF_YOU, NOTIF_NOTICE, NOTIF_UNREAD_TOTAL, OFFER_NOTIF_ID, randomNotif } from "../data/notifications";
@@ -1581,7 +1581,7 @@ function DrawTierCard({ rarity, large = false }: { rarity: Rarity; large?: boole
    because a lobby card's CTA opens the same flow without leaving the lobby.
    Hosts mount it as an overlay (the parent must be positioned) and ask for a
    draw by passing a `request`; it renders nothing while idle. */
-function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, onHome, onOpenStore, onOpenDraw, onResetScroll, onAttemptPaidDraw, onTopUp, pendingConfirm, onPendingConfirmConsumed }: { lang: Lang; item: OripaItem; coins: number; request: DrawRequest | null; soldOut?: boolean; /** The sold-out popup was dismissed, so the host can latch its greyed state. */ onSoldOut?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem) => void; /** Send the pack page behind the results back to the top when they close. */ onResetScroll?: () => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** The confirmation's Charge/Top Up CTA: open the store for a draw the wallet can't cover. */ onTopUp?: (count: number) => void; /** After Quick Purchase success, host re-opens this count's confirmation. */ pendingConfirm?: { count: number; token: number } | null; onPendingConfirmConsumed?: () => void }) {
+function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, onHome, onOpenStore, onOpenDraw, onResetScroll, onAttemptPaidDraw, onTopUp, pendingConfirm, onPendingConfirmConsumed, onPayShipping }: { lang: Lang; item: OripaItem; coins: number; request: DrawRequest | null; soldOut?: boolean; /** The sold-out popup was dismissed, so the host can latch its greyed state. */ onSoldOut?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem) => void; /** Send the pack page behind the results back to the top when they close. */ onResetScroll?: () => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** The confirmation's Charge/Top Up CTA: open the store for a draw the wallet can't cover. */ onTopUp?: (count: number) => void; /** After Quick Purchase success, host re-opens this count's confirmation. */ pendingConfirm?: { count: number; token: number } | null; onPendingConfirmConsumed?: () => void; /** Paid shipping from the results screen. */ onPayShipping?: (onPaid: () => void) => void }) {
   const t = STR[lang];
   // What one draw of this pack costs, in coins or in points.
   const price = packPrice(item);
@@ -2133,6 +2133,7 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
       {/* Draw results (list mode) — full-screen overlay above the draw screen */}
       {results && (
         <DrawResults
+          onPayShipping={onPayShipping}
           key={resultsRun}
           lang={lang}
           coins={coins}
@@ -2162,7 +2163,7 @@ function DrawFlow({ lang, item, coins, request, soldOut = false, onSoldOut, free
 
 // The pack page: artwork, price / stock, prize line-up and the sticky CTA row.
 // Drawing itself is delegated to DrawFlow, the same flow a lobby card opens.
-function DrawDetail({ lang, item: pack, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, onOpenDraw, onAttemptPaidDraw, onTopUp, pendingConfirm, onPendingConfirmConsumed, guest }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; onOpenDraw?: (item: OripaItem) => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** The confirmation's Charge/Top Up CTA: open the store for a draw the wallet can't cover. */ onTopUp?: (count: number) => void; /** After Quick Purchase success, host re-opens this count's confirmation. */ pendingConfirm?: { count: number; token: number } | null; onPendingConfirmConsumed?: () => void; /** Signed-out visitor: the page is browsable, but any draw CTA asks for an account. */ guest?: { onSignUp: () => void; onLogin: () => void } }) {
+function DrawDetail({ lang, item: pack, coins, onBack, onHome, onOpenStore, freeShipAvailable = true, onResultsChange, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, onOpenDraw, onAttemptPaidDraw, onTopUp, pendingConfirm, onPendingConfirmConsumed, onPayShipping, guest }: { lang: Lang; item: OripaItem; coins: number; onBack: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; onResultsChange?: (open: boolean) => void; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; onOpenDraw?: (item: OripaItem) => void; /** Returns true if coins were debited and the draw may proceed; false if Quick Purchase opened. */ onAttemptPaidDraw?: (count: number) => boolean; /** The confirmation's Charge/Top Up CTA: open the store for a draw the wallet can't cover. */ onTopUp?: (count: number) => void; /** After Quick Purchase success, host re-opens this count's confirmation. */ pendingConfirm?: { count: number; token: number } | null; onPendingConfirmConsumed?: () => void; /** Paid shipping from the results screen. */ onPayShipping?: (onPaid: () => void) => void; /** Signed-out visitor: the page is browsable, but any draw CTA asks for an account. */ guest?: { onSignUp: () => void; onLogin: () => void } }) {
   const t = STR[lang];
   // A pack retired in an earlier draw opens straight into its sold-out state.
   const item = useLivePack(pack);
@@ -2363,6 +2364,7 @@ function DrawDetail({ lang, item: pack, coins, onBack, onHome, onOpenStore, free
         onAttemptPaidDraw={onAttemptPaidDraw}
         onTopUp={onTopUp}
         pendingConfirm={pendingConfirm}
+        onPayShipping={onPayShipping}
         onPendingConfirmConsumed={onPendingConfirmConsumed}
       />}
     </div>
@@ -2636,7 +2638,7 @@ function SortArrows() {
 // the player review the cards they pulled, narrow down by tier/search, sort,
 // select, and exchange to coins or request shipping. Self-contained (local
 // selection). Mirrors the My Loot screen (which shows all un-actioned cards).
-function DrawResults({ lang, coins, item, cards, onDrawAgain, onBackToInfo, onHome, onOpenStore, freeShipAvailable = true, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, onOpenDraw }: { lang: Lang; coins: number; item: OripaItem; cards: WonPrize[]; onDrawAgain: () => void; onBackToInfo: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; onOpenDraw?: (item: OripaItem) => void }) {
+function DrawResults({ lang, coins, item, cards, onDrawAgain, onBackToInfo, onHome, onOpenStore, freeShipAvailable = true, shippingAddresses, onShippingAddressesChange, dailyLimitReached = false, onOpenDraw, onPayShipping }: { lang: Lang; coins: number; item: OripaItem; cards: WonPrize[]; onDrawAgain: () => void; onBackToInfo: () => void; onHome: () => void; onOpenStore?: () => void; freeShipAvailable?: boolean; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; dailyLimitReached?: boolean; onOpenDraw?: (item: OripaItem) => void; /** Paid shipping: collect the fee at the cashier, then run the callback. */ onPayShipping?: (onPaid: () => void) => void }) {
   const t = STR[lang];
   const [list, setList] = useState<WonPrize[]>(cards);
   // Draw results are filtered by rarity tier via the top tabs (All / Ultra /
@@ -2717,11 +2719,17 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onBackToInfo, onHo
   }
   // Confirmed from inside the shipping flow (address → confirm).
   function doShip() {
-    const ids = new Set(selected);
-    setList((l) => l.filter((p) => !ids.has(p.id)));
-    setSelected(new Set());
+    const finish = () => {
+      const ids = new Set(selected);
+      setList((l) => l.filter((p) => !ids.has(p.id)));
+      setSelected(new Set());
+      pushToast(t.toastShipReq);
+    };
     setShipOpen(false);
-    pushToast(t.toastShipReq);
+    // Paid shipping settles at the cashier first; the prizes only move once
+    // the fee is actually paid.
+    if (!freeShipAvailable && onPayShipping) { onPayShipping(finish); return; }
+    finish();
   }
 
   return (
@@ -3621,7 +3629,7 @@ function USStateSelect({ value, onChange, label }: { value: string; onChange: (v
 /* ── Prize History ───────────────────────────────────────────────────── */
 type Toast = { id: number; text: string };
 
-function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddressesChange, onBack, onHome, empty = false, onGoGacha, lootMode = false, onRequestKyc, freeShipAvailable = true, onOpenStore }: { lang: Lang; coins: number; setCoins: Dispatch<SetStateAction<number>>; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; onBack: () => void; onHome: () => void; empty?: boolean; onGoGacha?: () => void; lootMode?: boolean; onRequestKyc?: () => boolean; freeShipAvailable?: boolean; onOpenStore?: () => void }) {
+function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddressesChange, onBack, onHome, empty = false, onGoGacha, lootMode = false, onRequestKyc, freeShipAvailable = true, onOpenStore, onPayShipping }: { lang: Lang; coins: number; setCoins: Dispatch<SetStateAction<number>>; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; onBack: () => void; onHome: () => void; empty?: boolean; onGoGacha?: () => void; lootMode?: boolean; onRequestKyc?: () => boolean; freeShipAvailable?: boolean; onOpenStore?: () => void; /** Paid shipping: collect the fee at the cashier, then run the callback. */ onPayShipping?: (onPaid: () => void) => void }) {
   // "My Loot" reuses this screen but leads with the most valuable cards and
   // hides the Won/Waiting/Shipped tabs. It keeps a couple of normal (N) pulls
   // alongside the high-rarity ones so both exchange-confirm dialogs (simple vs.
@@ -3720,23 +3728,27 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
   function doListShip() {
     const ids = new Set(listSelected);
     const moving = won.filter((p) => ids.has(p.id));
-    setWaiting((list) => [
-      ...moving.map((p) => ({
-        id: p.id,
-        name: p.name,
-        nameJa: p.nameJa,
-        desc: p.desc,
-        descJa: p.descJa,
-        rarity: p.rarity,
-        coinValue: p.coinValue,
-        requestedAt: NOW,
-      })),
-      ...list,
-    ]);
-    setWon((list) => list.filter((p) => !ids.has(p.id)));
-    setListSelected(new Set());
     setListShipOpen(false);
-    pushToast(t.toastShipReq);
+    const finish = () => {
+      setWaiting((list) => [
+        ...moving.map((p) => ({
+          id: p.id,
+          name: p.name,
+          nameJa: p.nameJa,
+          desc: p.desc,
+          descJa: p.descJa,
+          rarity: p.rarity,
+          coinValue: p.coinValue,
+          requestedAt: NOW,
+        })),
+        ...list,
+      ]);
+      setWon((l) => l.filter((p) => !ids.has(p.id)));
+      setListSelected(new Set());
+      pushToast(t.toastShipReq);
+    };
+    if (!freeShipAvailable && onPayShipping) { onPayShipping(finish); return; }
+    finish();
   }
 
   // "Narrow down" scopes the list: a franchise category chip plus a free-text
@@ -7056,6 +7068,9 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   // The pinned "Claim your offer" notification. While the offer is live it
   // opens an oripa and counts as read; once expired it explains itself in a
   // popup instead and leaves the notification unread so it can be reopened.
+  // Paid shipping: the prize screens hand the fee over here, and their own
+  // completion runs only once the cashier reports the payment landed.
+  const [shipPayment, setShipPayment] = useState<{ onPaid: () => void } | null>(null);
   const [offerExpiredPopup, setOfferExpiredPopup] = useState(false);
   const openOfferNotif = () => {
     if (offerExpired) { setOfferExpiredPopup(true); return; }
@@ -7148,6 +7163,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onShippingAddressesChange={setShippingAddresses}
             onAttemptPaidDraw={attemptDraw}
             onTopUp={openTopUpForDraw}
+            onPayShipping={(onPaid) => setShipPayment({ onPaid })}
             pendingConfirm={pendingConfirm}
             onPendingConfirmConsumed={() => setPendingConfirm(null)}
           />
@@ -7202,7 +7218,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onHome={resetHome}
             empty={false}
             onGoGacha={goHome}
-            onRequestKyc={() => requestKyc("prizeHistory")}
+            onRequestKyc={() => requestKyc("prizeHistory")} onPayShipping={(onPaid) => setShipPayment({ onPaid })}
             onOpenStore={openStore}
           />
         )}
@@ -7218,7 +7234,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             empty={false}
             onGoGacha={goHome}
             lootMode
-            onRequestKyc={() => requestKyc("prizeHistory")}
+            onRequestKyc={() => requestKyc("prizeHistory")} onPayShipping={(onPaid) => setShipPayment({ onPaid })}
             freeShipAvailable={freeShipAvailable}
             onOpenStore={openStore}
           />
@@ -7352,6 +7368,27 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             </div>
           </div>
         )}
+        {/* Paid shipping fee — the store's own cashier, re-headed with the fee
+            and handing straight back on success so the prize screen can post
+            its "shipping requested" toast. */}
+        {shipPayment && (
+          <div className="absolute inset-0 z-[75] bg-[#eef0f3]">
+            <CashierLegalContext.Provider value={setLegalDoc}>
+              <PurchaseFlow
+                lang={lang}
+                pkg={{ id: "ship-fee", coins: 0, freePoints: 0, jpy: SHIP_FEE, inrApprox: 0 }}
+                feeSummary={{ label: STR[lang].shippingFeeLabel }}
+                completeOnSuccess
+                savedCards={savedCards}
+                onSaveCard={promoteSavedCard}
+                onDeleteCard={(idx) => setSavedCards((prev) => prev.filter((_, i) => i !== idx))}
+                onRequireKyc={() => requestKyc("purchase")}
+                onComplete={() => { const done = shipPayment.onPaid; setShipPayment(null); done(); }}
+                onClose={() => setShipPayment(null)}
+              />
+            </CashierLegalContext.Provider>
+          </div>
+        )}
         {quickPurchase && (
           <QuickPurchaseFlow
             lang={lang}
@@ -7399,6 +7436,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onOpenDraw={openDraw}
             onAttemptPaidDraw={attemptDraw}
             onTopUp={openTopUpForDraw}
+            onPayShipping={(onPaid) => setShipPayment({ onPaid })}
             pendingConfirm={pendingConfirm}
             onPendingConfirmConsumed={() => setPendingConfirm(null)}
           />

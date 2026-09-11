@@ -4,7 +4,7 @@
  * Cashier V1 — exact port of HeorhiiPovstianyi_repo PurchaseFlow cashierVariant="v1".
  */
 
-import { useEffect, useState, createContext, useContext } from "react";
+import { useEffect, useRef, useState, createContext, useContext } from "react";
 import type { Lang, OripaItem } from "../lib/types";
 import { STR } from "../lib/i18n";
 import type { LegalDocKey } from "../data/legal";
@@ -230,6 +230,8 @@ export function PurchaseFlow({
   onRequireKyc,
   enableCurrencyCheckout = false,
   onSelectPackage,
+  feeSummary,
+  completeOnSuccess = false,
 }: {
   pkg: PointPackage;
   lang: Lang;
@@ -243,6 +245,12 @@ export function PurchaseFlow({
   /** INR/JPY currency selector (demo: john.inr@gmail.com). */
   enableCurrencyCheckout?: boolean;
   onSelectPackage?: (pkg: PointPackage) => void;
+  /** Charging a flat fee rather than selling coins: replaces the package
+      summary with a single highlighted line (e.g. the shipping fee). */
+  feeSummary?: { label: string };
+  /** Skip the coin receipt — a fee has nothing to credit, so a successful
+      payment hands straight back to the caller. */
+  completeOnSuccess?: boolean;
 }) {
   const t = STR[lang];
   const openLegal = useContext(CashierLegalContext);
@@ -252,6 +260,15 @@ export function PurchaseFlow({
   };
   const [step, setStep] = useState<PurchaseStep>("checkout");
   const [failureReason, setFailureReason] = useState<FailureReason | null>(null);
+  // A fee has no coins to credit, so the caller takes over the moment the
+  // payment lands instead of the receipt screen rendering. Declared with the
+  // other hooks: the step-specific returns below would otherwise skip it.
+  const feeDoneRef = useRef(false);
+  useEffect(() => {
+    if (!completeOnSuccess || step !== "success" || feeDoneRef.current) return;
+    feeDoneRef.current = true;
+    onComplete(0);
+  }, [completeOnSuccess, step, onComplete]);
   const [payMethod, setPayMethod] = useState<PayMethod>("card");
   const [checkoutCurrency, setCheckoutCurrency] = useState<"INR" | "JPY">(
     enableCurrencyCheckout ? "INR" : "JPY",
@@ -602,6 +619,8 @@ export function PurchaseFlow({
       </div>
     );
   }
+
+  if (step === "success" && completeOnSuccess) return null;
 
   if (step === "success") {
     const isSubscription = !!pkg.subscriptionName;
@@ -1034,7 +1053,19 @@ export function PurchaseFlow({
       </div>
     );
 
-    const v1PackageSummary = (
+    const v1FeeSummary = feeSummary && (
+      <div className="mb-4 overflow-hidden rounded-xl border-2 bg-white" style={{ borderColor: "#D10005" }}>
+        <div className="flex items-center gap-2.5 px-3 py-3">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#D10005" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+            <path d="M21 8l-9-5-9 5 9 5 9-5z" /><path d="M3 8v8l9 5 9-5V8" /><path d="M12 13v8" />
+          </svg>
+          <p className="min-w-0 flex-1 text-[17px] font-extrabold text-[#1d2129]">{feeSummary.label}</p>
+          <span className="shrink-0 text-[17px] font-extrabold text-[#1d2129]">{priceLabel}</span>
+        </div>
+      </div>
+    );
+
+    const v1PackageSummary = feeSummary ? v1FeeSummary : (
       <div className="mb-4 overflow-hidden rounded-xl border bg-white" style={{ borderColor: (pkg.firstTimeOffer || pkg.popularOffer) ? "#B40206" : "#e5e8ec" }}>
         {(pkg.firstTimeOffer || pkg.popularOffer) && (
           <div className="flex items-center gap-1.5 px-3 pb-1 pt-1.5" style={{ background: "rgba(230,0,18,0.07)" }}>

@@ -5,7 +5,7 @@ import type { Category, Lang, PrizeStatus } from "./types";
 
 const SHIP_MIN_COINS = 1500;
 const FREE_SHIP_QUOTA = 3;
-const SHIP_FEE = 300;
+export const SHIP_FEE = 300;
 
 type SortKey = "coinDesc" | "coinAsc" | "wonNew" | "wonOld" | "expSoon";
 
@@ -209,6 +209,7 @@ const EN = {
   offerExpiredTitle: "Offer Expired",
   offerExpiredBody: "Sorry! This promotion has ended, but you can check out our latest active pools below.",
   offerExpiredCta: "Explore Other Offers",
+  shippingFeeLabel: "Shipping Fee",
   promoBanner: "PROMO BANNER",
   rewardHeadline: "Unlock special rewards!",
   rwDaily: "Daily",
@@ -1410,6 +1411,7 @@ const JA: Dict = {
   offerExpiredTitle: "オファーの受付は終了しました",
   offerExpiredBody: "申し訳ございません。このプロモーションは終了しました。現在開催中のオリパは下記からご覧いただけます。",
   offerExpiredCta: "ほかのオファーを見る",
+  shippingFeeLabel: "配送料",
   promoBanner: "PROMO BANNER",
   rewardHeadline: "特別報酬を解放しよう！",
   rwDaily: "デイリー",
