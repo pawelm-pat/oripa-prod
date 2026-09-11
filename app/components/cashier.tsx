@@ -46,41 +46,19 @@ function ApplePayMark({ size = 18, fill = "white" }: { size?: number; fill?: str
 }
 
 function PayPayMark() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
-      <rect width="24" height="24" rx="6" fill="#FF0033" />
-      <text x="12" y="16.5" textAnchor="middle" fill="white" fontSize="13" fontWeight="800" fontFamily="Arial, sans-serif">P</text>
-    </svg>
-  );
+  return <img src="/pay-paypay.png" alt="" aria-hidden draggable={false} className="h-[22px] w-auto shrink-0 object-contain" />;
 }
 
 function RakutenPayMark() {
-  return (
-    <svg width="22" height="18" viewBox="0 0 28 22" aria-hidden>
-      <rect width="28" height="22" rx="4" fill="#BF0000" />
-      <text x="14" y="15.5" textAnchor="middle" fill="white" fontSize="8" fontWeight="800" fontFamily="Arial, sans-serif">R Pay</text>
-    </svg>
-  );
+  return <img src="/pay-rakuten.png" alt="" aria-hidden draggable={false} className="h-[22px] w-auto shrink-0 object-contain" />;
 }
 
 function MelPayMark() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
-      <rect width="24" height="24" rx="5" fill="#E60012" />
-      <path d="M5 17V8.2l3.6 5.1L12.2 8.2V17h2.4V7H12L8.6 12.2 5.2 7H2.6v10H5z" fill="white" />
-    </svg>
-  );
+  return <img src="/pay-melpay.png" alt="" aria-hidden draggable={false} className="h-[22px] w-auto shrink-0 object-contain" />;
 }
 
 function FamiPayMark() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
-      <circle cx="9" cy="12" r="8" fill="#00A040" />
-      <circle cx="15" cy="12" r="8" fill="#00A0E9" />
-      <circle cx="12" cy="12" r="5.2" fill="white" />
-      <text x="12" y="15" textAnchor="middle" fill="#00A040" fontSize="8" fontWeight="800" fontFamily="Arial, sans-serif">F</text>
-    </svg>
-  );
+  return <img src="/pay-famipay.png" alt="" aria-hidden draggable={false} className="h-[16px] w-auto shrink-0 object-contain" />;
 }
 
 function CardBrandIcon({ brand, large = false }: { brand: string; large?: boolean }) {
@@ -877,12 +855,12 @@ export function PurchaseFlow({
   {
     const cards = savedCards ?? [];
     const hasCards = cards.length > 0;
+    // The design lists a single card — the selected / last used one — with
+    // everything else reachable through "Manage card".
     const visibleCardIndexes = (() => {
-      const idxs = cards.slice(0, 3).map((_, i) => i);
-      if (typeof selectedCardIdx === "number" && selectedCardIdx >= 3 && selectedCardIdx < cards.length && !idxs.includes(selectedCardIdx)) {
-        idxs.push(selectedCardIdx);
-      }
-      return idxs;
+      if (cards.length === 0) return [];
+      const idx = typeof selectedCardIdx === "number" && selectedCardIdx < cards.length ? selectedCardIdx : 0;
+      return [idx];
     })();
     const v1SelectGreen = "#16a34a";
     const v1Cta = "#D10005";
@@ -1277,13 +1255,13 @@ export function PurchaseFlow({
             </div>
           )}
 
+          {/* One panel holds the wallets and the card list, as the design has it. */}
           <div className="mb-4 rounded-2xl border border-[#e2e5ea] bg-white p-3">
-            <p className="mb-2.5 text-[12px] font-extrabold uppercase tracking-wide text-[#1d2129]">{t.checkoutPaymentMethods}</p>
+            <p className="mb-2.5 text-[14px] font-bold uppercase leading-none tracking-normal text-[#000000CC]">{t.checkoutPaymentMethods}</p>
             {v1ExpressGrid}
-          </div>
 
           <div className="mb-2 mt-4 flex items-center justify-between">
-            <p className="text-[12px] font-semibold uppercase tracking-wide text-[#8a9099]">{t.checkoutPayWithCard}</p>
+            <p className="text-[14px] font-bold uppercase leading-none tracking-normal text-[#000000CC]">{t.checkoutPayWithCard}</p>
             {hasCards && (
               <button
                 type="button"
@@ -1356,6 +1334,7 @@ export function PurchaseFlow({
               </div>
             </button>
           )}
+          </div>
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 border-t border-black/10 bg-white px-4 pb-5 pt-3">
