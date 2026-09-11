@@ -210,6 +210,7 @@ export function PurchaseFlow({
   onSelectPackage,
   feeSummary,
   completeOnSuccess = false,
+  forceFailure = false,
 }: {
   pkg: PointPackage;
   lang: Lang;
@@ -229,6 +230,9 @@ export function PurchaseFlow({
   /** Skip the coin receipt — a fee has nothing to credit, so a successful
       payment hands straight back to the caller. */
   completeOnSuccess?: boolean;
+  /** Demo harness: decline the next card payment whatever card is used. The
+      wallets still go through, which is what the decline screen offers. */
+  forceFailure?: boolean;
 }) {
   const t = STR[lang];
   const openLegal = useContext(CashierLegalContext);
@@ -343,6 +347,7 @@ export function PurchaseFlow({
   // decline scenario below (saved card or digits typed into the new-card form).
   const activeCardLast4 = payMethod !== "card" ? null : (typeof selectedCardIdx === "number" ? (savedCards?.[selectedCardIdx]?.last4 ?? null) : (rawCardNum.slice(-4) || null));
   const pendingFailureReason: FailureReason | null =
+    forceFailure ? "bankDecline" :
     activeCardLast4 === DECLINED_CARD_LAST4_INSUFFICIENT_FUNDS ? "insufficientFunds" :
     activeCardLast4 === DECLINED_CARD_LAST4_BANK_DECLINE ? "bankDecline" :
     null;
@@ -495,9 +500,8 @@ export function PurchaseFlow({
     return (
       <div className="absolute inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.55)" }}>
         <div className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-white px-5 pb-5 pt-6">
-          <button onClick={onClose} className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-[14px] font-bold text-[#5c626b] hover:bg-black/5">✕</button>
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full" style={{ background: "#fdecea" }}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#c0392b" strokeWidth="2" /><path d="M15 9l-6 6M9 9l6 6" stroke="#c0392b" strokeWidth="2" strokeLinecap="round" /></svg>
+          <div className="mx-auto flex h-[72px] w-[72px] items-center justify-center rounded-full border-[3px]" style={{ borderColor: "#D10005" }}>
+            <span className="text-[38px] font-black leading-none" style={{ color: "#D10005" }}>!</span>
           </div>
           <h2 className="mt-3 text-center text-[17px] font-extrabold text-[#1d2129]">{t.failedTitle}</h2>
           <p className="mt-2 text-center text-[13px] leading-relaxed text-[#5c626b]">
@@ -531,6 +535,15 @@ export function PurchaseFlow({
           )}
           {failureReason === "bankDecline" && (
             <div className="mt-4">
+              <button
+                type="button"
+                onClick={() => { setAuthCode(""); setFailureReason(null); setPayMethod("card"); setStep("checkout"); }}
+                className="mb-4 h-12 w-full rounded-xl text-[16px] font-bold text-white active:scale-[0.98]"
+                style={{ background: "#D10005" }}
+              >
+                {t.failedTryAgain}
+              </button>
+              <div className="mb-3 border-t border-black/10" />
               <p className="mb-2 text-center text-[11px] font-bold uppercase tracking-wide text-[#8a9099]">{t.failedTryAlternateMethod}</p>
               <div className="flex flex-col gap-2">
                 {alternatePaymentMethods.map((method) => {

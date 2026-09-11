@@ -6735,8 +6735,8 @@ function NotEnoughCoinsPopup({ lang, coins, cost, onCharge, onClose }: { lang: L
   );
 }
 
-export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, sendNotifications = false, onNotificationSent, errorScenario = "off", offerExpired = false }: {
-  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; /** Dev harness: deliver one fresh unread notification or announcement. */ sendNotifications?: boolean; /** Fired once the item has been delivered, so the harness can re-arm its toggle. */ onNotificationSent?: () => void; /** Dev harness: swallow the next navigation and show this error page instead. */ errorScenario?: ErrorScenario; /** Dev harness: the pinned promotional notification has expired. */ offerExpired?: boolean;
+export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, sendNotifications = false, onNotificationSent, errorScenario = "off", offerExpired = false, paymentSuccess = true }: {
+  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; /** Dev harness: deliver one fresh unread notification or announcement. */ sendNotifications?: boolean; /** Fired once the item has been delivered, so the harness can re-arm its toggle. */ onNotificationSent?: () => void; /** Dev harness: swallow the next navigation and show this error page instead. */ errorScenario?: ErrorScenario; /** Dev harness: the pinned promotional notification has expired. */ offerExpired?: boolean; /** Dev harness: whether the shipping fee payment goes through. */ paymentSuccess?: boolean;
 }) {
   const t = STR[lang];
   const [screen, setScreenRaw] = useState<Screen>("landing");
@@ -7452,6 +7452,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
                 pkg={{ id: "ship-fee", coins: 0, freePoints: 0, jpy: SHIP_FEE, inrApprox: 0 }}
                 feeSummary={{ label: STR[lang].shippingFeeLabel }}
                 completeOnSuccess
+                forceFailure={!paymentSuccess}
                 savedCards={savedCards}
                 onSaveCard={promoteSavedCard}
                 onDeleteCard={(idx) => setSavedCards((prev) => prev.filter((_, i) => i !== idx))}

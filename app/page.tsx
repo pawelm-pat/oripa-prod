@@ -47,6 +47,9 @@ export default function Page() {
   // item still points at a live promotion. No -> it opens an oripa and marks
   // itself read; Yes -> it explains the offer has ended.
   const [offerExpired, setOfferExpired] = useState(false);
+  // Demo control (shipping fee cashier): whether the payment is approved.
+  // No -> the bank-decline screen, whose wallet buttons still go through.
+  const [paymentSuccess, setPaymentSuccess] = useState(true);
   // Demo control (any screen): arm an error page. While one is armed the next
   // navigation lands on it instead of the screen that was asked for.
   const [errorScenario, setErrorScenario] = useState<ErrorScenario>("off");
@@ -74,6 +77,7 @@ export default function Page() {
             <>
               <ToggleControl label="Free shipping" value={freeShipping} onChange={setFreeShipping} />
               <ToggleControl label="Address provided" value={addressProvided} onChange={setAddressProvided} />
+              <ToggleControl label="Payment successful" value={paymentSuccess} onChange={setPaymentSuccess} />
             </>
           )}
           {screen === "notifications" && (
@@ -145,6 +149,7 @@ export default function Page() {
                 onNotificationSent={() => setSendNotifications(false)}
                 errorScenario={errorScenario}
                 offerExpired={offerExpired}
+                paymentSuccess={paymentSuccess}
               />
             </div>
           </div>
@@ -169,6 +174,7 @@ export default function Page() {
           onNotificationSent={() => setSendNotifications(false)}
           errorScenario={errorScenario}
           offerExpired={offerExpired}
+          paymentSuccess={paymentSuccess}
         />
       </div>
 
