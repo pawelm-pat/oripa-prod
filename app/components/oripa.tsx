@@ -4257,7 +4257,9 @@ function ShippingFlow({
   const phoneError = phoneTouched && newForm.phone.length > 0 && !phoneValid ? (lang === "ja" ? "電話番号は10桁以上で入力してください" : "Phone number must be at least 10 digits") : "";
   const zipError = zipTouched && newForm.zipCode.length > 0 && !zipValid ? "5 digits required" : "";
   const streetNumError = streetNumTouched && newForm.streetNumber.length > 0 && !streetNumValid ? (lang === "ja" ? "数字のみ" : "Numbers only") : "";
-  const canAddNew = newForm.lastName.trim().length > 0 && newForm.firstName.trim().length > 0 && phoneValid &&
+  // The form carries the address only: the name rides along from the account
+  // (or the address being edited), so it is not part of what must be filled in.
+  const canAddNew = phoneValid &&
     (newForm.country === "japan"
       ? postalValid && !!newForm.prefecture && newForm.city.trim().length > 0 && streetNumValid
       : newForm.cityStreetNumber.trim().length > 0 && !!newForm.state && zipValid);
@@ -4465,17 +4467,6 @@ function ShippingFlow({
               )}
               <AddressHomeIcon />
               <h3 className="text-[15px] font-bold text-[#000000]">{editId ? t.shippingEditAddress : t.shippingAddNew}</h3>
-            </div>
-
-            <div className="mb-3 flex gap-2">
-              <div className="flex-1 min-w-0">
-                <label className={labelCls}>{t.profileLastName}<span className="ml-0.5 text-[#D10005]">*</span></label>
-                <input value={newForm.lastName} onChange={e => setNewForm(f => ({ ...f, lastName: e.target.value }))} placeholder={t.profilePlaceholder} className={inputCls} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <label className={labelCls}>{t.profileFirstName}<span className="ml-0.5 text-[#D10005]">*</span></label>
-                <input value={newForm.firstName} onChange={e => setNewForm(f => ({ ...f, firstName: e.target.value }))} placeholder={t.profilePlaceholder} className={inputCls} />
-              </div>
             </div>
 
             <div className="mb-3">
