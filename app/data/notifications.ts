@@ -2,7 +2,13 @@
 
 import type { NotifItem } from "../lib/types";
 
+// The promotional item pinned to the top of the inbox. Tapping it is handled
+// by the app root rather than the list, because where it leads depends on
+// whether the offer is still live.
+export const OFFER_NOTIF_ID = "offer-claim";
+
 export const NOTIF_YOU: NotifItem[] = [
+  { id: OFFER_NOTIF_ID, at: "Feb 04, 2026 09:30", atJa: "2026年2月04日 09:30", title: "Claim your offer now", titleJa: "今すぐオファーを受け取りましょう", body: "A limited starter pack is reserved for your account. Open it to see what is inside before the promotion window closes.", bodyJa: "アカウント限定のスターターパックをご用意しています。プロモーション終了前に開いて中身をご確認ください。", unread: true },
   { id: "y1", at: "Feb 03, 2026 22:14", atJa: "2026年2月03日 22:14", title: "Your item has been shipped", titleJa: "商品を発送しました", body: "Your prize is on its way. Delivery takes up to 14 business days.", bodyJa: "景品を発送しました。お届けまで最大14営業日かかります。", tracking: "AA123456789JP", unread: true },
   { id: "y2", at: "Feb 02, 2026 18:40", atJa: "2026年2月02日 18:40", title: "Shipping request received", titleJa: "発送リクエストを受け付けました", body: "We have received your shipping request and are preparing your prize.", bodyJa: "発送リクエストを受け付けました。景品の準備を進めています。", unread: true },
   { id: "y3", at: "Jan 30, 2026 09:12", atJa: "2026年1月30日 09:12", title: "Prizes converted to coins", titleJa: "景品をコインに交換しました", body: "Your selected prizes were converted to Coins.", bodyJa: "選択した景品をコインに交換しました。" },

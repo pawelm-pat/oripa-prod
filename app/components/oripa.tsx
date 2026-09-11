@@ -26,7 +26,7 @@ import type {
 import { STR, type Dict, locTitle } from "../lib/i18n";
 import { AuthHeader, SignupPage, LoginPage, LineAuthIcon, LineAuthSheet, DEMO_INR_EMAIL } from "./auth";
 import { HOME_SECTIONS, ALL_ORIPA } from "../data/lobby";
-import { NOTIF_YOU, NOTIF_NOTICE, NOTIF_UNREAD_TOTAL, randomNotif } from "../data/notifications";
+import { NOTIF_YOU, NOTIF_NOTICE, NOTIF_UNREAD_TOTAL, OFFER_NOTIF_ID, randomNotif } from "../data/notifications";
 import { LEGAL, type LegalDocKey } from "../data/legal";
 import { FAQ, type FaqCategoryKey } from "../data/faq";
 import {
@@ -3309,7 +3309,7 @@ function SwipeToDeleteRow({ open, removing, entering = false, onEntered, onOpen,
   );
 }
 
-function NotificationsScreen({ lang, coins, empty = false, only, sent, readIds, deletedIds, onRead, onDelete, onBack, onHome, onOpenStore }: { lang: Lang; coins: number; empty?: boolean; only?: "you" | "notice"; /** Demo deliveries from the harness toggle, newest first. */ sent?: { you: NotifItem[]; notice: NotifItem[] }; readIds: Set<string>; deletedIds: Set<string>; onRead: (id: string) => void; onDelete: (id: string) => void; onBack: () => void; onHome: () => void; onOpenStore?: () => void }) {
+function NotificationsScreen({ lang, coins, empty = false, only, sent, readIds, deletedIds, onRead, onDelete, onBack, onHome, onOpenStore, onOpenOffer }: { lang: Lang; coins: number; empty?: boolean; only?: "you" | "notice"; /** Demo deliveries from the harness toggle, newest first. */ sent?: { you: NotifItem[]; notice: NotifItem[] }; readIds: Set<string>; deletedIds: Set<string>; onRead: (id: string) => void; onDelete: (id: string) => void; onBack: () => void; onHome: () => void; onOpenStore?: () => void; /** The promotional row leads somewhere: the app root decides where. */ onOpenOffer?: () => void }) {
   const t = STR[lang];
   const [tab, setTab] = useState<"you" | "notice">(only ?? "you");
   // Only one row shows its bin at a time.
@@ -3416,7 +3416,7 @@ function NotificationsScreen({ lang, coins, empty = false, only, sent, readIds, 
                   deleteLabel={t.notifDelete}
                 >
                 <button
-                  onClick={() => un && markRead(it.id)}
+                  onClick={() => { if (it.id === OFFER_NOTIF_ID && onOpenOffer) { onOpenOffer(); return; } if (un) markRead(it.id); }}
                   className={`relative w-full overflow-hidden rounded-xl border px-4 py-3 text-left transition ${un ? "border-[#f1c4c4] bg-[#fff5f5]" : "border-black/10 bg-white"}`}
                 >
                   {un && <span className="absolute inset-y-0 left-0 w-1 bg-[#D10005]" />}
@@ -6660,8 +6660,8 @@ function NotEnoughCoinsPopup({ lang, coins, cost, onCharge, onClose }: { lang: L
   );
 }
 
-export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, sendNotifications = false, onNotificationSent, errorScenario = "off" }: {
-  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; /** Dev harness: deliver one fresh unread notification or announcement. */ sendNotifications?: boolean; /** Fired once the item has been delivered, so the harness can re-arm its toggle. */ onNotificationSent?: () => void; /** Dev harness: swallow the next navigation and show this error page instead. */ errorScenario?: ErrorScenario;
+export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, sendNotifications = false, onNotificationSent, errorScenario = "off", offerExpired = false }: {
+  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; /** Dev harness: deliver one fresh unread notification or announcement. */ sendNotifications?: boolean; /** Fired once the item has been delivered, so the harness can re-arm its toggle. */ onNotificationSent?: () => void; /** Dev harness: swallow the next navigation and show this error page instead. */ errorScenario?: ErrorScenario; /** Dev harness: the pinned promotional notification has expired. */ offerExpired?: boolean;
 }) {
   const t = STR[lang];
   const [screen, setScreenRaw] = useState<Screen>("landing");
@@ -7053,6 +7053,20 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
     setLobbyDraw(null);
     setScreen("oripa");
   };
+  // The pinned "Claim your offer" notification. While the offer is live it
+  // opens an oripa and counts as read; once expired it explains itself in a
+  // popup instead and leaves the notification unread so it can be reopened.
+  const [offerExpiredPopup, setOfferExpiredPopup] = useState(false);
+  const openOfferNotif = () => {
+    if (offerExpired) { setOfferExpiredPopup(true); return; }
+    markNotifRead(OFFER_NOTIF_ID);
+    // Any pack still worth landing on — a promo that opens a sold-out or
+    // expired pack reads as a broken link.
+    const drawable = ALL_ORIPA.filter((it) => !it.expired && !it.soldOut && packStatus[it.id] === undefined);
+    const pool = drawable.length > 0 ? drawable : ALL_ORIPA;
+    const pack = pool[Math.floor(Math.random() * pool.length)];
+    if (pack) openDraw(pack);
+  };
   return (
     <PackStatusContext.Provider value={packStatus}>
     <PackRetireContext.Provider value={retirePack}>
@@ -7138,7 +7152,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onPendingConfirmConsumed={() => setPendingConfirm(null)}
           />
         )}
-        {screen === "notifications" && <NotificationsScreen lang={lang} coins={coins} empty={noHistory} only={notifOnly} sent={sentNotifs} readIds={notifRead} deletedIds={notifDeleted} onRead={markNotifRead} onDelete={deleteNotif} onBack={() => setScreen(prevScreen)} onHome={resetHome} onOpenStore={openStore} />}
+        {screen === "notifications" && <NotificationsScreen lang={lang} coins={coins} empty={noHistory} only={notifOnly} sent={sentNotifs} readIds={notifRead} deletedIds={notifDeleted} onRead={markNotifRead} onDelete={deleteNotif} onBack={() => setScreen(prevScreen)} onHome={resetHome} onOpenStore={openStore} onOpenOffer={openOfferNotif} />}
         {screen === "mypage" && (
           <MyPage
             lang={lang}
@@ -7307,6 +7321,34 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onCharge={() => { setQuickPurchase(shortfall); setShortfall(null); }}
             onClose={() => setShortfall(null)}
           />
+        )}
+        {/* Expired promotional offer — the pinned notification's dead end.
+            Its CTA returns to the lobby with the feed scrolled to the first
+            oripa, the same landing the category chips give. */}
+        {offerExpiredPopup && (
+          <div
+            className="animate-popup-backdrop absolute inset-0 z-[70] flex items-center justify-center p-4"
+            style={{ background: "rgba(20,8,4,0.62)" }}
+            onClick={() => setOfferExpiredPopup(false)}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div
+              className="animate-popup-pop w-full max-w-[340px] rounded-2xl bg-white px-6 pb-6 pt-7 text-center shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+              style={{ fontFamily: "var(--font-noto-sans-jp), system-ui, sans-serif" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img src="/verify-mascot.png" alt="" draggable={false} className="mx-auto h-[150px] w-[150px] select-none object-contain" />
+              <h3 className="mt-3 text-[22px] font-extrabold text-[#1d2129]">{STR[lang].offerExpiredTitle}</h3>
+              <p className="mx-auto mt-2 max-w-[290px] text-[13px] leading-relaxed text-[#6b7075]">{STR[lang].offerExpiredBody}</p>
+              <button
+                onClick={() => { setOfferExpiredPopup(false); openCategory("all"); }}
+                className="mt-5 w-full rounded-[14px] bg-[#D10005] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]"
+              >
+                {STR[lang].offerExpiredCta}
+              </button>
+            </div>
+          </div>
         )}
         {quickPurchase && (
           <QuickPurchaseFlow

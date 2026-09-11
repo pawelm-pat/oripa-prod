@@ -43,6 +43,10 @@ export default function Page() {
   // from an emptied notification centre. It re-arms itself once the item lands,
   // so each send is one click.
   const [sendNotifications, setSendNotifications] = useState(false);
+  // Demo control (notification centre): whether the pinned "Claim your offer"
+  // item still points at a live promotion. No -> it opens an oripa and marks
+  // itself read; Yes -> it explains the offer has ended.
+  const [offerExpired, setOfferExpired] = useState(false);
   // Demo control (any screen): arm an error page. While one is armed the next
   // navigation lands on it instead of the screen that was asked for.
   const [errorScenario, setErrorScenario] = useState<ErrorScenario>("off");
@@ -73,7 +77,10 @@ export default function Page() {
             </>
           )}
           {screen === "notifications" && (
-            <ToggleControl label="Send a notification" value={sendNotifications} onChange={setSendNotifications} />
+            <>
+              <ToggleControl label="Send a notification" value={sendNotifications} onChange={setSendNotifications} />
+              <ToggleControl label="Offer expired" value={offerExpired} onChange={setOfferExpired} />
+            </>
           )}
           {/* Reachable before the draw as well, so the limit can be armed on the
               pack page and hit straight from the results' "Draw again". */}
@@ -137,6 +144,7 @@ export default function Page() {
                 sendNotifications={sendNotifications}
                 onNotificationSent={() => setSendNotifications(false)}
                 errorScenario={errorScenario}
+                offerExpired={offerExpired}
               />
             </div>
           </div>
@@ -160,6 +168,7 @@ export default function Page() {
           sendNotifications={sendNotifications}
           onNotificationSent={() => setSendNotifications(false)}
           errorScenario={errorScenario}
+          offerExpired={offerExpired}
         />
       </div>
 
