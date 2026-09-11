@@ -885,7 +885,7 @@ export function PurchaseFlow({
       return idxs;
     })();
     const v1SelectGreen = "#16a34a";
-    const v1Cta = "#c0392b";
+    const v1Cta = "#D10005";
     const v1CardSelected = payMethod === "card" && typeof selectedCardIdx === "number";
     const v1NewCardReady = cardNumValid && expiryValid && billingComplete && cardNameLatinOk;
     const v1MainPayDisabled = !v1CardSelected;
@@ -1056,8 +1056,11 @@ export function PurchaseFlow({
     const v1FeeSummary = feeSummary && (
       <div className="mb-4 overflow-hidden rounded-xl border-2 bg-white" style={{ borderColor: "#D10005" }}>
         <div className="flex items-center gap-2.5 px-3 py-3">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#D10005" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-            <path d="M21 8l-9-5-9 5 9 5 9-5z" /><path d="M3 8v8l9 5 9-5V8" /><path d="M12 13v8" />
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#D10005" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+            <path d="m7.5 4.27 9 5.15" />
+            <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+            <path d="m3.3 7 8.7 5 8.7-5" />
+            <path d="M12 22V12" />
           </svg>
           <p className="min-w-0 flex-1 text-[17px] font-extrabold text-[#1d2129]">{feeSummary.label}</p>
           <span className="shrink-0 text-[17px] font-extrabold text-[#1d2129]">{priceLabel}</span>
@@ -1285,8 +1288,7 @@ export function PurchaseFlow({
               <button
                 type="button"
                 onClick={() => setShowMyCards(true)}
-                className="text-[13px] font-semibold underline underline-offset-2"
-                style={{ color: v1SelectGreen }}
+                className="text-[13px] font-semibold text-[#8a9099] underline underline-offset-2"
               >
                 {t.checkoutManageCards}
               </button>
@@ -1328,7 +1330,8 @@ export function PurchaseFlow({
                   onClick={openV1AddCard}
                   className="flex w-full items-center gap-3 rounded-xl border border-dashed border-[#c9ced6] bg-white px-3 py-3.5 text-left active:scale-[0.99]"
                 >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f0f1f3] text-[18px] font-semibold text-[#8a9099]">+</span>
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#c9ced6] text-[18px] font-semibold text-[#8a9099]">+</span>
+                  <svg width="26" height="18" viewBox="0 0 36 24" fill="none" className="shrink-0"><rect x="0.75" y="0.75" width="34.5" height="22.5" rx="3.25" fill="#FCC24C" stroke="#E0A62F" strokeWidth="1.5" /><rect x="3" y="14" width="12" height="3" rx="1.5" fill="#fff" opacity="0.85" /><rect x="3" y="5" width="30" height="3" fill="#E0A62F" opacity="0.55" /></svg>
                   <span className="flex-1 text-[14px] font-semibold text-[#1d2129]">{t.checkoutAddNewCardShort}</span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="#8a9099" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
                 </button>
@@ -1361,10 +1364,9 @@ export function PurchaseFlow({
               type="button"
               disabled={v1MainPayDisabled}
               onClick={v1PayWithSelectedCard}
-              className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[16px] font-bold text-white disabled:cursor-not-allowed"
+              className="mb-3 flex w-full items-center justify-center rounded-xl py-3.5 text-[16px] font-bold text-white disabled:cursor-not-allowed"
               style={{ background: v1MainPayDisabled ? "#c9ced6" : v1Cta }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="10" rx="2" stroke="white" strokeWidth="2" /><path d="M8 11V8a4 4 0 118 0v3" stroke="white" strokeWidth="2" strokeLinecap="round" /></svg>
               {t.checkoutPayNowBtn} {priceSymbolAmount}
             </button>
           )}
