@@ -7338,9 +7338,11 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
               style={{ fontFamily: "var(--font-noto-sans-jp), system-ui, sans-serif" }}
               onClick={(e) => e.stopPropagation()}
             >
-              <img src="/verify-mascot.png" alt="" draggable={false} className="mx-auto h-[150px] w-[150px] select-none object-contain" />
-              <h3 className="mt-3 text-[22px] font-extrabold text-[#1d2129]">{STR[lang].offerExpiredTitle}</h3>
-              <p className="mx-auto mt-2 max-w-[290px] text-[13px] leading-relaxed text-[#6b7075]">{STR[lang].offerExpiredBody}</p>
+              <img src="/icon-oops.png" alt="" draggable={false} className="mx-auto h-[150px] w-[150px] select-none object-contain" />
+              {/* Type is specced: Noto Sans JP 700/16 and 500/13, both at a
+                  100% line height with no letter-spacing, centred. */}
+              <h3 className="mt-3 text-center text-[16px] font-bold leading-none tracking-normal text-[#1d2129]">{STR[lang].offerExpiredTitle}</h3>
+              <p className="mx-auto mt-2 max-w-[290px] text-center text-[13px] font-medium leading-none tracking-normal text-[#0F0F0FCC]">{STR[lang].offerExpiredBody}</p>
               <button
                 onClick={() => { setOfferExpiredPopup(false); openCategory("all"); }}
                 className="mt-5 w-full rounded-[14px] bg-[#D10005] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]"
