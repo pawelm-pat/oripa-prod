@@ -6786,9 +6786,16 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
     setCoins((c) => c - cost);
     return true;
   };
-  // The draw confirmation states its own shortfall, so its Charge/Top Up CTA
-  // opens the sheet directly instead of repeating it in the shortfall popup.
-  const openTopUpForDraw = (count: number) => setQuickPurchase({ drawCount: count, billCount: count, cost: count * drawingPrice() });
+  // The draw confirmation's Charge/Top Up CTA sends the user to the store.
+  // The Oripa they left is held here so a completed purchase can return them
+  // to it, and cleared if they leave the store without buying anything.
+  const [topUpPack, setTopUpPack] = useState<OripaItem | null>(null);
+  const [topUpPurchased, setTopUpPurchased] = useState(false);
+  const openTopUpForDraw = () => {
+    setTopUpPack(lobbyDraw?.item ?? drawItem ?? null);
+    setTopUpPurchased(false);
+    openStore();
+  };
   // john.inr@gmail.com → Quick Purchase / cashier show INR + JPY currency picker.
   const intlLocalCurrency: IntlCurrencyInfo | null = (() => {
     try {
@@ -7228,13 +7235,28 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             lang={lang}
             coins={coins}
             setCoins={setCoins}
-            onBack={() => setScreen(storeReturn)}
+            onBack={() => {
+              // Topped up for a draw and bought something: back returns to the
+              // Oripa the top-up started from, not wherever the store opened over.
+              if (topUpPurchased && topUpPack) {
+                const pack = topUpPack;
+                setTopUpPack(null);
+                setTopUpPurchased(false);
+                openDraw(pack);
+                return;
+              }
+              setTopUpPack(null);
+              setScreen(storeReturn);
+            }}
             onHome={resetHome}
             onOpenStore={openStore}
             onRequireKyc={() => requestKyc("purchase")}
             onDrawItem={openDraw}
             purchasedIds={purchasedIds}
-            onPackagePurchased={(pkgId) => setPurchasedIds((prev) => (prev.includes(pkgId) ? prev : [...prev, pkgId]))}
+            onPackagePurchased={(pkgId) => {
+              setPurchasedIds((prev) => (prev.includes(pkgId) ? prev : [...prev, pkgId]));
+              if (topUpPack) setTopUpPurchased(true);
+            }}
             savedCards={savedCards}
             onSaveCard={promoteSavedCard}
             onDeleteCard={(idx) => setSavedCards((prev) => prev.filter((_, i) => i !== idx))}
