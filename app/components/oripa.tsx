@@ -879,7 +879,7 @@ function PriceRangeFilter({ label, min, max, onMin, onMax }: { label: string; mi
 
 // V2 lobby feed. `onView` (tap on any card) is inert in the logged-in lobby
 // and routes to Sign-up on the logged-out landing.
-function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll, onView, onOpenDraw, onRequestDraw, catRequest, showPromo = false }: { t: Dict; lang: Lang; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void; onView?: () => void; onOpenDraw?: (item: OripaItem) => void; onRequestDraw?: (item: OripaItem, req: Omit<DrawRequest, "token">) => void; catRequest?: CatRequest | null; showPromo?: boolean }) {
+function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll, onView, onOpenDraw, onRequestDraw, catRequest, showPromo = false, searchMvp = "mvp2" }: { t: Dict; lang: Lang; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void; onView?: () => void; onOpenDraw?: (item: OripaItem) => void; onRequestDraw?: (item: OripaItem, req: Omit<DrawRequest, "token">) => void; catRequest?: CatRequest | null; showPromo?: boolean; /** MVP1 browses by filter only; MVP2 keeps the free-text search. */ searchMvp?: "mvp1" | "mvp2" }) {
   const L = LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"];
   const [cat, setCat] = useState(catRequest?.key ?? "all");
   const [searchActive, setSearchActive] = useState(false);
@@ -1300,6 +1300,19 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
           className="bg-[#FEFEFE] px-3 py-2.5 transition-transform duration-300 ease-out will-change-transform"
           style={{ transform: searchHidden ? "translateY(-100%)" : "translateY(0)" }}
         >
+          {searchMvp === "mvp1" ? (
+            /* MVP1: no free-text search — the same filter panel, opened from a
+               Narrow down bar like the one My Loot uses. */
+            <button
+              type="button"
+              onClick={() => setSearchActive((v) => !v)}
+              className="flex w-full items-center justify-center gap-2 rounded-[10px] border-[1.5px] border-[#D10005] bg-white py-3 text-[15px] font-extrabold text-[#1d2129] active:bg-black/[0.03]"
+            >
+              <FilterIcon size={18} />
+              {L.narrowDown}
+              {filterCount > 0 && <span className="flex h-[8px] w-[8px] rounded-full bg-[#D10005]" />}
+            </button>
+          ) : (
           <div className="relative">
             <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#1d2129]">
               <SearchIcon />
@@ -1325,6 +1338,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
               </button>
             )}
           </div>
+          )}
         </div>
       </div>
 
@@ -1424,7 +1438,7 @@ function FeedScroller({ scrollElRef, onScroll, children }: { scrollElRef?: RefOb
   );
 }
 
-function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, onRequestDraw, scrollRef, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll, catRequest }: { lang: Lang; coins: number; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem) => void; onRequestDraw?: (item: OripaItem, req: Omit<DrawRequest, "token">) => void; scrollRef?: { current: number }; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void; catRequest?: CatRequest | null }) {
+function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, onRequestDraw, scrollRef, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll, catRequest, searchMvp }: { lang: Lang; coins: number; onHome: () => void; onOpenStore?: () => void; onOpenDraw?: (item: OripaItem) => void; onRequestDraw?: (item: OripaItem, req: Omit<DrawRequest, "token">) => void; scrollRef?: { current: number }; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void; catRequest?: CatRequest | null; searchMvp?: "mvp1" | "mvp2" }) {
   const t = STR[lang];
   // Preserve the lobby's scroll position across navigation (e.g. opening a draw
   // and coming back) so the user lands where they were, not at the top. The
@@ -1442,7 +1456,7 @@ function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, onRequestDraw
       <FeedScroller scrollElRef={scrollElRef} onScroll={(el) => { if (scrollRef) scrollRef.current = el.scrollTop; }}>
         <HomeHero lang={lang} />
 
-        <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={onApply} onToggleApplied={onToggleApplied} onClearAll={onClearAll} onOpenDraw={onOpenDraw} onRequestDraw={onRequestDraw} catRequest={catRequest} showPromo />
+        <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={onApply} onToggleApplied={onToggleApplied} onClearAll={onClearAll} onOpenDraw={onOpenDraw} onRequestDraw={onRequestDraw} catRequest={catRequest} searchMvp={searchMvp} showPromo />
 
         <SiteFooter t={t} />
       </FeedScroller>
@@ -6735,8 +6749,8 @@ function NotEnoughCoinsPopup({ lang, coins, cost, onCharge, onClose }: { lang: L
   );
 }
 
-export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, sendNotifications = false, onNotificationSent, errorScenario = "off", offerExpired = false, paymentSuccess = true }: {
-  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; /** Dev harness: deliver one fresh unread notification or announcement. */ sendNotifications?: boolean; /** Fired once the item has been delivered, so the harness can re-arm its toggle. */ onNotificationSent?: () => void; /** Dev harness: swallow the next navigation and show this error page instead. */ errorScenario?: ErrorScenario; /** Dev harness: the pinned promotional notification has expired. */ offerExpired?: boolean; /** Dev harness: whether the shipping fee payment goes through. */ paymentSuccess?: boolean;
+export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, sendNotifications = false, onNotificationSent, errorScenario = "off", offerExpired = false, paymentSuccess = true, notificationsMvp = "mvp2", searchMvp = "mvp2" }: {
+  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; /** Dev harness: deliver one fresh unread notification or announcement. */ sendNotifications?: boolean; /** Fired once the item has been delivered, so the harness can re-arm its toggle. */ onNotificationSent?: () => void; /** Dev harness: swallow the next navigation and show this error page instead. */ errorScenario?: ErrorScenario; /** Dev harness: the pinned promotional notification has expired. */ offerExpired?: boolean; /** Dev harness: whether the shipping fee payment goes through. */ paymentSuccess?: boolean; /** MVP1 hides the Announcements tab; MVP2 keeps both. */ notificationsMvp?: "mvp1" | "mvp2"; /** MVP1 browses the lobby by filter only. */ searchMvp?: "mvp1" | "mvp2";
 }) {
   const t = STR[lang];
   const [screen, setScreenRaw] = useState<Screen>("landing");
@@ -7044,7 +7058,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   const notifUnread = noHistory
     ? 0
     : [...NOTIF_YOU, ...NOTIF_NOTICE, ...sentNotifs.you, ...sentNotifs.notice].filter((n) => n.unread && !notifRead.has(n.id) && !notifDeleted.has(n.id)).length;
-  const openNotifications = () => { setNotifOnly(undefined); setPrevScreen((p) => (screen === "notifications" ? p : screen)); setScreen("notifications"); };
+  const openNotifications = () => { setNotifOnly(notificationsMvp === "mvp1" ? "you" : undefined); setPrevScreen((p) => (screen === "notifications" ? p : screen)); setScreen("notifications"); };
   // My Account → Announcements opens the notifications screen in single-tab
   // "notice" mode and returns to My Account on back.
   const openAnnouncements = () => { setNotifOnly("notice"); setPrevScreen("mypage"); setScreen("notifications"); };
@@ -7209,7 +7223,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
           />
         )}
         {/* Logged-in lobby — V2 format */}
-        {screen === "oripa" && <OripaHome key={homeKey} lang={lang} coins={coins} onHome={resetHome} onOpenStore={openStore} onOpenDraw={openDraw} onRequestDraw={requestLobbyDraw} scrollRef={homeScroll} query={lobbyQuery} filters={lobbyFilters} priceMin={lobbyPriceMin} priceMax={lobbyPriceMax} onApply={applyLobby} onToggleApplied={toggleLobbyFilter} onClearAll={clearLobbyFilters} catRequest={catRequest} />}
+        {screen === "oripa" && <OripaHome key={homeKey} lang={lang} coins={coins} onHome={resetHome} onOpenStore={openStore} onOpenDraw={openDraw} onRequestDraw={requestLobbyDraw} scrollRef={homeScroll} query={lobbyQuery} filters={lobbyFilters} priceMin={lobbyPriceMin} priceMax={lobbyPriceMax} onApply={applyLobby} onToggleApplied={toggleLobbyFilter} onClearAll={clearLobbyFilters} catRequest={catRequest} searchMvp={searchMvp} />}
         {screen === "drawDetail" && drawItem && (
           <DrawDetail
             key={drawItem.id}

@@ -50,6 +50,10 @@ export default function Page() {
   // Demo control (shipping fee cashier): whether the payment is approved.
   // No -> the bank-decline screen, whose wallet buttons still go through.
   const [paymentSuccess, setPaymentSuccess] = useState(true);
+  // Demo control: which MVP the notification centre and the lobby browse
+  // experience are cut to.
+  const [notificationsMvp, setNotificationsMvp] = useState<"mvp1" | "mvp2">("mvp2");
+  const [searchMvp, setSearchMvp] = useState<"mvp1" | "mvp2">("mvp2");
   // Demo control (any screen): arm an error page. While one is armed the next
   // navigation lands on it instead of the screen that was asked for.
   const [errorScenario, setErrorScenario] = useState<ErrorScenario>("off");
@@ -85,6 +89,22 @@ export default function Page() {
               <ToggleControl label="Send a notification" value={sendNotifications} onChange={setSendNotifications} />
               <ToggleControl label="Offer expired" value={offerExpired} onChange={setOfferExpired} />
             </>
+          )}
+          {(screen === "notifications" || screen === "oripa") && (
+            <SelectControl
+              label="Notifications"
+              value={notificationsMvp}
+              onChange={setNotificationsMvp}
+              options={[["MVP1", "mvp1"], ["MVP2", "mvp2"]]}
+            />
+          )}
+          {screen === "oripa" && (
+            <SelectControl
+              label="Search"
+              value={searchMvp}
+              onChange={setSearchMvp}
+              options={[["MVP1", "mvp1"], ["MVP2", "mvp2"]]}
+            />
           )}
           {/* Reachable before the draw as well, so the limit can be armed on the
               pack page and hit straight from the results' "Draw again". */}
@@ -150,6 +170,8 @@ export default function Page() {
                 errorScenario={errorScenario}
                 offerExpired={offerExpired}
                 paymentSuccess={paymentSuccess}
+                notificationsMvp={notificationsMvp}
+                searchMvp={searchMvp}
               />
             </div>
           </div>
@@ -175,6 +197,8 @@ export default function Page() {
           errorScenario={errorScenario}
           offerExpired={offerExpired}
           paymentSuccess={paymentSuccess}
+          notificationsMvp={notificationsMvp}
+          searchMvp={searchMvp}
         />
       </div>
 
