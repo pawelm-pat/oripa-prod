@@ -710,6 +710,7 @@ const LOBBY_NAV_STR = {
   en: {
     empty: "No packs match your search.",
     narrowDown: "Narrow down",
+    sortLabels: { recommended: "Recommended order", priceAsc: "Price: low → high", priceDesc: "Price: high → low" },
     searchPlaceholder: "Search for original packs (e.g., Pikachu, Charizard)",
     quickFilters: "Quick filters",
     clear: "Clear",
@@ -728,6 +729,7 @@ const LOBBY_NAV_STR = {
   ja: {
     empty: "一致するオリパがありません。",
     narrowDown: "絞り込み",
+    sortLabels: { recommended: "おすすめ順", priceAsc: "価格: 安い順", priceDesc: "価格: 高い順" },
     searchPlaceholder: "オリパを検索（例：ピカチュウ、リザードン）",
     quickFilters: "クイックフィルター",
     clear: "クリア",
@@ -907,6 +909,10 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
   // keep the search bar visible (never auto-hide on scroll) so the user can act.
   const keepVisibleRef = useRef(false);
   const filterCount = Object.keys(filters).length;
+  // MVP1's ordering control. The feed had no sort of its own, so this is the
+  // only thing that reads it.
+  const [sortKey, setSortKey] = useState<"recommended" | "priceAsc" | "priceDesc">("recommended");
+  const [sortMenu, setSortMenu] = useState(false);
   const qq = query.trim().toLowerCase();
   const hasQuery = qq.length > 0;
   // Map filter keys → human labels so applied filters can be shown as chips.
@@ -1128,6 +1134,8 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
     }
     // Tag filters have no data behind them, so they thin the feed instead.
     if (filterCount) arr = arr.filter((_, i) => i % (filterCount + 1) !== 0);
+    if (sortKey === "priceAsc") arr = arr.slice().sort((a, b) => packPrice(a) - packPrice(b));
+    if (sortKey === "priceDesc") arr = arr.slice().sort((a, b) => packPrice(b) - packPrice(a));
     return arr;
   }
 
@@ -1297,21 +1305,47 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
         {/* Inner bar slides as a rigid unit (synced with the wrapper clip) so it
             never appears squished/half-rendered while revealing. */}
         <div
-          className="bg-[#FEFEFE] px-3 py-2.5 transition-transform duration-300 ease-out will-change-transform"
+          className={`bg-[#FEFEFE] transition-transform duration-300 ease-out will-change-transform ${searchMvp === "mvp1" ? "" : "px-3 py-2.5"}`}
           style={{ transform: searchHidden ? "translateY(-100%)" : "translateY(0)" }}
         >
           {searchMvp === "mvp1" ? (
-            /* MVP1: no free-text search — the same filter panel, opened from a
-               Narrow down bar like the one My Loot uses. */
-            <button
-              type="button"
-              onClick={() => setSearchActive((v) => !v)}
-              className="flex w-full items-center justify-center gap-2 rounded-[10px] border-[1.5px] border-[#D10005] bg-white py-3 text-[15px] font-extrabold text-[#1d2129] active:bg-black/[0.03]"
-            >
-              <FilterIcon size={18} />
-              {L.narrowDown}
-              {filterCount > 0 && <span className="flex h-[8px] w-[8px] rounded-full bg-[#D10005]" />}
-            </button>
+            /* MVP1 browses by filter: the same split bar My Loot uses, narrow
+               down on the left and the ordering on the right. */
+            <div className="relative flex items-stretch border-b border-black/10 bg-white">
+              <button
+                type="button"
+                onClick={() => { setSortMenu(false); setSearchActive((v) => !v); }}
+                className="flex flex-1 items-center justify-center gap-2 py-3 text-[14px] font-extrabold text-[#1d2129] active:bg-black/[0.03]"
+              >
+                <FilterIcon size={18} />
+                {L.narrowDown}
+                {filterCount > 0 && <span className="flex h-[8px] w-[8px] rounded-full bg-[#D10005]" />}
+              </button>
+              <span className="my-2 w-px bg-black/10" />
+              <button
+                type="button"
+                onClick={() => setSortMenu((v) => !v)}
+                className="flex flex-1 items-center justify-center gap-1.5 py-3 text-[14px] font-extrabold text-[#1d2129] active:bg-black/[0.03]"
+              >
+                {L.sortLabels[sortKey]}
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4" /></svg>
+              </button>
+              {sortMenu && (
+                <div className="absolute right-2 top-full z-30 mt-1 w-[210px] overflow-hidden rounded-xl border border-black/10 bg-white shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+                  {(["recommended", "priceAsc", "priceDesc"] as const).map((k) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => { setSortKey(k); setSortMenu(false); }}
+                      className={`flex w-full items-center justify-between px-3 py-2.5 text-left text-[13px] font-semibold ${k === sortKey ? "text-[#D10005]" : "text-[#1d2129]"} active:bg-black/[0.03]`}
+                    >
+                      {L.sortLabels[k]}
+                      {k === sortKey && <span className="h-[7px] w-[7px] rounded-full bg-[#D10005]" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           ) : (
           <div className="relative">
             <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#1d2129]">
@@ -7058,7 +7092,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   const notifUnread = noHistory
     ? 0
     : [...NOTIF_YOU, ...NOTIF_NOTICE, ...sentNotifs.you, ...sentNotifs.notice].filter((n) => n.unread && !notifRead.has(n.id) && !notifDeleted.has(n.id)).length;
-  const openNotifications = () => { setNotifOnly(notificationsMvp === "mvp1" ? "you" : undefined); setPrevScreen((p) => (screen === "notifications" ? p : screen)); setScreen("notifications"); };
+  const openNotifications = () => { setNotifOnly(undefined); setPrevScreen((p) => (screen === "notifications" ? p : screen)); setScreen("notifications"); };
   // My Account → Announcements opens the notifications screen in single-tab
   // "notice" mode and returns to My Account on back.
   const openAnnouncements = () => { setNotifOnly("notice"); setPrevScreen("mypage"); setScreen("notifications"); };
@@ -7248,7 +7282,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onPendingConfirmConsumed={() => setPendingConfirm(null)}
           />
         )}
-        {screen === "notifications" && <NotificationsScreen lang={lang} coins={coins} empty={noHistory} only={notifOnly} sent={sentNotifs} readIds={notifRead} deletedIds={notifDeleted} onRead={markNotifRead} onDelete={deleteNotif} onBack={() => setScreen(prevScreen)} onHome={resetHome} onOpenStore={openStore} onOpenOffer={openOfferNotif} />}
+        {screen === "notifications" && <NotificationsScreen lang={lang} coins={coins} empty={noHistory} only={notificationsMvp === "mvp1" ? "you" : notifOnly} sent={sentNotifs} readIds={notifRead} deletedIds={notifDeleted} onRead={markNotifRead} onDelete={deleteNotif} onBack={() => setScreen(prevScreen)} onHome={resetHome} onOpenStore={openStore} onOpenOffer={openOfferNotif} />}
         {screen === "mypage" && (
           <MyPage
             lang={lang}

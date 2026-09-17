@@ -91,7 +91,7 @@ export default function Page() {
             </>
           )}
           {(screen === "notifications" || screen === "oripa") && (
-            <SelectControl
+            <PairControl
               label="Notifications"
               value={notificationsMvp}
               onChange={setNotificationsMvp}
@@ -99,7 +99,7 @@ export default function Page() {
             />
           )}
           {screen === "oripa" && (
-            <SelectControl
+            <PairControl
               label="Search"
               value={searchMvp}
               onChange={setSearchMvp}
@@ -222,6 +222,27 @@ function ToggleControl({ label, value, onChange }: { label: string; value: boole
         {([["Yes", true], ["No", false]] as const).map(([lbl, v]) => (
           <button
             key={lbl}
+            onClick={() => onChange(v)}
+            className={`flex-1 py-1.5 text-[11px] font-semibold transition ${value === v ? "bg-[#f5670a] text-white" : "bg-[#202127] text-white/60"}`}
+          >
+            {lbl}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Demo two-option picker laid out like ToggleControl, for controls whose two
+// states aren't Yes/No.
+function PairControl<T extends string>({ label, value, onChange, options }: { label: string; value: T; onChange: (v: T) => void; options: readonly (readonly [string, T])[] }) {
+  return (
+    <div className="flex w-[168px] flex-col items-start gap-2">
+      <span className="whitespace-nowrap text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-white/45">{label}</span>
+      <div className="flex w-full overflow-hidden rounded-lg border border-white/15">
+        {options.map(([lbl, v]) => (
+          <button
+            key={v}
             onClick={() => onChange(v)}
             className={`flex-1 py-1.5 text-[11px] font-semibold transition ${value === v ? "bg-[#f5670a] text-white" : "bg-[#202127] text-white/60"}`}
           >
