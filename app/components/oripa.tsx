@@ -710,6 +710,7 @@ const LOBBY_NAV_STR = {
   en: {
     empty: "No packs match your search.",
     narrowDown: "Narrow down",
+    sortTitle: "Sort oripa",
     sortLabels: { recommended: "Recommended order", priceAsc: "Price: low → high", priceDesc: "Price: high → low" },
     searchPlaceholder: "Search for original packs (e.g., Pikachu, Charizard)",
     quickFilters: "Quick filters",
@@ -729,6 +730,7 @@ const LOBBY_NAV_STR = {
   ja: {
     empty: "一致するオリパがありません。",
     narrowDown: "絞り込み",
+    sortTitle: "並び替え",
     sortLabels: { recommended: "おすすめ順", priceAsc: "価格: 安い順", priceDesc: "価格: 高い順" },
     searchPlaceholder: "オリパを検索（例：ピカチュウ、リザードン）",
     quickFilters: "クイックフィルター",
@@ -1178,6 +1180,23 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
   // only belongs on the red section.
   const sparkle = <img src="/sparkle.png" alt="" aria-hidden width={18} height={18} className="shrink-0" draggable={false} />;
 
+  const sortSheet = sortMenu && (
+    <BottomSheet title={L.sortTitle} onClose={() => setSortMenu(false)}>
+      {(["recommended", "priceAsc", "priceDesc"] as const).map((k) => (
+        <button
+          key={k}
+          onClick={() => { setSortKey(k); setSortMenu(false); }}
+          className="flex w-full items-center justify-between border-b border-black/5 py-3 text-left text-[14px]"
+        >
+          <span className={sortKey === k ? "font-bold text-[#1d2129]" : "text-[#41464e]"}>{L.sortLabels[k]}</span>
+          {sortKey === k && (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          )}
+        </button>
+      ))}
+    </BottomSheet>
+  );
+
   const showResults = hasQuery || filterCount > 0 || priceActive;
   let body: React.ReactNode;
   if (showResults) {
@@ -1251,6 +1270,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
 
   return (
     <div ref={rootRef} className="bg-[#eef0f3]">
+      {sortSheet}
       {/* Warm the pack artwork behind every card so opening a draw doesn't wait
           on the banner. Low priority keeps it behind the lobby's own images. */}
       <link rel="preload" as="image" href="/draw-banner.webp" fetchPriority="low" />
@@ -1330,21 +1350,6 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
                 {L.sortLabels[sortKey]}
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4" /></svg>
               </button>
-              {sortMenu && (
-                <div className="absolute right-2 top-full z-30 mt-1 w-[210px] overflow-hidden rounded-xl border border-black/10 bg-white shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
-                  {(["recommended", "priceAsc", "priceDesc"] as const).map((k) => (
-                    <button
-                      key={k}
-                      type="button"
-                      onClick={() => { setSortKey(k); setSortMenu(false); }}
-                      className={`flex w-full items-center justify-between px-3 py-2.5 text-left text-[13px] font-semibold ${k === sortKey ? "text-[#D10005]" : "text-[#1d2129]"} active:bg-black/[0.03]`}
-                    >
-                      {L.sortLabels[k]}
-                      {k === sortKey && <span className="h-[7px] w-[7px] rounded-full bg-[#D10005]" />}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
           ) : (
           <div className="relative">
@@ -5775,7 +5780,7 @@ function myMenuIcon(key: string) {
   }
 }
 
-function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onOpenMyLoot, onOpenPurchaseHistory, onOpenAnnouncements, onOpenShippingAddress, onOpenProfile, onOpenRefer, onOpenFaq, onHome, onLogout, onOpenStore }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenMyLoot: () => void; onOpenPurchaseHistory: () => void; onOpenAnnouncements: () => void; onOpenShippingAddress: () => void; onOpenProfile: () => void; onOpenRefer: () => void; onOpenFaq: () => void; onHome: () => void; onLogout: () => void; onOpenStore?: () => void }) {
+function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onOpenMyLoot, onOpenPurchaseHistory, onOpenAnnouncements, onOpenShippingAddress, onOpenProfile, notificationsMvp = "mvp2", onOpenRefer, onOpenFaq, onHome, onLogout, onOpenStore }: { lang: Lang; coins: number; displayName?: string; onOpenPrizeHistory: () => void; onOpenMyLoot: () => void; onOpenPurchaseHistory: () => void; onOpenAnnouncements: () => void; onOpenShippingAddress: () => void; onOpenProfile: () => void; /** MVP1 folds announcements into the notification centre, so the row is named for it. */ notificationsMvp?: "mvp1" | "mvp2"; onOpenRefer: () => void; onOpenFaq: () => void; onHome: () => void; onLogout: () => void; onOpenStore?: () => void }) {
   const t = STR[lang];
   const openLegal = useContext(LegalNavContext);
   const openCoinHistory = useContext(CoinHistoryNavContext);
@@ -5801,7 +5806,7 @@ function MyPage({ lang, coins, displayName = "Username", onOpenPrizeHistory, onO
     { key: "coinHistory", label: t.coinHistoryTitle, onClick: openCoinHistory },
     { key: "invite", label: t.mmInvite, onClick: onOpenRefer },
     { key: "faq", label: t.mmFaqSupport, onClick: onOpenFaq },
-    { key: "notices", label: t.mmNotices, onClick: onOpenAnnouncements },
+    { key: "notices", label: notificationsMvp === "mvp1" ? t.mmNotifications : t.mmNotices, onClick: onOpenAnnouncements },
     { key: "shippingAddress", label: t.mmShippingAddress, onClick: onOpenShippingAddress },
   ];
 
@@ -7292,6 +7297,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onOpenMyLoot={openMyLoot}
             onOpenPurchaseHistory={() => setScreen("purchaseHistory")}
             onOpenAnnouncements={openAnnouncements}
+            notificationsMvp={notificationsMvp}
             onOpenShippingAddress={() => setScreen("shippingAddress")}
             onOpenProfile={() => setScreen("profile")}
             onOpenRefer={() => setScreen("refer")}

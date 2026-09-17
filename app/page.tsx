@@ -90,7 +90,7 @@ export default function Page() {
               <ToggleControl label="Offer expired" value={offerExpired} onChange={setOfferExpired} />
             </>
           )}
-          {(screen === "notifications" || screen === "oripa") && (
+          {(screen === "notifications" || screen === "oripa" || screen === "mypage") && (
             <PairControl
               label="Notifications"
               value={notificationsMvp}
