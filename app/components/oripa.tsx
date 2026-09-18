@@ -711,7 +711,14 @@ const LOBBY_NAV_STR = {
     empty: "No packs match your search.",
     narrowDown: "Narrow down",
     sortTitle: "Sort oripa",
-    sortLabels: { recommended: "Recommended order", priceAsc: "Price: low → high", priceDesc: "Price: high → low" },
+    sortLabels: {
+      recommended: "Recommended order",
+      priceDesc: "Price: high → low",
+      priceAsc: "Price: low → high",
+      endingSoon: "Ending: soonest first",
+      endingLate: "Ending: latest first",
+      stockLow: "Remaining: fewest first",
+    },
     searchPlaceholder: "Search for original packs (e.g., Pikachu, Charizard)",
     quickFilters: "Quick filters",
     clear: "Clear",
@@ -731,7 +738,14 @@ const LOBBY_NAV_STR = {
     empty: "一致するオリパがありません。",
     narrowDown: "絞り込み",
     sortTitle: "並び替え",
-    sortLabels: { recommended: "おすすめ順", priceAsc: "価格: 安い順", priceDesc: "価格: 高い順" },
+    sortLabels: {
+      recommended: "おすすめ順",
+      priceDesc: "価格: 高い順",
+      priceAsc: "価格: 安い順",
+      endingSoon: "終了: 早い順",
+      endingLate: "終了: 遅い順",
+      stockLow: "残り: 少ない順",
+    },
     searchPlaceholder: "オリパを検索（例：ピカチュウ、リザードン）",
     quickFilters: "クイックフィルター",
     clear: "クリア",
@@ -883,7 +897,7 @@ function PriceRangeFilter({ label, min, max, onMin, onMax }: { label: string; mi
 
 // V2 lobby feed. `onView` (tap on any card) is inert in the logged-in lobby
 // and routes to Sign-up on the logged-out landing.
-export type LobbySortKey = "recommended" | "priceAsc" | "priceDesc";
+export type LobbySortKey = "recommended" | "priceDesc" | "priceAsc" | "endingSoon" | "endingLate" | "stockLow";
 
 function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll, onView, onOpenDraw, onRequestDraw, catRequest, showPromo = false, searchMvp = "mvp2", sortKey = "recommended", onOpenSort }: { t: Dict; lang: Lang; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void; onView?: () => void; onOpenDraw?: (item: OripaItem) => void; onRequestDraw?: (item: OripaItem, req: Omit<DrawRequest, "token">) => void; catRequest?: CatRequest | null; showPromo?: boolean; /** MVP1 browses by filter only; MVP2 keeps the free-text search. */ searchMvp?: "mvp1" | "mvp2"; /** MVP1 ordering. Owned by the screen so its sheet can cover it. */ sortKey?: LobbySortKey; onSortKey?: (k: LobbySortKey) => void; onOpenSort?: () => void }) {
   const L = LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"];
@@ -1135,8 +1149,13 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
     }
     // Tag filters have no data behind them, so they thin the feed instead.
     if (filterCount) arr = arr.filter((_, i) => i % (filterCount + 1) !== 0);
+    // Packs carry no win date or coin value, so the orderings read off what a
+    // pack does have: its draw price, when it closes and what's left.
     if (sortKey === "priceAsc") arr = arr.slice().sort((a, b) => packPrice(a) - packPrice(b));
     if (sortKey === "priceDesc") arr = arr.slice().sort((a, b) => packPrice(b) - packPrice(a));
+    if (sortKey === "endingSoon") arr = arr.slice().sort((a, b) => a.endsIn - b.endsIn);
+    if (sortKey === "endingLate") arr = arr.slice().sort((a, b) => b.endsIn - a.endsIn);
+    if (sortKey === "stockLow") arr = arr.slice().sort((a, b) => a.remaining - b.remaining);
     return arr;
   }
 
@@ -1145,6 +1164,13 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
   // sign-up through `onView`.
   const canOpen = !!(onOpenDraw || onView);
   const openCard = (it: OripaItem) => (onOpenDraw ? onOpenDraw(it) : onView?.());
+  // Cards fade-slide in one after another whenever the ordering or the filters
+  // change, the way My Loot's list does.
+  const listKey = `${cat}-${sortKey}-${filterCount}-${priceActive ? 1 : 0}-${query}`;
+  const stagger = (arr: OripaItem[]) => arr.map((it, i) => (
+    <div key={it.id} className="animate-fade-slide" style={{ animationDelay: `${(i % 8) * 45}ms` }}>{full(it)}</div>
+  ));
+
   const full = (it: OripaItem) => (
     <OripaCard
       key={it.id}
@@ -1185,7 +1211,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
     const items = transform(ALL_ORIPA);
     body = items.length === 0
       ? <div className="px-6 py-16 text-center text-[13px] font-semibold text-[#8a9099]">{L.empty}</div>
-      : <div className="flex flex-col gap-3 px-3.5 py-3">{items.map(full)}</div>;
+      : <div key={listKey} className="flex flex-col gap-3 px-3.5 py-3">{stagger(items)}</div>;
   } else if (cat === "all") {
     body = (
       <div>
@@ -1207,7 +1233,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
                   <div className="mb-3 flex items-center justify-between">
                     <h3 className="flex items-center gap-1.5 text-[15px] font-extrabold text-white">{sparkle}{title}</h3>
                   </div>
-                  <div className="flex flex-col gap-3">{s.items.map(full)}</div>
+                  <div key={`${listKey}-${s.titleKey}`} className="flex flex-col gap-3">{stagger(transform(s.items))}</div>
                 </section>
                 {/* Curved divider transitioning red -> white (below the section) */}
                 <img src="/home-divider-bottom.png" alt="" className="-mt-px block w-full" />
@@ -1220,7 +1246,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
               <div className="mb-2.5 flex items-center">
                 <h3 className="flex items-center gap-1.5 text-[15px] font-extrabold text-[#1d2129]">{s.icon ? sectionIcon(s.icon, false) : null}{title}</h3>
               </div>
-              <div className="flex flex-col gap-3">{s.items.map(full)}</div>
+              <div key={`${listKey}-${s.titleKey}`} className="flex flex-col gap-3">{stagger(transform(s.items))}</div>
             </div>
           );
         })}
@@ -1241,11 +1267,11 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
           </div>
           <section className="bg-[#B40206] px-3.5 pb-6 pt-4">
             <h3 className="mb-3 flex items-center gap-1.5 text-[15px] font-extrabold text-white">{sparkle}{recTitle}</h3>
-            <div className="flex flex-col gap-3">{featured.map(full)}</div>
+            <div key={`${listKey}-f`} className="flex flex-col gap-3">{stagger(featured)}</div>
           </section>
           <img src="/home-divider-bottom.png" alt="" className="-mt-px block w-full" />
           {promoBanners}
-          {rest.length > 0 && <div className="flex flex-col gap-3 px-3.5 py-3">{rest.map(full)}</div>}
+          {rest.length > 0 && <div key={`${listKey}-r`} className="flex flex-col gap-3 px-3.5 py-3">{stagger(rest)}</div>}
         </div>
       );
   }
@@ -1489,7 +1515,7 @@ function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, onRequestDraw
 
       {sortOpen && (
         <BottomSheet title={L.sortTitle} onClose={() => setSortOpen(false)}>
-          {(["recommended", "priceAsc", "priceDesc"] as const).map((k) => (
+          {(["recommended", "priceDesc", "priceAsc", "endingSoon", "endingLate", "stockLow"] as const).map((k) => (
             <button
               key={k}
               onClick={() => { setSortKey(k); setSortOpen(false); }}
