@@ -883,7 +883,9 @@ function PriceRangeFilter({ label, min, max, onMin, onMax }: { label: string; mi
 
 // V2 lobby feed. `onView` (tap on any card) is inert in the logged-in lobby
 // and routes to Sign-up on the logged-out landing.
-function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll, onView, onOpenDraw, onRequestDraw, catRequest, showPromo = false, searchMvp = "mvp2" }: { t: Dict; lang: Lang; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void; onView?: () => void; onOpenDraw?: (item: OripaItem) => void; onRequestDraw?: (item: OripaItem, req: Omit<DrawRequest, "token">) => void; catRequest?: CatRequest | null; showPromo?: boolean; /** MVP1 browses by filter only; MVP2 keeps the free-text search. */ searchMvp?: "mvp1" | "mvp2" }) {
+export type LobbySortKey = "recommended" | "priceAsc" | "priceDesc";
+
+function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, onToggleApplied, onClearAll, onView, onOpenDraw, onRequestDraw, catRequest, showPromo = false, searchMvp = "mvp2", sortKey = "recommended", onOpenSort }: { t: Dict; lang: Lang; query: string; filters: Record<string, boolean>; priceMin: number; priceMax: number; onApply: (q: string, f: Record<string, boolean>, min: number, max: number) => void; onToggleApplied: (k: string) => void; onClearAll: () => void; onView?: () => void; onOpenDraw?: (item: OripaItem) => void; onRequestDraw?: (item: OripaItem, req: Omit<DrawRequest, "token">) => void; catRequest?: CatRequest | null; showPromo?: boolean; /** MVP1 browses by filter only; MVP2 keeps the free-text search. */ searchMvp?: "mvp1" | "mvp2"; /** MVP1 ordering. Owned by the screen so its sheet can cover it. */ sortKey?: LobbySortKey; onSortKey?: (k: LobbySortKey) => void; onOpenSort?: () => void }) {
   const L = LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"];
   const [cat, setCat] = useState(catRequest?.key ?? "all");
   const [searchActive, setSearchActive] = useState(false);
@@ -911,10 +913,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
   // keep the search bar visible (never auto-hide on scroll) so the user can act.
   const keepVisibleRef = useRef(false);
   const filterCount = Object.keys(filters).length;
-  // MVP1's ordering control. The feed had no sort of its own, so this is the
-  // only thing that reads it.
-  const [sortKey, setSortKey] = useState<"recommended" | "priceAsc" | "priceDesc">("recommended");
-  const [sortMenu, setSortMenu] = useState(false);
+
   const qq = query.trim().toLowerCase();
   const hasQuery = qq.length > 0;
   // Map filter keys → human labels so applied filters can be shown as chips.
@@ -1180,23 +1179,6 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
   // only belongs on the red section.
   const sparkle = <img src="/sparkle.png" alt="" aria-hidden width={18} height={18} className="shrink-0" draggable={false} />;
 
-  const sortSheet = sortMenu && (
-    <BottomSheet title={L.sortTitle} onClose={() => setSortMenu(false)}>
-      {(["recommended", "priceAsc", "priceDesc"] as const).map((k) => (
-        <button
-          key={k}
-          onClick={() => { setSortKey(k); setSortMenu(false); }}
-          className="flex w-full items-center justify-between border-b border-black/5 py-3 text-left text-[14px]"
-        >
-          <span className={sortKey === k ? "font-bold text-[#1d2129]" : "text-[#41464e]"}>{L.sortLabels[k]}</span>
-          {sortKey === k && (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          )}
-        </button>
-      ))}
-    </BottomSheet>
-  );
-
   const showResults = hasQuery || filterCount > 0 || priceActive;
   let body: React.ReactNode;
   if (showResults) {
@@ -1270,7 +1252,6 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
 
   return (
     <div ref={rootRef} className="bg-[#eef0f3]">
-      {sortSheet}
       {/* Warm the pack artwork behind every card so opening a draw doesn't wait
           on the banner. Low priority keeps it behind the lobby's own images. */}
       <link rel="preload" as="image" href="/draw-banner.webp" fetchPriority="low" />
@@ -1334,7 +1315,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
             <div className="relative flex items-stretch border-b border-black/10 bg-white">
               <button
                 type="button"
-                onClick={() => { setSortMenu(false); setSearchActive((v) => !v); }}
+                onClick={() => setSearchActive((v) => !v)}
                 className="flex flex-1 items-center justify-center gap-2 py-3 text-[14px] font-extrabold text-[#1d2129] active:bg-black/[0.03]"
               >
                 <FilterIcon size={18} />
@@ -1344,7 +1325,7 @@ function LobbyNavFeed({ t, lang, query, filters, priceMin, priceMax, onApply, on
               <span className="my-2 w-px bg-black/10" />
               <button
                 type="button"
-                onClick={() => setSortMenu((v) => !v)}
+                onClick={() => onOpenSort?.()}
                 className="flex flex-1 items-center justify-center gap-1.5 py-3 text-[14px] font-extrabold text-[#1d2129] active:bg-black/[0.03]"
               >
                 {L.sortLabels[sortKey]}
@@ -1488,6 +1469,12 @@ function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, onRequestDraw
     const el = scrollElRef.current;
     if (el && scrollRef) el.scrollTop = scrollRef.current;
   }, [scrollRef]);
+  // MVP1's ordering. It lives here rather than in the feed so its sheet can
+  // cover the whole screen — mounted inside the scroller it sat mid-page and
+  // the feed kept scrolling behind it.
+  const [sortKey, setSortKey] = useState<LobbySortKey>("recommended");
+  const [sortOpen, setSortOpen] = useState(false);
+  const L = LOBBY_NAV_STR[lang === "ja" ? "ja" : "en"];
   return (
     <div className="relative flex h-full flex-col bg-[#eef0f3]">
       <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
@@ -1495,10 +1482,27 @@ function OripaHome({ lang, coins, onHome, onOpenStore, onOpenDraw, onRequestDraw
       <FeedScroller scrollElRef={scrollElRef} onScroll={(el) => { if (scrollRef) scrollRef.current = el.scrollTop; }}>
         <HomeHero lang={lang} />
 
-        <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={onApply} onToggleApplied={onToggleApplied} onClearAll={onClearAll} onOpenDraw={onOpenDraw} onRequestDraw={onRequestDraw} catRequest={catRequest} searchMvp={searchMvp} showPromo />
+        <LobbyNavFeed t={t} lang={lang} query={query} filters={filters} priceMin={priceMin} priceMax={priceMax} onApply={onApply} onToggleApplied={onToggleApplied} onClearAll={onClearAll} onOpenDraw={onOpenDraw} onRequestDraw={onRequestDraw} catRequest={catRequest} searchMvp={searchMvp} sortKey={sortKey} onOpenSort={() => setSortOpen(true)} showPromo />
 
         <SiteFooter t={t} />
       </FeedScroller>
+
+      {sortOpen && (
+        <BottomSheet title={L.sortTitle} onClose={() => setSortOpen(false)}>
+          {(["recommended", "priceAsc", "priceDesc"] as const).map((k) => (
+            <button
+              key={k}
+              onClick={() => { setSortKey(k); setSortOpen(false); }}
+              className="flex w-full items-center justify-between border-b border-black/5 py-3 text-left text-[14px]"
+            >
+              <span className={sortKey === k ? "font-bold text-[#1d2129]" : "text-[#41464e]"}>{L.sortLabels[k]}</span>
+              {sortKey === k && (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="#D10005" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              )}
+            </button>
+          ))}
+        </BottomSheet>
+      )}
     </div>
   );
 }
