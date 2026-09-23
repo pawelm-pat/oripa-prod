@@ -174,7 +174,16 @@ export type BillingAddress = {
 };
 export type SavedCard = { last4: string; expiry: string; brand: string; name: string; billingAddress?: BillingAddress };
 
-type PurchaseStep = "checkout" | "auth3ds" | "success" | "failed";
+type PurchaseStep = "checkout" | "auth3ds" | "success" | "failed" | "bankLoading" | "bankSent";
+
+function BankMark() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1d2129" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
+      <path d="M3 10h18L12 4 3 10z" />
+      <path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18" />
+    </svg>
+  );
+}
 type FailureReason = "insufficientFunds" | "bankDecline";
 
 const LATIN_NAME_RE = /^[A-Za-z\s'.\-]+$/;
@@ -211,6 +220,7 @@ export function PurchaseFlow({
   feeSummary,
   completeOnSuccess = false,
   forceFailure = false,
+  onBankTransfer,
 }: {
   pkg: PointPackage;
   lang: Lang;
@@ -233,6 +243,9 @@ export function PurchaseFlow({
   /** Demo harness: decline the next card payment whatever card is used. The
       wallets still go through, which is what the decline screen offers. */
   forceFailure?: boolean;
+  /** Japanese cashier: bank transfer takes PayPay's slot. The purchase stays
+      pending until the transfer lands, so no coins are credited here. */
+  onBankTransfer?: (pkg: PointPackage, paymentId: string) => void;
 }) {
   const t = STR[lang];
   const openLegal = useContext(CashierLegalContext);
@@ -251,6 +264,12 @@ export function PurchaseFlow({
     feeDoneRef.current = true;
     onComplete(0);
   }, [completeOnSuccess, step, onComplete]);
+  const [bankTransfer, setBankTransfer] = useState<{ accountNumber: string; deadline: Date } | null>(null);
+  useEffect(() => {
+    if (step !== "bankLoading") return;
+    const id = setTimeout(() => setStep("bankSent"), 1600);
+    return () => clearTimeout(id);
+  }, [step]);
   const [payMethod, setPayMethod] = useState<PayMethod>("card");
   const [checkoutCurrency, setCheckoutCurrency] = useState<"INR" | "JPY">(
     enableCurrencyCheckout ? "INR" : "JPY",
@@ -489,6 +508,73 @@ export function PurchaseFlow({
             </button>
             <button className="mt-3 block w-full text-center text-[13px] font-semibold text-[#2355c5] underline underline-offset-2">
               {t.auth3dsResend}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === "bankLoading") {
+    return (
+      <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4" style={{ background: "rgba(20,8,4,0.62)" }} role="status" aria-live="polite">
+        <span className="h-11 w-11 animate-spin rounded-full border-[3px] border-white/25 border-t-white" />
+        <p className="text-[15px] font-bold text-white">{t.paymentProcessing}</p>
+      </div>
+    );
+  }
+
+  if (step === "bankSent" && bankTransfer) {
+    const d = bankTransfer.deadline;
+    const hhmm = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+    const deadlineLabel = lang === "ja"
+      ? `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 ${hhmm}`
+      : `${d.toLocaleString("en-US", { month: "long" })} ${d.getDate()}, ${d.getFullYear()}, ${hhmm}`;
+    const rows: { label: string; value: string; note?: string }[] = [
+      { label: t.bankTransferTotal, value: t.bankTransferAmount(pkg.jpy) },
+      { label: t.bankTransferBank, value: t.bankTransferBankValue },
+      { label: t.bankTransferBranch, value: t.bankTransferBranchValue },
+      { label: t.bankTransferAccountType, value: t.bankTransferAccountTypeValue },
+      { label: t.bankTransferAccountNumber, value: bankTransfer.accountNumber, note: t.bankTransferAccountNumberNote },
+      { label: t.bankTransferRecipient, value: t.bankTransferRecipientValue },
+    ];
+    const close = () => {
+      onBankTransfer?.(pkg, `BT${bankTransfer.accountNumber}`);
+      onClose();
+    };
+    return (
+      <div className="animate-popup-backdrop no-scrollbar absolute inset-0 z-50 overflow-y-auto px-3 py-5" style={{ background: "rgba(0,0,0,0.55)" }} role="dialog" aria-modal="true">
+        <div className="animate-popup-pop relative mx-auto w-full max-w-sm overflow-hidden rounded-2xl bg-white pb-5">
+          <button type="button" onClick={close} aria-label={t.failedClose} className="absolute right-2.5 top-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-full text-[14px] font-bold text-[#5c626b] hover:bg-black/5">✕</button>
+          <div className="border-b border-black/10 py-3.5 pl-4 pr-10" style={{ borderLeft: "4px solid #f5c518" }}>
+            <h2 className="text-[15px] font-extrabold leading-snug text-[#1d2129]">{t.bankTransferTitle}</h2>
+          </div>
+          <div className="px-3.5 pt-3.5">
+            <p className="rounded-md bg-[#fde8ec] py-2.5 text-center text-[14px] font-bold text-[#e0325a]">{t.bankTransferDeadline(deadlineLabel)}</p>
+            <div className="mt-2.5 space-y-0.5 text-center text-[11px] leading-relaxed text-[#e0325a]">
+              {t.bankTransferWarning.map((line) => <p key={line}>{line}</p>)}
+            </div>
+            <div className="mt-4 space-y-0.5 text-[11.5px] leading-relaxed text-[#1d2129]">
+              {t.bankTransferEmailSent.map((line) => <p key={line}>{line}</p>)}
+            </div>
+            <div className="mt-3 space-y-1 rounded-md bg-[#f2f3f5] px-3 py-3 text-[10.5px] leading-relaxed text-[#1d2129]">
+              {t.bankTransferNotes.map((line) => <p key={line}>{line}</p>)}
+            </div>
+            <table className="mt-4 w-full border-collapse text-[11px]">
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.label}>
+                    <th className="w-[40%] border border-[#e2e5ea] bg-[#f5f6f8] px-2.5 py-2.5 text-left align-middle font-bold leading-snug text-[#1d2129]">{r.label}</th>
+                    <td className="border border-[#e2e5ea] px-2.5 py-2.5 align-middle leading-snug text-[#1d2129]">
+                      {r.value}
+                      {r.note && <p className="mt-0.5 text-[9.5px] text-[#e0325a]">{r.note}</p>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <button type="button" onClick={close} className="mt-4 w-full rounded-xl py-3 text-[15px] font-bold text-white active:scale-[0.98]" style={{ background: "#D10005" }}>
+              {t.failedClose}
             </button>
           </div>
         </div>
@@ -1010,6 +1096,19 @@ export function PurchaseFlow({
         Paypay
       </button>
     );
+    const startBankTransfer = () => beginPayment(() => {
+      const deadline = new Date();
+      deadline.setDate(deadline.getDate() + 6);
+      deadline.setHours(14, 59, 0, 0);
+      setBankTransfer({ accountNumber: String(1000000 + Math.floor(Math.random() * 9000000)), deadline });
+      setStep("bankLoading");
+    });
+    const bankTransferBtn = (
+      <button type="button" onClick={startBankTransfer} className={walletSecondaryCls} aria-label={t.bankTransfer}>
+        <BankMark />
+        {t.bankTransfer}
+      </button>
+    );
     const rakutenPayBtn = (
       <button type="button" onClick={() => payWithWallet("rakutenPay")} className={walletSecondaryCls} aria-label="Rakuten Pay">
         <RakutenPayMark />
@@ -1035,7 +1134,7 @@ export function PurchaseFlow({
         {applePayBtn}
         {!enableCurrencyCheckout && (
           <>
-            {payPayBtn}
+            {onBankTransfer ? bankTransferBtn : payPayBtn}
             {rakutenPayBtn}
             {melPayBtn}
             {famiPayBtn}
