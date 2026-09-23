@@ -205,6 +205,72 @@ function hasNonLatinAddress(value: string) {
 const DECLINED_CARD_LAST4_INSUFFICIENT_FUNDS = "9999";
 const DECLINED_CARD_LAST4_BANK_DECLINE = "8888";
 
+export type BankTransferDetails = { accountNumber: string; deadline: number };
+
+function accountEmail() {
+  try {
+    return String(JSON.parse(sessionStorage.getItem("authData") || "{}").email || "");
+  } catch {
+    return "";
+  }
+}
+
+/** Transfer instructions for a pending bank-transfer purchase. Shown after
+    checkout and again from the Purchase History record. */
+export function BankTransferModal({ lang, jpy, details, onClose }: { lang: Lang; jpy: number; details: BankTransferDetails; onClose: () => void }) {
+  const t = STR[lang];
+  const [email] = useState(accountEmail);
+  const d = new Date(details.deadline);
+  const hhmm = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const deadlineLabel = lang === "ja"
+    ? `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 ${hhmm}`
+    : `${d.toLocaleString("en-US", { month: "long" })} ${d.getDate()}, ${d.getFullYear()}, ${hhmm}`;
+  const rows: { label: string; value: string; note?: string }[] = [
+    { label: t.bankTransferTotal, value: t.bankTransferAmount(jpy) },
+    { label: t.bankTransferBank, value: t.bankTransferBankValue },
+    { label: t.bankTransferBranch, value: t.bankTransferBranchValue },
+    { label: t.bankTransferAccountType, value: t.bankTransferAccountTypeValue },
+    { label: t.bankTransferAccountNumber, value: details.accountNumber, note: t.bankTransferAccountNumberNote },
+    { label: t.bankTransferRecipient, value: t.bankTransferRecipientValue },
+  ];
+  return (
+    <div className="animate-popup-backdrop no-scrollbar absolute inset-0 z-[80] overflow-y-auto px-3 py-5" style={{ background: "rgba(0,0,0,0.55)" }} role="dialog" aria-modal="true" onClick={onClose}>
+      <div className="animate-popup-pop relative mx-auto w-full max-w-sm overflow-hidden rounded-2xl bg-white pb-5" onClick={(e) => e.stopPropagation()}>
+        <button type="button" onClick={onClose} aria-label={t.failedClose} className="absolute right-2.5 top-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-full text-[14px] font-bold text-[#5c626b] hover:bg-black/5">✕</button>
+        <div className="border-b border-black/10 py-3.5 pl-4 pr-10" style={{ borderLeft: "4px solid #f5c518" }}>
+          <h2 className="text-[15px] font-extrabold leading-snug text-[#1d2129]">{t.bankTransferTitle}</h2>
+        </div>
+        <div className="px-3.5 pt-3.5">
+          <p className="rounded-md bg-[#fde8ec] py-2.5 text-center text-[14px] font-bold text-[#e0325a]">{t.bankTransferDeadline(deadlineLabel)}</p>
+          <div className="mt-3.5 space-y-2 text-[12px] leading-relaxed text-[#1d2129]">
+            <p>{t.bankTransferEmailSent(email)}</p>
+            <p>{t.bankTransferCredited}</p>
+          </div>
+          <table className="mt-3.5 w-full border-collapse text-[11px]">
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.label}>
+                  <th className="w-[40%] border border-[#e2e5ea] bg-[#f5f6f8] px-2.5 py-2.5 text-left align-middle font-bold leading-snug text-[#1d2129]">{r.label}</th>
+                  <td className="border border-[#e2e5ea] px-2.5 py-2.5 align-middle leading-snug text-[#1d2129]">
+                    {r.value}
+                    {r.note && <p className="mt-0.5 text-[9.5px] text-[#e0325a]">{r.note}</p>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <ul className="mt-3.5 list-disc space-y-1 pl-4 text-[11px] leading-relaxed text-[#5c626b]">
+            {t.bankTransferNotes.map((line) => <li key={line}>{line}</li>)}
+          </ul>
+          <button type="button" onClick={onClose} className="mt-4 w-full rounded-xl py-3 text-[15px] font-bold text-white active:scale-[0.98]" style={{ background: "#D10005" }}>
+            {t.failedClose}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function PurchaseFlow({
   pkg,
   lang,
@@ -245,7 +311,7 @@ export function PurchaseFlow({
   forceFailure?: boolean;
   /** Japanese cashier: bank transfer takes PayPay's slot. The purchase stays
       pending until the transfer lands, so no coins are credited here. */
-  onBankTransfer?: (pkg: PointPackage, paymentId: string) => void;
+  onBankTransfer?: (pkg: PointPackage, details: BankTransferDetails) => void;
 }) {
   const t = STR[lang];
   const openLegal = useContext(CashierLegalContext);
@@ -264,7 +330,7 @@ export function PurchaseFlow({
     feeDoneRef.current = true;
     onComplete(0);
   }, [completeOnSuccess, step, onComplete]);
-  const [bankTransfer, setBankTransfer] = useState<{ accountNumber: string; deadline: Date } | null>(null);
+  const [bankTransfer, setBankTransfer] = useState<BankTransferDetails | null>(null);
   useEffect(() => {
     if (step !== "bankLoading") return;
     const id = setTimeout(() => setStep("bankSent"), 1600);
@@ -525,60 +591,16 @@ export function PurchaseFlow({
   }
 
   if (step === "bankSent" && bankTransfer) {
-    const d = bankTransfer.deadline;
-    const hhmm = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-    const deadlineLabel = lang === "ja"
-      ? `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 ${hhmm}`
-      : `${d.toLocaleString("en-US", { month: "long" })} ${d.getDate()}, ${d.getFullYear()}, ${hhmm}`;
-    const rows: { label: string; value: string; note?: string }[] = [
-      { label: t.bankTransferTotal, value: t.bankTransferAmount(pkg.jpy) },
-      { label: t.bankTransferBank, value: t.bankTransferBankValue },
-      { label: t.bankTransferBranch, value: t.bankTransferBranchValue },
-      { label: t.bankTransferAccountType, value: t.bankTransferAccountTypeValue },
-      { label: t.bankTransferAccountNumber, value: bankTransfer.accountNumber, note: t.bankTransferAccountNumberNote },
-      { label: t.bankTransferRecipient, value: t.bankTransferRecipientValue },
-    ];
-    const close = () => {
-      onBankTransfer?.(pkg, `BT${bankTransfer.accountNumber}`);
-      onClose();
-    };
     return (
-      <div className="animate-popup-backdrop no-scrollbar absolute inset-0 z-50 overflow-y-auto px-3 py-5" style={{ background: "rgba(0,0,0,0.55)" }} role="dialog" aria-modal="true">
-        <div className="animate-popup-pop relative mx-auto w-full max-w-sm overflow-hidden rounded-2xl bg-white pb-5">
-          <button type="button" onClick={close} aria-label={t.failedClose} className="absolute right-2.5 top-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-full text-[14px] font-bold text-[#5c626b] hover:bg-black/5">✕</button>
-          <div className="border-b border-black/10 py-3.5 pl-4 pr-10" style={{ borderLeft: "4px solid #f5c518" }}>
-            <h2 className="text-[15px] font-extrabold leading-snug text-[#1d2129]">{t.bankTransferTitle}</h2>
-          </div>
-          <div className="px-3.5 pt-3.5">
-            <p className="rounded-md bg-[#fde8ec] py-2.5 text-center text-[14px] font-bold text-[#e0325a]">{t.bankTransferDeadline(deadlineLabel)}</p>
-            <div className="mt-2.5 space-y-0.5 text-center text-[11px] leading-relaxed text-[#e0325a]">
-              {t.bankTransferWarning.map((line) => <p key={line}>{line}</p>)}
-            </div>
-            <div className="mt-4 space-y-0.5 text-[11.5px] leading-relaxed text-[#1d2129]">
-              {t.bankTransferEmailSent.map((line) => <p key={line}>{line}</p>)}
-            </div>
-            <div className="mt-3 space-y-1 rounded-md bg-[#f2f3f5] px-3 py-3 text-[10.5px] leading-relaxed text-[#1d2129]">
-              {t.bankTransferNotes.map((line) => <p key={line}>{line}</p>)}
-            </div>
-            <table className="mt-4 w-full border-collapse text-[11px]">
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.label}>
-                    <th className="w-[40%] border border-[#e2e5ea] bg-[#f5f6f8] px-2.5 py-2.5 text-left align-middle font-bold leading-snug text-[#1d2129]">{r.label}</th>
-                    <td className="border border-[#e2e5ea] px-2.5 py-2.5 align-middle leading-snug text-[#1d2129]">
-                      {r.value}
-                      {r.note && <p className="mt-0.5 text-[9.5px] text-[#e0325a]">{r.note}</p>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <button type="button" onClick={close} className="mt-4 w-full rounded-xl py-3 text-[15px] font-bold text-white active:scale-[0.98]" style={{ background: "#D10005" }}>
-              {t.failedClose}
-            </button>
-          </div>
-        </div>
-      </div>
+      <BankTransferModal
+        lang={lang}
+        jpy={pkg.jpy}
+        details={bankTransfer}
+        onClose={() => {
+          onBankTransfer?.(pkg, bankTransfer);
+          onClose();
+        }}
+      />
     );
   }
 
@@ -1100,7 +1122,7 @@ export function PurchaseFlow({
       const deadline = new Date();
       deadline.setDate(deadline.getDate() + 6);
       deadline.setHours(14, 59, 0, 0);
-      setBankTransfer({ accountNumber: String(1000000 + Math.floor(Math.random() * 9000000)), deadline });
+      setBankTransfer({ accountNumber: String(1000000 + Math.floor(Math.random() * 9000000)), deadline: deadline.getTime() });
       setStep("bankLoading");
     });
     const bankTransferBtn = (

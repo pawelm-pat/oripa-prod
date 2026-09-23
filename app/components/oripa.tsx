@@ -52,7 +52,7 @@ import {
 } from "../data/prizes";
 
 import { StorePage as StorePageView, type PointPackage } from "./store-page";
-import { PurchaseFlow, CashierLegalContext, type SavedCard } from "./cashier";
+import { PurchaseFlow, CashierLegalContext, BankTransferModal, type BankTransferDetails, type SavedCard } from "./cashier";
 import { QuickPurchaseFlow, type QuickPurchasePending, type QuickSavedCard, type IntlCurrencyInfo } from "./quick-purchase";
 import { PROFILE_AVATAR_KEY, ProfileAvatar, ProfilePage } from "./profile-page";
 import {
@@ -5960,6 +5960,8 @@ type PurchaseRecord = {
   paymentId: string;
   status: "Completed" | "Cancelled" | "Pending";
   jpy: number;
+  /** Set on a pending bank transfer: tapping the record reopens its instructions. */
+  bankTransfer?: BankTransferDetails;
 };
 
 const DAY_MS = 86_400_000;
@@ -6009,6 +6011,7 @@ function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false, onOpe
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [openTransfer, setOpenTransfer] = useState<PurchaseRecord | null>(null);
   const [visible, setVisible] = useState(LOAD_MORE_PAGE);
   const [loading, setLoading] = useState(false);
   const [filtering, setFiltering] = useState(false);
@@ -6067,7 +6070,7 @@ function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false, onOpe
   };
 
   return (
-    <div className="flex h-full flex-col bg-[#eef0f3]">
+    <div className="relative flex h-full flex-col bg-[#eef0f3]">
       <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
 
       {/* Title row */}
@@ -6164,8 +6167,14 @@ function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false, onOpe
             {items.map((rec, i) => {
               const statusLabel = rec.status === "Completed" ? t.purchaseStatusCompleted : rec.status === "Pending" ? t.purchaseStatusPending : t.purchaseStatusCancelled;
               const statusColor = rec.status === "Completed" ? "#16a34a" : rec.status === "Pending" ? "#d97706" : "#D10005";
+              const transfer = rec.status === "Pending" && rec.bankTransfer;
               return (
-                <div key={rec.id} className="animate-fade-slide rounded-xl bg-white px-4 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.07)]" style={{ animationDelay: `${(i % LOAD_MORE_PAGE) * 70}ms` }}>
+                <div
+                  key={rec.id}
+                  className={`animate-fade-slide rounded-xl bg-white px-4 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.07)] ${transfer ? "cursor-pointer active:scale-[0.99]" : ""}`}
+                  style={{ animationDelay: `${(i % LOAD_MORE_PAGE) * 70}ms` }}
+                  {...(transfer ? { role: "button", tabIndex: 0, onClick: () => setOpenTransfer(rec) } : {})}
+                >
                   {/* Date + status */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-1.5 text-[12px] text-[#8a9099]">
@@ -6198,6 +6207,9 @@ function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false, onOpe
 
         <SiteFooter t={t} />
       </div>
+      {openTransfer?.bankTransfer && (
+        <BankTransferModal lang={lang} jpy={openTransfer.jpy} details={openTransfer.bankTransfer} onClose={() => setOpenTransfer(null)} />
+      )}
     </div>
   );
 }
@@ -6716,7 +6728,7 @@ function StorePage({
   setCoins: Dispatch<SetStateAction<number>>;
   onBack: () => void;
   onHome?: () => void;
-  onBankTransfer?: (pkg: PointPackage, paymentId: string) => void;
+  onBankTransfer?: (pkg: PointPackage, details: BankTransferDetails) => void;
   onOpenStore?: () => void;
   onRequireKyc?: () => boolean;
   onDrawItem?: (item: OripaItem) => void;
@@ -6916,16 +6928,17 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   const [purchasedIds, setPurchasedIds] = useState<string[]>([]);
   // Bank transfers awaiting payment: listed in Purchase History, no coins yet.
   const [pendingPurchases, setPendingPurchases] = useState<PurchaseRecord[]>([]);
-  const addPendingBankTransfer = (pkg: PointPackage, paymentId: string) => {
+  const addPendingBankTransfer = (pkg: PointPackage, details: BankTransferDetails) => {
     setPendingPurchases((prev) => [{
-      id: `bt-${paymentId}-${Date.now()}`,
+      id: `bt-${details.accountNumber}-${Date.now()}`,
       ts: Date.now(),
       coins: pkg.coins,
       freePoints: pkg.freePoints,
       paymentMethod: STR[lang].bankTransfer,
-      paymentId,
+      paymentId: `BT${details.accountNumber}`,
       status: "Pending",
       jpy: pkg.jpy,
+      bankTransfer: details,
     }, ...prev]);
   };
   const [savedCards, setSavedCards] = useState<QuickSavedCard[]>([
