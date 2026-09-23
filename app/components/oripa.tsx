@@ -52,7 +52,7 @@ import {
 } from "../data/prizes";
 
 import { StorePage as StorePageView, type PointPackage } from "./store-page";
-import { PurchaseFlow, CashierLegalContext, BankTransferModal, type BankTransferDetails, type SavedCard } from "./cashier";
+import { PurchaseFlow, CashierLegalContext, BankTransferModal, ConvenienceStoreModal, type BankTransferDetails, type ConvenienceStoreDetails, type SavedCard } from "./cashier";
 import { QuickPurchaseFlow, type QuickPurchasePending, type QuickSavedCard, type IntlCurrencyInfo } from "./quick-purchase";
 import { PROFILE_AVATAR_KEY, ProfileAvatar, ProfilePage } from "./profile-page";
 import {
@@ -5962,6 +5962,8 @@ type PurchaseRecord = {
   jpy: number;
   /** Set on a pending bank transfer: tapping the record reopens its instructions. */
   bankTransfer?: BankTransferDetails;
+  /** Set on a pending convenience-store payment: tapping reopens its slip. */
+  convenienceStore?: ConvenienceStoreDetails;
 };
 
 const DAY_MS = 86_400_000;
@@ -6167,7 +6169,7 @@ function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false, onOpe
             {items.map((rec, i) => {
               const statusLabel = rec.status === "Completed" ? t.purchaseStatusCompleted : rec.status === "Pending" ? t.purchaseStatusPending : t.purchaseStatusCancelled;
               const statusColor = rec.status === "Completed" ? "#16a34a" : rec.status === "Pending" ? "#d97706" : "#D10005";
-              const transfer = rec.status === "Pending" && rec.bankTransfer;
+              const transfer = rec.status === "Pending" && (rec.bankTransfer || rec.convenienceStore);
               return (
                 <div
                   key={rec.id}
@@ -6209,6 +6211,9 @@ function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false, onOpe
       </div>
       {openTransfer?.bankTransfer && (
         <BankTransferModal lang={lang} jpy={openTransfer.jpy} details={openTransfer.bankTransfer} onClose={() => setOpenTransfer(null)} />
+      )}
+      {openTransfer?.convenienceStore && (
+        <ConvenienceStoreModal lang={lang} jpy={openTransfer.jpy} details={openTransfer.convenienceStore} onClose={() => setOpenTransfer(null)} />
       )}
     </div>
   );
@@ -6722,6 +6727,7 @@ function StorePage({
   onSaveCard,
   onDeleteCard,
   onBankTransfer,
+  onConvenienceStore,
 }: {
   lang: Lang;
   coins: number;
@@ -6729,6 +6735,7 @@ function StorePage({
   onBack: () => void;
   onHome?: () => void;
   onBankTransfer?: (pkg: PointPackage, details: BankTransferDetails) => void;
+  onConvenienceStore?: (pkg: PointPackage, details: ConvenienceStoreDetails) => void;
   onOpenStore?: () => void;
   onRequireKyc?: () => boolean;
   onDrawItem?: (item: OripaItem) => void;
@@ -6774,6 +6781,7 @@ function StorePage({
               onDrawItem={onDrawItem}
               enableCurrencyCheckout={enableCurrencyCheckout}
               onBankTransfer={enableCurrencyCheckout ? undefined : onBankTransfer}
+              onConvenienceStore={enableCurrencyCheckout ? undefined : onConvenienceStore}
             />
           ),
         }}
@@ -6939,6 +6947,19 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
       status: "Pending",
       jpy: pkg.jpy,
       bankTransfer: details,
+    }, ...prev]);
+  };
+  const addPendingConvenienceStore = (pkg: PointPackage, details: ConvenienceStoreDetails) => {
+    setPendingPurchases((prev) => [{
+      id: `cvs-${details.customerNumber}`,
+      ts: Date.now(),
+      coins: pkg.coins,
+      freePoints: pkg.freePoints,
+      paymentMethod: `${STR[lang].cvsPay} (${STR[lang].cvsStores[details.store]})`,
+      paymentId: `CVS${details.customerNumber}`,
+      status: "Pending",
+      jpy: pkg.jpy,
+      convenienceStore: details,
     }, ...prev]);
   };
   const [savedCards, setSavedCards] = useState<QuickSavedCard[]>([
@@ -7465,6 +7486,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onRequireKyc={() => requestKyc("purchase")}
             onDrawItem={openDraw}
             onBankTransfer={addPendingBankTransfer}
+            onConvenienceStore={addPendingConvenienceStore}
             purchasedIds={purchasedIds}
             onPackagePurchased={(pkgId) => {
               setPurchasedIds((prev) => (prev.includes(pkgId) ? prev : [...prev, pkgId]));
