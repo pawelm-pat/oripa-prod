@@ -52,7 +52,7 @@ import {
 } from "../data/prizes";
 
 import { StorePage as StorePageView, type PointPackage } from "./store-page";
-import { PurchaseFlow, CashierLegalContext, type SavedCard } from "./cashier";
+import { PurchaseFlow, CashierLegalContext, BankTransferModal, ConvenienceStoreModal, type BankTransferDetails, type ConvenienceStoreDetails, type SavedCard } from "./cashier";
 import { QuickPurchaseFlow, type QuickPurchasePending, type QuickSavedCard, type IntlCurrencyInfo } from "./quick-purchase";
 import { PROFILE_AVATAR_KEY, ProfileAvatar, ProfilePage } from "./profile-page";
 import {
@@ -5958,8 +5958,12 @@ type PurchaseRecord = {
   freePoints: number;
   paymentMethod: string;
   paymentId: string;
-  status: "Completed" | "Cancelled";
+  status: "Completed" | "Cancelled" | "Pending";
   jpy: number;
+  /** Set on a pending bank transfer: tapping the record reopens its instructions. */
+  bankTransfer?: BankTransferDetails;
+  /** Set on a pending convenience-store payment: tapping reopens its slip. */
+  convenienceStore?: ConvenienceStoreDetails;
 };
 
 const DAY_MS = 86_400_000;
@@ -6003,12 +6007,13 @@ function filterPurchases(list: PurchaseRecord[], range: PhRangeKey, from: string
   return list.filter((r) => r.ts >= cutoff);
 }
 
-function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false, onOpenStore }: { lang: Lang; coins: number; onBack: () => void; onHome: () => void; empty?: boolean; onOpenStore?: () => void }) {
+function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false, onOpenStore, extra = [] }: { lang: Lang; coins: number; onBack: () => void; onHome: () => void; empty?: boolean; onOpenStore?: () => void; /** Purchases made this session (e.g. pending bank transfers), newest first. */ extra?: PurchaseRecord[] }) {
   const t = STR[lang];
   const [range, setRange] = useState<PhRangeKey>("all");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [openTransfer, setOpenTransfer] = useState<PurchaseRecord | null>(null);
   const [visible, setVisible] = useState(LOAD_MORE_PAGE);
   const [loading, setLoading] = useState(false);
   const [filtering, setFiltering] = useState(false);
@@ -6016,7 +6021,8 @@ function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false, onOpe
 
   useEffect(() => () => { if (filterTimer.current) clearTimeout(filterTimer.current); }, []);
 
-  const filtered = useMemo(() => filterPurchases(PURCHASE_HISTORY, range, customFrom, customTo), [range, customFrom, customTo]);
+  const filtered = useMemo(() => filterPurchases(empty ? extra : [...extra, ...PURCHASE_HISTORY], range, customFrom, customTo), [empty, extra, range, customFrom, customTo]);
+  const showEmpty = empty && extra.length === 0;
   const items = filtered.slice(0, visible);
   const hasMore = visible < filtered.length;
   const loadMore = () => {
@@ -6066,7 +6072,7 @@ function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false, onOpe
   };
 
   return (
-    <div className="flex h-full flex-col bg-[#eef0f3]">
+    <div className="relative flex h-full flex-col bg-[#eef0f3]">
       <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
 
       {/* Title row */}
@@ -6133,12 +6139,12 @@ function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false, onOpe
         {/* Note */}
         <p className="px-4 py-2.5 text-[11.5px] text-[#8a9099]">{t.purchaseHistoryNote}</p>
 
-        {empty && (
+        {showEmpty && (
           <p className="px-4 py-20 text-center text-[14px] text-[#9aa0a8]">{t.purchaseEmpty}</p>
         )}
 
         {/* Filtering skeleton */}
-        {!empty && filtering && (
+        {!showEmpty && filtering && (
           <div className="space-y-2 px-3 pb-6">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="animate-pulse rounded-xl bg-white px-4 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.07)]" style={{ animationDelay: `${i * 90}ms` }}>
@@ -6155,17 +6161,22 @@ function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false, onOpe
         )}
 
         {/* Purchase records */}
-        {!empty && !filtering && (
+        {!showEmpty && !filtering && (
           <div className="space-y-2 px-3 pb-6">
             {items.length === 0 && (
               <p className="px-1 py-16 text-center text-[13px] text-[#9aa0a8]">{t.phFilterNone}</p>
             )}
             {items.map((rec, i) => {
-              const isCompleted = rec.status === "Completed";
-              const statusLabel = isCompleted ? t.purchaseStatusCompleted : t.purchaseStatusCancelled;
-              const statusColor = isCompleted ? "#16a34a" : "#D10005";
+              const statusLabel = rec.status === "Completed" ? t.purchaseStatusCompleted : rec.status === "Pending" ? t.purchaseStatusPending : t.purchaseStatusCancelled;
+              const statusColor = rec.status === "Completed" ? "#16a34a" : rec.status === "Pending" ? "#d97706" : "#D10005";
+              const transfer = rec.status === "Pending" && (rec.bankTransfer || rec.convenienceStore);
               return (
-                <div key={rec.id} className="animate-fade-slide rounded-xl bg-white px-4 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.07)]" style={{ animationDelay: `${(i % LOAD_MORE_PAGE) * 70}ms` }}>
+                <div
+                  key={rec.id}
+                  className={`animate-fade-slide rounded-xl bg-white px-4 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.07)] ${transfer ? "cursor-pointer active:scale-[0.99]" : ""}`}
+                  style={{ animationDelay: `${(i % LOAD_MORE_PAGE) * 70}ms` }}
+                  {...(transfer ? { role: "button", tabIndex: 0, onClick: () => setOpenTransfer(rec) } : {})}
+                >
                   {/* Date + status */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-1.5 text-[12px] text-[#8a9099]">
@@ -6198,6 +6209,12 @@ function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false, onOpe
 
         <SiteFooter t={t} />
       </div>
+      {openTransfer?.bankTransfer && (
+        <BankTransferModal lang={lang} jpy={openTransfer.jpy} details={openTransfer.bankTransfer} onClose={() => setOpenTransfer(null)} />
+      )}
+      {openTransfer?.convenienceStore && (
+        <ConvenienceStoreModal lang={lang} jpy={openTransfer.jpy} details={openTransfer.convenienceStore} onClose={() => setOpenTransfer(null)} />
+      )}
     </div>
   );
 }
@@ -6709,12 +6726,16 @@ function StorePage({
   savedCards,
   onSaveCard,
   onDeleteCard,
+  onBankTransfer,
+  onConvenienceStore,
 }: {
   lang: Lang;
   coins: number;
   setCoins: Dispatch<SetStateAction<number>>;
   onBack: () => void;
   onHome?: () => void;
+  onBankTransfer?: (pkg: PointPackage, details: BankTransferDetails) => void;
+  onConvenienceStore?: (pkg: PointPackage, details: ConvenienceStoreDetails) => void;
   onOpenStore?: () => void;
   onRequireKyc?: () => boolean;
   onDrawItem?: (item: OripaItem) => void;
@@ -6759,6 +6780,8 @@ function StorePage({
               onRequireKyc={onRequireKyc}
               onDrawItem={onDrawItem}
               enableCurrencyCheckout={enableCurrencyCheckout}
+              onBankTransfer={enableCurrencyCheckout ? undefined : onBankTransfer}
+              onConvenienceStore={enableCurrencyCheckout ? undefined : onConvenienceStore}
             />
           ),
         }}
@@ -6911,6 +6934,34 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   const [coins, setCoins] = useState(10000);
   // Shared across Store cashier + Quick Purchase so LAST USED stays in sync.
   const [purchasedIds, setPurchasedIds] = useState<string[]>([]);
+  // Bank transfers awaiting payment: listed in Purchase History, no coins yet.
+  const [pendingPurchases, setPendingPurchases] = useState<PurchaseRecord[]>([]);
+  const addPendingBankTransfer = (pkg: PointPackage, details: BankTransferDetails) => {
+    setPendingPurchases((prev) => [{
+      id: `bt-${details.accountNumber}-${Date.now()}`,
+      ts: Date.now(),
+      coins: pkg.coins,
+      freePoints: pkg.freePoints,
+      paymentMethod: STR[lang].bankTransfer,
+      paymentId: `BT${details.accountNumber}`,
+      status: "Pending",
+      jpy: pkg.jpy,
+      bankTransfer: details,
+    }, ...prev]);
+  };
+  const addPendingConvenienceStore = (pkg: PointPackage, details: ConvenienceStoreDetails) => {
+    setPendingPurchases((prev) => [{
+      id: `cvs-${details.customerNumber}`,
+      ts: Date.now(),
+      coins: pkg.coins,
+      freePoints: pkg.freePoints,
+      paymentMethod: `${STR[lang].cvsPay} (${STR[lang].cvsStores[details.store]})`,
+      paymentId: `CVS${details.customerNumber}`,
+      status: "Pending",
+      jpy: pkg.jpy,
+      convenienceStore: details,
+    }, ...prev]);
+  };
   const [savedCards, setSavedCards] = useState<QuickSavedCard[]>([
     { last4: "1111", expiry: "08/29", brand: "Visa", name: "Taro Yamada" },
     // Demo-only cards that always decline in Store cashier (not Quick Purchase).
@@ -7398,6 +7449,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onHome={resetHome}
             empty={noHistory}
             onOpenStore={openStore}
+            extra={pendingPurchases}
           />
         )}
         {screen === "shippingAddress" && (
@@ -7433,6 +7485,8 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onOpenStore={openStore}
             onRequireKyc={() => requestKyc("purchase")}
             onDrawItem={openDraw}
+            onBankTransfer={addPendingBankTransfer}
+            onConvenienceStore={addPendingConvenienceStore}
             purchasedIds={purchasedIds}
             onPackagePurchased={(pkgId) => {
               setPurchasedIds((prev) => (prev.includes(pkgId) ? prev : [...prev, pkgId]));

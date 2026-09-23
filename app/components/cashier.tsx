@@ -174,7 +174,16 @@ export type BillingAddress = {
 };
 export type SavedCard = { last4: string; expiry: string; brand: string; name: string; billingAddress?: BillingAddress };
 
-type PurchaseStep = "checkout" | "auth3ds" | "success" | "failed";
+type PurchaseStep = "checkout" | "auth3ds" | "success" | "failed" | "bankLoading" | "bankSent" | "cvsSelect" | "cvsLoading" | "cvsSent";
+
+function BankMark() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1d2129" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
+      <path d="M3 10h18L12 4 3 10z" />
+      <path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18" />
+    </svg>
+  );
+}
 type FailureReason = "insufficientFunds" | "bankDecline";
 
 const LATIN_NAME_RE = /^[A-Za-z\s'.\-]+$/;
@@ -196,6 +205,197 @@ function hasNonLatinAddress(value: string) {
 const DECLINED_CARD_LAST4_INSUFFICIENT_FUNDS = "9999";
 const DECLINED_CARD_LAST4_BANK_DECLINE = "8888";
 
+export type BankTransferDetails = { accountNumber: string; deadline: number };
+
+function accountEmail() {
+  try {
+    return String(JSON.parse(sessionStorage.getItem("authData") || "{}").email || "");
+  } catch {
+    return "";
+  }
+}
+
+/** Transfer instructions for a pending bank-transfer purchase. Shown after
+    checkout and again from the Purchase History record. */
+function fmtDeadline(lang: Lang, ts: number) {
+  const d = new Date(ts);
+  const hhmm = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return lang === "ja"
+    ? `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 ${hhmm}`
+    : `${d.toLocaleString("en-US", { month: "long" })} ${d.getDate()}, ${d.getFullYear()}, ${hhmm}`;
+}
+
+export const CVS_STORES = ["lawson", "familyMart", "ministop", "sevenEleven", "seicomart"] as const;
+export type CvsStore = (typeof CVS_STORES)[number];
+export type ConvenienceStoreDetails = { store: CvsStore; customerNumber: string; confirmationNumber: string; deadline: number };
+
+function randomDigits(n: number) {
+  let s = String(1 + Math.floor(Math.random() * 9));
+  while (s.length < n) s += Math.floor(Math.random() * 10);
+  return s;
+}
+
+/** Payment slip for a pending convenience-store purchase. Shown after
+    checkout and again from the Purchase History record. */
+export function ConvenienceStoreModal({ lang, jpy, details, onClose }: { lang: Lang; jpy: number; details: ConvenienceStoreDetails; onClose: () => void }) {
+  const t = STR[lang];
+  const [email] = useState(accountEmail);
+  const th = "w-[40%] border border-[#e2e5ea] bg-[#f5f6f8] px-2.5 py-2.5 text-left align-middle font-bold leading-snug text-[#1d2129]";
+  const td = "border border-[#e2e5ea] px-2.5 py-2.5 align-middle leading-snug text-[#1d2129]";
+  return (
+    <div className="animate-popup-backdrop no-scrollbar absolute inset-0 z-[80] overflow-y-auto px-3 py-5" style={{ background: "rgba(0,0,0,0.55)" }} role="dialog" aria-modal="true" onClick={onClose}>
+      <div className="animate-popup-pop relative mx-auto w-full max-w-sm overflow-hidden rounded-2xl bg-white pb-5" onClick={(e) => e.stopPropagation()}>
+        <button type="button" onClick={onClose} aria-label={t.failedClose} className="absolute right-2.5 top-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-full text-[14px] font-bold text-[#5c626b] hover:bg-black/5">✕</button>
+        <div className="border-b border-black/10 py-3.5 pl-4 pr-10" style={{ borderLeft: "4px solid #f5c518" }}>
+          <h2 className="text-[15px] font-extrabold leading-snug text-[#1d2129]">{t.cvsTitle}</h2>
+        </div>
+        <div className="px-3.5 pt-3.5">
+          <p className="text-center text-[12px] font-bold text-[#1d2129]">{t.cvsNeedNumbers}</p>
+          <table className="mt-3 w-full border-collapse text-[11px]">
+            <tbody>
+              <tr>
+                <th className={`${th} font-medium`}>{t.cvsCustomerNumber}</th>
+                <td className={`${td} text-[20px] font-extrabold tracking-wide`}>{details.customerNumber}</td>
+              </tr>
+              <tr>
+                <th className={`${th} font-medium`}>{t.cvsConfirmationNumber}</th>
+                <td className={`${td} text-[20px] font-extrabold tracking-wide`}>{details.confirmationNumber}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p className="mt-4 rounded-md bg-[#fde8ec] py-2.5 text-center text-[14px] font-bold text-[#e0325a]">{t.bankTransferDeadline(fmtDeadline(lang, details.deadline))}</p>
+          <p className="mt-2 text-center text-[11px] text-[#e0325a]">{t.cvsAutoCancel}</p>
+          <div className="mt-3.5 space-y-2 text-[12px] leading-relaxed text-[#1d2129]">
+            <p>{t.cvsEmailSent(email)}</p>
+            <p>{t.cvsCredited}</p>
+          </div>
+          <table className="mt-3.5 w-full border-collapse text-[11px]">
+            <tbody>
+              <tr><th className={th}>{t.cvsAmount}</th><td className={td}>{t.bankTransferAmount(jpy)}</td></tr>
+              <tr><th className={th}>{t.cvsStore}</th><td className={td}>{t.cvsStores[details.store]}</td></tr>
+              <tr>
+                <th className={th}>{t.cvsPrecautions}</th>
+                <td className={td}>
+                  <ul className="list-disc space-y-1 pl-3.5">
+                    {t.cvsPrecautionItems.map((line) => <li key={line}>{line}</li>)}
+                  </ul>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <button type="button" onClick={onClose} className="mt-4 w-full rounded-xl py-3 text-[15px] font-bold text-white active:scale-[0.98]" style={{ background: "#D10005" }}>
+            {t.failedClose}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ConvenienceStorePicker({ lang, onContinue, onClose }: { lang: Lang; onContinue: (store: CvsStore) => void; onClose: () => void }) {
+  const t = STR[lang];
+  const [store, setStore] = useState<CvsStore | null>(null);
+  const green = "#16a34a";
+  return (
+    <div className="animate-popup-backdrop absolute inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.55)" }} role="dialog" aria-modal="true" onClick={onClose}>
+      <div className="animate-popup-pop relative w-full max-w-sm rounded-2xl bg-white px-4 pb-4 pt-5" onClick={(e) => e.stopPropagation()}>
+        <button type="button" onClick={onClose} aria-label={t.failedClose} className="absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full text-[14px] font-bold text-[#5c626b] hover:bg-black/5">✕</button>
+        <h2 className="text-[17px] font-extrabold text-[#1d2129]">{t.cvsSelectTitle}</h2>
+        <p className="mt-1 text-[12px] text-[#5c626b]">{t.cvsSelectSub}</p>
+        <div className="mt-3.5 flex flex-col gap-2" role="radiogroup">
+          {CVS_STORES.map((s) => {
+            const selected = store === s;
+            return (
+              <button
+                key={s}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => setStore(s)}
+                className="flex items-center gap-3 rounded-xl border px-3 py-3 text-left"
+                style={{ borderColor: selected ? green : "#e2e5ea", background: selected ? "#f0fdf4" : "white" }}
+              >
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2" style={{ borderColor: selected ? green : "#c9ced6" }}>
+                  {selected && <span className="h-2.5 w-2.5 rounded-full" style={{ background: green }} />}
+                </span>
+                <span className="text-[14px] font-semibold text-[#1d2129]">{t.cvsStores[s]}</span>
+              </button>
+            );
+          })}
+        </div>
+        <button
+          type="button"
+          disabled={!store}
+          onClick={() => store && onContinue(store)}
+          className="mt-4 w-full rounded-xl py-3 text-[15px] font-bold text-white disabled:cursor-not-allowed"
+          style={{ background: store ? "#D10005" : "#c9ced6" }}
+        >
+          {t.cvsContinue}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function StoreMark() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1d2129" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
+      <path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v1.5a2.5 2.5 0 005 0 2.5 2.5 0 005 0 2.5 2.5 0 005 0 2.5 2.5 0 003 0V9" />
+      <path d="M5 13v7h14v-7M10 20v-4h4v4" />
+    </svg>
+  );
+}
+
+export function BankTransferModal({ lang, jpy, details, onClose }: { lang: Lang; jpy: number; details: BankTransferDetails; onClose: () => void }) {
+  const t = STR[lang];
+  const [email] = useState(accountEmail);
+  const deadlineLabel = fmtDeadline(lang, details.deadline);
+  const rows: { label: string; value: string; note?: string }[] = [
+    { label: t.bankTransferTotal, value: t.bankTransferAmount(jpy) },
+    { label: t.bankTransferBank, value: t.bankTransferBankValue },
+    { label: t.bankTransferBranch, value: t.bankTransferBranchValue },
+    { label: t.bankTransferAccountType, value: t.bankTransferAccountTypeValue },
+    { label: t.bankTransferAccountNumber, value: details.accountNumber, note: t.bankTransferAccountNumberNote },
+    { label: t.bankTransferRecipient, value: t.bankTransferRecipientValue },
+  ];
+  return (
+    <div className="animate-popup-backdrop no-scrollbar absolute inset-0 z-[80] overflow-y-auto px-3 py-5" style={{ background: "rgba(0,0,0,0.55)" }} role="dialog" aria-modal="true" onClick={onClose}>
+      <div className="animate-popup-pop relative mx-auto w-full max-w-sm overflow-hidden rounded-2xl bg-white pb-5" onClick={(e) => e.stopPropagation()}>
+        <button type="button" onClick={onClose} aria-label={t.failedClose} className="absolute right-2.5 top-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-full text-[14px] font-bold text-[#5c626b] hover:bg-black/5">✕</button>
+        <div className="border-b border-black/10 py-3.5 pl-4 pr-10" style={{ borderLeft: "4px solid #f5c518" }}>
+          <h2 className="text-[15px] font-extrabold leading-snug text-[#1d2129]">{t.bankTransferTitle}</h2>
+        </div>
+        <div className="px-3.5 pt-3.5">
+          <p className="rounded-md bg-[#fde8ec] py-2.5 text-center text-[14px] font-bold text-[#e0325a]">{t.bankTransferDeadline(deadlineLabel)}</p>
+          <div className="mt-3.5 space-y-2 text-[12px] leading-relaxed text-[#1d2129]">
+            <p>{t.bankTransferEmailSent(email)}</p>
+            <p>{t.bankTransferCredited}</p>
+          </div>
+          <table className="mt-3.5 w-full border-collapse text-[11px]">
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.label}>
+                  <th className="w-[40%] border border-[#e2e5ea] bg-[#f5f6f8] px-2.5 py-2.5 text-left align-middle font-bold leading-snug text-[#1d2129]">{r.label}</th>
+                  <td className="border border-[#e2e5ea] px-2.5 py-2.5 align-middle leading-snug text-[#1d2129]">
+                    {r.value}
+                    {r.note && <p className="mt-0.5 text-[9.5px] text-[#e0325a]">{r.note}</p>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <ul className="mt-3.5 list-disc space-y-1 pl-4 text-[11px] leading-relaxed text-[#5c626b]">
+            {t.bankTransferNotes.map((line) => <li key={line}>{line}</li>)}
+          </ul>
+          <button type="button" onClick={onClose} className="mt-4 w-full rounded-xl py-3 text-[15px] font-bold text-white active:scale-[0.98]" style={{ background: "#D10005" }}>
+            {t.failedClose}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function PurchaseFlow({
   pkg,
   lang,
@@ -211,6 +411,8 @@ export function PurchaseFlow({
   feeSummary,
   completeOnSuccess = false,
   forceFailure = false,
+  onBankTransfer,
+  onConvenienceStore,
 }: {
   pkg: PointPackage;
   lang: Lang;
@@ -233,6 +435,11 @@ export function PurchaseFlow({
   /** Demo harness: decline the next card payment whatever card is used. The
       wallets still go through, which is what the decline screen offers. */
   forceFailure?: boolean;
+  /** Japanese cashier: bank transfer takes PayPay's slot. The purchase stays
+      pending until the transfer lands, so no coins are credited here. */
+  onBankTransfer?: (pkg: PointPackage, details: BankTransferDetails) => void;
+  /** Japanese cashier: convenience-store cash takes Rakuten Pay's slot; also pending. */
+  onConvenienceStore?: (pkg: PointPackage, details: ConvenienceStoreDetails) => void;
 }) {
   const t = STR[lang];
   const openLegal = useContext(CashierLegalContext);
@@ -251,6 +458,14 @@ export function PurchaseFlow({
     feeDoneRef.current = true;
     onComplete(0);
   }, [completeOnSuccess, step, onComplete]);
+  const [bankTransfer, setBankTransfer] = useState<BankTransferDetails | null>(null);
+  const [cvs, setCvs] = useState<ConvenienceStoreDetails | null>(null);
+  useEffect(() => {
+    if (step !== "bankLoading" && step !== "cvsLoading") return;
+    const next = step === "bankLoading" ? "bankSent" : "cvsSent";
+    const id = setTimeout(() => setStep(next), 1600);
+    return () => clearTimeout(id);
+  }, [step]);
   const [payMethod, setPayMethod] = useState<PayMethod>("card");
   const [checkoutCurrency, setCheckoutCurrency] = useState<"INR" | "JPY">(
     enableCurrencyCheckout ? "INR" : "JPY",
@@ -493,6 +708,59 @@ export function PurchaseFlow({
           </div>
         </div>
       </div>
+    );
+  }
+
+  if (step === "cvsSelect") {
+    return (
+      <ConvenienceStorePicker
+        lang={lang}
+        onClose={() => setStep("checkout")}
+        onContinue={(store) => {
+          const deadline = new Date();
+          deadline.setDate(deadline.getDate() + 5);
+          deadline.setHours(23, 59, 0, 0);
+          setCvs({ store, customerNumber: randomDigits(14), confirmationNumber: randomDigits(4), deadline: deadline.getTime() });
+          setStep("cvsLoading");
+        }}
+      />
+    );
+  }
+
+  if (step === "cvsSent" && cvs) {
+    return (
+      <ConvenienceStoreModal
+        lang={lang}
+        jpy={pkg.jpy}
+        details={cvs}
+        onClose={() => {
+          onConvenienceStore?.(pkg, cvs);
+          onClose();
+        }}
+      />
+    );
+  }
+
+  if (step === "bankLoading" || step === "cvsLoading") {
+    return (
+      <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4" style={{ background: "rgba(20,8,4,0.62)" }} role="status" aria-live="polite">
+        <span className="h-11 w-11 animate-spin rounded-full border-[3px] border-white/25 border-t-white" />
+        <p className="text-[15px] font-bold text-white">{t.paymentProcessing}</p>
+      </div>
+    );
+  }
+
+  if (step === "bankSent" && bankTransfer) {
+    return (
+      <BankTransferModal
+        lang={lang}
+        jpy={pkg.jpy}
+        details={bankTransfer}
+        onClose={() => {
+          onBankTransfer?.(pkg, bankTransfer);
+          onClose();
+        }}
+      />
     );
   }
 
@@ -1010,6 +1278,25 @@ export function PurchaseFlow({
         Paypay
       </button>
     );
+    const startBankTransfer = () => beginPayment(() => {
+      const deadline = new Date();
+      deadline.setDate(deadline.getDate() + 6);
+      deadline.setHours(14, 59, 0, 0);
+      setBankTransfer({ accountNumber: String(1000000 + Math.floor(Math.random() * 9000000)), deadline: deadline.getTime() });
+      setStep("bankLoading");
+    });
+    const bankTransferBtn = (
+      <button type="button" onClick={startBankTransfer} className={walletSecondaryCls} aria-label={t.bankTransfer}>
+        <BankMark />
+        {t.bankTransfer}
+      </button>
+    );
+    const cvsBtn = (
+      <button type="button" onClick={() => beginPayment(() => setStep("cvsSelect"))} className={walletSecondaryCls} aria-label={t.cvsPay}>
+        <StoreMark />
+        <span className="leading-tight">{t.cvsPay}</span>
+      </button>
+    );
     const rakutenPayBtn = (
       <button type="button" onClick={() => payWithWallet("rakutenPay")} className={walletSecondaryCls} aria-label="Rakuten Pay">
         <RakutenPayMark />
@@ -1035,8 +1322,8 @@ export function PurchaseFlow({
         {applePayBtn}
         {!enableCurrencyCheckout && (
           <>
-            {payPayBtn}
-            {rakutenPayBtn}
+            {onBankTransfer ? bankTransferBtn : payPayBtn}
+            {onConvenienceStore ? cvsBtn : rakutenPayBtn}
             {melPayBtn}
             {famiPayBtn}
           </>
