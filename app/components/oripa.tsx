@@ -52,7 +52,7 @@ import {
 } from "../data/prizes";
 
 import { StorePage as StorePageView, type PointPackage } from "./store-page";
-import { PurchaseFlow, CashierLegalContext, BankTransferPage, ConvenienceStoreModal, type BankTransferDetails, type ConvenienceStoreDetails, type SavedCard } from "./cashier";
+import { PurchaseFlow, CashierLegalContext, BankTransferPage, ConvenienceStorePage, type BankTransferDetails, type ConvenienceStoreDetails, type SavedCard } from "./cashier";
 import { QuickPurchaseFlow, type QuickPurchasePending, type QuickSavedCard, type IntlCurrencyInfo } from "./quick-purchase";
 import { PROFILE_AVATAR_KEY, ProfileAvatar, ProfilePage } from "./profile-page";
 import {
@@ -6213,7 +6213,7 @@ function PurchaseHistoryPage({ lang, coins, onBack, onHome, empty = false, onOpe
         <BankTransferPage lang={lang} jpy={openTransfer.jpy} details={openTransfer.bankTransfer} onClose={() => setOpenTransfer(null)} />
       )}
       {openTransfer?.convenienceStore && (
-        <ConvenienceStoreModal lang={lang} jpy={openTransfer.jpy} details={openTransfer.convenienceStore} onClose={() => setOpenTransfer(null)} />
+        <ConvenienceStorePage lang={lang} jpy={openTransfer.jpy} details={openTransfer.convenienceStore} onClose={() => setOpenTransfer(null)} />
       )}
     </div>
   );

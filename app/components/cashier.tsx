@@ -284,30 +284,9 @@ function ConvenienceStoreInstructions({ lang, jpy, details }: { lang: Lang; jpy:
   );
 }
 
-/** Payment slip for a pending convenience-store purchase, reopened from the
-    Purchase History record. */
-export function ConvenienceStoreModal({ lang, jpy, details, onClose }: { lang: Lang; jpy: number; details: ConvenienceStoreDetails; onClose: () => void }) {
-  const t = STR[lang];
-  return (
-    <div className="animate-popup-backdrop no-scrollbar absolute inset-0 z-[80] overflow-y-auto px-3 py-5" style={{ background: "rgba(0,0,0,0.55)" }} role="dialog" aria-modal="true" onClick={onClose}>
-      <div className="animate-popup-pop relative mx-auto w-full max-w-sm overflow-hidden rounded-2xl bg-white pb-5" onClick={(e) => e.stopPropagation()}>
-        <button type="button" onClick={onClose} aria-label={t.failedClose} className="absolute right-2.5 top-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-full text-[14px] font-bold text-[#5c626b] hover:bg-black/5">✕</button>
-        <div className="border-b border-black/10 py-3.5 pl-4 pr-10" style={{ borderLeft: "4px solid #f5c518" }}>
-          <h2 className="text-[15px] font-extrabold leading-snug text-[#1d2129]">{t.cvsTitle}</h2>
-        </div>
-        <div className="px-3.5 pt-3.5">
-          <ConvenienceStoreInstructions lang={lang} jpy={jpy} details={details} />
-          <button type="button" onClick={onClose} className="mt-4 w-full rounded-xl py-3 text-[15px] font-bold text-white active:scale-[0.98]" style={{ background: "#D10005" }}>
-            {t.failedClose}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** Full-page payment slip, shown straight after the convenience-store checkout. */
-function ConvenienceStorePage({ lang, jpy, details, onClose }: { lang: Lang; jpy: number; details: ConvenienceStoreDetails; onClose: () => void }) {
+/** Full-page payment slip, shown after the convenience-store checkout and
+    from a pending Purchase History record. */
+export function ConvenienceStorePage({ lang, jpy, details, onClose }: { lang: Lang; jpy: number; details: ConvenienceStoreDetails; onClose: () => void }) {
   const t = STR[lang];
   return (
     <div className="animate-screen-in absolute inset-0 z-50 flex flex-col bg-white">
