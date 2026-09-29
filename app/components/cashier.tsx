@@ -174,7 +174,7 @@ export type BillingAddress = {
 };
 export type SavedCard = { last4: string; expiry: string; brand: string; name: string; billingAddress?: BillingAddress };
 
-type PurchaseStep = "checkout" | "auth3ds" | "success" | "failed" | "bankLoading" | "bankSent" | "cvsSelect" | "cvsLoading" | "cvsSent";
+type PurchaseStep = "checkout" | "auth3ds" | "success" | "failed" | "bankLoading" | "bankSent" | "cvsLoading" | "cvsSent";
 
 function BankMark() {
   return (
@@ -235,106 +235,117 @@ function randomDigits(n: number) {
   return s;
 }
 
-/** Payment slip for a pending convenience-store purchase. Shown after
-    checkout and again from the Purchase History record. */
-export function ConvenienceStoreModal({ lang, jpy, details, onClose }: { lang: Lang; jpy: number; details: ConvenienceStoreDetails; onClose: () => void }) {
+function ConvenienceStoreInstructions({ lang, jpy, details }: { lang: Lang; jpy: number; details: ConvenienceStoreDetails }) {
   const t = STR[lang];
   const [email] = useState(accountEmail);
   const th = "w-[40%] border border-[#e2e5ea] bg-[#f5f6f8] px-2.5 py-2.5 text-left align-middle font-bold leading-snug text-[#1d2129]";
   const td = "border border-[#e2e5ea] px-2.5 py-2.5 align-middle leading-snug text-[#1d2129]";
   return (
-    <div className="animate-popup-backdrop no-scrollbar absolute inset-0 z-[80] overflow-y-auto px-3 py-5" style={{ background: "rgba(0,0,0,0.55)" }} role="dialog" aria-modal="true" onClick={onClose}>
-      <div className="animate-popup-pop relative mx-auto w-full max-w-sm overflow-hidden rounded-2xl bg-white pb-5" onClick={(e) => e.stopPropagation()}>
-        <button type="button" onClick={onClose} aria-label={t.failedClose} className="absolute right-2.5 top-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-full text-[14px] font-bold text-[#5c626b] hover:bg-black/5">✕</button>
-        <div className="border-b border-black/10 py-3.5 pl-4 pr-10" style={{ borderLeft: "4px solid #f5c518" }}>
-          <h2 className="text-[15px] font-extrabold leading-snug text-[#1d2129]">{t.cvsTitle}</h2>
-        </div>
-        <div className="px-3.5 pt-3.5">
-          <p className="text-center text-[12px] font-bold text-[#1d2129]">{t.cvsNeedNumbers}</p>
-          <table className="mt-3 w-full border-collapse text-[11px]">
-            <tbody>
-              <tr>
-                <th className={`${th} font-medium`}>{t.cvsCustomerNumber}</th>
-                <td className={`${td} text-[20px] font-extrabold tracking-wide`}>{details.customerNumber}</td>
-              </tr>
-              <tr>
-                <th className={`${th} font-medium`}>{t.cvsConfirmationNumber}</th>
-                <td className={`${td} text-[20px] font-extrabold tracking-wide`}>{details.confirmationNumber}</td>
-              </tr>
-            </tbody>
-          </table>
-          <p className="mt-4 rounded-md bg-[#fde8ec] py-2.5 text-center text-[14px] font-bold text-[#e0325a]">{t.bankTransferDeadline(fmtDeadline(lang, details.deadline))}</p>
-          <p className="mt-2 text-center text-[11px] text-[#e0325a]">{t.cvsAutoCancel}</p>
-          <div className="mt-3.5 space-y-2 text-[12px] leading-relaxed text-[#1d2129]">
-            <p>{t.cvsEmailSent(email)}</p>
-            <p>{t.cvsCredited}</p>
-          </div>
-          <table className="mt-3.5 w-full border-collapse text-[11px]">
-            <tbody>
-              <tr><th className={th}>{t.cvsAmount}</th><td className={td}>{t.bankTransferAmount(jpy)}</td></tr>
-              <tr><th className={th}>{t.cvsStore}</th><td className={td}>{t.cvsStores[details.store]}</td></tr>
-              <tr>
-                <th className={th}>{t.cvsPrecautions}</th>
-                <td className={td}>
-                  <ul className="list-disc space-y-1 pl-3.5">
-                    {t.cvsPrecautionItems.map((line) => <li key={line}>{line}</li>)}
-                  </ul>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          <button type="button" onClick={onClose} className="mt-4 w-full rounded-xl py-3 text-[15px] font-bold text-white active:scale-[0.98]" style={{ background: "#D10005" }}>
-            {t.failedClose}
-          </button>
-        </div>
+    <>
+      <p className="text-center text-[12px] font-bold text-[#1d2129]">{t.cvsNeedNumbers}</p>
+      <table className="mt-3 w-full border-collapse text-[11px]">
+        <tbody>
+          <tr>
+            <th className={`${th} font-medium`}>{t.cvsCustomerNumber}</th>
+            <td className={`${td} text-[20px] font-extrabold tracking-wide`}>{details.customerNumber}</td>
+          </tr>
+          <tr>
+            <th className={`${th} font-medium`}>{t.cvsConfirmationNumber}</th>
+            <td className={`${td} text-[20px] font-extrabold tracking-wide`}>{details.confirmationNumber}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p className="mt-4 rounded-md bg-[#fde8ec] py-2.5 text-center text-[14px] font-bold text-[#e0325a]">{t.bankTransferDeadline(fmtDeadline(lang, details.deadline))}</p>
+      <p className="mt-2 text-center text-[11px] text-[#e0325a]">{t.cvsAutoCancel}</p>
+      <div className="mt-3.5 space-y-2 text-[12px] leading-relaxed text-[#1d2129]">
+        <p>{t.cvsEmailSent(email)}</p>
+        <p>{t.cvsCredited}</p>
+      </div>
+      <table className="mt-3.5 w-full border-collapse text-[11px]">
+        <tbody>
+          <tr><th className={th}>{t.cvsAmount}</th><td className={td}>{t.bankTransferAmount(jpy)}</td></tr>
+          <tr>
+            <th className={th}>{t.cvsStore}</th>
+            <td className={td}>
+              <span className="flex items-center gap-2"><CvsLogo store={details.store} />{t.cvsStores[details.store]}</span>
+            </td>
+          </tr>
+          <tr>
+            <th className={th}>{t.cvsPrecautions}</th>
+            <td className={td}>
+              <ul className="list-disc space-y-1 pl-3.5">
+                {t.cvsPrecautionItems.map((line) => <li key={line}>{line}</li>)}
+              </ul>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </>
+  );
+}
+
+/** Full-page payment slip, shown after the convenience-store checkout and
+    from a pending Purchase History record. */
+export function ConvenienceStorePage({ lang, jpy, details, onClose }: { lang: Lang; jpy: number; details: ConvenienceStoreDetails; onClose: () => void }) {
+  const t = STR[lang];
+  return (
+    <div className="animate-screen-in absolute inset-0 z-50 flex flex-col bg-white">
+      <div className="sticky top-0 z-10 flex items-center justify-end border-b border-black/10 bg-white px-4 py-3">
+        <button type="button" onClick={onClose} aria-label={t.failedClose} className="flex h-8 w-8 items-center justify-center rounded-full text-[16px] font-bold text-[#5c626b] hover:bg-black/5">✕</button>
+      </div>
+      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 pb-28 pt-4">
+        <h1 className="mb-3.5 py-1 pl-3 text-[16px] font-extrabold leading-snug text-[#1d2129]" style={{ borderLeft: "4px solid #f5c518" }}>{t.cvsTitle}</h1>
+        <ConvenienceStoreInstructions lang={lang} jpy={jpy} details={details} />
+      </div>
+      <div className="absolute bottom-0 left-0 right-0 border-t border-black/10 bg-white px-4 pb-5 pt-3">
+        <button type="button" onClick={onClose} className="w-full rounded-xl py-3.5 text-[15px] font-bold text-white active:scale-[0.98]" style={{ background: "#D10005" }}>
+          {t.failedClose}
+        </button>
       </div>
     </div>
   );
 }
 
-function ConvenienceStorePicker({ lang, onContinue, onClose }: { lang: Lang; onContinue: (store: CvsStore) => void; onClose: () => void }) {
-  const t = STR[lang];
-  const [store, setStore] = useState<CvsStore | null>(null);
-  const green = "#16a34a";
-  return (
-    <div className="animate-popup-backdrop absolute inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.55)" }} role="dialog" aria-modal="true" onClick={onClose}>
-      <div className="animate-popup-pop relative w-full max-w-sm rounded-2xl bg-white px-4 pb-4 pt-5" onClick={(e) => e.stopPropagation()}>
-        <button type="button" onClick={onClose} aria-label={t.failedClose} className="absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full text-[14px] font-bold text-[#5c626b] hover:bg-black/5">✕</button>
-        <h2 className="text-[17px] font-extrabold text-[#1d2129]">{t.cvsSelectTitle}</h2>
-        <p className="mt-1 text-[12px] text-[#5c626b]">{t.cvsSelectSub}</p>
-        <div className="mt-3.5 flex flex-col gap-2" role="radiogroup">
-          {CVS_STORES.map((s) => {
-            const selected = store === s;
-            return (
-              <button
-                key={s}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                onClick={() => setStore(s)}
-                className="flex items-center gap-3 rounded-xl border px-3 py-3 text-left"
-                style={{ borderColor: selected ? green : "#e2e5ea", background: selected ? "#f0fdf4" : "white" }}
-              >
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2" style={{ borderColor: selected ? green : "#c9ced6" }}>
-                  {selected && <span className="h-2.5 w-2.5 rounded-full" style={{ background: green }} />}
-                </span>
-                <span className="text-[14px] font-semibold text-[#1d2129]">{t.cvsStores[s]}</span>
-              </button>
-            );
-          })}
-        </div>
-        <button
-          type="button"
-          disabled={!store}
-          onClick={() => store && onContinue(store)}
-          className="mt-4 w-full rounded-xl py-3 text-[15px] font-bold text-white disabled:cursor-not-allowed"
-          style={{ background: store ? "#D10005" : "#c9ced6" }}
-        >
-          {t.cvsContinue}
-        </button>
-      </div>
-    </div>
-  );
+/** Brand-coloured stand-ins for the chain logos until the real artwork lands. */
+function CvsLogo({ store }: { store: CvsStore }) {
+  const box = "flex h-8 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md";
+  switch (store) {
+    case "lawson":
+      return (
+        <span className={box} style={{ background: "#0068b7" }} aria-hidden>
+          <span className="text-[9px] font-black tracking-tight text-white">LAWSON</span>
+        </span>
+      );
+    case "familyMart":
+      return (
+        <span className={`${box} flex-col border border-[#e2e5ea] bg-white`} aria-hidden>
+          <span className="h-[5px] w-full" style={{ background: "#00a040" }} />
+          <span className="flex flex-1 items-center text-[7.5px] font-black tracking-tight" style={{ color: "#0071bc" }}>FamilyMart</span>
+          <span className="h-[5px] w-full" style={{ background: "#0071bc" }} />
+        </span>
+      );
+    case "ministop":
+      return (
+        <span className={box} style={{ background: "#004ea2" }} aria-hidden>
+          <span className="text-[7.5px] font-black tracking-tight" style={{ color: "#ffe100" }}>MINISTOP</span>
+        </span>
+      );
+    case "sevenEleven":
+      return (
+        <span className={`${box} flex-col border border-[#e2e5ea] bg-white`} aria-hidden>
+          <span className="h-[4px] w-full" style={{ background: "#f58220" }} />
+          <span className="h-[4px] w-full" style={{ background: "#00a54f" }} />
+          <span className="flex flex-1 items-center text-[13px] font-black leading-none" style={{ color: "#ee2e24" }}>7</span>
+          <span className="h-[4px] w-full" style={{ background: "#ee2e24" }} />
+        </span>
+      );
+    case "seicomart":
+      return (
+        <span className={box} style={{ background: "#f39800" }} aria-hidden>
+          <span className="text-[7.5px] font-black tracking-tight text-white">Seicomart</span>
+        </span>
+      );
+  }
 }
 
 function StoreMark() {
@@ -346,7 +357,7 @@ function StoreMark() {
   );
 }
 
-export function BankTransferModal({ lang, jpy, details, onClose }: { lang: Lang; jpy: number; details: BankTransferDetails; onClose: () => void }) {
+function BankTransferInstructions({ lang, jpy, details }: { lang: Lang; jpy: number; details: BankTransferDetails }) {
   const t = STR[lang];
   const [email] = useState(accountEmail);
   const deadlineLabel = fmtDeadline(lang, details.deadline);
@@ -359,38 +370,49 @@ export function BankTransferModal({ lang, jpy, details, onClose }: { lang: Lang;
     { label: t.bankTransferRecipient, value: t.bankTransferRecipientValue },
   ];
   return (
-    <div className="animate-popup-backdrop no-scrollbar absolute inset-0 z-[80] overflow-y-auto px-3 py-5" style={{ background: "rgba(0,0,0,0.55)" }} role="dialog" aria-modal="true" onClick={onClose}>
-      <div className="animate-popup-pop relative mx-auto w-full max-w-sm overflow-hidden rounded-2xl bg-white pb-5" onClick={(e) => e.stopPropagation()}>
-        <button type="button" onClick={onClose} aria-label={t.failedClose} className="absolute right-2.5 top-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-full text-[14px] font-bold text-[#5c626b] hover:bg-black/5">✕</button>
-        <div className="border-b border-black/10 py-3.5 pl-4 pr-10" style={{ borderLeft: "4px solid #f5c518" }}>
-          <h2 className="text-[15px] font-extrabold leading-snug text-[#1d2129]">{t.bankTransferTitle}</h2>
-        </div>
-        <div className="px-3.5 pt-3.5">
-          <p className="rounded-md bg-[#fde8ec] py-2.5 text-center text-[14px] font-bold text-[#e0325a]">{t.bankTransferDeadline(deadlineLabel)}</p>
-          <div className="mt-3.5 space-y-2 text-[12px] leading-relaxed text-[#1d2129]">
-            <p>{t.bankTransferEmailSent(email)}</p>
-            <p>{t.bankTransferCredited}</p>
-          </div>
-          <table className="mt-3.5 w-full border-collapse text-[11px]">
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.label}>
-                  <th className="w-[40%] border border-[#e2e5ea] bg-[#f5f6f8] px-2.5 py-2.5 text-left align-middle font-bold leading-snug text-[#1d2129]">{r.label}</th>
-                  <td className="border border-[#e2e5ea] px-2.5 py-2.5 align-middle leading-snug text-[#1d2129]">
-                    {r.value}
-                    {r.note && <p className="mt-0.5 text-[9.5px] text-[#e0325a]">{r.note}</p>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <ul className="mt-3.5 list-disc space-y-1 pl-4 text-[11px] leading-relaxed text-[#5c626b]">
-            {t.bankTransferNotes.map((line) => <li key={line}>{line}</li>)}
-          </ul>
-          <button type="button" onClick={onClose} className="mt-4 w-full rounded-xl py-3 text-[15px] font-bold text-white active:scale-[0.98]" style={{ background: "#D10005" }}>
-            {t.failedClose}
-          </button>
-        </div>
+    <>
+      <p className="rounded-md bg-[#fde8ec] py-2.5 text-center text-[14px] font-bold text-[#e0325a]">{t.bankTransferDeadline(deadlineLabel)}</p>
+      <div className="mt-3.5 space-y-2 text-[12px] leading-relaxed text-[#1d2129]">
+        <p>{t.bankTransferEmailSent(email)}</p>
+        <p>{t.bankTransferCredited}</p>
+      </div>
+      <table className="mt-3.5 w-full border-collapse text-[11px]">
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.label}>
+              <th className="w-[40%] border border-[#e2e5ea] bg-[#f5f6f8] px-2.5 py-2.5 text-left align-middle font-bold leading-snug text-[#1d2129]">{r.label}</th>
+              <td className="border border-[#e2e5ea] px-2.5 py-2.5 align-middle leading-snug text-[#1d2129]">
+                {r.value}
+                {r.note && <p className="mt-0.5 text-[9.5px] text-[#e0325a]">{r.note}</p>}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <ul className="mt-3.5 list-disc space-y-1 pl-4 text-[11px] leading-relaxed text-[#5c626b]">
+        {t.bankTransferNotes.map((line) => <li key={line}>{line}</li>)}
+      </ul>
+    </>
+  );
+}
+
+/** Full-page version of the transfer instructions, shown after the
+    bank-transfer checkout and from a pending Purchase History record. */
+export function BankTransferPage({ lang, jpy, details, onClose }: { lang: Lang; jpy: number; details: BankTransferDetails; onClose: () => void }) {
+  const t = STR[lang];
+  return (
+    <div className="animate-screen-in absolute inset-0 z-50 flex flex-col bg-white">
+      <div className="sticky top-0 z-10 flex items-center justify-end border-b border-black/10 bg-white px-4 py-3">
+        <button type="button" onClick={onClose} aria-label={t.failedClose} className="flex h-8 w-8 items-center justify-center rounded-full text-[16px] font-bold text-[#5c626b] hover:bg-black/5">✕</button>
+      </div>
+      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 pb-28 pt-4">
+        <h1 className="mb-3.5 py-1 pl-3 text-[16px] font-extrabold leading-snug text-[#1d2129]" style={{ borderLeft: "4px solid #f5c518" }}>{t.bankTransferTitle}</h1>
+        <BankTransferInstructions lang={lang} jpy={jpy} details={details} />
+      </div>
+      <div className="absolute bottom-0 left-0 right-0 border-t border-black/10 bg-white px-4 pb-5 pt-3">
+        <button type="button" onClick={onClose} className="w-full rounded-xl py-3.5 text-[15px] font-bold text-white active:scale-[0.98]" style={{ background: "#D10005" }}>
+          {t.failedClose}
+        </button>
       </div>
     </div>
   );
@@ -460,6 +482,9 @@ export function PurchaseFlow({
   }, [completeOnSuccess, step, onComplete]);
   const [bankTransfer, setBankTransfer] = useState<BankTransferDetails | null>(null);
   const [cvs, setCvs] = useState<ConvenienceStoreDetails | null>(null);
+  const [cvsOpen, setCvsOpen] = useState(false);
+  // A chosen store is the active payment method until a card is picked again.
+  const [cvsStore, setCvsStore] = useState<CvsStore | null>(null);
   useEffect(() => {
     if (step !== "bankLoading" && step !== "cvsLoading") return;
     const next = step === "bankLoading" ? "bankSent" : "cvsSent";
@@ -711,25 +736,9 @@ export function PurchaseFlow({
     );
   }
 
-  if (step === "cvsSelect") {
-    return (
-      <ConvenienceStorePicker
-        lang={lang}
-        onClose={() => setStep("checkout")}
-        onContinue={(store) => {
-          const deadline = new Date();
-          deadline.setDate(deadline.getDate() + 5);
-          deadline.setHours(23, 59, 0, 0);
-          setCvs({ store, customerNumber: randomDigits(14), confirmationNumber: randomDigits(4), deadline: deadline.getTime() });
-          setStep("cvsLoading");
-        }}
-      />
-    );
-  }
-
   if (step === "cvsSent" && cvs) {
     return (
-      <ConvenienceStoreModal
+      <ConvenienceStorePage
         lang={lang}
         jpy={pkg.jpy}
         details={cvs}
@@ -752,7 +761,7 @@ export function PurchaseFlow({
 
   if (step === "bankSent" && bankTransfer) {
     return (
-      <BankTransferModal
+      <BankTransferPage
         lang={lang}
         jpy={pkg.jpy}
         details={bankTransfer}
@@ -1145,9 +1154,20 @@ export function PurchaseFlow({
     })();
     const v1SelectGreen = "#16a34a";
     const v1Cta = "#D10005";
-    const v1CardSelected = payMethod === "card" && typeof selectedCardIdx === "number";
+    const v1CardSelected = !cvsStore && payMethod === "card" && typeof selectedCardIdx === "number";
     const v1NewCardReady = cardNumValid && expiryValid && billingComplete && cardNameLatinOk;
-    const v1MainPayDisabled = !v1CardSelected;
+    const v1MainPayDisabled = !cvsStore && !v1CardSelected;
+    const v1ShowPayNow = hasCards || cvsStore !== null;
+
+    function v1PayWithCvs(store: CvsStore) {
+      beginPayment(() => {
+        const deadline = new Date();
+        deadline.setDate(deadline.getDate() + 5);
+        deadline.setHours(23, 59, 0, 0);
+        setCvs({ store, customerNumber: randomDigits(14), confirmationNumber: randomDigits(4), deadline: deadline.getTime() });
+        setStep("cvsLoading");
+      });
+    }
 
     function v1SaveNewCardAndAuth() {
       if (!v1NewCardReady) return;
@@ -1173,6 +1193,7 @@ export function PurchaseFlow({
     }
 
     function openV1AddCard() {
+      setCvsStore(null);
       setSelectedCardIdx("new");
       setPayMethod("card");
       setBillingEditMode(true);
@@ -1292,10 +1313,46 @@ export function PurchaseFlow({
       </button>
     );
     const cvsBtn = (
-      <button type="button" onClick={() => beginPayment(() => setStep("cvsSelect"))} className={walletSecondaryCls} aria-label={t.cvsPay}>
+      <button
+        type="button"
+        onClick={() => setCvsOpen((o) => !o)}
+        aria-expanded={cvsOpen}
+        className={walletSecondaryCls}
+        style={cvsOpen ? { borderColor: v1SelectGreen, background: "#f0fdf4" } : undefined}
+        aria-label={t.cvsPay}
+      >
         <StoreMark />
         <span className="leading-tight">{t.cvsPay}</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className={`shrink-0 transition-transform ${cvsOpen ? "rotate-180" : ""}`} aria-hidden><path d="M6 9l6 6 6-6" stroke="#5c626b" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
       </button>
+    );
+    const cvsList = cvsOpen && (
+      <div className="animate-fade-slide col-span-2 rounded-xl border border-[#e2e5ea] bg-[#f5f6f8] p-2.5">
+        <p className="text-[13px] font-bold text-[#1d2129]">{t.cvsSelectTitle}</p>
+        <p className="mt-0.5 text-[11px] text-[#5c626b]">{t.cvsSelectSub}</p>
+        <div className="mt-2.5 flex flex-col gap-2" role="radiogroup" aria-label={t.cvsSelectTitle}>
+          {CVS_STORES.map((s) => {
+            const selected = cvsStore === s;
+            return (
+              <button
+                key={s}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => setCvsStore(s)}
+                className="flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left active:scale-[0.99]"
+                style={{ borderColor: selected ? v1SelectGreen : "#e2e5ea", background: selected ? "#f0fdf4" : "white" }}
+              >
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2" style={{ borderColor: selected ? v1SelectGreen : "#c9ced6" }}>
+                  {selected && <span className="h-2.5 w-2.5 rounded-full" style={{ background: v1SelectGreen }} />}
+                </span>
+                <CvsLogo store={s} />
+                <span className="text-[14px] font-semibold text-[#1d2129]">{t.cvsStores[s]}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
     );
     const rakutenPayBtn = (
       <button type="button" onClick={() => payWithWallet("rakutenPay")} className={walletSecondaryCls} aria-label="Rakuten Pay">
@@ -1324,6 +1381,7 @@ export function PurchaseFlow({
           <>
             {onBankTransfer ? bankTransferBtn : payPayBtn}
             {onConvenienceStore ? cvsBtn : rakutenPayBtn}
+            {onConvenienceStore && cvsList}
             {melPayBtn}
             {famiPayBtn}
           </>
@@ -1496,7 +1554,7 @@ export function PurchaseFlow({
           <div className="ml-auto h-8 w-8" />
         </div>
 
-        <div className={`min-h-0 flex-1 overflow-y-auto px-4 pt-4 ${hasCards ? "pb-36" : "pb-24"}`}>
+        <div className={`min-h-0 flex-1 overflow-y-auto px-4 pt-4 ${v1ShowPayNow ? "pb-36" : "pb-24"}`}>
           {v1PackageSummary}
 
           {enableCurrencyCheckout && (
@@ -1578,12 +1636,12 @@ export function PurchaseFlow({
               <div className="flex flex-col gap-2.5">
                 {visibleCardIndexes.map((i) => {
                   const card = cards[i];
-                  const selected = payMethod === "card" && selectedCardIdx === i;
+                  const selected = !cvsStore && payMethod === "card" && selectedCardIdx === i;
                   return (
                     <button
                       key={`${card.last4}-${i}`}
                       type="button"
-                      onClick={() => { setSelectedCardIdx(i); setPayMethod("card"); }}
+                      onClick={() => { setSelectedCardIdx(i); setPayMethod("card"); setCvsStore(null); }}
                       className="flex w-full items-center gap-3 rounded-xl border px-3 py-3.5 text-left"
                       style={{ borderColor: selected ? v1SelectGreen : "#e2e5ea", background: selected ? "#f0fdf4" : "white" }}
                     >
@@ -1638,11 +1696,11 @@ export function PurchaseFlow({
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 border-t border-black/10 bg-white px-4 pb-5 pt-3">
-          {hasCards && (
+          {v1ShowPayNow && (
             <button
               type="button"
               disabled={v1MainPayDisabled}
-              onClick={v1PayWithSelectedCard}
+              onClick={() => (cvsStore ? v1PayWithCvs(cvsStore) : v1PayWithSelectedCard())}
               className="mb-3 flex w-full items-center justify-center rounded-xl py-3.5 text-[16px] font-bold text-white disabled:cursor-not-allowed"
               style={{ background: v1MainPayDisabled ? "#c9ced6" : v1Cta }}
             >
