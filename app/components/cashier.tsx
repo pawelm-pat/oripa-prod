@@ -346,7 +346,7 @@ function StoreMark() {
   );
 }
 
-export function BankTransferModal({ lang, jpy, details, onClose }: { lang: Lang; jpy: number; details: BankTransferDetails; onClose: () => void }) {
+function BankTransferInstructions({ lang, jpy, details }: { lang: Lang; jpy: number; details: BankTransferDetails }) {
   const t = STR[lang];
   const [email] = useState(accountEmail);
   const deadlineLabel = fmtDeadline(lang, details.deadline);
@@ -359,6 +359,35 @@ export function BankTransferModal({ lang, jpy, details, onClose }: { lang: Lang;
     { label: t.bankTransferRecipient, value: t.bankTransferRecipientValue },
   ];
   return (
+    <>
+      <p className="rounded-md bg-[#fde8ec] py-2.5 text-center text-[14px] font-bold text-[#e0325a]">{t.bankTransferDeadline(deadlineLabel)}</p>
+      <div className="mt-3.5 space-y-2 text-[12px] leading-relaxed text-[#1d2129]">
+        <p>{t.bankTransferEmailSent(email)}</p>
+        <p>{t.bankTransferCredited}</p>
+      </div>
+      <table className="mt-3.5 w-full border-collapse text-[11px]">
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.label}>
+              <th className="w-[40%] border border-[#e2e5ea] bg-[#f5f6f8] px-2.5 py-2.5 text-left align-middle font-bold leading-snug text-[#1d2129]">{r.label}</th>
+              <td className="border border-[#e2e5ea] px-2.5 py-2.5 align-middle leading-snug text-[#1d2129]">
+                {r.value}
+                {r.note && <p className="mt-0.5 text-[9.5px] text-[#e0325a]">{r.note}</p>}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <ul className="mt-3.5 list-disc space-y-1 pl-4 text-[11px] leading-relaxed text-[#5c626b]">
+        {t.bankTransferNotes.map((line) => <li key={line}>{line}</li>)}
+      </ul>
+    </>
+  );
+}
+
+export function BankTransferModal({ lang, jpy, details, onClose }: { lang: Lang; jpy: number; details: BankTransferDetails; onClose: () => void }) {
+  const t = STR[lang];
+  return (
     <div className="animate-popup-backdrop no-scrollbar absolute inset-0 z-[80] overflow-y-auto px-3 py-5" style={{ background: "rgba(0,0,0,0.55)" }} role="dialog" aria-modal="true" onClick={onClose}>
       <div className="animate-popup-pop relative mx-auto w-full max-w-sm overflow-hidden rounded-2xl bg-white pb-5" onClick={(e) => e.stopPropagation()}>
         <button type="button" onClick={onClose} aria-label={t.failedClose} className="absolute right-2.5 top-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-full text-[14px] font-bold text-[#5c626b] hover:bg-black/5">✕</button>
@@ -366,31 +395,34 @@ export function BankTransferModal({ lang, jpy, details, onClose }: { lang: Lang;
           <h2 className="text-[15px] font-extrabold leading-snug text-[#1d2129]">{t.bankTransferTitle}</h2>
         </div>
         <div className="px-3.5 pt-3.5">
-          <p className="rounded-md bg-[#fde8ec] py-2.5 text-center text-[14px] font-bold text-[#e0325a]">{t.bankTransferDeadline(deadlineLabel)}</p>
-          <div className="mt-3.5 space-y-2 text-[12px] leading-relaxed text-[#1d2129]">
-            <p>{t.bankTransferEmailSent(email)}</p>
-            <p>{t.bankTransferCredited}</p>
-          </div>
-          <table className="mt-3.5 w-full border-collapse text-[11px]">
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.label}>
-                  <th className="w-[40%] border border-[#e2e5ea] bg-[#f5f6f8] px-2.5 py-2.5 text-left align-middle font-bold leading-snug text-[#1d2129]">{r.label}</th>
-                  <td className="border border-[#e2e5ea] px-2.5 py-2.5 align-middle leading-snug text-[#1d2129]">
-                    {r.value}
-                    {r.note && <p className="mt-0.5 text-[9.5px] text-[#e0325a]">{r.note}</p>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <ul className="mt-3.5 list-disc space-y-1 pl-4 text-[11px] leading-relaxed text-[#5c626b]">
-            {t.bankTransferNotes.map((line) => <li key={line}>{line}</li>)}
-          </ul>
+          <BankTransferInstructions lang={lang} jpy={jpy} details={details} />
           <button type="button" onClick={onClose} className="mt-4 w-full rounded-xl py-3 text-[15px] font-bold text-white active:scale-[0.98]" style={{ background: "#D10005" }}>
             {t.failedClose}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/** Full-page version of the transfer instructions, shown straight after the
+    bank-transfer checkout. Both close controls leave the cashier. */
+function BankTransferPage({ lang, jpy, details, onClose }: { lang: Lang; jpy: number; details: BankTransferDetails; onClose: () => void }) {
+  const t = STR[lang];
+  return (
+    <div className="animate-screen-in absolute inset-0 z-50 flex flex-col bg-white">
+      <div className="sticky top-0 z-10 flex items-center border-b border-black/10 bg-white px-4 py-3">
+        <div className="h-8 w-8" />
+        <h1 className="absolute left-1/2 max-w-[70%] -translate-x-1/2 truncate text-[16px] font-bold text-[#1d2129]">{t.bankTransferTitle}</h1>
+        <button type="button" onClick={onClose} aria-label={t.failedClose} className="ml-auto flex h-8 w-8 items-center justify-center rounded-full text-[16px] font-bold text-[#5c626b] hover:bg-black/5">✕</button>
+      </div>
+      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 pb-28 pt-4">
+        <BankTransferInstructions lang={lang} jpy={jpy} details={details} />
+      </div>
+      <div className="absolute bottom-0 left-0 right-0 border-t border-black/10 bg-white px-4 pb-5 pt-3">
+        <button type="button" onClick={onClose} className="w-full rounded-xl py-3.5 text-[15px] font-bold text-white active:scale-[0.98]" style={{ background: "#D10005" }}>
+          {t.failedClose}
+        </button>
       </div>
     </div>
   );
@@ -752,7 +784,7 @@ export function PurchaseFlow({
 
   if (step === "bankSent" && bankTransfer) {
     return (
-      <BankTransferModal
+      <BankTransferPage
         lang={lang}
         jpy={pkg.jpy}
         details={bankTransfer}
