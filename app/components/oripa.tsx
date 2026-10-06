@@ -3636,16 +3636,18 @@ function ShipOutcomeModal({ t, ok, onClose, onCta }: { t: Dict; ok: boolean; onC
         onClick={(e) => e.stopPropagation()}
       >
         {ok ? (
-          <img src="/icon-shipping-done.png" alt="" draggable={false} className="mx-auto h-[168px] w-[168px] select-none object-contain" />
+          <img src="/icon-shipping-done.png" alt="" draggable={false} className="mx-auto h-[150px] w-auto select-none object-contain" />
         ) : (
           <div className="mx-auto flex h-[72px] w-[72px] items-center justify-center rounded-full border-[3px]" style={{ borderColor: "#D10005" }}>
             <span className="text-[38px] font-black leading-none" style={{ color: "#D10005" }}>!</span>
           </div>
         )}
-        <h3 className="mt-3 text-center text-[16px] font-bold leading-none tracking-normal text-[#1d2129]">{ok ? t.shipDoneTitle : t.shipFailTitle}</h3>
-        <p className="mx-auto mt-3 max-w-[290px] text-center text-[13px] font-medium leading-relaxed text-[#0F0F0FCC]">{ok ? t.shipDoneBody : t.shipFailBody}</p>
-        <p className="mx-auto mt-2.5 max-w-[290px] text-center text-[13px] font-medium leading-relaxed text-[#0F0F0FCC]">{ok ? t.shipDoneNote : t.shipFailNote}</p>
-        <button onClick={onCta} className="mt-5 w-full rounded-[14px] bg-[#D10005] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]">
+        {/* Specced type: Noto Sans JP 700/20 for the title, 500/12 for the copy,
+            both centred at a 100% line height with no letter-spacing. */}
+        <h3 className="mt-4 text-center text-[20px] font-bold leading-none tracking-normal text-[#1d2129]">{ok ? t.shipDoneTitle : t.shipFailTitle}</h3>
+        <p className="mx-auto mt-3 max-w-[290px] text-center text-[12px] font-medium leading-none tracking-normal text-[#0F0F0FCC]">{ok ? t.shipDoneBody : t.shipFailBody}</p>
+        <p className="mx-auto mt-2.5 max-w-[290px] text-center text-[12px] font-medium leading-[1.45] tracking-normal text-[#0F0F0FCC]">{ok ? t.shipDoneNote : t.shipFailNote}</p>
+        <button onClick={onCta} className="mt-5 w-full rounded-[8px] bg-[#D10005] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]">
           {ok ? t.shipDoneCta : t.shipFailCta}
         </button>
       </div>
