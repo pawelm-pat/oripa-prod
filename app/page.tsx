@@ -50,6 +50,9 @@ export default function Page() {
   // Demo control (shipping fee cashier): whether the payment is approved.
   // No -> the bank-decline screen, whose wallet buttons still go through.
   const [paymentSuccess, setPaymentSuccess] = useState(true);
+  // Demo control (shipping request): whether the request itself goes through.
+  // No -> the failure modal, and the prizes stay put in My Loot.
+  const [shippingSuccess, setShippingSuccess] = useState(true);
   // Demo control: which MVP the notification centre and the lobby browse
   // experience are cut to.
   const [notificationsMvp, setNotificationsMvp] = useState<"mvp1" | "mvp2">("mvp2");
@@ -82,6 +85,7 @@ export default function Page() {
               <ToggleControl label="Free shipping" value={freeShipping} onChange={setFreeShipping} />
               <ToggleControl label="Address provided" value={addressProvided} onChange={setAddressProvided} />
               <ToggleControl label="Payment successful" value={paymentSuccess} onChange={setPaymentSuccess} />
+              <ToggleControl label="Shipping successful" value={shippingSuccess} onChange={setShippingSuccess} />
             </>
           )}
           {screen === "notifications" && (
@@ -170,6 +174,7 @@ export default function Page() {
                 errorScenario={errorScenario}
                 offerExpired={offerExpired}
                 paymentSuccess={paymentSuccess}
+                shippingSuccess={shippingSuccess}
                 notificationsMvp={notificationsMvp}
                 searchMvp={searchMvp}
               />
@@ -197,6 +202,7 @@ export default function Page() {
           errorScenario={errorScenario}
           offerExpired={offerExpired}
           paymentSuccess={paymentSuccess}
+          shippingSuccess={shippingSuccess}
           notificationsMvp={notificationsMvp}
           searchMvp={searchMvp}
         />
