@@ -3757,7 +3757,7 @@ function USStateSelect({ value, onChange, label }: { value: string; onChange: (v
 /* ── Prize History ───────────────────────────────────────────────────── */
 type Toast = { id: number; text: string };
 
-function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddressesChange, onBack, onHome, empty = false, onGoGacha, lootMode = false, onRequestKyc, freeShipAvailable = true, onOpenStore, onPayShipping, shippingSucceeds = true }: { lang: Lang; coins: number; setCoins: Dispatch<SetStateAction<number>>; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; onBack: () => void; onHome: () => void; empty?: boolean; onGoGacha?: () => void; lootMode?: boolean; onRequestKyc?: () => boolean; freeShipAvailable?: boolean; onOpenStore?: () => void; /** Paid shipping: collect the fee at the cashier, then run the callback. */ onPayShipping?: (onPaid: () => void) => void; /** Dev harness: whether the shipping request succeeds. */ shippingSucceeds?: boolean }) {
+function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddressesChange, onBack, onHome, empty = false, onGoGacha, lootMode = false, onRequestKyc, freeShipAvailable = true, onOpenStore, onPayShipping, shippingSucceeds = true, initialTab = "won" }: { lang: Lang; coins: number; setCoins: Dispatch<SetStateAction<number>>; shippingAddresses: ShippingAddr[]; onShippingAddressesChange: Dispatch<SetStateAction<ShippingAddr[]>>; onBack: () => void; onHome: () => void; empty?: boolean; onGoGacha?: () => void; lootMode?: boolean; onRequestKyc?: () => boolean; freeShipAvailable?: boolean; onOpenStore?: () => void; /** Paid shipping: collect the fee at the cashier, then run the callback. */ onPayShipping?: (onPaid: () => void) => void; /** Dev harness: whether the shipping request succeeds. */ shippingSucceeds?: boolean; /** Which tab the screen opens on — Pending when arriving from a completed request. */ initialTab?: PrizeTab }) {
   const [shipOutcome, setShipOutcome] = useState<"ok" | "fail" | null>(null);
   // "My Loot" reuses this screen but leads with the most valuable cards and
   // hides the Won/Waiting/Shipped tabs. It keeps a couple of normal (N) pulls
@@ -3769,7 +3769,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
   const bestOnly = <T extends { rarity: Rarity }>(arr: T[]) => arr;
   const t = STR[lang];
 
-  const [tab, setTab] = useState<PrizeTab>("won");
+  const [tab, setTab] = useState<PrizeTab>(initialTab);
   const [won, setWon] = useState<WonPrize[]>(bestOnly(INITIAL_WON));
   const [waiting, setWaiting] = useState<WaitingPrize[]>(bestOnly(INITIAL_WAITING));
   const [shipped] = useState<ShippedPrize[]>(bestOnly(INITIAL_SHIPPED));
@@ -7244,7 +7244,10 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   // cards. It can be opened from the bottom nav or from My Account; back
   // returns to wherever it was opened from.
   const [lootReturn, setLootReturn] = useState<Screen>("oripa");
-  const openMyLoot = () => { setLootReturn((p) => (screen === "myLoot" ? p : screen)); setScreen("myLoot"); };
+  // My Loot normally opens on the won cards; a completed shipping request sends
+  // the user to Pending instead, which is what its CTA offers.
+  const [lootTab, setLootTab] = useState<PrizeTab>("won");
+  const openMyLoot = (tab: PrizeTab = "won") => { setLootTab(tab); setLootReturn((p) => (screen === "myLoot" ? p : screen)); setScreen("myLoot"); };
   // Store (coin purchase) can be opened from the header "+" button or the
   // bottom-nav Store tab; back returns to wherever it was opened from.
   const [storeReturn, setStoreReturn] = useState<Screen>("oripa");
@@ -7423,7 +7426,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onTopUp={openTopUpForDraw}
             onPayShipping={(onPaid) => setShipPayment({ onPaid })}
             shippingSucceeds={shippingSuccess}
-            onOpenMyLoot={openMyLoot}
+            onOpenMyLoot={() => openMyLoot("waiting")}
             pendingConfirm={pendingConfirm}
             onPendingConfirmConsumed={() => setPendingConfirm(null)}
           />
@@ -7435,7 +7438,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             coins={coins}
             displayName={displayName}
             onOpenPrizeHistory={() => setScreen("prizeHistory")}
-            onOpenMyLoot={openMyLoot}
+            onOpenMyLoot={() => openMyLoot("waiting")}
             onOpenPurchaseHistory={() => setScreen("purchaseHistory")}
             onOpenAnnouncements={openAnnouncements}
             notificationsMvp={notificationsMvp}
@@ -7486,6 +7489,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
         )}
         {screen === "myLoot" && (
           <PrizeHistory
+            initialTab={lootTab}
             lang={lang}
             coins={coins}
             setCoins={setCoins}
@@ -7715,7 +7719,7 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onTopUp={openTopUpForDraw}
             onPayShipping={(onPaid) => setShipPayment({ onPaid })}
             shippingSucceeds={shippingSuccess}
-            onOpenMyLoot={openMyLoot}
+            onOpenMyLoot={() => openMyLoot("waiting")}
             pendingConfirm={pendingConfirm}
             onPendingConfirmConsumed={() => setPendingConfirm(null)}
           />
