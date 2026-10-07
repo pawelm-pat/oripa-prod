@@ -3631,10 +3631,17 @@ function ShipOutcomeModal({ t, ok, onClose, onCta }: { t: Dict; ok: boolean; onC
   return (
     <div className="animate-popup-backdrop absolute inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "rgba(20,8,4,0.62)" }} onClick={onClose} role="dialog" aria-modal="true">
       <div
-        className="animate-popup-pop w-full max-w-[340px] rounded-2xl bg-white px-6 pb-6 pt-7 text-center shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+        className="animate-popup-pop relative w-full max-w-[340px] rounded-2xl bg-white px-6 pb-6 pt-7 text-center shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
         style={{ fontFamily: "var(--font-noto-sans-jp), system-ui, sans-serif" }}
         onClick={(e) => e.stopPropagation()}
       >
+        <button
+          onClick={onClose}
+          aria-label={t.closeAria}
+          className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-[16px] font-bold text-[#8a9099] hover:bg-black/5 active:scale-95"
+        >
+          ✕
+        </button>
         {ok ? (
           <img src="/icon-shipping-done.png" alt="" draggable={false} className="mx-auto h-[150px] w-auto select-none object-contain" />
         ) : (
