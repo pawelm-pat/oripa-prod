@@ -3647,7 +3647,7 @@ function ShipOutcomeModal({ t, ok, onClose, onCta }: { t: Dict; ok: boolean; onC
         <h3 className="mt-4 text-center text-[20px] font-bold leading-none tracking-normal text-[#1d2129]">{ok ? t.shipDoneTitle : t.shipFailTitle}</h3>
         <p className="mx-auto mt-3 max-w-[290px] text-center text-[12px] font-medium leading-none tracking-normal text-[#0F0F0FCC]">{ok ? t.shipDoneBody : t.shipFailBody}</p>
         <p className="mx-auto mt-2.5 max-w-[290px] text-center text-[12px] font-medium leading-[1.45] tracking-normal text-[#0F0F0FCC]">{ok ? t.shipDoneNote : t.shipFailNote}</p>
-        <button onClick={onCta} className="mt-5 w-full rounded-[8px] bg-[#D10005] py-3.5 text-[15px] font-extrabold text-white active:scale-[0.98]">
+        <button onClick={onCta} className="mt-3.5 flex h-[38px] w-full items-center justify-center rounded-[6px] bg-[#D10005] text-[15px] font-extrabold text-white active:scale-[0.98]">
           {ok ? t.shipDoneCta : t.shipFailCta}
         </button>
       </div>
