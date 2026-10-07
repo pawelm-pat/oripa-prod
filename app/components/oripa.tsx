@@ -3019,7 +3019,7 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onBackToInfo, onHo
           t={t}
           ok={shipOutcome === "ok"}
           onClose={() => setShipOutcome(null)}
-          onCta={() => { const ok = shipOutcome === "ok"; setShipOutcome(null); if (ok) onOpenMyLoot?.(); }}
+          onCta={() => { const ok = shipOutcome === "ok"; setShipOutcome(null); if (ok) { onOpenMyLoot?.(); return; } setShipOpen(true); }}
         />
       )}
 
@@ -4205,7 +4205,7 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
           t={t}
           ok={shipOutcome === "ok"}
           onClose={() => setShipOutcome(null)}
-          onCta={() => { if (shipOutcome === "ok") setTab("waiting"); setShipOutcome(null); }}
+          onCta={() => { const ok = shipOutcome === "ok"; setShipOutcome(null); if (ok) { setTab("waiting"); return; } setListShipOpen(true); }}
         />
       )}
 
