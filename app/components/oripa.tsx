@@ -3615,15 +3615,6 @@ function GreenCheck() {
   );
 }
 
-function EmptyState({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) {
-  return (
-    <div className="flex h-full flex-col items-center justify-center px-8 text-center">
-      <div className="text-4xl">{icon}</div>
-      <p className="mt-3 text-[15px] font-bold text-[#41464e]">{title}</p>
-      <p className="mt-1 text-[12.5px] text-[#8a9099]">{subtitle}</p>
-    </div>
-  );
-}
 
 // The shipping request's outcome. Success moves the prizes on and offers the
 // Pending tab; failure leaves them where they are and says so.
@@ -4093,8 +4084,8 @@ function PrizeHistory({ lang, coins, setCoins, shippingAddresses, onShippingAddr
             </>
           )
         )}
-        {tab === "waiting" && <WaitingTab prizes={waiting} t={t} lang={lang} visible={wonVisible} page={WON_PAGE} hasMore={wonHasMore} />}
-        {tab === "shipped" && <ShippedTab prizes={shipped} onCopy={(c) => pushToast(t.toastCopied(c))} t={t} lang={lang} visible={wonVisible} page={WON_PAGE} hasMore={wonHasMore} />}
+        {tab === "waiting" && <WaitingTab prizes={waiting} t={t} lang={lang} visible={wonVisible} page={WON_PAGE} hasMore={wonHasMore} onGoGacha={onGoGacha ?? onHome} />}
+        {tab === "shipped" && <ShippedTab prizes={shipped} onCopy={(c) => pushToast(t.toastCopied(c))} t={t} lang={lang} visible={wonVisible} page={WON_PAGE} hasMore={wonHasMore} onGoGacha={onGoGacha ?? onHome} />}
       </div>
 
       {lootMode && tab === "won" && won.length > 0 && (
@@ -4255,9 +4246,29 @@ function LoadingMoreRow({ t }: { t: Dict }) {
   );
 }
 
-function WaitingTab({ prizes, t, lang, visible, page, hasMore }: { prizes: WaitingPrize[]; t: Dict; lang: Lang; visible: number; page: number; hasMore: boolean }) {
+// My Loot's empty tabs: the mascot, two centred lines and the gacha CTA.
+function LootEmptyState({ t, title, subtitle, onGoGacha }: { t: Dict; title: string; subtitle: string; onGoGacha?: () => void }) {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col items-center justify-center py-16">
+      <img src="/prize-character-wave.webp" alt="" className="mb-5 h-48 w-48 object-contain" />
+      <p className="max-w-[334px] text-center text-[14px] leading-[17px] text-[#0F0F0F80]">
+        {title}
+        <br />
+        {subtitle}
+      </p>
+      <button
+        onClick={onGoGacha}
+        className="mt-7 flex h-[39px] w-full max-w-[386px] items-center justify-center rounded-lg bg-[#D10005] text-[16px] font-extrabold leading-none text-white active:scale-[0.99]"
+      >
+        {t.winEmptyCta}
+      </button>
+    </div>
+  );
+}
+
+function WaitingTab({ prizes, t, lang, visible, page, hasMore, onGoGacha }: { prizes: WaitingPrize[]; t: Dict; lang: Lang; visible: number; page: number; hasMore: boolean; onGoGacha?: () => void }) {
   if (prizes.length === 0) {
-    return <EmptyState icon="📦" title={t.waitingEmptyTitle} subtitle={t.waitingEmptySub} />;
+    return <LootEmptyState t={t} title={t.waitingEmptyTitle} subtitle={t.waitingEmptySub} onGoGacha={onGoGacha} />;
   }
   return (
     <div className="px-3 pb-4 pt-3">
@@ -4293,9 +4304,9 @@ function WaitingTab({ prizes, t, lang, visible, page, hasMore }: { prizes: Waiti
   );
 }
 
-function ShippedTab({ prizes, onCopy, t, lang, visible, page, hasMore }: { prizes: ShippedPrize[]; onCopy: (code: string) => void; t: Dict; lang: Lang; visible: number; page: number; hasMore: boolean }) {
+function ShippedTab({ prizes, onCopy, t, lang, visible, page, hasMore, onGoGacha }: { prizes: ShippedPrize[]; onCopy: (code: string) => void; t: Dict; lang: Lang; visible: number; page: number; hasMore: boolean; onGoGacha?: () => void }) {
   if (prizes.length === 0) {
-    return <EmptyState icon="✅" title={t.shippedEmptyTitle} subtitle={t.shippedEmptySub} />;
+    return <LootEmptyState t={t} title={t.shippedEmptyTitle} subtitle={t.shippedEmptySub} onGoGacha={onGoGacha} />;
   }
   return (
     <div className="px-3 pb-4 pt-3">
