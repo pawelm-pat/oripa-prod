@@ -53,6 +53,9 @@ export default function Page() {
   // Demo control (shipping request): whether the request itself goes through.
   // No -> the failure modal, and the prizes stay put in My Loot.
   const [shippingSuccess, setShippingSuccess] = useState(true);
+  // Demo control (shipping request): whether coins have ever been bought.
+  // No -> requesting shipping is blocked behind the first-purchase dialog.
+  const [firstPurchaseMade, setFirstPurchaseMade] = useState(true);
   // Demo control: which MVP the notification centre and the lobby browse
   // experience are cut to.
   const [notificationsMvp, setNotificationsMvp] = useState<"mvp1" | "mvp2">("mvp2");
@@ -86,6 +89,7 @@ export default function Page() {
               <ToggleControl label="Address provided" value={addressProvided} onChange={setAddressProvided} />
               <ToggleControl label="Payment successful" value={paymentSuccess} onChange={setPaymentSuccess} />
               <ToggleControl label="Shipping successful" value={shippingSuccess} onChange={setShippingSuccess} />
+              <ToggleControl label="First purchase" value={firstPurchaseMade} onChange={setFirstPurchaseMade} />
             </>
           )}
           {screen === "notifications" && (
@@ -175,6 +179,7 @@ export default function Page() {
                 offerExpired={offerExpired}
                 paymentSuccess={paymentSuccess}
                 shippingSuccess={shippingSuccess}
+                firstPurchaseMade={firstPurchaseMade}
                 notificationsMvp={notificationsMvp}
                 searchMvp={searchMvp}
               />
@@ -203,6 +208,7 @@ export default function Page() {
           offerExpired={offerExpired}
           paymentSuccess={paymentSuccess}
           shippingSuccess={shippingSuccess}
+          firstPurchaseMade={firstPurchaseMade}
           notificationsMvp={notificationsMvp}
           searchMvp={searchMvp}
         />
