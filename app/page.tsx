@@ -56,6 +56,9 @@ export default function Page() {
   // Demo control (shipping request): whether coins have ever been bought.
   // No -> requesting shipping is blocked behind the first-purchase dialog.
   const [firstPurchaseMade, setFirstPurchaseMade] = useState(true);
+  // Demo control (draw results): V1 filters the cards by tier chip, V2 turns
+  // the chips into a multi-select that highlights every card in the tier.
+  const [tierSelect, setTierSelect] = useState<"v1" | "v2">("v1");
   // Demo control: which MVP the notification centre and the lobby browse
   // experience are cut to.
   const [notificationsMvp, setNotificationsMvp] = useState<"mvp1" | "mvp2">("mvp2");
@@ -119,6 +122,14 @@ export default function Page() {
           {(screen === "drawDetail" || screen === "oripa" || drawResultsOpen) && (
             <ToggleControl label="Daily limit" value={dailyLimit} onChange={setDailyLimit} />
           )}
+          {drawResultsOpen && (
+            <PairControl
+              label="Tier chips"
+              value={tierSelect}
+              onChange={setTierSelect}
+              options={[["V1", "v1"], ["V2", "v2"]]}
+            />
+          )}
           {/* Anywhere a draw can start: the pack page, and the lobby, whose
               card CTAs open the same confirmation without leaving the feed. */}
           {(screen === "drawDetail" || screen === "oripa") && !drawResultsOpen && (
@@ -180,6 +191,7 @@ export default function Page() {
                 paymentSuccess={paymentSuccess}
                 shippingSuccess={shippingSuccess}
                 firstPurchaseMade={firstPurchaseMade}
+                tierSelect={tierSelect}
                 notificationsMvp={notificationsMvp}
                 searchMvp={searchMvp}
               />
@@ -209,6 +221,7 @@ export default function Page() {
           paymentSuccess={paymentSuccess}
           shippingSuccess={shippingSuccess}
           firstPurchaseMade={firstPurchaseMade}
+          tierSelect={tierSelect}
           notificationsMvp={notificationsMvp}
           searchMvp={searchMvp}
         />
