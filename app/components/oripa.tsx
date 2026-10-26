@@ -4919,7 +4919,9 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
   const zipError = zipTouched && form.zipCode.length > 0 && !zipValid ? "5 digits required" : "";
   const streetNumError = streetNumTouched && form.streetNumber.length > 0 && !streetNumValid ? (lang === "ja" ? "数字のみ入力してください" : "Numbers only") : "";
 
-  const canSubmit = form.lastName.trim().length > 0 && form.firstName.trim().length > 0 && phoneValid &&
+  // The form carries the address only — the name rides along from the account
+  // or the address being edited — so it is not part of what must be filled in.
+  const canSubmit = phoneValid &&
     (form.country === "japan"
       ? postalValid && !!form.prefecture && form.city.trim().length > 0 && streetNumValid
       : form.cityStreetNumber.trim().length > 0 && !!form.state && zipValid);
@@ -4993,8 +4995,19 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
 
   const formDirty = (Object.keys(form) as (keyof typeof form)[]).some((k) => (form[k] ?? "") !== (formBaseline[k] ?? ""));
 
+  function openAddForm() {
+    setEditingId(null);
+    setForm({ ...EMPTY_SHIPPING_FORM });
+    setFormBaseline({ ...EMPTY_SHIPPING_FORM });
+    setPostalTouched(false); setPhoneTouched(false); setZipTouched(false); setStreetNumTouched(false);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    setSearching(false); setCandidates([]);
+    setView("form");
+  }
+
   // Nothing edited means nothing to confirm — Update just leaves.
   function submitEdit() {
+    if (!editingId) { handleRegister(); return; }
     if (!formDirty) { setEditingId(null); onBack(); return; }
     setConfirmUpdate(true);
   }
@@ -5191,7 +5204,7 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
           </div>
 
           <button disabled={!canSubmit} onClick={submitEdit} className="w-full rounded-xl py-3 text-[14px] font-bold text-white" style={{ background: canSubmit ? "#D10005" : "#d1d5db", cursor: canSubmit ? "pointer" : "not-allowed" }}>
-            {t.shippingUpdate}
+            {editingId ? t.shippingUpdate : t.shippingRegister}
           </button>
           <button onClick={cancelEdit} className="mt-2 w-full rounded-xl border border-[#c9ced6] bg-white py-3 text-[14px] font-bold text-[#5c626b]">
             {t.cancel}
@@ -5210,6 +5223,18 @@ function ShippingAddressPage({ lang, coins, addresses, onAddressesChange, onBack
                 {t.shippingEmpty}
               </p>
             </div>
+          )}
+
+          {/* Only one address is kept, so the add affordance stands down once
+              there is one — that address is edited instead. */}
+          {addresses.length === 0 && (
+            <button
+              onClick={openAddForm}
+              className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-black/20 bg-white py-3 text-[14px] font-bold text-[#1d2129] active:bg-black/[0.03]"
+            >
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#c9ced6] text-[17px] font-semibold text-[#8a9099]">+</span>
+              {t.shippingAddNew}
+            </button>
           )}
 
           {addresses.map((addr) => {
