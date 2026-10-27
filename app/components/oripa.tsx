@@ -3643,6 +3643,146 @@ function GreenCheck() {
 }
 
 
+/* ── Phone verification (post-login reward flow) ──────────────────────────
+   Four steps behind one overlay: the offer, the number, the code and the
+   payout. There is no SMS to receive, so the generated code is surfaced in a
+   toast at the bottom for the tester to type back in. */
+function PhoneVerifyFlow({ lang, onClose, onVerified }: { lang: Lang; onClose: () => void; onVerified: () => void }) {
+  const t = STR[lang];
+  const [step, setStep] = useState<"intro" | "phone" | "code" | "done">("intro");
+  const [phone, setPhone] = useState("9012345678");
+  const [digits, setDigits] = useState<string[]>(["", "", "", "", "", ""]);
+  const [sentCode, setSentCode] = useState("");
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<number | null>(null);
+  const boxes = useRef<(HTMLInputElement | null)[]>([]);
+
+  const say = (msg: string) => {
+    setToast(msg);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 6000);
+  };
+  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
+
+  const sendCode = () => {
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    setSentCode(code);
+    setDigits(["", "", "", "", "", ""]);
+    setStep("code");
+    say(t.pvCodeToast(code));
+  };
+
+  const phoneValid = phone.replace(/\D/g, "").length >= 9;
+  const entered = digits.join("");
+  const codeReady = entered.length === 6;
+  const submitCode = () => {
+    if (!codeReady) return;
+    if (entered !== sentCode) { say(t.pvCodeWrong); return; }
+    setToast(null);
+    setStep("done");
+    onVerified();
+  };
+  const setDigit = (i: number, v: string) => {
+    const d = v.replace(/\D/g, "").slice(-1);
+    setDigits((prev) => { const next = [...prev]; next[i] = d; return next; });
+    if (d && i < 5) boxes.current[i + 1]?.focus();
+  };
+
+  const cardCls = "relative w-full max-w-[330px] overflow-hidden rounded-[18px] border-[3px] border-[#F3B829] bg-[#FFFCF2] px-5 pb-5 pt-4 text-center shadow-[0_18px_50px_rgba(0,0,0,0.45)]";
+  const ctaCls = "flex h-[42px] w-full items-center justify-center rounded-[8px] bg-[#D10005] text-[15px] font-extrabold text-white active:scale-[0.98]";
+
+  return (
+    <div className="animate-popup-backdrop absolute inset-0 z-[85] flex items-center justify-center p-4" style={{ background: "rgba(20,8,4,0.62)", fontFamily: "var(--font-noto-sans-jp), system-ui, sans-serif" }} role="dialog" aria-modal="true">
+      {step === "intro" && (
+        <div className="animate-popup-pop w-full max-w-[330px]">
+          <img src="/verify-hero.png" alt="" draggable={false} className="-mb-6 w-full select-none object-contain" />
+          <div className={cardCls}>
+            <img src="/verify-coins.png" alt="" draggable={false} className="mx-auto h-[104px] w-auto select-none object-contain" />
+            <h3 className="mt-2 text-[20px] font-extrabold leading-tight text-[#D10005]">{t.pvIntroTitle}</h3>
+            <p className="mt-2 text-[13px] font-medium text-[#1d2129]">
+              {t.pvIntroLead}<span className="font-extrabold text-[#D10005]">{t.pvIntroReward}</span>
+            </p>
+            <button onClick={() => setStep("phone")} className={`mt-4 ${ctaCls}`}>{t.pvIntroCta}</button>
+            <button onClick={onClose} className="mt-2.5 w-full text-[13px] font-semibold text-[#6b7075] active:opacity-70">{t.pvIntroLater}</button>
+          </div>
+        </div>
+      )}
+
+      {(step === "phone" || step === "code") && (
+        <div className="animate-popup-pop w-full max-w-[340px] overflow-hidden rounded-2xl bg-white shadow-[0_18px_50px_rgba(0,0,0,0.45)]">
+          <img src="/verify-banner.png" alt="" draggable={false} className="w-full select-none object-cover" />
+          <div className="px-5 pb-5 pt-4">
+            <button onClick={onClose} aria-label={t.closeAria} className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-full bg-white/80 text-[16px] font-bold text-[#5c626b]">✕</button>
+            <h3 className="text-[18px] font-extrabold text-[#1d2129]">{t.pvFormTitle}</h3>
+            <p className="mt-2 text-[12px] font-medium leading-[1.5] text-[#5c626b]">{t.pvFormBody}</p>
+
+            {step === "phone" ? (
+              <>
+                <p className="mb-1 mt-4 text-left text-[12px] font-bold text-[#1d2129]">{t.pvPhoneLabel}<span className="text-[#D10005]">*</span></p>
+                <div className="flex h-[42px] items-center overflow-hidden rounded-[8px] border border-[#c9ced6] bg-white">
+                  <span className="flex h-full items-center border-r border-[#e2e5ea] px-3 text-[14px] font-semibold text-[#1d2129]">+81</span>
+                  <input
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/[^\d]/g, ""))}
+                    inputMode="numeric"
+                    className="h-full flex-1 px-3 text-left text-[14px] text-[#1d2129] outline-none"
+                  />
+                </div>
+                <button disabled={!phoneValid} onClick={sendCode} className={`mt-4 ${ctaCls} disabled:bg-[#c9ced6]`}>{t.pvSendCode}</button>
+              </>
+            ) : (
+              <>
+                <div className="my-3 border-t border-black/10" />
+                <p className="text-[13px] font-semibold leading-[1.5] text-[#1d2129]">{t.pvSentTo(`+81 ${phone}`)}</p>
+                <button onClick={() => setStep("phone")} className="mt-2.5 rounded-[8px] border border-[#1d2129] px-4 py-2 text-[13px] font-bold text-[#1d2129] active:opacity-70">{t.pvEditPhone}</button>
+                <p className="mt-4 text-[17px] font-extrabold text-[#1d2129]">{t.pvEnterCode}</p>
+                <div className="mt-3 flex justify-center gap-2">
+                  {digits.map((d, i) => (
+                    <input
+                      key={i}
+                      ref={(el) => { boxes.current[i] = el; }}
+                      value={d}
+                      onChange={(e) => setDigit(i, e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Backspace" && !digits[i] && i > 0) boxes.current[i - 1]?.focus(); }}
+                      inputMode="numeric"
+                      aria-label={`${t.pvEnterCode} ${i + 1}`}
+                      className="h-[48px] w-[44px] rounded-[8px] border border-[#e2e5ea] bg-[#f7f8fa] text-center text-[20px] font-bold text-[#1d2129] outline-none focus:border-[#D10005]"
+                    />
+                  ))}
+                </div>
+                <p className="mt-3 text-[11px] font-bold tracking-wide text-[#8a9099]">
+                  {t.pvNoCode}{" "}
+                  <button onClick={sendCode} className="underline underline-offset-2 active:opacity-70">{t.pvResend} ✓</button>
+                </p>
+                <button disabled={!codeReady} onClick={submitCode} className={`mt-4 ${ctaCls} disabled:bg-[#c9ced6]`}>{t.pvSendCode}</button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {step === "done" && (
+        <div className={`animate-popup-pop ${cardCls}`}>
+          <img src="/verify-coins.png" alt="" draggable={false} className="mx-auto h-[150px] w-auto select-none object-contain" />
+          <p className="mt-1 text-[26px] font-extrabold leading-none text-[#D10005]">{t.pvDoneAmount}</p>
+          <p className="mt-1.5 text-[18px] font-extrabold text-[#1d2129]">{t.pvDoneSub}</p>
+          <div className="mt-3 flex h-[44px] items-center justify-center gap-2 rounded-[10px] bg-white">
+            <img src="/coin.png" alt="" aria-hidden className="h-5 w-5 object-contain" />
+            <span className="text-[16px] font-extrabold text-[#16a34a]">+ 500</span>
+          </div>
+          <button onClick={onClose} className={`mt-3 ${ctaCls}`}>{t.pvDoneCta}</button>
+        </div>
+      )}
+
+      {toast && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-8 z-[90] flex justify-center px-4">
+          <div className="rounded-full bg-black/85 px-4 py-2 text-[12.5px] font-semibold text-white shadow-lg">{toast}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Shipping is gated on having bought coins at least once.
 function FirstPurchaseModal({ t, onClose, onGoShop }: { t: Dict; onClose: () => void; onGoShop?: () => void }) {
   return (
@@ -7002,8 +7142,8 @@ function NotEnoughCoinsPopup({ lang, coins, cost, onCharge, onClose }: { lang: L
   );
 }
 
-export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, sendNotifications = false, onNotificationSent, errorScenario = "off", offerExpired = false, paymentSuccess = true, shippingSuccess = true, firstPurchaseMade = true, tierSelect = "v1", notificationsMvp = "mvp2", searchMvp = "mvp2" }: {
-  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; /** Dev harness: deliver one fresh unread notification or announcement. */ sendNotifications?: boolean; /** Fired once the item has been delivered, so the harness can re-arm its toggle. */ onNotificationSent?: () => void; /** Dev harness: swallow the next navigation and show this error page instead. */ errorScenario?: ErrorScenario; /** Dev harness: the pinned promotional notification has expired. */ offerExpired?: boolean; /** Dev harness: whether the shipping fee payment goes through. */ paymentSuccess?: boolean; /** Dev harness: whether the shipping request itself succeeds. */ shippingSuccess?: boolean; /** Dev harness: whether coins have been bought at least once. */ firstPurchaseMade?: boolean; /** Draw results: V2 turns the tier chips into multi-select. */ tierSelect?: "v1" | "v2"; /** MVP1 hides the Announcements tab; MVP2 keeps both. */ notificationsMvp?: "mvp1" | "mvp2"; /** MVP1 browses the lobby by filter only. */ searchMvp?: "mvp1" | "mvp2";
+export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario = "none", freeShipAvailable = true, onDrawResultsChange, addressProvided = true, dailyLimitReached = false, drawScenario = "off", multiCurrency = true, sendNotifications = false, onNotificationSent, errorScenario = "off", offerExpired = false, paymentSuccess = true, shippingSuccess = true, firstPurchaseMade = true, tierSelect = "v1", phoneVerify = false, notificationsMvp = "mvp2", searchMvp = "mvp2" }: {
+  lang: Lang; noHistory: boolean; onScreenChange?: (s: Screen) => void; initialKycScenario?: KycScenario; freeShipAvailable?: boolean; onDrawResultsChange?: (open: boolean) => void; addressProvided?: boolean; dailyLimitReached?: boolean; drawScenario?: DrawScenario; multiCurrency?: boolean; /** Dev harness: deliver one fresh unread notification or announcement. */ sendNotifications?: boolean; /** Fired once the item has been delivered, so the harness can re-arm its toggle. */ onNotificationSent?: () => void; /** Dev harness: swallow the next navigation and show this error page instead. */ errorScenario?: ErrorScenario; /** Dev harness: the pinned promotional notification has expired. */ offerExpired?: boolean; /** Dev harness: whether the shipping fee payment goes through. */ paymentSuccess?: boolean; /** Dev harness: whether the shipping request itself succeeds. */ shippingSuccess?: boolean; /** Dev harness: whether coins have been bought at least once. */ firstPurchaseMade?: boolean; /** Draw results: V2 turns the tier chips into multi-select. */ tierSelect?: "v1" | "v2"; /** Dev harness: offer phone verification once the user is in. */ phoneVerify?: boolean; /** MVP1 hides the Announcements tab; MVP2 keeps both. */ notificationsMvp?: "mvp1" | "mvp2"; /** MVP1 browses the lobby by filter only. */ searchMvp?: "mvp1" | "mvp2";
 }) {
   const t = STR[lang];
   const [screen, setScreenRaw] = useState<Screen>("landing");
@@ -7293,12 +7433,15 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
   const [authReturn, setAuthReturn] = useState<OripaItem | null>(null);
   // PROD: login/sign-up land straight on the lobby (no onboarding flow), unless
   // a pack is owed — then they land on it, ready to draw.
+  // The verification offer waits until the user is actually inside.
+  const [verifyOpen, setVerifyOpen] = useState(false);
   const enterHome = (method?: "line") => {
     const pack = authReturn;
     setAuthReturn(null);
     if (pack) { setDrawItem(pack); setScreen("drawDetail"); }
     else setScreen("oripa");
     if (method === "line") setLineLoginToast(true);
+    if (phoneVerify) setVerifyOpen(true);
   };
   // Leaving the visitor's pack page for the logged-out lobby drops that debt:
   // logging in from the landing header belongs on the lobby.
@@ -7827,6 +7970,14 @@ export function PhoneApp({ lang, noHistory, onScreenChange, initialKycScenario =
             onPendingConfirmConsumed={() => setPendingConfirm(null)}
           />
         )}
+        {verifyOpen && (
+          <PhoneVerifyFlow
+            lang={lang}
+            onClose={() => setVerifyOpen(false)}
+            onVerified={() => setCoins((c) => c + 500)}
+          />
+        )}
+
         {legalDoc && <LegalOverlay lang={lang} doc={legalDoc} onClose={() => setLegalDoc(null)} />}
         {inquiryToast && (
           <div className="pointer-events-none absolute inset-x-0 bottom-6 z-[90] flex justify-center px-6">

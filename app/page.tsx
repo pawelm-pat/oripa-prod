@@ -59,6 +59,8 @@ export default function Page() {
   // Demo control (draw results): V1 filters the cards by tier chip, V2 turns
   // the chips into a multi-select that highlights every card in the tier.
   const [tierSelect, setTierSelect] = useState<"v1" | "v2">("v1");
+  // Demo control: offer phone verification once the user has logged in.
+  const [phoneVerify, setPhoneVerify] = useState(false);
   // Demo control: which MVP the notification centre and the lobby browse
   // experience are cut to.
   const [notificationsMvp, setNotificationsMvp] = useState<"mvp1" | "mvp2">("mvp2");
@@ -84,6 +86,7 @@ export default function Page() {
         <div className="absolute right-full top-3 mr-4 flex w-max flex-col items-end gap-4">
           <LangToggle lang={lang} setLang={setLang} />
           <KycScenarioControl value={kycScenario} onChange={changeKycScenario} onReset={resetKycSession} />
+          <ToggleControl label="Phone verif" value={phoneVerify} onChange={setPhoneVerify} />
           {/* Only relevant where prizes can be selected for shipping:
               My Loot, and the draw-results overlay (not draw selection). */}
           {(screen === "myLoot" || drawResultsOpen) && (
@@ -192,6 +195,7 @@ export default function Page() {
                 shippingSuccess={shippingSuccess}
                 firstPurchaseMade={firstPurchaseMade}
                 tierSelect={tierSelect}
+                phoneVerify={phoneVerify}
                 notificationsMvp={notificationsMvp}
                 searchMvp={searchMvp}
               />
@@ -222,6 +226,7 @@ export default function Page() {
           shippingSuccess={shippingSuccess}
           firstPurchaseMade={firstPurchaseMade}
           tierSelect={tierSelect}
+          phoneVerify={phoneVerify}
           notificationsMvp={notificationsMvp}
           searchMvp={searchMvp}
         />
