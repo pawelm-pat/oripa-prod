@@ -3688,8 +3688,8 @@ function PhoneVerifyFlow({ lang, onClose, onVerified }: { lang: Lang; onClose: (
     if (d && i < 5) boxes.current[i + 1]?.focus();
   };
 
-  const cardCls = "relative w-full max-w-[330px] overflow-hidden rounded-[18px] border-[3px] border-[#F3B829] bg-[#FFFCF2] px-5 pb-5 pt-4 text-center shadow-[0_18px_50px_rgba(0,0,0,0.45)]";
-  const ctaCls = "flex h-[42px] w-full items-center justify-center rounded-[8px] bg-[#D10005] text-[15px] font-extrabold text-white active:scale-[0.98]";
+  const cardCls = "relative w-full max-w-[330px] overflow-hidden rounded-[18px] border-[3px] border-[#F3B829] bg-[#FFFEF8] px-5 pb-5 pt-4 text-center shadow-[0_18px_50px_rgba(0,0,0,0.45)]";
+  const ctaCls = "flex h-[50px] w-full items-center justify-center rounded-[10px] bg-[#D10005] text-[16px] font-extrabold text-white active:scale-[0.98]";
 
   return (
     <div className="animate-popup-backdrop absolute inset-0 z-[85] flex items-center justify-center p-4" style={{ background: "rgba(20,8,4,0.62)", fontFamily: "var(--font-noto-sans-jp), system-ui, sans-serif" }} role="dialog" aria-modal="true">
@@ -3713,8 +3713,8 @@ function PhoneVerifyFlow({ lang, onClose, onVerified }: { lang: Lang; onClose: (
           <img src="/verify-banner.png" alt="" draggable={false} className="w-full select-none object-cover" />
           <div className="px-5 pb-5 pt-4">
             <button onClick={onClose} aria-label={t.closeAria} className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-full bg-white/80 text-[16px] font-bold text-[#5c626b]">✕</button>
-            <h3 className="text-[18px] font-extrabold text-[#1d2129]">{t.pvFormTitle}</h3>
-            <p className="mt-2 text-[12px] font-medium leading-[1.5] text-[#5c626b]">{t.pvFormBody}</p>
+            <h3 className="text-[20px] font-extrabold leading-tight text-[#1d2129]">{t.pvFormTitle}</h3>
+            <p className="mt-2.5 text-[12px] font-medium leading-[1.55] text-[#5c626b]">{t.pvFormBody}</p>
 
             {step === "phone" ? (
               <>
@@ -3733,9 +3733,9 @@ function PhoneVerifyFlow({ lang, onClose, onVerified }: { lang: Lang; onClose: (
             ) : (
               <>
                 <div className="my-3 border-t border-black/10" />
-                <p className="text-[13px] font-semibold leading-[1.5] text-[#1d2129]">{t.pvSentTo(`+81 ${phone}`)}</p>
-                <button onClick={() => setStep("phone")} className="mt-2.5 rounded-[8px] border border-[#1d2129] px-4 py-2 text-[13px] font-bold text-[#1d2129] active:opacity-70">{t.pvEditPhone}</button>
-                <p className="mt-4 text-[17px] font-extrabold text-[#1d2129]">{t.pvEnterCode}</p>
+                <p className="text-center text-[14px] font-semibold leading-[1.45] text-[#1d2129]">{t.pvSentTo(`+81 ${phone}`)}</p>
+                <button onClick={() => setStep("phone")} className="mx-auto mt-3 block rounded-full border border-[#1d2129] px-6 py-2 text-[12px] font-bold text-[#1d2129] active:opacity-70">{t.pvEditPhone}</button>
+                <p className="mt-5 text-[17px] font-extrabold text-[#1d2129]">{t.pvEnterCode}</p>
                 <div className="mt-3 flex justify-center gap-2">
                   {digits.map((d, i) => (
                     <input
@@ -3746,11 +3746,11 @@ function PhoneVerifyFlow({ lang, onClose, onVerified }: { lang: Lang; onClose: (
                       onKeyDown={(e) => { if (e.key === "Backspace" && !digits[i] && i > 0) boxes.current[i - 1]?.focus(); }}
                       inputMode="numeric"
                       aria-label={`${t.pvEnterCode} ${i + 1}`}
-                      className="h-[48px] w-[44px] rounded-[8px] border border-[#e2e5ea] bg-[#f7f8fa] text-center text-[20px] font-bold text-[#1d2129] outline-none focus:border-[#D10005]"
+                      className="h-[56px] w-[44px] rounded-[10px] border border-[#e2e5ea] bg-[#f7f8fa] text-center text-[22px] font-bold text-[#1d2129] outline-none focus:border-[#D10005]"
                     />
                   ))}
                 </div>
-                <p className="mt-3 text-[11px] font-bold tracking-wide text-[#8a9099]">
+                <p className="mt-4 text-[10px] font-bold tracking-wide text-[#8a9099]">
                   {t.pvNoCode}{" "}
                   <button onClick={sendCode} className="underline underline-offset-2 active:opacity-70">{t.pvResend} ✓</button>
                 </p>
@@ -3762,15 +3762,20 @@ function PhoneVerifyFlow({ lang, onClose, onVerified }: { lang: Lang; onClose: (
       )}
 
       {step === "done" && (
-        <div className={`animate-popup-pop ${cardCls}`}>
-          <img src="/verify-coins.png" alt="" draggable={false} className="mx-auto h-[150px] w-auto select-none object-contain" />
-          <p className="mt-1 text-[26px] font-extrabold leading-none text-[#D10005]">{t.pvDoneAmount}</p>
-          <p className="mt-1.5 text-[18px] font-extrabold text-[#1d2129]">{t.pvDoneSub}</p>
-          <div className="mt-3 flex h-[44px] items-center justify-center gap-2 rounded-[10px] bg-white">
-            <img src="/coin.png" alt="" aria-hidden className="h-5 w-5 object-contain" />
-            <span className="text-[16px] font-extrabold text-[#16a34a]">+ 500</span>
+        /* The coin art carries the card's own top corners and the pile that
+           spills above them, so it runs full-bleed and the panel picks the
+           border up underneath. */
+        <div className="animate-popup-pop w-full max-w-[330px] drop-shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
+          <img src="/verify-coins.png" alt="" draggable={false} className="block w-full select-none" />
+          <div className="-mt-px rounded-b-[18px] border-x-[3px] border-b-[3px] border-[#F3B829] bg-[#FFFEF8] px-5 pb-5 pt-1 text-center">
+            <p className="text-[28px] font-extrabold leading-none text-[#D10005]">{t.pvDoneAmount}</p>
+            <p className="mt-2 text-[19px] font-extrabold text-[#1d2129]">{t.pvDoneSub}</p>
+            <div className="mt-3 flex h-[44px] items-center justify-center gap-2 rounded-[10px] border border-black/5 bg-white">
+              <img src="/coin.png" alt="" aria-hidden className="h-5 w-5 object-contain" />
+              <span className="text-[16px] font-extrabold text-[#16a34a]">+ 500</span>
+            </div>
+            <button onClick={onClose} className={`mt-3 ${ctaCls}`}>{t.pvDoneCta}</button>
           </div>
-          <button onClick={onClose} className={`mt-3 ${ctaCls}`}>{t.pvDoneCta}</button>
         </div>
       )}
 
