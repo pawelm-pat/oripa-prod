@@ -2847,11 +2847,11 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onBackToInfo, onHo
   }
 
   return (
-    <div className="animate-screen-in absolute inset-0 z-50 flex h-full flex-col bg-[#eef0f3]">
+    <div className="animate-screen-in absolute inset-0 z-50 flex h-full max-h-full flex-col overflow-hidden bg-[#eef0f3]">
       <AppHeader coins={coins} t={t} onHome={onHome} onOpenStore={onOpenStore} />
 
       {/* Top actions: roll again, or drop back to the pack's info page. */}
-      <div className="flex shrink-0 items-center gap-2 bg-white px-3 pt-3">
+      <div className="sticky top-0 z-30 flex shrink-0 items-center gap-2 bg-white px-3 pt-3">
         <button onClick={() => { if (dailyLimitReached) { setOtherIdx(0); setLimitOpen(true); } else { onDrawAgain(); } }} className="h-[39px] flex-1 rounded-lg bg-[#D10005] text-[14px] font-extrabold text-white active:scale-[0.99]">
           {t.drawAgain}
         </button>
@@ -2970,7 +2970,7 @@ function DrawResults({ lang, coins, item, cards, onDrawAgain, onBackToInfo, onHo
 
       {/* Bottom action bar */}
       {!noneLeft && (
-      <div className="shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2.5 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
+      <div className="sticky bottom-0 z-30 shrink-0 border-t border-black/10 bg-white px-3 pb-3 pt-2.5 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
         <div className="mb-4 flex items-center justify-between">
           <span className="flex items-center gap-1.5">
             <CoinIcon size={26} />
