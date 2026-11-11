@@ -686,6 +686,7 @@ function SiteFooter({ t }: { t: Dict }) {
       <div className="my-6 h-px bg-white/15" />
       <p className="text-[10px] font-medium leading-relaxed text-white">{t.ftPurchaseNote}</p>
       <p className="mt-4 text-[10px] font-medium leading-relaxed text-white">{t.ftOperator}</p>
+      <p className="mt-4 text-[10px] font-medium leading-relaxed text-white">{t.ftProducts}</p>
       <p className="mt-4 text-[10px] font-medium text-white">{t.ftCopyright}</p>
     </footer>
   );
